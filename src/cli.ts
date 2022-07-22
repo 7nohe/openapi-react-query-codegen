@@ -4,11 +4,8 @@ import { Command } from "commander";
 import packageJson from "../package.json";
 
 export type CLIOptions = {
-  packageVersion: string;
   outputDir: string;
   path: string;
-  baseUrl: string;
-  replacer: string[];
 };
 
 const program = new Command();
