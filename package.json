@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build:dev": "node ./dist/src/cli.js -p petstore.yaml"
+    "preview": "npm run build && node ./dist/src/cli.js -p petstore.yaml"
   },
   "keywords": [],
   "author": "Daiki Urata (@7nohe)",

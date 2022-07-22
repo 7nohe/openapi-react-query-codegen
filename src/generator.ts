@@ -1,23 +1,21 @@
 import ts from "typescript";
-import type { OpenAPI, OpenAPIV3 } from "openapi-types";
 import { generate as generateTSClients } from 'openapi-typescript-codegen'
 import { print } from "./print";
-import { makeImports } from "./imports";
 import { makeQueries } from "./queries";
 import { CLIOptions } from "./cli";
 import path from "path";
 
-function makeSourceFile() {
+function makeSourceFile(outputPath: string) {
   return ts.factory.createSourceFile(
     /*statements*/ [
-      ...makeImports(),
+      ...makeQueries(outputPath),
     ],
     /*endOfFileToken*/ ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
     /*flags*/ ts.NodeFlags.None
   );
 }
 
-function makeSource() {
+function makeSource(outputPath: string) {
   const resultFile = ts.createSourceFile(
     "client.ts",
     "",
@@ -29,7 +27,7 @@ function makeSource() {
 
   const result = printer.printNode(
     ts.EmitHint.Unspecified,
-    makeSourceFile(),
+    makeSourceFile(outputPath),
     resultFile
   );
 
@@ -42,7 +40,6 @@ export async function generate(options: CLIOptions) {
     input: options.path,
     output: outputPath,
   })
-  await makeQueries(path.join(options.outputDir, 'queries'), outputPath);
-  const source = makeSource();
+  const source = makeSource(outputPath);
   print(source, options);
 }
