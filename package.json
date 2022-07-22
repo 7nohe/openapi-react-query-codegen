@@ -2,12 +2,8 @@
   "name": "@7nohe/openapi-react-query-codegen",
   "version": "0.0.1",
   "description": "OpenAPI React Query Codegen",
-  "bin": "bin/generate.js",
-  "exports": {
-    ".": {
-      "import": "./dist/cli.mjs",
-      "require": "./dist/cli.js"
-    }
+  "bin": {
+    "codegen": "src/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -18,11 +14,9 @@
   "license": "MIT",
   "dependencies": {
     "commander": "^9.4.0",
-    "ejs": "^3.1.8",
     "typescript": "^4.7.4"
   },
   "devDependencies": {
-    "@types/ejs": "^3.1.1",
     "@types/glob": "^7.2.0",
     "@types/node": "^18.0.6",
     "glob": "^8.0.3",

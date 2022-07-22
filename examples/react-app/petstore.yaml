@@ -1,11 +1,11 @@
-openapi: "3.0.0"
+openapi: 3.0.0
 info:
   version: 1.0.0
   title: Swagger Petstore
   license:
     name: MIT
 servers:
-  - url: http://localhost:4010
+  - url: 'http://localhost:4010'
 paths:
   /pets:
     get:
@@ -30,15 +30,30 @@ paths:
               schema:
                 type: string
           content:
-            application/json:    
+            application/json:
               schema:
-                $ref: "#/components/schemas/Pets"
+                $ref: '#/components/schemas/Pets'
+              examples:
+                example-1:
+                  value:
+                    - id: 1
+                      name: Luna
+                      tag: string
+                    - id: 2
+                      name: Bella
+                      tag: string
+                    - id: 3
+                      name: Oliver
+                      tag: string
+                    - id: 4
+                      name: Leo
+                      tag: string
         default:
           description: unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
     post:
       summary: Create a pet
       operationId: createPets
@@ -52,8 +67,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
-  /pets/{petId}:
+                $ref: '#/components/schemas/Error'
+  '/pets/{petId}':
     get:
       summary: Info for a specific pet
       operationId: showPetById
@@ -72,13 +87,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Pet"
+                $ref: '#/components/schemas/Pet'
         default:
           description: unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Pet:
@@ -97,7 +112,7 @@ components:
     Pets:
       type: array
       items:
-        $ref: "#/components/schemas/Pet"
+        $ref: '#/components/schemas/Pet'
     Error:
       type: object
       required:
