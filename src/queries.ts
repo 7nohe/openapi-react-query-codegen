@@ -26,7 +26,7 @@ export const makeQueries = (
           ts.factory.createIdentifier("useQuery")
         )])
       ),
-      ts.factory.createStringLiteral("react-query"),
+      ts.factory.createStringLiteral("@tanstack/react-query"),
       undefined
     ),
     ...nodes.map((node) => {
@@ -61,23 +61,37 @@ export const makeQueries = (
               ts.factory.createIdentifier(`use${className}${capitalizeFirstLetter(methodName)}`),
               undefined,
               undefined,
-              ts.factory.createCallExpression(
-                ts.factory.createIdentifier("useQuery"),
+              ts.factory.createArrowFunction(
                 undefined,
-                [
-                  ts.factory.createArrayLiteralExpression(
-                    [ts.factory.createStringLiteral(`${className}${capitalizeFirstLetter(methodName)}`)],
-                    false
-                  ),
-                  ts.factory.createCallExpression(
-                    ts.factory.createPropertyAccessExpression(
-                      ts.factory.createIdentifier(className),
-                      ts.factory.createIdentifier(methodName)
+                undefined,
+                [],
+                undefined,
+                ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+                ts.factory.createCallExpression(
+                  ts.factory.createIdentifier("useQuery"),
+                  undefined,
+                  [
+                    ts.factory.createArrayLiteralExpression(
+                      [ts.factory.createStringLiteral(`${className}${capitalizeFirstLetter(methodName)}`)],
+                      false
                     ),
-                    undefined,
-                    []
-                  )
-                ]
+                    ts.factory.createArrowFunction(
+                      undefined,
+                      undefined,
+                      [],
+                      undefined,
+                      ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+                      ts.factory.createCallExpression(
+                        ts.factory.createPropertyAccessExpression(
+                          ts.factory.createIdentifier(className),
+                          ts.factory.createIdentifier(methodName)
+                        ),
+                        undefined,
+                        []
+                      )
+                    )
+                  ]
+                )
               )
             )],
             ts.NodeFlags.Const
