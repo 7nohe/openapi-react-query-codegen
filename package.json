@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "preview": "npm run build && node ./dist/src/cli.js -p petstore.yaml"
+    "preview": "npm run build && npm -C examples/react-app run generate:clients"
   },
   "keywords": [],
   "author": "Daiki Urata (@7nohe)",

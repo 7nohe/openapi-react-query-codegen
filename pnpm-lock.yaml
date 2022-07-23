@@ -4,7 +4,6 @@ importers:
 
   .:
     specifiers:
-      '@types/ejs': ^3.1.1
       '@types/glob': ^7.2.0
       '@types/node': ^18.0.6
       commander: ^9.4.0
@@ -16,7 +15,6 @@ importers:
       commander: 9.4.0
       typescript: 4.7.4
     devDependencies:
-      '@types/ejs': 3.1.1
       '@types/glob': 7.2.0
       '@types/node': 18.0.6
       glob: 8.0.3
@@ -595,10 +593,6 @@ packages:
   /@tootallnate/once/2.0.0:
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
     engines: {node: '>= 10'}
-    dev: true
-
-  /@types/ejs/3.1.1:
-    resolution: {integrity: sha512-RQul5wEfY7BjWm0sYY86cmUN/pcXWGyVxWX93DFFJvcrxax5zKlieLwA3T77xJGwNcZW0YW6CYG70p1m8xPFmA==}
     dev: true
 
   /@types/glob/7.2.0:

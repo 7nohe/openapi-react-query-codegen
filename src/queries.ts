@@ -14,21 +14,6 @@ export const makeQueries = (
     ts.ScriptTarget.Latest // langugeVersion
   ))
   return [
-    ts.factory.createImportDeclaration(
-      undefined,
-      undefined,
-      ts.factory.createImportClause(
-        false,
-        undefined,
-        ts.factory.createNamedImports([ts.factory.createImportSpecifier(
-          false,
-          undefined,
-          ts.factory.createIdentifier("useQuery")
-        )])
-      ),
-      ts.factory.createStringLiteral("@tanstack/react-query"),
-      undefined
-    ),
     ...nodes.map((node) => {
       const klass = node.getChildren()[0].getChildren().find(child => child.kind === ts.SyntaxKind.ClassDeclaration) as ts.ClassDeclaration;
       const className = klass.name?.getText(node)!;
@@ -51,9 +36,14 @@ export const makeQueries = (
     ...nodes.map((node) => {
       const klass = node.getChildren()[0].getChildren().find(child => child.kind === ts.SyntaxKind.ClassDeclaration) as ts.ClassDeclaration;
       const className = klass.name?.getText(node)!;
-      const methods = klass.members.filter(node => node.kind === ts.SyntaxKind.MethodDeclaration)
+      const methods = klass.members.filter(node => node.kind === ts.SyntaxKind.MethodDeclaration) as ts.MethodDeclaration[];
       return methods.map(method => {
         const methodName = method.name?.getText(node)!;
+        const methodBlock = method.getChildren(node).find(child => child.kind === ts.SyntaxKind.Block) as ts.Block;
+        const returnStatement = methodBlock.statements.find(s => s.kind === ts.SyntaxKind.ReturnStatement) as ts.ReturnStatement;
+        const callExpression = returnStatement.expression as ts.CallExpression;
+        const properties = (callExpression.arguments[1] as ts.ObjectLiteralExpression).properties as unknown as ts.PropertyAssignment[];
+        const httpMethodName = properties.find(p => p.name?.getText(node) === 'method')?.initializer?.getText(node)!;
         return ts.factory.createVariableStatement(
           [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
           ts.factory.createVariableDeclarationList(
@@ -64,11 +54,11 @@ export const makeQueries = (
               ts.factory.createArrowFunction(
                 undefined,
                 undefined,
-                [],
+                method.parameters,
                 undefined,
                 ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
                 ts.factory.createCallExpression(
-                  ts.factory.createIdentifier("useQuery"),
+                  ts.factory.createIdentifier(httpMethodName === "'GET'" ? "useQuery" : "useMutation"),
                   undefined,
                   [
                     ts.factory.createArrayLiteralExpression(
@@ -87,7 +77,7 @@ export const makeQueries = (
                           ts.factory.createIdentifier(methodName)
                         ),
                         undefined,
-                        []
+                        method.parameters.map(param => ts.factory.createIdentifier(param.name.getText(node)))
                       )
                     )
                   ]
