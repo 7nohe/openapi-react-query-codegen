@@ -8,7 +8,59 @@ import path from "path";
 
 function makeSourceFile(outputPath: string) {
   return ts.factory.createSourceFile(
-    /*statements*/ [...makeImports(outputPath), ...makeQueries(outputPath)],
+    /*statements*/ [
+      ...makeImports(outputPath),
+      ts.factory.createTypeAliasDeclaration(
+        undefined,
+        undefined,
+        ts.factory.createIdentifier("ArgumentTypes"),
+        [
+          ts.factory.createTypeParameterDeclaration(
+            undefined,
+            ts.factory.createIdentifier("F"),
+            ts.factory.createTypeReferenceNode(
+              ts.factory.createIdentifier("Function"),
+              undefined
+            ),
+            undefined
+          ),
+        ],
+        ts.factory.createConditionalTypeNode(
+          ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier("F"),
+            undefined
+          ),
+          ts.factory.createFunctionTypeNode(
+            undefined,
+            [
+              ts.factory.createParameterDeclaration(
+                undefined,
+                undefined,
+                ts.factory.createToken(ts.SyntaxKind.DotDotDotToken),
+                ts.factory.createIdentifier("args"),
+                undefined,
+                ts.factory.createInferTypeNode(
+                  ts.factory.createTypeParameterDeclaration(
+                    undefined,
+                    ts.factory.createIdentifier("A"),
+                    undefined,
+                    undefined
+                  )
+                ),
+                undefined
+              ),
+            ],
+            ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
+          ),
+          ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier("A"),
+            undefined
+          ),
+          ts.factory.createKeywordTypeNode(ts.SyntaxKind.NeverKeyword)
+        )
+      ),
+      ...makeQueries(outputPath),
+    ],
     /*endOfFileToken*/ ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
     /*flags*/ ts.NodeFlags.None
   );
