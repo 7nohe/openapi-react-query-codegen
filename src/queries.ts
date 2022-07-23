@@ -123,7 +123,6 @@ const makeUseQuery = (
                 undefined
               ),
             ],
-            // method.parameters,
             undefined,
             ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
             ts.factory.createCallExpression(
@@ -218,18 +217,15 @@ const makeUseMutation = (
                         ts.factory.createKeywordTypeNode(
                           ts.SyntaxKind.UnknownKeyword
                         ),
-                        ts.factory.createTypeReferenceNode(
-                          ts.factory.createIdentifier("ArgumentTypes"),
-                          [
-                            ts.factory.createTypeQueryNode(
-                              ts.factory.createQualifiedName(
-                                ts.factory.createIdentifier(className),
-                                ts.factory.createIdentifier(methodName)
-                              ),
-                              undefined
-                            ),
-                          ]
-                        ),
+                        ts.factory.createTypeLiteralNode(
+                          method.parameters.map((param) => {
+                            return ts.factory.createPropertySignature(
+                              undefined,
+                              ts.factory.createIdentifier(param.name.getText(node)),
+                              undefined,
+                              param.type
+                            )
+                          })),
                         ts.factory.createKeywordTypeNode(
                           ts.SyntaxKind.UnknownKeyword
                         ),
@@ -257,7 +253,14 @@ const makeUseMutation = (
                       undefined,
                       undefined,
                       undefined,
-                      ts.factory.createIdentifier("body"),
+                      ts.factory.createObjectBindingPattern(method.parameters.map((param) => {
+                        return ts.factory.createBindingElement(
+                          undefined,
+                          undefined,
+                          ts.factory.createIdentifier(param.name.getText(node)),
+                          undefined
+                        )
+                      })),
                       undefined,
                       undefined,
                       undefined
@@ -271,11 +274,7 @@ const makeUseMutation = (
                       ts.factory.createIdentifier(methodName)
                     ),
                     undefined,
-                    [
-                      ts.factory.createSpreadElement(
-                        ts.factory.createIdentifier("body")
-                      ),
-                    ]
+                    method.parameters.map(params => ts.factory.createIdentifier(params.name.getText(node)))
                   )
                 ),
                 ts.factory.createIdentifier("options"),

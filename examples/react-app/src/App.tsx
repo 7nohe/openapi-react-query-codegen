@@ -19,7 +19,9 @@ function App() {
       <button
         onClick={() => {
           mutation.mutate(
-            [{ name: "Duggy", photoUrls: ["http://example.com"] }],
+            {
+              body: { name: "Duggy", photoUrls: ["http://example.com"] }
+            },
             {
               onSuccess: () => console.log("success"),
             }
