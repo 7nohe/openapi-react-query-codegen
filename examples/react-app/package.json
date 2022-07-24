@@ -9,7 +9,7 @@
     "dev:mock": "prism mock ./petstore.yaml",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate:api": "codegen -p ./petstore.yaml",
+    "generate:api": "openapi-rq -p ./petstore.yaml",
     "test:generated": "npm run generate:api && tsc ./openapi/queries/index.ts --noEmit --target esnext --moduleResolution node"
   },
   "dependencies": {

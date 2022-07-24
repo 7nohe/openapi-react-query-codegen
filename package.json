@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "OpenAPI React Query Codegen",
   "bin": {
-    "codegen": "src/cli.js"
+    "openapi-rq": "src/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
