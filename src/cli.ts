@@ -11,6 +11,7 @@ export type CLIOptions = {
 const program = new Command();
 
 program
+  .name('openapi-rq')
   .version(packageJson.version)
   .description("Generate React Query code based on OpenAPI")
   .requiredOption("-p, --path <path>", "Path to OpenAPI file")
