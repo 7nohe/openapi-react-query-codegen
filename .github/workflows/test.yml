@@ -9,7 +9,7 @@ on:
   pull_request:
 
 jobs:
-  cache-and-install:
+  test:
     runs-on: ubuntu-latest
 
     steps:
