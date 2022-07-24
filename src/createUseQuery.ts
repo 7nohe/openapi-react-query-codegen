@@ -52,6 +52,18 @@ export const createUseQuery = (
                 undefined,
                 undefined,
                 undefined,
+                ts.factory.createIdentifier("queryKey"),
+                undefined,
+                ts.factory.createArrayTypeNode(ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword)),
+                ts.factory.createArrayLiteralExpression(
+                  [],
+                  false
+                )
+              ),
+              ts.factory.createParameterDeclaration(
+                undefined,
+                undefined,
+                undefined,
                 ts.factory.createIdentifier("options"),
                 ts.factory.createToken(ts.SyntaxKind.QuestionToken),
                 ts.factory.createTypeReferenceNode(
@@ -131,6 +143,7 @@ export const createUseQuery = (
                     ts.factory.createStringLiteral(
                       `${className}${capitalizeFirstLetter(methodName)}`
                     ),
+                    ts.factory.createSpreadElement(ts.factory.createIdentifier("queryKey"))
                   ],
                   false
                 ),

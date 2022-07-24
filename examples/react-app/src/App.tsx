@@ -4,7 +4,15 @@ import {
   usePetServiceFindPetsByStatus,
 } from "../openapi/queries";
 function App() {
-  const { data } = usePetServiceFindPetsByStatus({ status: ["available"] });
+  const { data } = usePetServiceFindPetsByStatus(
+    { status: ["available"] },
+    ["available"],
+    {
+      onError: (error) => {
+        console.error(error);
+      },
+    }
+  );
   const mutation = usePetServiceAddPet();
 
   return (
@@ -20,10 +28,11 @@ function App() {
         onClick={() => {
           mutation.mutate(
             {
-              body: { name: "Duggy", photoUrls: ["http://example.com"] }
+              body: { name: "Duggy", photoUrls: ["http://example.com"] },
             },
             {
               onSuccess: () => console.log("success"),
+              onError: (error) => console.error(error),
             }
           );
         }}
