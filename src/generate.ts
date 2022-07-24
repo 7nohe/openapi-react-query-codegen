@@ -1,6 +1,6 @@
 import { generate as generateTSClients } from "openapi-typescript-codegen";
 import { print } from "./print";
-import { CLIOptions } from "../bin/cli";
+import { CLIOptions } from "./cli";
 import path from "path";
 import { createSource } from "./createSource";
 

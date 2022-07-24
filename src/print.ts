@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { CLIOptions } from "../bin/cli";
+import { CLIOptions } from "./cli";
 
 function printGeneratedTS(result: string, options: CLIOptions) {
   const dir = path.join(options.outputDir, "queries")

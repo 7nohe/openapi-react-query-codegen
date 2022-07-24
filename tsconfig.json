@@ -12,6 +12,6 @@
     "lib": ["ESNext", "DOM"]
   },
   "include": [
-    "bin"
-],
+    "src"
+  ],
 }
