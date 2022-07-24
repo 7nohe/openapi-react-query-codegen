@@ -42,7 +42,13 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm -w install
+      
+      - name: Build
+        run: pnpm -w build
+
+      - name: Install dependencies in example app
+        run: pnpm --filter @7nohe/react-app install
       
       - name: Run test
         run: pnpm --filter @7nohe/react-app test:generated 
