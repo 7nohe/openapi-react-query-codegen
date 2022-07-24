@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { generate } from "./generate";
+import { generate } from "../src/generate";
 import { Command } from "commander";
 import packageJson from "../package.json";
 

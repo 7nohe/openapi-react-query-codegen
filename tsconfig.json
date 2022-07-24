@@ -11,5 +11,8 @@
     "outDir": "dist",
     "lib": ["ESNext", "DOM"]
   },
-  "files": ["src/cli.ts"]
+  "include": [
+    "bin",
+    "package.json"
+],
 }
