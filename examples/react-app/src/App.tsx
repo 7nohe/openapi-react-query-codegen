@@ -19,10 +19,9 @@ function App() {
     <div className="App">
       <h1>Pet List</h1>
       <ul>
-        {data instanceof Array &&
-          data.map((pet, index) => (
-            <li key={pet.id + "-" + index}>{pet.name}</li>
-          ))}
+        {data?.map((pet, index) => (
+          <li key={pet.id + "-" + index}>{pet.name}</li>
+        ))}
       </ul>
       <button
         onClick={() => {
