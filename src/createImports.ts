@@ -2,7 +2,7 @@ import ts from "typescript";
 import glob from "glob";
 import { join } from "path";
 
-export const makeImports = (generatedClientsPath: string) => {
+export const createImports = (generatedClientsPath: string) => {
   const models = glob.sync(`${generatedClientsPath}/models/*.ts`);
   const services = glob.sync(`${generatedClientsPath}/services/*.ts`);
   return [
