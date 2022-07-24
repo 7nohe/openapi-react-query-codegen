@@ -7,20 +7,39 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "preview": "npm run build && npm -C examples/react-app run generate:api"
+    "preview": "npm run build && npm -C examples/react-app run generate:api",
+    "prepublishOnly": "npm run build",
+    "release": "npx git-ensure -a && npx bumpp --commit --tag --push"
   },
-  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/7nohe/openapi-react-query-codegen.git"
+  },
+  "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
+  "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "codegen",
+    "react-query",
+    "react",
+    "openapi",
+    "swagger",
+    "typescript",
+    "openapi-typescript-codegen"
+  ],
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
   "dependencies": {
-    "commander": "^9.4.0",
-    "typescript": "^4.7.4"
+    "commander": "^9.4.0"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0",
     "@types/node": "^18.0.6",
     "glob": "^8.0.3",
     "openapi-types": "^12.0.0",
-    "openapi-typescript-codegen": "^0.23.0"
+    "openapi-typescript-codegen": "^0.23.0",
+    "typescript": "^4.7.4"
   }
 }
