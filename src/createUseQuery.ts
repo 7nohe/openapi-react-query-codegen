@@ -7,6 +7,38 @@ export const createUseQuery = (
   method: ts.MethodDeclaration
 ) => {
   const methodName = method.name?.getText(node)!;
+  let requestParam = [];
+  if (method.parameters.length !== 0) {
+    requestParam.push(
+      ts.factory.createParameterDeclaration(
+        undefined,
+        undefined,
+        undefined,
+        ts.factory.createObjectBindingPattern(
+          method.parameters.map((param) =>
+            ts.factory.createBindingElement(
+              undefined,
+              undefined,
+              ts.factory.createIdentifier(param.name.getText(node)),
+              undefined
+            )
+          )
+        ),
+        undefined,
+        ts.factory.createTypeLiteralNode(
+          method.parameters.map((param) =>
+            ts.factory.createPropertySignature(
+              undefined,
+              ts.factory.createIdentifier(param.name.getText(node)),
+              undefined,
+              param.type
+            )
+          )
+        ),
+        undefined
+      ),
+    );
+  }
   return ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
@@ -21,33 +53,7 @@ export const createUseQuery = (
             undefined,
             undefined,
             [
-              ts.factory.createParameterDeclaration(
-                undefined,
-                undefined,
-                undefined,
-                ts.factory.createObjectBindingPattern(
-                  method.parameters.map((param) =>
-                    ts.factory.createBindingElement(
-                      undefined,
-                      undefined,
-                      ts.factory.createIdentifier(param.name.getText(node)),
-                      undefined
-                    )
-                  )
-                ),
-                undefined,
-                ts.factory.createTypeLiteralNode(
-                  method.parameters.map((param) =>
-                    ts.factory.createPropertySignature(
-                      undefined,
-                      ts.factory.createIdentifier(param.name.getText(node)),
-                      undefined,
-                      param.type
-                    )
-                  )
-                ),
-                undefined
-              ),
+              ...requestParam,
               ts.factory.createParameterDeclaration(
                 undefined,
                 undefined,

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "preview": "npm run build && npm -C examples/react-app run generate:clients"
+    "preview": "npm run build && npm -C examples/react-app run generate:api"
   },
   "keywords": [],
   "author": "Daiki Urata (@7nohe)",

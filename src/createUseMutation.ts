@@ -53,7 +53,7 @@ export const createUseMutation = (
                         ts.factory.createKeywordTypeNode(
                           ts.SyntaxKind.UnknownKeyword
                         ),
-                        ts.factory.createTypeLiteralNode(
+                        method.parameters.length !== 0 ? ts.factory.createTypeLiteralNode(
                           method.parameters.map((param) => {
                             return ts.factory.createPropertySignature(
                               undefined,
@@ -64,6 +64,8 @@ export const createUseMutation = (
                               param.type
                             );
                           })
+                        ) : ts.factory.createKeywordTypeNode(
+                          ts.SyntaxKind.VoidKeyword
                         ),
                         ts.factory.createKeywordTypeNode(
                           ts.SyntaxKind.UnknownKeyword
@@ -87,7 +89,7 @@ export const createUseMutation = (
                 ts.factory.createArrowFunction(
                   undefined,
                   undefined,
-                  [
+                  method.parameters.length !== 0 ? [
                     ts.factory.createParameterDeclaration(
                       undefined,
                       undefined,
@@ -108,7 +110,7 @@ export const createUseMutation = (
                       undefined,
                       undefined
                     ),
-                  ],
+                  ] : [],
                   undefined,
                   ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
                   ts.factory.createCallExpression(
