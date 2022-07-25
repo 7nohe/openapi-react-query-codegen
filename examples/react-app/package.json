@@ -9,13 +9,15 @@
     "dev:mock": "prism mock ./petstore.yaml",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate:api": "node ../../dist/src/cli.js -p ./petstore.yaml",
+    "generate:api": "node ../../dist/src/cli.js -i ./petstore.yaml -c axios --exportSchemas=true --postfix=Client --request ./request.ts",
     "test:generated": "npm run generate:api && tsc ./openapi/queries/index.ts --noEmit --target esnext --moduleResolution node"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.0.10",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "axios": "^0.27.2",
+    "form-data": "4.x"
   },
   "devDependencies": {
     "@stoplight/prism-cli": "^4.10.1",

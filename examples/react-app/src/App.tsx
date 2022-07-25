@@ -1,25 +1,27 @@
 import "./App.css";
 import {
-  usePetServiceAddPet,
-  usePetServiceFindPetsByStatus,
+  useDefaultClientAddPet,
+  useDefaultClientFindPets,
 } from "../openapi/queries";
+
 function App() {
-  const { data } = usePetServiceFindPetsByStatus(
-    { status: ["available"] },
-    ["available"],
+  const { data } = useDefaultClientFindPets(
+    { tags: [], limit: 10 },
+    [],
     {
       onError: (error) => {
         console.error(error);
       },
     }
   );
-  const mutation = usePetServiceAddPet();
+
+  const mutation = useDefaultClientAddPet();
 
   return (
     <div className="App">
       <h1>Pet List</h1>
       <ul>
-        {data?.map((pet, index) => (
+        {data instanceof Array && data?.map((pet, index) => (
           <li key={pet.id + "-" + index}>{pet.name}</li>
         ))}
       </ul>
@@ -27,7 +29,7 @@ function App() {
         onClick={() => {
           mutation.mutate(
             {
-              body: { name: "Duggy", photoUrls: ["http://example.com"] },
+              requestBody: { name: "Duggy" },
             },
             {
               onSuccess: () => console.log("success"),
