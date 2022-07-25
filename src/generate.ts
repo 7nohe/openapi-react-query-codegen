@@ -3,11 +3,17 @@ import { print } from "./print";
 import { CLIOptions } from "./cli";
 import path from "path";
 import { createSource } from "./createSource";
+import { defaultOutputPath, requestsOutputPath } from "./constants";
 
 export async function generate(options: CLIOptions) {
-  const openApiOutputPath = path.join(options.outputDir, "requests");
+  const openApiOutputPath = path.join(
+    options.output ?? defaultOutputPath,
+    requestsOutputPath
+  );
+
   await generateTSClients({
-    input: options.path,
+    ...options,
+    httpClient: options.client,
     output: openApiOutputPath,
   });
   const source = createSource(openApiOutputPath);
