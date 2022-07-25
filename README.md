@@ -18,15 +18,20 @@ $ npm install -D @7nohe/openapi-react-query-codegen
 ```
 $ openapi-rq --help
 
-  Usage: openapi-rq [options]
+Usage: openapi-rq [options]
 
-  Generate React Query code based on OpenAPI
+Generate React Query code based on OpenAPI
 
-  Options:
-    -V, --version                 output the version number
-    -p, --path <path>             Path to OpenAPI file
-    -o, --output-dir [directory]  Directory to output the generated package (default: "openapi")
-    -h, --help                    display help for command
+Options:
+  -V, --version            output the version number
+  -i, --input <value>      OpenAPI specification, can be a path, url or string content (required)
+  -o, --output <value>     Output directory (default: "openapi")
+  -c, --client <value>     HTTP client to generate [fetch, xhr, node, axios, angular] (default: "fetch")
+  --exportSchemas <value>  Write schemas to disk (default: false)
+  --indent <value>         Indentation options [4, 2, tabs] (default: "4")
+  --postfix <value>        Service name postfix (default: "Service")
+  --request <value>        Path to custom request file
+  -h, --help               display help for command
 ```
 
 ## Example Usage
