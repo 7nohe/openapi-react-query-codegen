@@ -39,13 +39,30 @@ export const createUseQuery = (
       ),
     );
   }
-  return ts.factory.createVariableStatement(
+
+  const customHookName = `use${className}${capitalizeFirstLetter(methodName)}`;
+  const queryKey = `${customHookName}Key`
+
+  return [
+    ts.factory.createVariableStatement(
+      [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+      ts.factory.createVariableDeclarationList(
+        [ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(queryKey),
+          undefined,
+          undefined,
+          ts.factory.createStringLiteral(`${className}${capitalizeFirstLetter(methodName)}`)
+        )],
+        ts.NodeFlags.Const
+      )
+    ),
+    ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
       [
         ts.factory.createVariableDeclaration(
           ts.factory.createIdentifier(
-            `use${className}${capitalizeFirstLetter(methodName)}`
+            customHookName
           ),
           undefined,
           undefined,
@@ -146,9 +163,7 @@ export const createUseQuery = (
               [
                 ts.factory.createArrayLiteralExpression(
                   [
-                    ts.factory.createStringLiteral(
-                      `${className}${capitalizeFirstLetter(methodName)}`
-                    ),
+                    ts.factory.createIdentifier(queryKey),
                     ts.factory.createSpreadElement(ts.factory.createIdentifier("queryKey"))
                   ],
                   false
@@ -178,5 +193,5 @@ export const createUseQuery = (
       ],
       ts.NodeFlags.Const
     )
-  );
+  )];
 };
