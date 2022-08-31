@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/7nohe/openapi-react-query-codegen.git"
+    "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git"
   },
   "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
   "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
