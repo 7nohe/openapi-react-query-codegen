@@ -40,7 +40,7 @@ Options:
 ### Command
 
 ```
-$ openapi-rq -p ./petstore.yaml
+$ openapi-rq -i ./petstore.yaml
 ```
 
 ### Output directory structure
