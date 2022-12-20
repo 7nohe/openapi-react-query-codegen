@@ -54,4 +54,9 @@ jobs:
         run: pnpm --filter @7nohe/react-app install
       
       - name: Run test
-        run: pnpm --filter @7nohe/react-app test:generated 
+        run: pnpm --filter @7nohe/react-app test:generated
+      - name: Archive generated query file
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-query-file
+          path: openapi/queries/index.ts
