@@ -58,5 +58,5 @@ jobs:
       - name: Archive generated query file
         uses: actions/upload-artifact@v3
         with:
-          name: generated-query-file
+          name: generated-query-file-${{ matrix.os }}
           path: examples/react-app/openapi/queries/index.ts
