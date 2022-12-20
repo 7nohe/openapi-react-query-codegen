@@ -59,4 +59,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: generated-query-file
-          path: openapi/queries/index.ts
+          path: examples/react-app/openapi/queries/index.ts
