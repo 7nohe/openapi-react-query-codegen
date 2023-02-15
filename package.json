@@ -32,8 +32,8 @@
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
   "dependencies": {
-    "commander": "^9.4.1",
-    "glob": "^8.0.3",
+    "commander": "^10.0.0",
+    "glob": "^8.1.0",
     "openapi-typescript-codegen": "^0.23.0",
     "typescript": "^4.9.4"
   },

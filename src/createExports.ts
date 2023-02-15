@@ -6,7 +6,7 @@ import { createUseQuery } from "./createUseQuery";
 import { createUseMutation } from "./createUseMutation";
 
 export const createExports = (generatedClientsPath: string) => {
-  const services = glob.sync(`${generatedClientsPath}/services/*.ts`);
+  const services = glob.sync(join(generatedClientsPath, 'services', '*.ts'));
   const nodes = services.map((servicePath) =>
     ts.createSourceFile(
       servicePath, // fileName
