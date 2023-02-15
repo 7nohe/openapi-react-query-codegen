@@ -3,8 +3,8 @@ import glob from "glob";
 import { join } from "path";
 
 export const createImports = (generatedClientsPath: string) => {
-  const models = glob.sync(join(generatedClientsPath, 'models', '*.ts'));
-  const services = glob.sync(join(generatedClientsPath, 'services', '*.ts'));
+  const models = glob.sync(join(generatedClientsPath, 'models', '*.ts').replace(/\\/g, '/'));
+  const services = glob.sync(join(generatedClientsPath, 'services', '*.ts').replace(/\\/g, '/'));
   return [
     ts.factory.createImportDeclaration(
       undefined,
