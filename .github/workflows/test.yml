@@ -10,36 +10,22 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 7
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 16
-
-      - uses: pnpm/action-setup@v2.0.1
-        name: Install pnpm
-        id: pnpm-install
-        with:
-          version: 7
-          run_install: false
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: |
-          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
-
-      - uses: actions/cache@v3
-        name: Setup pnpm cache
-        with:
-          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm -w install
@@ -51,4 +37,9 @@ jobs:
         run: pnpm --filter @7nohe/react-app install
       
       - name: Run test
-        run: pnpm --filter @7nohe/react-app test:generated 
+        run: pnpm --filter @7nohe/react-app test:generated
+      - name: Archive generated query file
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-query-file-${{ matrix.os }}
+          path: examples/react-app/openapi/queries/index.ts
