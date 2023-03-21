@@ -10,7 +10,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "generate:api": "node ../../dist/src/cli.js -i ./petstore.yaml -c axios --exportSchemas=true --postfix=Client --request ./request.ts",
-    "test:generated": "npm run generate:api && tsc ./openapi/queries/index.ts --noEmit --target esnext --moduleResolution node"
+    "test:generated": "tsc ./openapi/queries/index.ts --noEmit --target esnext --moduleResolution node"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.28.0",
