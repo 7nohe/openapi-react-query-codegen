@@ -9,7 +9,8 @@
     "downlevelIteration": true,
     "resolveJsonModule": true,
     "outDir": "dist",
-    "lib": ["ESNext", "DOM"]
+    "lib": ["ESNext", "DOM"],
+    "target": "ESNext"
   },
   "include": [
     "src"

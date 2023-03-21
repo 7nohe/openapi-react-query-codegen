@@ -1,13 +1,12 @@
 import ts from "typescript";
 import glob from "glob";
-import { join } from "path";
+import { extname, basename, join } from "path";
 
 export const createImports = (generatedClientsPath: string) => {
   const models = glob.sync(join(generatedClientsPath, 'models', '*.ts').replace(/\\/g, '/'));
   const services = glob.sync(join(generatedClientsPath, 'services', '*.ts').replace(/\\/g, '/'));
   return [
     ts.factory.createImportDeclaration(
-      undefined,
       undefined,
       ts.factory.createImportClause(
         false,
@@ -39,9 +38,8 @@ export const createImports = (generatedClientsPath: string) => {
       undefined
     ),
     ...models.map((model) => {
-      const modelName = model.split("/").pop()!.split(".")[0];
+      const modelName = basename(model, extname(model));
       return ts.factory.createImportDeclaration(
-        undefined,
         undefined,
         ts.factory.createImportClause(
           false,
@@ -59,9 +57,8 @@ export const createImports = (generatedClientsPath: string) => {
       );
     }),
     ...services.map((service) => {
-      const serviceName = service.split("/").pop()!.split(".")[0];
+      const serviceName = basename(service, extname(service));
       return ts.factory.createImportDeclaration(
-        undefined,
         undefined,
         ts.factory.createImportClause(
           false,

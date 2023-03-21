@@ -36,10 +36,14 @@ jobs:
       - name: Install dependencies in example app
         run: pnpm --filter @7nohe/react-app install
       
-      - name: Run test
-        run: pnpm --filter @7nohe/react-app test:generated
+      - name: Run codegen
+        run: pnpm --filter @7nohe/react-app generate:api
+
       - name: Archive generated query file
         uses: actions/upload-artifact@v3
         with:
           name: generated-query-file-${{ matrix.os }}
           path: examples/react-app/openapi/queries/index.ts
+
+      - name: Run tsc
+        run: pnpm --filter @7nohe/react-app test:generated

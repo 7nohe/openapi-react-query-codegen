@@ -24,7 +24,6 @@ export const createUseMutation = (
               ts.factory.createParameterDeclaration(
                 undefined,
                 undefined,
-                undefined,
                 ts.factory.createIdentifier("options"),
                 ts.factory.createToken(ts.SyntaxKind.QuestionToken),
                 ts.factory.createTypeReferenceNode(
@@ -91,7 +90,6 @@ export const createUseMutation = (
                   undefined,
                   method.parameters.length !== 0 ? [
                     ts.factory.createParameterDeclaration(
-                      undefined,
                       undefined,
                       undefined,
                       ts.factory.createObjectBindingPattern(

@@ -13,7 +13,6 @@ export const createUseQuery = (
       ts.factory.createParameterDeclaration(
         undefined,
         undefined,
-        undefined,
         ts.factory.createObjectBindingPattern(
           method.parameters.map((param) =>
             ts.factory.createBindingElement(
@@ -35,7 +34,6 @@ export const createUseQuery = (
             )
           )
         ),
-        undefined
       ),
     );
   }
@@ -74,7 +72,6 @@ export const createUseQuery = (
               ts.factory.createParameterDeclaration(
                 undefined,
                 undefined,
-                undefined,
                 ts.factory.createIdentifier("queryKey"),
                 undefined,
                 ts.factory.createArrayTypeNode(ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword)),
@@ -84,7 +81,6 @@ export const createUseQuery = (
                 )
               ),
               ts.factory.createParameterDeclaration(
-                undefined,
                 undefined,
                 undefined,
                 ts.factory.createIdentifier("options"),
@@ -152,7 +148,6 @@ export const createUseQuery = (
                     ]),
                   ]
                 ),
-                undefined
               ),
             ],
             undefined,
