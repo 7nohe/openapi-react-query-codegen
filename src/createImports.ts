@@ -8,7 +8,6 @@ export const createImports = (generatedClientsPath: string) => {
   return [
     ts.factory.createImportDeclaration(
       undefined,
-      undefined,
       ts.factory.createImportClause(
         false,
         undefined,
@@ -42,7 +41,6 @@ export const createImports = (generatedClientsPath: string) => {
       const modelName = model.split("/").pop()!.split(".")[0];
       return ts.factory.createImportDeclaration(
         undefined,
-        undefined,
         ts.factory.createImportClause(
           false,
           undefined,
@@ -61,7 +59,6 @@ export const createImports = (generatedClientsPath: string) => {
     ...services.map((service) => {
       const serviceName = service.split("/").pop()!.split(".")[0];
       return ts.factory.createImportDeclaration(
-        undefined,
         undefined,
         ts.factory.createImportClause(
           false,
