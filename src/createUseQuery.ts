@@ -39,7 +39,10 @@ export const createUseQuery = (
   }
 
   const customHookName = `use${className}${capitalizeFirstLetter(methodName)}`;
-  const queryKey = `${customHookName}Key`
+  const queryKey = `${customHookName}Key`;
+
+  const queryKeyGenericType = ts.factory.createTypeReferenceNode('TQueryKey', undefined);
+  const queryKeyConstraint = ts.factory.createTypeReferenceNode('Array', [ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)]);
 
   return [
     ts.factory.createVariableStatement(
@@ -66,19 +69,22 @@ export const createUseQuery = (
           undefined,
           ts.factory.createArrowFunction(
             undefined,
-            undefined,
+            ts.factory.createNodeArray([
+              ts.factory.createTypeParameterDeclaration(
+                undefined,
+                'TQueryKey',
+                queryKeyConstraint,
+                ts.factory.createArrayTypeNode(ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)),
+              ),
+            ]),
             [
               ...requestParam,
               ts.factory.createParameterDeclaration(
                 undefined,
                 undefined,
                 ts.factory.createIdentifier("queryKey"),
-                undefined,
-                ts.factory.createArrayTypeNode(ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword)),
-                ts.factory.createArrayLiteralExpression(
-                  [],
-                  false
-                )
+                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                queryKeyGenericType,
               ),
               ts.factory.createParameterDeclaration(
                 undefined,
@@ -130,7 +136,7 @@ export const createUseQuery = (
                         ),
                         ts.factory.createArrayTypeNode(
                           ts.factory.createKeywordTypeNode(
-                            ts.SyntaxKind.StringKeyword
+                            ts.SyntaxKind.UnknownKeyword,
                           )
                         ),
                       ]
@@ -159,7 +165,19 @@ export const createUseQuery = (
                 ts.factory.createArrayLiteralExpression(
                   [
                     ts.factory.createIdentifier(queryKey),
-                    ts.factory.createSpreadElement(ts.factory.createIdentifier("queryKey"))
+                    ts.factory.createSpreadElement(ts.factory.createParenthesizedExpression(ts.factory.createBinaryExpression(
+                      ts.factory.createIdentifier("queryKey"),
+                      ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+                      method.parameters.length ? ts.factory.createArrayLiteralExpression([
+                        ts.factory.createObjectLiteralExpression(
+                          method.parameters.map((param) =>
+                            ts.factory.createShorthandPropertyAssignment(
+                              ts.factory.createIdentifier(param.name.getText(node)),
+                            ),
+                          ),
+                        ),
+                      ]) : ts.factory.createArrayLiteralExpression([]),
+                    ))),
                   ],
                   false
                 ),
