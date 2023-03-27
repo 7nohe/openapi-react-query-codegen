@@ -29,7 +29,7 @@ export const createUseQuery = (
             ts.factory.createPropertySignature(
               undefined,
               ts.factory.createIdentifier(param.name.getText(node)),
-              param.questionToken,
+              param.questionToken ?? param.initializer ? ts.factory.createToken(ts.SyntaxKind.QuestionToken) : param.questionToken,
               param.type
             )
           )
