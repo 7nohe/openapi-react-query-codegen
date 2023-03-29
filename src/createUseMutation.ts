@@ -59,7 +59,7 @@ export const createUseMutation = (
                               ts.factory.createIdentifier(
                                 param.name.getText(node)
                               ),
-                              undefined,
+                              param.questionToken ?? param.initializer ? ts.factory.createToken(ts.SyntaxKind.QuestionToken) : param.questionToken,
                               param.type
                             );
                           })
