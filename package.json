@@ -31,19 +31,17 @@
   ],
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
-  "dependencies": {
-  },
   "devDependencies": {
-    "@types/node": "^18.15.10",
-    "typescript": "^5.0.3",
+    "@types/node": "^18.15.11",
     "commander": "^10.0.0",
     "glob": "^9.3.4",
-    "openapi-typescript-codegen": "^0.23.0"
+    "openapi-typescript-codegen": "^0.23.0",
+    "typescript": "^5.0.3"
   },
   "peerDependencies": {
-    "typescript": ">= 4.8.3",
     "commander": "> 10",
     "glob": "> 9",
-    "openapi-typescript-codegen": "^0.23.0"
+    "openapi-typescript-codegen": "^0.23.0",
+    "typescript": ">= 4.8.3"
   }
 }
