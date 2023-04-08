@@ -7,7 +7,7 @@ import { Options } from "openapi-typescript-codegen";
 export type CLIOptions = {
   output?: string;
   client?: Options["httpClient"];
-} & Pick<Options, 'exportSchemas' | 'postfix' | 'request' | 'indent' | 'input'>;
+} & Pick<Options, 'exportSchemas' | 'postfix' | 'request' | 'indent' | 'input' | 'useUnionTypes'>;
 
 const program = new Command();
 
@@ -25,6 +25,7 @@ program
     "HTTP client to generate [fetch, xhr, node, axios, angular]",
     "fetch"
   )
+  .option("--useUnionTypes", "Use union types", false)
   .option("--exportSchemas <value>", "Write schemas to disk", false)
   .option("--indent <value>", "Indentation options [4, 2, tabs]", "4")
   .option("--postfix <value>", "Service name postfix", "Service")
