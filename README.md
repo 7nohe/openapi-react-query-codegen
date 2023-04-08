@@ -28,6 +28,7 @@ Options:
   -i, --input <value>      OpenAPI specification, can be a path, url or string content (required)
   -o, --output <value>     Output directory (default: "openapi")
   -c, --client <value>     HTTP client to generate [fetch, xhr, node, axios, angular] (default: "fetch")
+  --useUnionTypes          Use union types (default: false)
   --exportSchemas <value>  Write schemas to disk (default: false)
   --indent <value>         Indentation options [4, 2, tabs] (default: "4")
   --postfix <value>        Service name postfix (default: "Service")
