@@ -7,7 +7,7 @@ import { Options } from "openapi-typescript-codegen";
 export type CLIOptions = {
   output?: string;
   client?: Options["httpClient"];
-} & Pick<Options, 'exportSchemas' | 'postfix' | 'request' | 'indent' | 'input' | 'useUnionTypes'>;
+} & Pick<Options, 'exportSchemas' | 'postfixModels' | 'postfixServices' | 'request' | 'indent' | 'input' | 'useUnionTypes'>;
 
 const program = new Command();
 
@@ -28,7 +28,8 @@ program
   .option("--useUnionTypes", "Use union types", false)
   .option("--exportSchemas <value>", "Write schemas to disk", false)
   .option("--indent <value>", "Indentation options [4, 2, tabs]", "4")
-  .option("--postfix <value>", "Service name postfix", "Service")
+  .option("--postfixServices <value>", "Service name postfix", "Service")
+  .option("--postfixModels <value>", "Modal name postfix")
   .option("--request <value>", "Path to custom request file")
   .parse();
 
