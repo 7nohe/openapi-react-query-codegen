@@ -32,9 +32,9 @@
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^18.15.11",
-    "commander": "^10.0.0",
-    "glob": "^10.0.0",
+    "@types/node": "^18.16.0",
+    "commander": "^10.0.1",
+    "glob": "^10.2.5",
     "openapi-typescript-codegen": "^0.24.0",
     "typescript": "^5.0.4"
   },
