@@ -1,6 +1,8 @@
 import ts from "typescript";
 import { sync } from "glob";
-import { extname, basename, join } from "path";
+import { extname, basename, posix } from "path";
+
+const { join } = posix;
 
 export const createImports = (generatedClientsPath: string) => {
   const models = sync(join(generatedClientsPath, 'models', '*.ts').replace(/\\/g, '/'));
