@@ -1,5 +1,9 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
 importers:
 
   .:
@@ -23,13 +27,13 @@ importers:
   dist:
     devDependencies:
       '@types/node':
-        specifier: ^18.15.11
+        specifier: ^18.16.0
         version: 18.18.6
       commander:
-        specifier: ^10.0.0
-        version: 10.0.1
+        specifier: ^11.1.0
+        version: 11.1.0
       glob:
-        specifier: ^10.0.0
+        specifier: ^10.2.5
         version: 10.3.10
       openapi-typescript-codegen:
         specifier: ^0.24.0
