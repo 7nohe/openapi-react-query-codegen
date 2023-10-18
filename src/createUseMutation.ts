@@ -85,44 +85,51 @@ export const createUseMutation = (
               ts.factory.createIdentifier("useMutation"),
               undefined,
               [
-                ts.factory.createArrowFunction(
-                  undefined,
-                  undefined,
-                  method.parameters.length !== 0 ? [
-                    ts.factory.createParameterDeclaration(
+                ts.factory.createObjectLiteralExpression([
+                  ts.factory.createPropertyAssignment(
+                    ts.factory.createIdentifier("mutationFn"),
+                    ts.factory.createArrowFunction(
                       undefined,
                       undefined,
-                      ts.factory.createObjectBindingPattern(
-                        method.parameters.map((param) => {
-                          return ts.factory.createBindingElement(
-                            undefined,
-                            undefined,
-                            ts.factory.createIdentifier(
-                              param.name.getText(node)
-                            ),
-                            undefined
-                          );
-                        })
-                      ),
+                      method.parameters.length !== 0 ? [
+                        ts.factory.createParameterDeclaration(
+                          undefined,
+                          undefined,
+                          ts.factory.createObjectBindingPattern(
+                            method.parameters.map((param) => {
+                              return ts.factory.createBindingElement(
+                                undefined,
+                                undefined,
+                                ts.factory.createIdentifier(
+                                  param.name.getText(node)
+                                ),
+                                undefined
+                              );
+                            })
+                          ),
+                          undefined,
+                          undefined,
+                          undefined
+                        ),
+                      ] : [],
                       undefined,
-                      undefined,
-                      undefined
-                    ),
-                  ] : [],
-                  undefined,
-                  ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-                  ts.factory.createCallExpression(
-                    ts.factory.createPropertyAccessExpression(
-                      ts.factory.createIdentifier(className),
-                      ts.factory.createIdentifier(methodName)
-                    ),
-                    undefined,
-                    method.parameters.map((params) =>
-                      ts.factory.createIdentifier(params.name.getText(node))
+                      ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+                      ts.factory.createCallExpression(
+                        ts.factory.createPropertyAccessExpression(
+                          ts.factory.createIdentifier(className),
+                          ts.factory.createIdentifier(methodName)
+                        ),
+                        undefined,
+                        method.parameters.map((params) =>
+                          ts.factory.createIdentifier(params.name.getText(node))
+                        )
+                      )
                     )
-                  )
-                ),
-                ts.factory.createIdentifier("options"),
+                  ),
+                  ts.factory.createSpreadAssignment(
+                    ts.factory.createIdentifier("options")
+                  ),
+                ]),
               ]
             )
           )
