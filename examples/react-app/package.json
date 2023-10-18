@@ -6,14 +6,14 @@
   "scripts": {
     "dev": "run-p dev:mock dev:client",
     "dev:client": "vite --clearScreen=false",
-    "dev:mock": "prism mock ./petstore.yaml",
+    "dev:mock": "prism mock ./petstore.yaml --dynamic",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "generate:api": "node ../../dist/src/cli.js -i ./petstore.yaml -c axios --exportSchemas=true --postfixServices=Client --request ./request.ts",
     "test:generated": "tsc ./openapi/queries/index.ts --noEmit --target esnext --moduleResolution node"
   },
   "dependencies": {
-    "@tanstack/react-query": "^4.29.7",
+    "@tanstack/react-query": "^5.0.0",
     "axios": "^1.4.0",
     "form-data": "~4.0.0",
     "react": "^18.2.0",

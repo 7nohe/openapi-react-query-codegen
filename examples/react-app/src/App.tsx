@@ -2,20 +2,28 @@ import "./App.css";
 import {
   useDefaultClientAddPet,
   useDefaultClientFindPets,
+  useDefaultClientFindPetsKey,
 } from "../openapi/queries";
+import { useState } from 'react';
+import { queryClient } from './queryClient';
 
 function App() {
-  const { data } = useDefaultClientFindPets(
-    { tags: [], limit: 10 },
-    [],
-    {
-      onError: (error) => {
-        console.error(error);
-      },
-    }
+
+  const [tags, _setTags] = useState<string[]>([]);
+  const [limit, _setLimit] = useState<number>(10);
+
+  const { data, error, refetch } = useDefaultClientFindPets(
+    { tags, limit },
   );
 
-  const mutation = useDefaultClientAddPet();
+  const { mutate: addPet } = useDefaultClientAddPet();
+
+  if (error) return (
+  <div>
+    <p>Failed to fetch pets</p>
+    <button onClick={() => refetch()}>Retry</button>
+  </div>
+  );
 
   return (
     <div className="App">
@@ -27,12 +35,18 @@ function App() {
       </ul>
       <button
         onClick={() => {
-          mutation.mutate(
+          addPet(
             {
               requestBody: { name: "Duggy" },
             },
             {
-              onSuccess: () => console.log("success"),
+              onSuccess: () => {
+                queryClient.invalidateQueries({
+                  queryKey: [useDefaultClientFindPetsKey],
+                });
+                console.log("success")
+
+              },
               onError: (error) => console.error(error),
             }
           );
