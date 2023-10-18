@@ -18,8 +18,8 @@ importers:
         specifier: ^10.2.5
         version: 10.3.10
       openapi-typescript-codegen:
-        specifier: ^0.24.0
-        version: 0.24.0
+        specifier: ^0.25.0
+        version: 0.25.0
       typescript:
         specifier: ^5.0.4
         version: 5.2.2
@@ -36,8 +36,8 @@ importers:
         specifier: ^10.2.5
         version: 10.3.10
       openapi-typescript-codegen:
-        specifier: ^0.24.0
-        version: 0.24.0
+        specifier: ^0.25.0
+        version: 0.25.0
       typescript:
         specifier: ^5.0.4
         version: 5.2.2
@@ -1169,11 +1169,6 @@ packages:
       delayed-stream: 1.0.0
     dev: false
 
-  /commander@10.0.1:
-    resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
-    engines: {node: '>=14'}
-    dev: true
-
   /commander@11.1.0:
     resolution: {integrity: sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==}
     engines: {node: '>=16'}
@@ -2211,12 +2206,12 @@ packages:
       format-util: 1.0.5
     dev: true
 
-  /openapi-typescript-codegen@0.24.0:
-    resolution: {integrity: sha512-rSt8t1XbMWhv6Db7GUI24NNli7FU5kzHLxcE8BpzgGWRdWyWt9IB2YoLyPahxNrVA7yOaVgnXPkrcTDRMQtJYg==}
+  /openapi-typescript-codegen@0.25.0:
+    resolution: {integrity: sha512-nN/TnIcGbP58qYgwEEy5FrAAjePcYgfMaCe3tsmYyTgI3v4RR9v8os14L+LEWDvV50+CmqiyTzRkKKtJeb6Ybg==}
     hasBin: true
     dependencies:
       camelcase: 6.3.0
-      commander: 10.0.1
+      commander: 11.1.0
       fs-extra: 11.1.1
       handlebars: 4.7.8
       json-schema-ref-parser: 9.0.9
