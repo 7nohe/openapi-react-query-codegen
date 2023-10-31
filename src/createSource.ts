@@ -26,7 +26,7 @@ export const createSource = (outputPath: string) => {
 
   const node = createSourceFile(outputPath);
 
-  const result = `// generated with openapi-generator@${version} \n` + printer.printNode(ts.EmitHint.Unspecified, node, resultFile);
+  const result = `// generated with @7nohe/openapi-react-query-codegen@${version} \n` + printer.printNode(ts.EmitHint.Unspecified, node, resultFile);
 
   
 
