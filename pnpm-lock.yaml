@@ -21,7 +21,7 @@ importers:
         specifier: ^0.25.0
         version: 0.25.0
       typescript:
-        specifier: ^5.0.4
+        specifier: ^5.2.2
         version: 5.2.2
 
   dist:
@@ -39,17 +39,17 @@ importers:
         specifier: ^0.25.0
         version: 0.25.0
       typescript:
-        specifier: ^5.0.4
+        specifier: ^5.2.2
         version: 5.2.2
 
   examples/react-app:
     dependencies:
       '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
+        specifier: ^5.4.3
+        version: 5.4.3(react-dom@18.2.0)(react@18.2.0)
       axios:
-        specifier: ^1.4.0
-        version: 1.5.1
+        specifier: ^1.6.0
+        version: 1.6.0
       form-data:
         specifier: ~4.0.0
         version: 4.0.0
@@ -61,8 +61,8 @@ importers:
         version: 18.2.0(react@18.2.0)
     devDependencies:
       '@stoplight/prism-cli':
-        specifier: ^5.0.0
-        version: 5.4.0
+        specifier: ^5.5.1
+        version: 5.5.1
       '@types/react':
         specifier: ^18.2.6
         version: 18.2.29
@@ -70,16 +70,16 @@ importers:
         specifier: ^18.2.4
         version: 18.2.13
       '@vitejs/plugin-react':
-        specifier: ^4.0.0
+        specifier: ^4.1.0
         version: 4.1.0(vite@4.5.0)
       npm-run-all:
         specifier: ^4.1.5
         version: 4.1.5
       typescript:
-        specifier: ^5.0.4
+        specifier: ^5.2.2
         version: 5.2.2
       vite:
-        specifier: ^4.3.8
+        specifier: ^4.5.0
         version: 4.5.0(@types/node@18.18.6)
 
 packages:
@@ -577,13 +577,13 @@ packages:
     dev: true
     optional: true
 
-  /@stoplight/http-spec@5.13.0:
-    resolution: {integrity: sha512-zVUEviT2U0dBMzLOb1aPp41ef6eOUZ+CncVvPME3UX0lcYUhHw/Om3IceKa/KGGFVXWppb7dGKe1dr8Aw1LWEg==}
+  /@stoplight/http-spec@6.0.2:
+    resolution: {integrity: sha512-6uQxW0ycJF3cUSthsv7u3EClGn6AgqkLW9Q0dlrxOYJ1iH5Rx6SJEGYtmnkbTc/iXX/LygyoQ40lk8ebpqSegQ==}
     engines: {node: '>=14.13'}
     dependencies:
       '@stoplight/json': 3.21.0
       '@stoplight/json-schema-generator': 1.0.2
-      '@stoplight/types': 13.20.0
+      '@stoplight/types': 14.0.0
       '@types/json-schema': 7.0.11
       '@types/swagger-schema-official': 2.0.24
       '@types/type-is': 1.6.5
@@ -663,18 +663,18 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /@stoplight/prism-cli@5.4.0:
-    resolution: {integrity: sha512-Y7l6MqNQKzzM1xbGX1veP2Wjg9FEzp0LP28SRiPiirzRixUpBxkYx/u+TF3IOfEJAwo4eWjfHS0E6Uu2G3PldQ==}
+  /@stoplight/prism-cli@5.5.1:
+    resolution: {integrity: sha512-Gk9PtZs0PKNTUSpV58l1EjR2FE0vTbd452UJphobzAVcIGZOZ2upel2x2xSr+6HWkV8ovgOlZrwDg6at4TjKrg==}
     engines: {node: '>=16'}
     hasBin: true
     dependencies:
-      '@stoplight/http-spec': 5.13.0
+      '@stoplight/http-spec': 6.0.2
       '@stoplight/json': 3.21.0
       '@stoplight/json-schema-ref-parser': 9.2.7
-      '@stoplight/prism-core': 5.4.0
-      '@stoplight/prism-http': 5.4.0
-      '@stoplight/prism-http-server': 5.4.0
-      '@stoplight/types': 13.20.0
+      '@stoplight/prism-core': 5.5.1
+      '@stoplight/prism-http': 5.5.1
+      '@stoplight/prism-http-server': 5.5.1
+      '@stoplight/types': 14.0.0
       chalk: 4.1.2
       chokidar: 3.5.3
       fp-ts: 2.16.1
@@ -693,8 +693,8 @@ packages:
       - supports-color
     dev: true
 
-  /@stoplight/prism-core@5.4.0:
-    resolution: {integrity: sha512-xZ/lyaUxw++v1whXaQyXNX/9a2+FREr5FLJHESTKPRk3RUrBL7RYheey72OuJbgpaAfhiEn4kBeg+x4UzVbLdA==}
+  /@stoplight/prism-core@5.5.1:
+    resolution: {integrity: sha512-5itsaRyj1RmOwqz2hm1GRmak1OOVG1Eb3hAux1sHpTbIc3BE1upAq8wk4y66fr5sqpFnsAO/jaiuyVs8iH+ARw==}
     engines: {node: '>=16'}
     dependencies:
       fp-ts: 2.16.1
@@ -703,13 +703,13 @@ packages:
       tslib: 2.6.2
     dev: true
 
-  /@stoplight/prism-http-server@5.4.0:
-    resolution: {integrity: sha512-ZD4U1Zxpv1Sn3I/ap73sfHWdtpgvRmVnTyV6iIdf32uHIZxwRToYKD9wSAfmDeW0t2rqFOhbm/YAFD4hLRagWQ==}
+  /@stoplight/prism-http-server@5.5.1:
+    resolution: {integrity: sha512-v8djvSQo+sutTOqBhbgmeiscwUYJFsa/81ST6dT4/tnj1idXbm9XXsoXxOQRGmGfzxMWbRnH94QjPo7PFNCHEw==}
     engines: {node: '>=16'}
     dependencies:
-      '@stoplight/prism-core': 5.4.0
-      '@stoplight/prism-http': 5.4.0
-      '@stoplight/types': 13.20.0
+      '@stoplight/prism-core': 5.5.1
+      '@stoplight/prism-http': 5.5.1
+      '@stoplight/types': 14.0.0
       fast-xml-parser: 4.3.2
       fp-ts: 2.16.1
       io-ts: 2.2.20(fp-ts@2.16.1)
@@ -724,16 +724,16 @@ packages:
       - supports-color
     dev: true
 
-  /@stoplight/prism-http@5.4.0:
-    resolution: {integrity: sha512-1oVA2VafbuvAILtji74MePwm8Kd1/BVFm6SpTL+op49NgY3ktjvGW7BQPL43Slr7+cymq0YQlpvk/7cVR2Iy9w==}
+  /@stoplight/prism-http@5.5.1:
+    resolution: {integrity: sha512-mNqHDBaVqAL5ek4EgcmaCSUXhUOgJ3lXGNXW4caOke8Ary3sWxx9ziaw4iR+TxYzXZyOQJCNNWggZh7obcbb0w==}
     engines: {node: '>=16'}
     dependencies:
       '@faker-js/faker': 6.3.1
       '@stoplight/json': 3.21.0
       '@stoplight/json-schema-merge-allof': 0.7.8
       '@stoplight/json-schema-sampler': 0.3.0
-      '@stoplight/prism-core': 5.4.0
-      '@stoplight/types': 13.20.0
+      '@stoplight/prism-core': 5.5.1
+      '@stoplight/types': 14.0.0
       '@stoplight/yaml': 4.2.3
       abstract-logging: 2.0.1
       accepts: 1.3.8
@@ -767,6 +767,14 @@ packages:
       utility-types: 3.10.0
     dev: true
 
+  /@stoplight/types@14.0.0:
+    resolution: {integrity: sha512-w7Ejau6TaB7RqR0vWzGJSdmgLEYD2frjgbHPZoxgGQwAq/R8Qh/D9p9Bl9JFdii+YTL5xoDjyX0c1WDRlbMV8g==}
+    engines: {node: ^12.20 || >=14.13}
+    dependencies:
+      '@types/json-schema': 7.0.14
+      utility-types: 3.10.0
+    dev: true
+
   /@stoplight/yaml-ast-parser@0.0.48:
     resolution: {integrity: sha512-sV+51I7WYnLJnKPn2EMWgS4EUfoP4iWEbrWwbXsj0MZCB/xOK8j6+C9fntIdOM50kpx45ZLC3s6kwKivWuqvyg==}
     dev: true
@@ -781,12 +789,12 @@ packages:
       tslib: 2.6.2
     dev: true
 
-  /@tanstack/query-core@5.0.0:
-    resolution: {integrity: sha512-Y1BpiA6BblJd/UlVqxEVeAG7IACn568YJuTTItAiecBI7En+33g780kg+/8lhgl+BzcUPN7o+NjBrSRGJoemyQ==}
+  /@tanstack/query-core@5.4.3:
+    resolution: {integrity: sha512-fnI9ORjcuLGm1sNrKatKIosRQUpuqcD4SV7RqRSVmj8JSicX2aoMyKryHEBpVQvf6N4PaBVgBxQomjsbsGPssQ==}
     dev: false
 
-  /@tanstack/react-query@5.0.0(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-diQoC8FNBcO5Uf5yuaJlXthTtbO1xM8kzOX+pSBUMT9n/cqQ/u1wJGCtukvhDWA+6j07WmIj4bfqNbd2KOB6jQ==}
+  /@tanstack/react-query@5.4.3(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-4aSOrRNa6yEmf7mws5QPTVMn8Lp7L38tFoTZ0c1ZmhIvbr8GIA0WT7X5N3yz/nuK8hUtjw9cAzBr4BPDZZ+tzA==}
     peerDependencies:
       react: ^18.0.0
       react-dom: ^18.0.0
@@ -797,7 +805,7 @@ packages:
       react-native:
         optional: true
     dependencies:
-      '@tanstack/query-core': 5.0.0
+      '@tanstack/query-core': 5.4.3
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
     dev: false
@@ -1018,8 +1026,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /axios@1.5.1:
-    resolution: {integrity: sha512-Q28iYCWzNHjAm+yEAot5QaAMxhMghWLFVf7rRdwhUI+c2jix2DUXjAHXVi+s1ibs3mjPO/cCgbA++3BjD0vP/A==}
+  /axios@1.6.0:
+    resolution: {integrity: sha512-EZ1DYihju9pwVB+jg67ogm+Tmqc6JmhamRN6I4Zt8DfZu5lbcQGw3ozH9lFejSJgs/ibaef3A9PMXPLeefFGJg==}
     dependencies:
       follow-redirects: 1.15.3
       form-data: 4.0.0
@@ -2105,7 +2113,7 @@ packages:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
     hasBin: true
     dependencies:
-      minimist: 1.2.6
+      minimist: 1.2.8
     dev: true
 
   /ms@2.1.2:

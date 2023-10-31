@@ -14,6 +14,23 @@
 $ npm install -D @7nohe/openapi-react-query-codegen
 ```
 
+ Register the command to the `scripts` property in your package.json file.
+
+```json
+{
+  "scripts": {
+    "codegen": "openapi-rq -i ./petstore.yaml -c axios"
+  }
+}
+```
+
+You can also run the command without installing it in your project using the npx command.
+
+```bash
+$ npx --package @7nohe/openapi-react-query-codegen openapi-rq -i ./petstore.yaml -c axios
+```
+
+
 ## Usage
 
 ```
