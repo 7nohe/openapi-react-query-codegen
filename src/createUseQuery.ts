@@ -72,7 +72,7 @@ export const createUseQuery = (
 
   const responseDataType = ts.factory.createTypeParameterDeclaration(
     undefined,
-    "ResponseData",
+    "TData",
     undefined,
     awaitedResponseDataType
   );
@@ -118,6 +118,14 @@ export const createUseQuery = (
                   )
                 ),
                 responseDataType,
+                ts.factory.createTypeParameterDeclaration(
+                  undefined,
+                  "TError",
+                  undefined,
+                  ts.factory.createKeywordTypeNode(
+                    ts.SyntaxKind.UnknownKeyword
+                  )
+                ),
               ]),
               [
                 ...requestParam,
@@ -236,7 +244,7 @@ export const createUseQuery = (
                     ]),
                   ]
                 ),
-              // Omit<UseQueryResult<ResponseData, unknown>, 'data'> & { data: ResponseData };
+              // Omit<UseQueryResult<Awaited<ReturnType<typeof myClass.myMethod>>, TError>, 'data'> & { data: TData };
               ts.factory.createIntersectionTypeNode([
                 ts.factory.createTypeReferenceNode(
                   ts.factory.createIdentifier("Omit"),
@@ -245,8 +253,9 @@ export const createUseQuery = (
                       ts.factory.createIdentifier("UseQueryResult"),
                       [
                         awaitedResponseDataType,
-                        ts.factory.createKeywordTypeNode(
-                          ts.SyntaxKind.UnknownKeyword
+                        ts.factory.createTypeReferenceNode(
+                          ts.factory.createIdentifier("TError"),
+                          undefined
                         ),
                       ]
                     ),
@@ -261,7 +270,7 @@ export const createUseQuery = (
                     ts.factory.createIdentifier("data"),
                     undefined,
                     ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("ResponseData"),
+                      ts.factory.createIdentifier("TData"),
                       undefined
                     )
                   ),

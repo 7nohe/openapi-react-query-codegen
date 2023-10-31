@@ -28,7 +28,7 @@ export const createUseMutation = (
 
   const responseDataType = ts.factory.createTypeParameterDeclaration(
     undefined,
-    "ResponseData",
+    "TData",
     undefined,
     awaitedResponseDataType
   );
@@ -61,7 +61,21 @@ export const createUseMutation = (
           undefined,
           ts.factory.createArrowFunction(
             undefined,
-            ts.factory.createNodeArray([responseDataType]),
+            ts.factory.createNodeArray([
+              responseDataType,
+              ts.factory.createTypeParameterDeclaration(
+                undefined,
+                "TError",
+                undefined,
+                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
+              ),
+              ts.factory.createTypeParameterDeclaration(
+                undefined,
+                "TContext",
+                undefined,
+                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
+              ),
+            ]),
             [
               ts.factory.createParameterDeclaration(
                 undefined,
@@ -152,7 +166,7 @@ export const createUseMutation = (
                   ]),
                 ]
               ),
-              // Omit<UseMutationResult<ResponseData, unknown, { requestBody: NewPet; }, unknown>, 'data'> & { data: ResponseData };
+              // Omit<UseMutationResult<Awaited<ReturnType<typeof myClass.myMethod>>, TError, params, TContext>, 'data'> & { data: TData };
               ts.factory.createIntersectionTypeNode([
                 ts.factory.createTypeReferenceNode(
                   ts.factory.createIdentifier("Omit"),
@@ -161,12 +175,14 @@ export const createUseMutation = (
                       ts.factory.createIdentifier("UseMutationResult"),
                       [
                         awaitedResponseDataType,
-                        ts.factory.createKeywordTypeNode(
-                          ts.SyntaxKind.UnknownKeyword
+                        ts.factory.createTypeReferenceNode(
+                          ts.factory.createIdentifier("TError"),
+                          undefined
                         ),
                         methodParameters,
-                        ts.factory.createKeywordTypeNode(
-                          ts.SyntaxKind.UnknownKeyword
+                        ts.factory.createTypeReferenceNode(
+                          ts.factory.createIdentifier("TContext"),
+                          undefined
                         ),
                       ]
                     ),
@@ -181,7 +197,7 @@ export const createUseMutation = (
                     ts.factory.createIdentifier("data"),
                     undefined,
                     ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("ResponseData"),
+                      ts.factory.createIdentifier("TData"),
                       undefined
                     )
                   ),
