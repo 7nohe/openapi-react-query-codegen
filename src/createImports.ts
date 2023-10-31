@@ -5,8 +5,12 @@ import { extname, basename, posix } from "path";
 const { join } = posix;
 
 export const createImports = (generatedClientsPath: string) => {
-  const models = sync(join(generatedClientsPath, 'models', '*.ts').replace(/\\/g, '/'));
-  const services = sync(join(generatedClientsPath, 'services', '*.ts').replace(/\\/g, '/'));
+  const models = sync(
+    join(generatedClientsPath, "models", "*.ts").replace(/\\/g, "/")
+  );
+  const services = sync(
+    join(generatedClientsPath, "services", "*.ts").replace(/\\/g, "/")
+  );
   return [
     ts.factory.createImportDeclaration(
       undefined,

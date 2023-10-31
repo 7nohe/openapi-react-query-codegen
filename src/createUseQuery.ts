@@ -122,9 +122,7 @@ export const createUseQuery = (
                   undefined,
                   "TError",
                   undefined,
-                  ts.factory.createKeywordTypeNode(
-                    ts.SyntaxKind.UnknownKeyword
-                  )
+                  ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
                 ),
               ]),
               [
@@ -206,7 +204,9 @@ export const createUseQuery = (
                                           )
                                         ),
                                       ])
-                                    : ts.factory.createArrayLiteralExpression([])
+                                    : ts.factory.createArrayLiteralExpression(
+                                        []
+                                      )
                                 )
                               )
                             ),
@@ -244,38 +244,38 @@ export const createUseQuery = (
                     ]),
                   ]
                 ),
-              // Omit<UseQueryResult<Awaited<ReturnType<typeof myClass.myMethod>>, TError>, 'data'> & { data: TData };
-              ts.factory.createIntersectionTypeNode([
-                ts.factory.createTypeReferenceNode(
-                  ts.factory.createIdentifier("Omit"),
-                  [
-                    ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("UseQueryResult"),
-                      [
-                        awaitedResponseDataType,
-                        ts.factory.createTypeReferenceNode(
-                          ts.factory.createIdentifier("TError"),
-                          undefined
-                        ),
-                      ]
-                    ),
-                    ts.factory.createLiteralTypeNode(
-                      ts.factory.createStringLiteral("data")
-                    ),
-                  ]
-                ),
-                ts.factory.createTypeLiteralNode([
-                  ts.factory.createPropertySignature(
-                    undefined,
-                    ts.factory.createIdentifier("data"),
-                    undefined,
-                    ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("TData"),
-                      undefined
-                    )
+                // Omit<UseQueryResult<Awaited<ReturnType<typeof myClass.myMethod>>, TError>, 'data'> & { data: TData };
+                ts.factory.createIntersectionTypeNode([
+                  ts.factory.createTypeReferenceNode(
+                    ts.factory.createIdentifier("Omit"),
+                    [
+                      ts.factory.createTypeReferenceNode(
+                        ts.factory.createIdentifier("UseQueryResult"),
+                        [
+                          awaitedResponseDataType,
+                          ts.factory.createTypeReferenceNode(
+                            ts.factory.createIdentifier("TError"),
+                            undefined
+                          ),
+                        ]
+                      ),
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("data")
+                      ),
+                    ]
                   ),
-                ]),
-              ])
+                  ts.factory.createTypeLiteralNode([
+                    ts.factory.createPropertySignature(
+                      undefined,
+                      ts.factory.createIdentifier("data"),
+                      undefined,
+                      ts.factory.createTypeReferenceNode(
+                        ts.factory.createIdentifier("TData"),
+                        undefined
+                      )
+                    ),
+                  ]),
+                ])
               )
             )
           ),

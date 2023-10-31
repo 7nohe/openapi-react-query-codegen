@@ -1,12 +1,14 @@
 import ts from "typescript";
-import { sync }  from "glob";
+import { sync } from "glob";
 import { join } from "path";
 import fs from "fs";
 import { createUseQuery } from "./createUseQuery";
 import { createUseMutation } from "./createUseMutation";
 
 export const createExports = (generatedClientsPath: string) => {
-  const services = sync(join(generatedClientsPath, 'services', '*.ts').replace(/\\/g, '/'));
+  const services = sync(
+    join(generatedClientsPath, "services", "*.ts").replace(/\\/g, "/")
+  );
   const nodes = services.map((servicePath) =>
     ts.createSourceFile(
       servicePath, // fileName
