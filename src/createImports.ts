@@ -27,12 +27,22 @@ export const createImports = (generatedClientsPath: string) => {
           ts.factory.createImportSpecifier(
             false,
             undefined,
+            ts.factory.createIdentifier("UseQueryResult")
+          ),
+          ts.factory.createImportSpecifier(
+            false,
+            undefined,
             ts.factory.createIdentifier("UseQueryOptions")
           ),
           ts.factory.createImportSpecifier(
             false,
             undefined,
             ts.factory.createIdentifier("UseMutationOptions")
+          ),
+          ts.factory.createImportSpecifier(
+            false,
+            undefined,
+            ts.factory.createIdentifier("UseMutationResult")
           ),
         ])
       ),

@@ -1,6 +1,7 @@
 import ts from "typescript";
 import { createImports } from "./createImports";
 import { createExports } from "./createExports";
+import { version } from "../package.json";
 
 const createSourceFile = (outputPath: string) => {
   return ts.factory.createSourceFile(
@@ -18,13 +19,16 @@ export const createSource = (outputPath: string) => {
     false,
     ts.ScriptKind.TS
   );
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  const printer = ts.createPrinter({
+    newLine: ts.NewLineKind.LineFeed,
+    removeComments: false,
+  });
 
-  const result = printer.printNode(
-    ts.EmitHint.Unspecified,
-    createSourceFile(outputPath),
-    resultFile
-  );
+  const node = createSourceFile(outputPath);
+
+  const result = `// generated with openapi-generator@${version} \n` + printer.printNode(ts.EmitHint.Unspecified, node, resultFile);
+
+  
 
   return result;
 };

@@ -29,7 +29,6 @@ export const createExports = (generatedClientsPath: string) => {
         ) as ts.MethodDeclaration[];
         return methods
           .map((method) => {
-            const methodName = method.name?.getText(node)!;
             const methodBlock = method
               .getChildren(node)
               .find((child) => child.kind === ts.SyntaxKind.Block) as ts.Block;
