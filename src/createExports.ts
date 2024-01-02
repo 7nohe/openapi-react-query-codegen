@@ -13,7 +13,7 @@ export const createExports = (generatedClientsPath: string) => {
     ts.createSourceFile(
       servicePath, // fileName
       fs.readFileSync(join(process.cwd(), servicePath), "utf8"),
-      ts.ScriptTarget.Latest // langugeVersion
+      ts.ScriptTarget.Latest // languageVersion
     )
   );
   return [
