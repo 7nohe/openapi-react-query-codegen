@@ -1,6 +1,6 @@
 import ts from "typescript";
 import { capitalizeFirstLetter } from "./common";
-import { addJSDocToNode } from './util';
+import { addJSDocToNode } from "./util";
 
 export const createUseQuery = (
   node: ts.SourceFile,
@@ -221,37 +221,34 @@ export const createUseQuery = (
                 ts.factory.createObjectLiteralExpression([
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryKey"),
-                    ts.factory.createAsExpression(
-                      ts.factory.createArrayLiteralExpression(
-                        [
-                          ts.factory.createIdentifier(queryKey),
-                          ts.factory.createSpreadElement(
-                            ts.factory.createParenthesizedExpression(
-                              ts.factory.createBinaryExpression(
-                                ts.factory.createIdentifier("queryKey"),
-                                ts.factory.createToken(
-                                  ts.SyntaxKind.QuestionQuestionToken
-                                ),
-                                method.parameters.length
-                                  ? ts.factory.createArrayLiteralExpression([
-                                      ts.factory.createObjectLiteralExpression(
-                                        method.parameters.map((param) =>
-                                          ts.factory.createShorthandPropertyAssignment(
-                                            ts.factory.createIdentifier(
-                                              param.name.getText(node)
-                                            )
+                    ts.factory.createArrayLiteralExpression(
+                      [
+                        ts.factory.createIdentifier(queryKey),
+                        ts.factory.createSpreadElement(
+                          ts.factory.createParenthesizedExpression(
+                            ts.factory.createBinaryExpression(
+                              ts.factory.createIdentifier("queryKey"),
+                              ts.factory.createToken(
+                                ts.SyntaxKind.QuestionQuestionToken
+                              ),
+                              method.parameters.length
+                                ? ts.factory.createArrayLiteralExpression([
+                                    ts.factory.createObjectLiteralExpression(
+                                      method.parameters.map((param) =>
+                                        ts.factory.createShorthandPropertyAssignment(
+                                          ts.factory.createIdentifier(
+                                            param.name.getText(node)
                                           )
                                         )
-                                      ),
-                                    ])
-                                  : ts.factory.createArrayLiteralExpression([])
-                              )
+                                      )
+                                    ),
+                                  ])
+                                : ts.factory.createArrayLiteralExpression([])
                             )
-                          ),
-                        ],
-                        false
-                      ),
-                      queryKeyGenericType
+                          )
+                        ),
+                      ],
+                      false
                     )
                   ),
                   ts.factory.createPropertyAssignment(
