@@ -1,10 +1,13 @@
 import ts from "typescript";
 import { capitalizeFirstLetter } from "./common";
+import { addJSDocToNode } from "./util";
 
 export const createUseQuery = (
   node: ts.SourceFile,
   className: string,
-  method: ts.MethodDeclaration
+  method: ts.MethodDeclaration,
+  jsDoc: (string | ts.NodeArray<ts.JSDocComment> | undefined)[] = [],
+  deprecated: boolean = false
 ) => {
   const methodName = method.name?.getText(node)!;
   let requestParam = [];
@@ -43,10 +46,7 @@ export const createUseQuery = (
   const customHookName = `use${className}${capitalizeFirstLetter(methodName)}`;
   const queryKey = `${customHookName}Key`;
 
-  const queryKeyGenericType = ts.factory.createTypeReferenceNode(
-    "TQueryKey",
-    undefined
-  );
+  const queryKeyGenericType = ts.factory.createTypeReferenceNode("TQueryKey");
   const queryKeyConstraint = ts.factory.createTypeReferenceNode("Array", [
     ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
   ]);
@@ -69,219 +69,228 @@ export const createUseQuery = (
       ),
     ]
   );
-
-  const responseDataType = ts.factory.createTypeParameterDeclaration(
-    undefined,
-    "TData",
+  // DefaultResponseDataType
+  // export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
+  const defaultApiResponse = ts.factory.createTypeAliasDeclaration(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createIdentifier(
+      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
+        methodName
+      )}DefaultResponse`
+    ),
     undefined,
     awaitedResponseDataType
   );
 
-  return [
-    // QueryKey
-    ts.factory.createVariableStatement(
-      [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-      ts.factory.createVariableDeclarationList(
-        [
-          ts.factory.createVariableDeclaration(
-            ts.factory.createIdentifier(queryKey),
-            undefined,
-            undefined,
-            ts.factory.createStringLiteral(
-              `${className}${capitalizeFirstLetter(methodName)}`
-            )
-          ),
-        ],
-        ts.NodeFlags.Const
-      )
+  const TData = ts.factory.createIdentifier("TData");
+  const TError = ts.factory.createIdentifier("TError");
+
+  const responseDataType = ts.factory.createTypeParameterDeclaration(
+    undefined,
+    TData.text,
+    undefined,
+    ts.factory.createTypeReferenceNode(defaultApiResponse.name)
+  );
+
+  // Return Type
+  // export const classNameMethodNameQueryResult<TData = MyClassMethodDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+  const returnTypeExport = ts.factory.createTypeAliasDeclaration(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createIdentifier(
+      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
+        methodName
+      )}QueryResult`
     ),
-    // Custom hook
-    ts.factory.createVariableStatement(
-      [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-      ts.factory.createVariableDeclarationList(
-        [
-          ts.factory.createVariableDeclaration(
-            ts.factory.createIdentifier(customHookName),
+    [
+      ts.factory.createTypeParameterDeclaration(
+        undefined,
+        TData,
+        undefined,
+        ts.factory.createTypeReferenceNode(defaultApiResponse.name)
+      ),
+      ts.factory.createTypeParameterDeclaration(
+        undefined,
+        TError,
+        undefined,
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
+      ),
+    ],
+    ts.factory.createTypeReferenceNode(
+      ts.factory.createIdentifier("UseQueryResult"),
+      [
+        ts.factory.createTypeReferenceNode(TData),
+        ts.factory.createTypeReferenceNode(TError),
+      ],
+    ),
+  );
+
+  // QueryKey
+  const queryKeyExport = ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(queryKey),
+          undefined,
+          undefined,
+          ts.factory.createStringLiteral(
+            `${className}${capitalizeFirstLetter(methodName)}`
+          )
+        ),
+      ],
+      ts.NodeFlags.Const
+    )
+  );
+
+  // Custom hook
+  const hookExport = ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(customHookName),
+          undefined,
+          undefined,
+          ts.factory.createArrowFunction(
             undefined,
-            undefined,
-            ts.factory.createArrowFunction(
-              undefined,
-              ts.factory.createNodeArray([
-                ts.factory.createTypeParameterDeclaration(
-                  undefined,
-                  "TQueryKey",
-                  queryKeyConstraint,
-                  ts.factory.createArrayTypeNode(
-                    ts.factory.createKeywordTypeNode(
-                      ts.SyntaxKind.UnknownKeyword
-                    )
-                  )
-                ),
-                responseDataType,
-                ts.factory.createTypeParameterDeclaration(
-                  undefined,
-                  "TError",
-                  undefined,
+            ts.factory.createNodeArray([
+              responseDataType,
+              ts.factory.createTypeParameterDeclaration(
+                undefined,
+                TError,
+                undefined,
+                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
+              ),
+              ts.factory.createTypeParameterDeclaration(
+                undefined,
+                "TQueryKey",
+                queryKeyConstraint,
+                ts.factory.createArrayTypeNode(
                   ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
-                ),
-              ]),
-              [
-                ...requestParam,
-                ts.factory.createParameterDeclaration(
-                  undefined,
-                  undefined,
-                  ts.factory.createIdentifier("queryKey"),
-                  ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-                  queryKeyGenericType
-                ),
-                ts.factory.createParameterDeclaration(
-                  undefined,
-                  undefined,
-                  ts.factory.createIdentifier("options"),
-                  ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-                  ts.factory.createTypeReferenceNode(
-                    ts.factory.createIdentifier("Omit"),
-                    [
-                      ts.factory.createTypeReferenceNode(
-                        ts.factory.createIdentifier("UseQueryOptions"),
-                        [
-                          awaitedResponseDataType,
-                          ts.factory.createKeywordTypeNode(
-                            ts.SyntaxKind.UnknownKeyword
-                          ),
-                          awaitedResponseDataType,
-                          ts.factory.createArrayTypeNode(
-                            ts.factory.createKeywordTypeNode(
-                              ts.SyntaxKind.UnknownKeyword
-                            )
-                          ),
-                        ]
-                      ),
-                      ts.factory.createUnionTypeNode([
-                        ts.factory.createLiteralTypeNode(
-                          ts.factory.createStringLiteral("queryKey")
-                        ),
-                        ts.factory.createLiteralTypeNode(
-                          ts.factory.createStringLiteral("queryFn")
-                        ),
-                        ts.factory.createLiteralTypeNode(
-                          ts.factory.createStringLiteral("initialData")
-                        ),
-                      ]),
-                    ]
-                  )
-                ),
-              ],
-              undefined,
-              ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-              ts.factory.createAsExpression(
-                ts.factory.createCallExpression(
-                  ts.factory.createIdentifier("useQuery"),
-                  undefined,
+                )
+              ),
+            ]),
+            [
+              ...requestParam,
+              ts.factory.createParameterDeclaration(
+                undefined,
+                undefined,
+                ts.factory.createIdentifier("queryKey"),
+                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                queryKeyGenericType
+              ),
+              ts.factory.createParameterDeclaration(
+                undefined,
+                undefined,
+                ts.factory.createIdentifier("options"),
+                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                ts.factory.createTypeReferenceNode(
+                  ts.factory.createIdentifier("Omit"),
                   [
-                    ts.factory.createObjectLiteralExpression([
-                      ts.factory.createPropertyAssignment(
-                        ts.factory.createIdentifier("queryKey"),
-                        ts.factory.createArrayLiteralExpression(
-                          [
-                            ts.factory.createIdentifier(queryKey),
-                            ts.factory.createSpreadElement(
-                              ts.factory.createParenthesizedExpression(
-                                ts.factory.createBinaryExpression(
-                                  ts.factory.createIdentifier("queryKey"),
-                                  ts.factory.createToken(
-                                    ts.SyntaxKind.QuestionQuestionToken
-                                  ),
-                                  method.parameters.length
-                                    ? ts.factory.createArrayLiteralExpression([
-                                        ts.factory.createObjectLiteralExpression(
-                                          method.parameters.map((param) =>
-                                            ts.factory.createShorthandPropertyAssignment(
-                                              ts.factory.createIdentifier(
-                                                param.name.getText(node)
-                                              )
-                                            )
-                                          )
-                                        ),
-                                      ])
-                                    : ts.factory.createArrayLiteralExpression(
-                                        []
-                                      )
-                                )
-                              )
-                            ),
-                          ],
-                          false
-                        )
+                    ts.factory.createTypeReferenceNode(
+                      ts.factory.createIdentifier("UseQueryOptions"),
+                      [
+                        ts.factory.createTypeReferenceNode(TData),
+                        ts.factory.createTypeReferenceNode(TError),
+                      ]
+                    ),
+                    ts.factory.createUnionTypeNode([
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("queryKey")
                       ),
-                      ts.factory.createPropertyAssignment(
-                        ts.factory.createIdentifier("queryFn"),
-                        ts.factory.createArrowFunction(
-                          undefined,
-                          undefined,
-                          [],
-                          undefined,
-                          ts.factory.createToken(
-                            ts.SyntaxKind.EqualsGreaterThanToken
-                          ),
-                          ts.factory.createCallExpression(
-                            ts.factory.createPropertyAccessExpression(
-                              ts.factory.createIdentifier(className),
-                              ts.factory.createIdentifier(methodName)
-                            ),
-                            undefined,
-                            method.parameters.map((param) =>
-                              ts.factory.createIdentifier(
-                                param.name.getText(node)
-                              )
-                            )
-                          )
-                        )
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("queryFn")
                       ),
-                      ts.factory.createSpreadAssignment(
-                        ts.factory.createIdentifier("options")
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("initialData")
                       ),
                     ]),
                   ]
-                ),
-                // Omit<UseQueryResult<Awaited<ReturnType<typeof myClass.myMethod>>, TError>, 'data'> & { data: TData };
-                ts.factory.createIntersectionTypeNode([
-                  ts.factory.createTypeReferenceNode(
-                    ts.factory.createIdentifier("Omit"),
-                    [
-                      ts.factory.createTypeReferenceNode(
-                        ts.factory.createIdentifier("UseQueryResult"),
-                        [
-                          awaitedResponseDataType,
-                          ts.factory.createTypeReferenceNode(
-                            ts.factory.createIdentifier("TError"),
-                            undefined
-                          ),
-                        ]
-                      ),
-                      ts.factory.createLiteralTypeNode(
-                        ts.factory.createStringLiteral("data")
-                      ),
-                    ]
+                )
+              ),
+            ],
+            undefined,
+            ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            ts.factory.createCallExpression(
+              ts.factory.createIdentifier("useQuery"),
+              [
+                ts.factory.createTypeReferenceNode(TData),
+                ts.factory.createTypeReferenceNode(TError),
+              ],
+              [
+                ts.factory.createObjectLiteralExpression([
+                  ts.factory.createPropertyAssignment(
+                    ts.factory.createIdentifier("queryKey"),
+                    ts.factory.createArrayLiteralExpression(
+                      [
+                        ts.factory.createIdentifier(queryKey),
+                        ts.factory.createSpreadElement(
+                          ts.factory.createParenthesizedExpression(
+                            ts.factory.createBinaryExpression(
+                              ts.factory.createIdentifier("queryKey"),
+                              ts.factory.createToken(
+                                ts.SyntaxKind.QuestionQuestionToken
+                              ),
+                              method.parameters.length
+                                ? ts.factory.createArrayLiteralExpression([
+                                    ts.factory.createObjectLiteralExpression(
+                                      method.parameters.map((param) =>
+                                        ts.factory.createShorthandPropertyAssignment(
+                                          ts.factory.createIdentifier(
+                                            param.name.getText(node)
+                                          )
+                                        )
+                                      )
+                                    ),
+                                  ])
+                                : ts.factory.createArrayLiteralExpression([])
+                            )
+                          )
+                        ),
+                      ],
+                      false
+                    )
                   ),
-                  ts.factory.createTypeLiteralNode([
-                    ts.factory.createPropertySignature(
+                  ts.factory.createPropertyAssignment(
+                    ts.factory.createIdentifier("queryFn"),
+                    ts.factory.createArrowFunction(
                       undefined,
-                      ts.factory.createIdentifier("data"),
                       undefined,
-                      ts.factory.createTypeReferenceNode(
-                        ts.factory.createIdentifier("TData"),
-                        undefined
+                      [],
+                      undefined,
+                      ts.factory.createToken(
+                        ts.SyntaxKind.EqualsGreaterThanToken
+                      ),
+                      ts.factory.createAsExpression(
+                        ts.factory.createCallExpression(
+                          ts.factory.createPropertyAccessExpression(
+                            ts.factory.createIdentifier(className),
+                            ts.factory.createIdentifier(methodName)
+                          ),
+                          undefined,
+                          method.parameters.map((param) =>
+                            ts.factory.createIdentifier(
+                              param.name.getText(node)
+                            )
+                          )
+                        ),
+                        ts.factory.createTypeReferenceNode(TData)
                       )
-                    ),
-                  ]),
-                ])
-              )
+                    )
+                  ),
+                  ts.factory.createSpreadAssignment(
+                    ts.factory.createIdentifier("options")
+                  ),
+                ]),
+              ]
             )
-          ),
-        ],
-        ts.NodeFlags.Const
-      )
-    ),
-  ];
+          )
+        ),
+      ],
+      ts.NodeFlags.Const
+    )
+  );
+  const hookWithJsDoc = addJSDocToNode(hookExport, node, deprecated, jsDoc);
+
+  return [defaultApiResponse, returnTypeExport, queryKeyExport, hookWithJsDoc];
 };
