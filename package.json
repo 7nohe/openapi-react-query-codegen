@@ -32,11 +32,11 @@
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^18.16.0",
+    "@types/node": "^20.10.6",
     "commander": "^11.1.0",
-    "glob": "^10.2.5",
+    "glob": "^10.3.10",
     "openapi-typescript-codegen": "^0.25.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.3.3"
   },
   "peerDependencies": {
     "commander": ">= 11 < 12",
