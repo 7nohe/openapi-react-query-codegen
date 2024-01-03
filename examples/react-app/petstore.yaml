@@ -77,6 +77,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /not-defined:
+    get:
+      description: This path is not fully defined.
+      responses:
+        default:
+          description: unexpected error
   /pets/{id}:
     get:
       description: Returns a user based on a single ID, if the user does not have access to the pet

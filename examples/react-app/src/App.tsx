@@ -3,6 +3,7 @@ import {
   useDefaultClientAddPet,
   useDefaultClientFindPets,
   useDefaultClientFindPetsKey,
+  useDefaultClientGetNotDefined,
 } from "../openapi/queries";
 import { useState } from "react";
 import { queryClient } from "./queryClient";
@@ -12,6 +13,10 @@ function App() {
   const [limit, _setLimit] = useState<number>(10);
 
   const { data, error, refetch } = useDefaultClientFindPets({ tags, limit });
+
+  // This is an example of a query that is not defined in the OpenAPI spec
+  // this defaults to any - here we are showing how to override the type
+  const { data: notDefined } = useDefaultClientGetNotDefined<undefined>();
 
   const { mutate: addPet } = useDefaultClientAddPet();
 
