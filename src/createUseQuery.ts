@@ -4,7 +4,9 @@ import { capitalizeFirstLetter } from "./common";
 export const createUseQuery = (
   node: ts.SourceFile,
   className: string,
-  method: ts.MethodDeclaration
+  method: ts.MethodDeclaration,
+  jsDoc: (string | ts.NodeArray<ts.JSDocComment> | undefined)[] = [],
+  deprecated: boolean = false
 ) => {
   const methodName = method.name?.getText(node)!;
   let requestParam = [];
@@ -312,5 +314,41 @@ export const createUseQuery = (
     )
   );
 
-  return [defaultApiResponse, returnTypeExport, queryKeyExport, hookExport];
+  const deprecatedString = deprecated ? "@deprecated" : "";
+
+  const jsDocString = [deprecatedString]
+    .concat(
+      jsDoc.map((comment) => {
+        if (typeof comment === "string") {
+          return comment;
+        }
+        if (Array.isArray(comment)) {
+          return comment
+            .map((c) => c.getText(node))
+            .join("\n");
+        }
+        return "";
+      })
+    )
+    // remove empty lines
+    .filter(Boolean)
+    // trim
+    .map((comment) => comment.trim())
+    // add * to each line
+    .map((comment) => `* ${comment}`)
+    // join lines
+    .join("\n")
+    // replace new lines with \n *
+    .replace(/\n/g, "\n * ");
+
+  const hookWithJSDoc = jsDocString
+    ? ts.addSyntheticLeadingComment(
+        hookExport,
+        ts.SyntaxKind.MultiLineCommentTrivia,
+        `*\n ${jsDocString}\n `,
+        true,
+      )
+    : hookExport;
+
+  return [defaultApiResponse, returnTypeExport, queryKeyExport, hookWithJSDoc];
 };

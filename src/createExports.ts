@@ -1,4 +1,4 @@
-import ts from "typescript";
+import ts, { JSDoc } from "typescript";
 import { sync } from "glob";
 import { join } from "path";
 import fs from "fs";
@@ -45,8 +45,26 @@ export const createExports = (generatedClientsPath: string) => {
             const httpMethodName = properties
               .find((p) => p.name?.getText(node) === "method")
               ?.initializer?.getText(node)!;
+
+
+            const getAllChildren = (tsNode: ts.Node): Array<ts.Node> => {
+              const childItems = tsNode.getChildren(node);
+              if (childItems.length) {
+                const allChildren = childItems.map(getAllChildren);
+                return [tsNode].concat(allChildren.flat());
+              }
+              return [tsNode];
+            }
+
+            const children = getAllChildren(method);
+            const jsDoc = children.filter((c) => c.kind === ts.SyntaxKind.JSDoc).map((c) => {
+              return (c as JSDoc).comment
+            });
+            const hasDeprecated = children
+              .some((c) => c.kind === ts.SyntaxKind.JSDocDeprecatedTag);
+
             return httpMethodName === "'GET'"
-              ? createUseQuery(node, className, method)
+              ? createUseQuery(node, className, method, jsDoc, hasDeprecated)
               : createUseMutation(node, className, method);
           })
           .flat();

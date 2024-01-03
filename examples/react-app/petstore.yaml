@@ -79,6 +79,7 @@ paths:
                 $ref: '#/components/schemas/Error'
   /not-defined:
     get:
+      deprecated: true
       description: This path is not fully defined.
       responses:
         default:
