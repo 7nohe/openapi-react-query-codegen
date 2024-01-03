@@ -1,10 +1,13 @@
 import ts from "typescript";
 import { capitalizeFirstLetter } from "./common";
+import { addJSDocToNode } from "./util";
 
 export const createUseMutation = (
   node: ts.SourceFile,
   className: string,
-  method: ts.MethodDeclaration
+  method: ts.MethodDeclaration,
+  jsDoc: (string | ts.NodeArray<ts.JSDocComment> | undefined)[] = [],
+  deprecated: boolean = false
 ) => {
   const methodName = method.name?.getText(node)!;
   // Awaited<ReturnType<typeof myClass.myMethod>>
@@ -26,11 +29,22 @@ export const createUseMutation = (
     ]
   );
 
-  const responseDataType = ts.factory.createTypeParameterDeclaration(
-    undefined,
-    "TData",
+  const TData = ts.factory.createIdentifier("TData");
+  const TError = ts.factory.createIdentifier("TError");
+  const TContext = ts.factory.createIdentifier("TContext");
+
+  const mutationResult = ts.factory.createTypeAliasDeclaration(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createIdentifier(`${className}${methodName}MutationResult`),
     undefined,
     awaitedResponseDataType
+  );
+
+  const responseDataType = ts.factory.createTypeParameterDeclaration(
+    undefined,
+    TData,
+    undefined,
+    ts.factory.createTypeReferenceNode(mutationResult.name)
   );
 
   const methodParameters =
@@ -49,7 +63,7 @@ export const createUseMutation = (
         )
       : ts.factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword);
 
-  return ts.factory.createVariableStatement(
+  const exportHook = ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
       [
@@ -65,13 +79,13 @@ export const createUseMutation = (
               responseDataType,
               ts.factory.createTypeParameterDeclaration(
                 undefined,
-                "TError",
+                TError,
                 undefined,
                 ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
               ),
               ts.factory.createTypeParameterDeclaration(
                 undefined,
-                "TContext",
+                TContext,
                 undefined,
                 ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
               ),
@@ -88,14 +102,10 @@ export const createUseMutation = (
                     ts.factory.createTypeReferenceNode(
                       ts.factory.createIdentifier("UseMutationOptions"),
                       [
-                        awaitedResponseDataType,
-                        ts.factory.createKeywordTypeNode(
-                          ts.SyntaxKind.UnknownKeyword
-                        ),
+                        ts.factory.createTypeReferenceNode(TData),
+                        ts.factory.createTypeReferenceNode(TError),
                         methodParameters,
-                        ts.factory.createKeywordTypeNode(
-                          ts.SyntaxKind.UnknownKeyword
-                        ),
+                        ts.factory.createTypeReferenceNode(TContext),
                       ]
                     ),
                     ts.factory.createLiteralTypeNode(
@@ -108,101 +118,79 @@ export const createUseMutation = (
             ],
             undefined,
             ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-            ts.factory.createAsExpression(
-              ts.factory.createCallExpression(
-                ts.factory.createIdentifier("useMutation"),
-                undefined,
-                [
-                  ts.factory.createObjectLiteralExpression([
-                    ts.factory.createPropertyAssignment(
-                      ts.factory.createIdentifier("mutationFn"),
-                      ts.factory.createArrowFunction(
-                        undefined,
-                        undefined,
-                        method.parameters.length !== 0
-                          ? [
-                              ts.factory.createParameterDeclaration(
-                                undefined,
-                                undefined,
-                                ts.factory.createObjectBindingPattern(
-                                  method.parameters.map((param) => {
-                                    return ts.factory.createBindingElement(
-                                      undefined,
-                                      undefined,
-                                      ts.factory.createIdentifier(
-                                        param.name.getText(node)
-                                      ),
-                                      undefined
-                                    );
-                                  })
-                                ),
-                                undefined,
-                                undefined,
-                                undefined
+            ts.factory.createCallExpression(
+              ts.factory.createIdentifier("useMutation"),
+              [
+                ts.factory.createTypeReferenceNode(TData),
+                ts.factory.createTypeReferenceNode(TError),
+                methodParameters,
+                ts.factory.createTypeReferenceNode(TContext),
+              ],
+              [
+                ts.factory.createObjectLiteralExpression([
+                  ts.factory.createPropertyAssignment(
+                    ts.factory.createIdentifier("mutationFn"),
+                    ts.factory.createArrowFunction(
+                      undefined,
+                      undefined,
+                      method.parameters.length !== 0
+                        ? [
+                            ts.factory.createParameterDeclaration(
+                              undefined,
+                              undefined,
+                              ts.factory.createObjectBindingPattern(
+                                method.parameters.map((param) => {
+                                  return ts.factory.createBindingElement(
+                                    undefined,
+                                    undefined,
+                                    ts.factory.createIdentifier(
+                                      param.name.getText(node)
+                                    ),
+                                    undefined
+                                  );
+                                })
                               ),
-                            ]
-                          : [],
-                        undefined,
-                        ts.factory.createToken(
-                          ts.SyntaxKind.EqualsGreaterThanToken
-                        ),
-                        ts.factory.createCallExpression(
-                          ts.factory.createPropertyAccessExpression(
-                            ts.factory.createIdentifier(className),
-                            ts.factory.createIdentifier(methodName)
-                          ),
-                          undefined,
-                          method.parameters.map((params) =>
-                            ts.factory.createIdentifier(
-                              params.name.getText(node)
+                              undefined,
+                              undefined,
+                              undefined
+                            ),
+                          ]
+                        : [],
+                      undefined,
+                      ts.factory.createToken(
+                        ts.SyntaxKind.EqualsGreaterThanToken
+                      ),
+                      ts.factory.createAsExpression(
+                        ts.factory.createAsExpression(
+                          ts.factory.createCallExpression(
+                            ts.factory.createPropertyAccessExpression(
+                              ts.factory.createIdentifier(className),
+                              ts.factory.createIdentifier(methodName)
+                            ),
+                            undefined,
+                            method.parameters.map((params) =>
+                              ts.factory.createIdentifier(
+                                params.name.getText(node)
+                              )
                             )
+                          ),
+                          ts.factory.createKeywordTypeNode(
+                            ts.SyntaxKind.UnknownKeyword
                           )
+                        ),
+
+                        ts.factory.createTypeReferenceNode(
+                          ts.factory.createIdentifier("Promise"),
+                          [ts.factory.createTypeReferenceNode(TData)]
                         )
                       )
-                    ),
-                    ts.factory.createSpreadAssignment(
-                      ts.factory.createIdentifier("options")
-                    ),
-                  ]),
-                ]
-              ),
-              // Omit<UseMutationResult<Awaited<ReturnType<typeof myClass.myMethod>>, TError, params, TContext>, 'data'> & { data: TData };
-              ts.factory.createIntersectionTypeNode([
-                ts.factory.createTypeReferenceNode(
-                  ts.factory.createIdentifier("Omit"),
-                  [
-                    ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("UseMutationResult"),
-                      [
-                        awaitedResponseDataType,
-                        ts.factory.createTypeReferenceNode(
-                          ts.factory.createIdentifier("TError"),
-                          undefined
-                        ),
-                        methodParameters,
-                        ts.factory.createTypeReferenceNode(
-                          ts.factory.createIdentifier("TContext"),
-                          undefined
-                        ),
-                      ]
-                    ),
-                    ts.factory.createLiteralTypeNode(
-                      ts.factory.createStringLiteral("data")
-                    ),
-                  ]
-                ),
-                ts.factory.createTypeLiteralNode([
-                  ts.factory.createPropertySignature(
-                    undefined,
-                    ts.factory.createIdentifier("data"),
-                    undefined,
-                    ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("TData"),
-                      undefined
                     )
                   ),
+                  ts.factory.createSpreadAssignment(
+                    ts.factory.createIdentifier("options")
+                  ),
                 ]),
-              ])
+              ]
             )
           )
         ),
@@ -210,4 +198,8 @@ export const createUseMutation = (
       ts.NodeFlags.Const
     )
   );
+
+  const hookWithJsDoc = addJSDocToNode(exportHook, node, deprecated, jsDoc);
+
+  return [mutationResult, hookWithJsDoc];
 };

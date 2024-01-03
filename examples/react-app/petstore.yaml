@@ -84,6 +84,12 @@ paths:
       responses:
         default:
           description: unexpected error
+    post:
+      deprecated: true
+      description: This path is not defined at all.
+      responses:
+        default:
+          description: unexpected error
   /pets/{id}:
     get:
       description: Returns a user based on a single ID, if the user does not have access to the pet

@@ -1,5 +1,6 @@
 import ts from "typescript";
 import { capitalizeFirstLetter } from "./common";
+import { addJSDocToNode } from './util';
 
 export const createUseQuery = (
   node: ts.SourceFile,
@@ -69,6 +70,7 @@ export const createUseQuery = (
     ]
   );
   // DefaultResponseDataType
+  // export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
   const defaultApiResponse = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
@@ -90,32 +92,8 @@ export const createUseQuery = (
     ts.factory.createTypeReferenceNode(defaultApiResponse.name)
   );
 
-  // Omit<UseQueryResult<Awaited<ReturnType<typeof myClass.myMethod>>, TError>, 'data'> & { data: TData|undefined };
-  const responseReturnType = ts.factory.createIntersectionTypeNode([
-    ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("Omit"), [
-      ts.factory.createTypeReferenceNode(
-        ts.factory.createIdentifier("UseQueryResult"),
-        [
-          defaultApiResponse.type,
-          ts.factory.createTypeReferenceNode(TError, undefined),
-        ]
-      ),
-      ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral("data")),
-    ]),
-    ts.factory.createTypeLiteralNode([
-      ts.factory.createPropertySignature(
-        undefined,
-        ts.factory.createIdentifier("data"),
-        undefined,
-        ts.factory.createUnionTypeNode([
-          ts.factory.createTypeReferenceNode(TData, undefined),
-          ts.factory.createKeywordTypeNode(ts.SyntaxKind.UndefinedKeyword),
-        ])
-      ),
-    ]),
-  ]);
-
   // Return Type
+  // export const classNameMethodNameQueryResult<TData = MyClassMethodDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
   const returnTypeExport = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
@@ -137,7 +115,13 @@ export const createUseQuery = (
         ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
       ),
     ],
-    responseReturnType
+    ts.factory.createTypeReferenceNode(
+      ts.factory.createIdentifier("UseQueryResult"),
+      [
+        ts.factory.createTypeReferenceNode(TData),
+        ts.factory.createTypeReferenceNode(TError),
+      ],
+    ),
   );
 
   // QueryKey
@@ -208,8 +192,6 @@ export const createUseQuery = (
                       [
                         ts.factory.createTypeReferenceNode(TData),
                         ts.factory.createTypeReferenceNode(TError),
-                        ts.factory.createTypeReferenceNode(TData),
-                        queryKeyGenericType,
                       ]
                     ),
                     ts.factory.createUnionTypeNode([
@@ -234,8 +216,6 @@ export const createUseQuery = (
               [
                 ts.factory.createTypeReferenceNode(TData),
                 ts.factory.createTypeReferenceNode(TError),
-                ts.factory.createTypeReferenceNode(TData),
-                queryKeyGenericType,
               ],
               [
                 ts.factory.createObjectLiteralExpression([
@@ -313,42 +293,7 @@ export const createUseQuery = (
       ts.NodeFlags.Const
     )
   );
+  const hookWithJsDoc = addJSDocToNode(hookExport, node, deprecated, jsDoc);
 
-  const deprecatedString = deprecated ? "@deprecated" : "";
-
-  const jsDocString = [deprecatedString]
-    .concat(
-      jsDoc.map((comment) => {
-        if (typeof comment === "string") {
-          return comment;
-        }
-        if (Array.isArray(comment)) {
-          return comment
-            .map((c) => c.getText(node))
-            .join("\n");
-        }
-        return "";
-      })
-    )
-    // remove empty lines
-    .filter(Boolean)
-    // trim
-    .map((comment) => comment.trim())
-    // add * to each line
-    .map((comment) => `* ${comment}`)
-    // join lines
-    .join("\n")
-    // replace new lines with \n *
-    .replace(/\n/g, "\n * ");
-
-  const hookWithJSDoc = jsDocString
-    ? ts.addSyntheticLeadingComment(
-        hookExport,
-        ts.SyntaxKind.MultiLineCommentTrivia,
-        `*\n ${jsDocString}\n `,
-        true,
-      )
-    : hookExport;
-
-  return [defaultApiResponse, returnTypeExport, queryKeyExport, hookWithJSDoc];
+  return [defaultApiResponse, returnTypeExport, queryKeyExport, hookWithJsDoc];
 };

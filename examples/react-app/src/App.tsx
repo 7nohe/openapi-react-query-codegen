@@ -4,6 +4,7 @@ import {
   useDefaultClientFindPets,
   useDefaultClientFindPetsKey,
   useDefaultClientGetNotDefined,
+  useDefaultClientPostNotDefined,
 } from "../openapi/queries";
 import { useState } from "react";
 import { queryClient } from "./queryClient";
@@ -16,7 +17,9 @@ function App() {
 
   // This is an example of a query that is not defined in the OpenAPI spec
   // this defaults to any - here we are showing how to override the type
+  // Note - this is marked as deprecated in the OpenAPI spec and being passed to the client
   const { data: notDefined } = useDefaultClientGetNotDefined<undefined>();
+  const { mutate: mutateNotDefined } = useDefaultClientPostNotDefined<undefined>();
 
   const { mutate: addPet } = useDefaultClientAddPet();
 

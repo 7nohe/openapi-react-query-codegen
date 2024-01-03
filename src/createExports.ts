@@ -65,7 +65,7 @@ export const createExports = (generatedClientsPath: string) => {
 
             return httpMethodName === "'GET'"
               ? createUseQuery(node, className, method, jsDoc, hasDeprecated)
-              : createUseMutation(node, className, method);
+              : createUseMutation(node, className, method, jsDoc, hasDeprecated);
           })
           .flat();
       })
