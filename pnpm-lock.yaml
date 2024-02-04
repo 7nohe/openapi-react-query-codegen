@@ -18,7 +18,7 @@ importers:
         specifier: ^10.3.10
         version: 10.3.10
       openapi-typescript-codegen:
-        specifier: ^0.26.0
+        specifier: 0.26.0
         version: 0.26.0
       typescript:
         specifier: ^5.3.3
@@ -36,8 +36,8 @@ importers:
         specifier: ^10.3.10
         version: 10.3.10
       openapi-typescript-codegen:
-        specifier: ^0.27.0
-        version: 0.27.0
+        specifier: ^0.26.0
+        version: 0.26.0
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -90,17 +90,6 @@ packages:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.3
       '@jridgewell/trace-mapping': 0.3.20
-    dev: true
-
-  /@apidevtools/json-schema-ref-parser@10.1.0:
-    resolution: {integrity: sha512-3e+viyMuXdrcK8v5pvP+SDoAQ77FH6OyRmuK48SZKmdHJRFm87RsSs8qm6kP39a/pOPURByJw+OXzQIqcfmKtA==}
-    engines: {node: '>= 16'}
-    dependencies:
-      '@jsdevtools/ono': 7.1.3
-      '@types/json-schema': 7.0.14
-      '@types/lodash.clonedeep': 4.5.9
-      js-yaml: 4.1.0
-      lodash.clonedeep: 4.5.0
     dev: true
 
   /@apidevtools/json-schema-ref-parser@11.1.0:
@@ -2351,17 +2340,6 @@ packages:
     hasBin: true
     dependencies:
       '@apidevtools/json-schema-ref-parser': 11.1.0
-      camelcase: 6.3.0
-      commander: 11.1.0
-      fs-extra: 11.2.0
-      handlebars: 4.7.8
-    dev: true
-
-  /openapi-typescript-codegen@0.27.0:
-    resolution: {integrity: sha512-QyQEod/vuel3zfnTRC3GgmYsqLPSBzB2OL4ojMYjO9hJmfYW02T+7tbQWEnuqWdhh2KSOBf3L8h59vLStr6vwA==}
-    hasBin: true
-    dependencies:
-      '@apidevtools/json-schema-ref-parser': 10.1.0
       camelcase: 6.3.0
       commander: 11.1.0
       fs-extra: 11.2.0
