@@ -1,6 +1,6 @@
 {
   "name": "@7nohe/openapi-react-query-codegen",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "OpenAPI React Query Codegen",
   "bin": {
     "openapi-rq": "dist/src/cli.js"
