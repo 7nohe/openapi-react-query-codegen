@@ -34,7 +34,7 @@ jobs:
         run: pnpm -w build
 
       - name: Install dependencies in example app
-        run: pnpm --filter @7nohe/react-app install
+        run: pnpm --filter @7nohe/react-app install --no-frozen-lockfile
       
       - name: Run codegen
         run: pnpm --filter @7nohe/react-app generate:api
