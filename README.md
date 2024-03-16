@@ -107,11 +107,13 @@ import {
 
 function App() {
   // You can still use the auto-generated query key
-  const { data } = useQuery([usePetServiceFindPetsByStatusKey], () => {
-    // Do something here
-    
-    return PetService.findPetsByStatus(['available']);
-  });
+  const { data } = useQuery({
+    queryKey: [usePetServiceFindPetsByStatusKey],
+    queryFn: () => {
+      // Do something here
+      return PetService.findPetsByStatus(['available']);
+    }
+});
 
   return (
     <div className="App">
