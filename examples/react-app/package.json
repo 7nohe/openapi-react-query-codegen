@@ -9,7 +9,7 @@
     "dev:mock": "prism mock ./petstore.yaml --dynamic",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate:api": "node ../../dist/src/cli.js -i ./petstore.yaml -c axios --exportSchemas=true --postfixServices=Client --request ./request.ts",
+    "generate:api": "node ../../dist/src/cli.js -i petstore.yaml -c axios --exportSchemas=true --postfixServices=Client --request request.ts",
     "test:generated": "tsc ./openapi/queries/index.ts --noEmit --target esnext --moduleResolution node"
   },
   "dependencies": {
