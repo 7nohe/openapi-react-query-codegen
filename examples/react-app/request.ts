@@ -1,5 +1,4 @@
 import axios from "axios";
-import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 
 import type { ApiRequestOptions } from "./ApiRequestOptions";
 import { CancelablePromise } from "./CancelablePromise";
@@ -17,19 +16,31 @@ const axiosInstance = axios.create({
 });
 
 // Add a request interceptor
-axios.interceptors.request.use(
-  function (config) {
-    // Do something before request is sent
-    return config;
-  },
-  function (error) {
-    // Do something with request error
-    return Promise.reject(error);
-  }
+axiosInstance.interceptors.request.use(
+    function (config) {
+        // Do something before request is sent
+        if (!config.url || !config.params) {
+            return config;
+        }
+
+        Object.entries(config.params).forEach(([key, value]) => {
+            const stringToSearch = `{${key}}`;
+            if(config.url !== undefined && config.url.search(stringToSearch) !== -1) {
+                config.url = config.url.replace(`{${key}}`, encodeURIComponent(value));
+                delete config.params[key];
+            }
+        });
+
+        return  config;
+    },
+    function (error) {
+        // Do something with request error
+        return Promise.reject(error);
+    }
 );
 
 // Add a response interceptor
-axios.interceptors.response.use(
+axiosInstance.interceptors.response.use(
   function (response) {
     // Any status code that lie within the range of 2xx cause this function to trigger
     // Do something with response data
