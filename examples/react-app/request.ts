@@ -49,11 +49,20 @@ export const request = <T>(
   return new CancelablePromise((resolve, reject, onCancel) => {
     onCancel(() => source.cancel("The user aborted a request."));
 
+    let formattedHeaders = options.headers;
+    if(options.mediaType) {
+      formattedHeaders = {
+        ...options.headers,
+        "Content-Type": options.mediaType,
+      };
+    }
+
     return axiosInstance
       .request({
         url: options.url,
         data: options.body,
         method: options.method,
+        headers: formattedHeaders,
         cancelToken: source.token,
       })
       .then((res) => {
