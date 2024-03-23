@@ -26,6 +26,11 @@ export const createImports = (generatedClientsPath: string) => {
           ts.factory.createImportSpecifier(
             false,
             undefined,
+            ts.factory.createIdentifier("useSuspenseQuery")
+          ),
+          ts.factory.createImportSpecifier(
+            false,
+            undefined,
             ts.factory.createIdentifier("useMutation")
           ),
           ts.factory.createImportSpecifier(
