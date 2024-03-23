@@ -10,7 +10,7 @@ export const createUseQuery = (
   deprecated: boolean = false
 ) => {
   const methodName = method.name?.getText(node)!;
-  let requestParam = [];
+  let requestParam: ts.ParameterDeclaration[] = [];
   if (method.parameters.length !== 0) {
     requestParam.push(
       ts.factory.createParameterDeclaration(
@@ -143,154 +143,175 @@ export const createUseQuery = (
   );
 
   // Custom hook
-  const hookExport = ts.factory.createVariableStatement(
-    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createVariableDeclarationList(
-      [
-        ts.factory.createVariableDeclaration(
-          ts.factory.createIdentifier(customHookName),
-          undefined,
-          undefined,
-          ts.factory.createArrowFunction(
+  /**
+   * Creates a custom hook for a query
+   * @param queryString The type of query to use from react-query
+   * @param suffix The suffix to append to the hook name
+   */
+  function createQueryHook(queryString: "useSuspenseQuery" | "useQuery", suffix: string) {
+    const hookExport = ts.factory.createVariableStatement(
+      [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+      ts.factory.createVariableDeclarationList(
+        [
+          ts.factory.createVariableDeclaration(
+            ts.factory.createIdentifier(`${customHookName}${suffix}`),
             undefined,
-            ts.factory.createNodeArray([
-              responseDataType,
-              ts.factory.createTypeParameterDeclaration(
-                undefined,
-                TError,
-                undefined,
-                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
-              ),
-              ts.factory.createTypeParameterDeclaration(
-                undefined,
-                "TQueryKey",
-                queryKeyConstraint,
-                ts.factory.createArrayTypeNode(
+            undefined,
+            ts.factory.createArrowFunction(
+              undefined,
+              ts.factory.createNodeArray([
+                responseDataType,
+                ts.factory.createTypeParameterDeclaration(
+                  undefined,
+                  TError,
+                  undefined,
                   ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
-                )
-              ),
-            ]),
-            [
-              ...requestParam,
-              ts.factory.createParameterDeclaration(
-                undefined,
-                undefined,
-                ts.factory.createIdentifier("queryKey"),
-                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-                queryKeyGenericType
-              ),
-              ts.factory.createParameterDeclaration(
-                undefined,
-                undefined,
-                ts.factory.createIdentifier("options"),
-                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-                ts.factory.createTypeReferenceNode(
-                  ts.factory.createIdentifier("Omit"),
-                  [
-                    ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("UseQueryOptions"),
-                      [
-                        ts.factory.createTypeReferenceNode(TData),
-                        ts.factory.createTypeReferenceNode(TError),
-                      ]
-                    ),
-                    ts.factory.createUnionTypeNode([
-                      ts.factory.createLiteralTypeNode(
-                        ts.factory.createStringLiteral("queryKey")
-                      ),
-                      ts.factory.createLiteralTypeNode(
-                        ts.factory.createStringLiteral("queryFn")
-                      ),
-                      ts.factory.createLiteralTypeNode(
-                        ts.factory.createStringLiteral("initialData")
-                      ),
-                    ]),
-                  ]
-                )
-              ),
-            ],
-            undefined,
-            ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-            ts.factory.createCallExpression(
-              ts.factory.createIdentifier("useQuery"),
+                ),
+                ts.factory.createTypeParameterDeclaration(
+                  undefined,
+                  "TQueryKey",
+                  queryKeyConstraint,
+                  ts.factory.createArrayTypeNode(
+                    ts.factory.createKeywordTypeNode(
+                      ts.SyntaxKind.UnknownKeyword
+                    )
+                  )
+                ),
+              ]),
               [
-                ts.factory.createTypeReferenceNode(TData),
-                ts.factory.createTypeReferenceNode(TError),
+                ...requestParam,
+                ts.factory.createParameterDeclaration(
+                  undefined,
+                  undefined,
+                  ts.factory.createIdentifier("queryKey"),
+                  ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                  queryKeyGenericType
+                ),
+                ts.factory.createParameterDeclaration(
+                  undefined,
+                  undefined,
+                  ts.factory.createIdentifier("options"),
+                  ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                  ts.factory.createTypeReferenceNode(
+                    ts.factory.createIdentifier("Omit"),
+                    [
+                      ts.factory.createTypeReferenceNode(
+                        ts.factory.createIdentifier("UseQueryOptions"),
+                        [
+                          ts.factory.createTypeReferenceNode(TData),
+                          ts.factory.createTypeReferenceNode(TError),
+                        ]
+                      ),
+                      ts.factory.createUnionTypeNode([
+                        ts.factory.createLiteralTypeNode(
+                          ts.factory.createStringLiteral("queryKey")
+                        ),
+                        ts.factory.createLiteralTypeNode(
+                          ts.factory.createStringLiteral("queryFn")
+                        ),
+                        ts.factory.createLiteralTypeNode(
+                          ts.factory.createStringLiteral("initialData")
+                        ),
+                      ]),
+                    ]
+                  )
+                ),
               ],
-              [
-                ts.factory.createObjectLiteralExpression([
-                  ts.factory.createPropertyAssignment(
-                    ts.factory.createIdentifier("queryKey"),
-                    ts.factory.createArrayLiteralExpression(
-                      [
-                        ts.factory.createIdentifier(queryKey),
-                        ts.factory.createSpreadElement(
-                          ts.factory.createParenthesizedExpression(
-                            ts.factory.createBinaryExpression(
-                              ts.factory.createIdentifier("queryKey"),
-                              ts.factory.createToken(
-                                ts.SyntaxKind.QuestionQuestionToken
-                              ),
-                              method.parameters.length
-                                ? ts.factory.createArrayLiteralExpression([
-                                    ts.factory.createObjectLiteralExpression(
-                                      method.parameters.map((param) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(
-                                            param.name.getText(node)
+              undefined,
+              ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+              ts.factory.createCallExpression(
+                ts.factory.createIdentifier(queryString),
+                [
+                  ts.factory.createTypeReferenceNode(TData),
+                  ts.factory.createTypeReferenceNode(TError),
+                ],
+                [
+                  ts.factory.createObjectLiteralExpression([
+                    ts.factory.createPropertyAssignment(
+                      ts.factory.createIdentifier("queryKey"),
+                      ts.factory.createArrayLiteralExpression(
+                        [
+                          ts.factory.createIdentifier(queryKey),
+                          ts.factory.createSpreadElement(
+                            ts.factory.createParenthesizedExpression(
+                              ts.factory.createBinaryExpression(
+                                ts.factory.createIdentifier("queryKey"),
+                                ts.factory.createToken(
+                                  ts.SyntaxKind.QuestionQuestionToken
+                                ),
+                                method.parameters.length
+                                  ? ts.factory.createArrayLiteralExpression([
+                                      ts.factory.createObjectLiteralExpression(
+                                        method.parameters.map((param) =>
+                                          ts.factory.createShorthandPropertyAssignment(
+                                            ts.factory.createIdentifier(
+                                              param.name.getText(node)
+                                            )
                                           )
                                         )
-                                      )
-                                    ),
-                                  ])
-                                : ts.factory.createArrayLiteralExpression([])
+                                      ),
+                                    ])
+                                  : ts.factory.createArrayLiteralExpression([])
+                              )
                             )
-                          )
-                        ),
-                      ],
-                      false
-                    )
-                  ),
-                  ts.factory.createPropertyAssignment(
-                    ts.factory.createIdentifier("queryFn"),
-                    ts.factory.createArrowFunction(
-                      undefined,
-                      undefined,
-                      [],
-                      undefined,
-                      ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken
-                      ),
-                      ts.factory.createAsExpression(
-                        ts.factory.createCallExpression(
-                          ts.factory.createPropertyAccessExpression(
-                            ts.factory.createIdentifier(className),
-                            ts.factory.createIdentifier(methodName)
                           ),
-                          undefined,
-                          method.parameters.map((param) =>
-                            ts.factory.createIdentifier(
-                              param.name.getText(node)
-                            )
-                          )
-                        ),
-                        ts.factory.createTypeReferenceNode(TData)
+                        ],
+                        false
                       )
-                    )
-                  ),
-                  ts.factory.createSpreadAssignment(
-                    ts.factory.createIdentifier("options")
-                  ),
-                ]),
-              ]
+                    ),
+                    ts.factory.createPropertyAssignment(
+                      ts.factory.createIdentifier("queryFn"),
+                      ts.factory.createArrowFunction(
+                        undefined,
+                        undefined,
+                        [],
+                        undefined,
+                        ts.factory.createToken(
+                          ts.SyntaxKind.EqualsGreaterThanToken
+                        ),
+                        ts.factory.createAsExpression(
+                          ts.factory.createCallExpression(
+                            ts.factory.createPropertyAccessExpression(
+                              ts.factory.createIdentifier(className),
+                              ts.factory.createIdentifier(methodName)
+                            ),
+                            undefined,
+                            method.parameters.map((param) =>
+                              ts.factory.createIdentifier(
+                                param.name.getText(node)
+                              )
+                            )
+                          ),
+                          ts.factory.createTypeReferenceNode(TData)
+                        )
+                      )
+                    ),
+                    ts.factory.createSpreadAssignment(
+                      ts.factory.createIdentifier("options")
+                    ),
+                  ]),
+                ]
+              )
             )
-          )
-        ),
-      ],
-      ts.NodeFlags.Const
-    )
-  );
-  const hookWithJsDoc = addJSDocToNode(hookExport, node, deprecated, jsDoc);
+          ),
+        ],
+        ts.NodeFlags.Const
+      )
+    );
+    return hookExport;
+  }
 
-  return [defaultApiResponse, returnTypeExport, queryKeyExport, hookWithJsDoc];
+  const queryHook = createQueryHook("useQuery", "");
+  const suspenseQueryHook = createQueryHook("useSuspenseQuery", "Suspense");
+
+  const hookWithJsDoc = addJSDocToNode(queryHook, node, deprecated, jsDoc);
+  const suspenseHookWithJsDoc = addJSDocToNode(suspenseQueryHook, node, deprecated, jsDoc);
+
+  return [
+    defaultApiResponse,
+    returnTypeExport,
+    queryKeyExport,
+    hookWithJsDoc,
+    suspenseHookWithJsDoc,
+  ];
 };
