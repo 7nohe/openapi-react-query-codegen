@@ -1,7 +1,6 @@
 import ts from "typescript";
-import { createImports } from "./createImports";
-import { createExports } from "./createExports";
-import { version } from "../package.json";
+import { createImports } from "./createImports.js";
+import { createExports } from "./createExports.js";
 
 const createSourceFile = (outputPath: string) => {
   return ts.factory.createSourceFile(
@@ -11,7 +10,7 @@ const createSourceFile = (outputPath: string) => {
   );
 };
 
-export const createSource = (outputPath: string) => {
+export const createSource = (outputPath: string, version: string) => {
   const resultFile = ts.createSourceFile(
     "index.ts",
     "",
