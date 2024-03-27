@@ -1,6 +1,6 @@
 import ts from "typescript";
-import { capitalizeFirstLetter } from "./common";
-import { addJSDocToNode } from "./util";
+import { capitalizeFirstLetter } from "./common.js";
+import { addJSDocToNode } from "./util.js";
 
 export const createUseMutation = (
   node: ts.SourceFile,

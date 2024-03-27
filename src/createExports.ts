@@ -2,8 +2,8 @@ import ts, { JSDoc } from "typescript";
 import { sync } from "glob";
 import { join } from "path";
 import fs from "fs";
-import { createUseQuery } from "./createUseQuery";
-import { createUseMutation } from "./createUseMutation";
+import { createUseQuery } from "./createUseQuery.js";
+import { createUseMutation } from "./createUseMutation.js";
 
 export const createExports = (generatedClientsPath: string) => {
   const services = sync(

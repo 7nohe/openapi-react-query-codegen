@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
-import { CLIOptions } from "./cli";
-import { defaultOutputPath, queriesOutputPath } from "./constants";
+import { defaultOutputPath, queriesOutputPath } from "./constants.js";
+import { LimitedUserConfig } from './cli.js';
 
-function printGeneratedTS(result: string, options: CLIOptions) {
+function printGeneratedTS(result: string, options: LimitedUserConfig) {
   const dir = path.join(options.output ?? defaultOutputPath, queriesOutputPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -11,7 +11,7 @@ function printGeneratedTS(result: string, options: CLIOptions) {
   fs.writeFileSync(path.join(dir, "index.ts"), result);
 }
 
-export function print(result: string, options: CLIOptions) {
+export function print(result: string, options: LimitedUserConfig) {
   const outputPath = options.output ?? defaultOutputPath;
   if (!fs.existsSync(outputPath)) {
     fs.mkdirSync(outputPath);
