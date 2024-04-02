@@ -1,21 +1,40 @@
-import fs from "fs";
+import { stat, mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { CLIOptions } from "./cli";
 import { defaultOutputPath, queriesOutputPath } from "./constants";
+import { exists } from "./common";
 
-function printGeneratedTS(result: string, options: CLIOptions) {
+async function printGeneratedTS(
+  result: {
+    name: string;
+    content: string;
+  },
+  options: CLIOptions
+) {
   const dir = path.join(options.output ?? defaultOutputPath, queriesOutputPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  const dirExists = await exists(dir);
+  if (!dirExists) {
+    await mkdir(dir, { recursive: true });
   }
-  fs.writeFileSync(path.join(dir, "index.ts"), result);
+  await writeFile(path.join(dir, result.name), result.content);
 }
 
-export function print(result: string, options: CLIOptions) {
+export async function print(
+  results: {
+    name: string;
+    content: string;
+  }[],
+  options: CLIOptions
+) {
   const outputPath = options.output ?? defaultOutputPath;
-  if (!fs.existsSync(outputPath)) {
-    fs.mkdirSync(outputPath);
+  const dirExists = await exists(outputPath);
+  if (!dirExists) {
+    await mkdir(outputPath);
   }
 
-  printGeneratedTS(result, options);
+  const promises = results.map(async (result) => {
+    await printGeneratedTS(result, options);
+  });
+
+  await Promise.all(promises);
 }
