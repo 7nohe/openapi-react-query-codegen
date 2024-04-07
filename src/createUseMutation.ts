@@ -1,17 +1,26 @@
 import ts from "typescript";
-import { capitalizeFirstLetter } from "./common";
+import {
+  BuildCommonTypeName,
+  MethodDescription,
+  TContext,
+  TData,
+  TError,
+  capitalizeFirstLetter,
+  getNameFromMethod,
+} from "./common";
 import { addJSDocToNode } from "./util";
 
-export const createUseMutation = (
-  node: ts.SourceFile,
-  className: string,
-  method: ts.MethodDeclaration,
-  jsDoc: (string | ts.NodeArray<ts.JSDocComment> | undefined)[] = [],
-  deprecated: boolean = false
-) => {
-  const methodName = method.name?.getText(node)!;
-  // Awaited<ReturnType<typeof myClass.myMethod>>
-  const awaitedResponseDataType = ts.factory.createTypeReferenceNode(
+/**
+ *  Awaited<ReturnType<typeof myClass.myMethod>>
+ */
+function generateAwaitedReturnType({
+  className,
+  methodName,
+}: {
+  className: string;
+  methodName: string;
+}) {
+  return ts.factory.createTypeReferenceNode(
     ts.factory.createIdentifier("Awaited"),
     [
       ts.factory.createTypeReferenceNode(
@@ -28,14 +37,26 @@ export const createUseMutation = (
       ),
     ]
   );
+}
 
-  const TData = ts.factory.createIdentifier("TData");
-  const TError = ts.factory.createIdentifier("TError");
-  const TContext = ts.factory.createIdentifier("TContext");
+export const createUseMutation = ({
+  node,
+  className,
+  method,
+  jsDoc = [],
+  isDeprecated = false,
+}: MethodDescription) => {
+  const methodName = getNameFromMethod(method, node);
+  const awaitedResponseDataType = generateAwaitedReturnType({
+    className,
+    methodName,
+  });
 
   const mutationResult = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createIdentifier(`${className}${capitalizeFirstLetter(methodName)}MutationResult`),
+    ts.factory.createIdentifier(
+      `${className}${capitalizeFirstLetter(methodName)}MutationResult`
+    ),
     undefined,
     awaitedResponseDataType
   );
@@ -44,7 +65,7 @@ export const createUseMutation = (
     undefined,
     TData,
     undefined,
-    ts.factory.createTypeReferenceNode(mutationResult.name)
+    ts.factory.createTypeReferenceNode(BuildCommonTypeName(mutationResult.name))
   );
 
   const methodParameters =
@@ -199,7 +220,10 @@ export const createUseMutation = (
     )
   );
 
-  const hookWithJsDoc = addJSDocToNode(exportHook, node, deprecated, jsDoc);
+  const hookWithJsDoc = addJSDocToNode(exportHook, node, isDeprecated, jsDoc);
 
-  return [mutationResult, hookWithJsDoc];
+  return {
+    mutationResult,
+    mutationHook: hookWithJsDoc,
+  };
 };

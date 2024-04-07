@@ -8,6 +8,7 @@ import {
 } from "../openapi/queries";
 import { useState } from "react";
 import { queryClient } from "./queryClient";
+import { SuspenseParent } from "./components/SuspenseParent";
 
 function App() {
   const [tags, _setTags] = useState<string[]>([]);
@@ -19,7 +20,8 @@ function App() {
   // this defaults to any - here we are showing how to override the type
   // Note - this is marked as deprecated in the OpenAPI spec and being passed to the client
   const { data: notDefined } = useDefaultClientGetNotDefined<undefined>();
-  const { mutate: mutateNotDefined } = useDefaultClientPostNotDefined<undefined>();
+  const { mutate: mutateNotDefined } =
+    useDefaultClientPostNotDefined<undefined>();
 
   const { mutate: addPet } = useDefaultClientAddPet();
 
@@ -60,6 +62,10 @@ function App() {
       >
         Create a pet
       </button>
+      <div>
+        <h1>Suspense Components</h1>
+        <SuspenseParent />
+      </div>
     </div>
   );
 }

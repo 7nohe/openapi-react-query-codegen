@@ -1,57 +1,23 @@
 import ts from "typescript";
-import { capitalizeFirstLetter } from "./common";
+import {
+  BuildCommonTypeName,
+  capitalizeFirstLetter,
+  getNameFromMethod,
+  queryKeyConstraint,
+  queryKeyGenericType,
+} from "./common";
 import { addJSDocToNode } from "./util";
+import { type MethodDescription } from "./common";
+import { TData, TError } from "./common";
 
-export const createUseQuery = (
-  node: ts.SourceFile,
-  className: string,
-  method: ts.MethodDeclaration,
-  jsDoc: (string | ts.NodeArray<ts.JSDocComment> | undefined)[] = [],
-  deprecated: boolean = false
-) => {
-  const methodName = method.name?.getText(node)!;
-  let requestParam = [];
-  if (method.parameters.length !== 0) {
-    requestParam.push(
-      ts.factory.createParameterDeclaration(
-        undefined,
-        undefined,
-        ts.factory.createObjectBindingPattern(
-          method.parameters.map((param) =>
-            ts.factory.createBindingElement(
-              undefined,
-              undefined,
-              ts.factory.createIdentifier(param.name.getText(node)),
-              undefined
-            )
-          )
-        ),
-        undefined,
-        ts.factory.createTypeLiteralNode(
-          method.parameters.map((param) =>
-            ts.factory.createPropertySignature(
-              undefined,
-              ts.factory.createIdentifier(param.name.getText(node)),
-              param.questionToken ?? param.initializer
-                ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-                : param.questionToken,
-              param.type
-            )
-          )
-        )
-      )
-    );
-  }
-
-  const customHookName = `use${className}${capitalizeFirstLetter(methodName)}`;
-  const queryKey = `${customHookName}Key`;
-
-  const queryKeyGenericType = ts.factory.createTypeReferenceNode("TQueryKey");
-  const queryKeyConstraint = ts.factory.createTypeReferenceNode("Array", [
-    ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
-  ]);
-
-  // Awaited<ReturnType<typeof myClass.myMethod>>
+export const createApiResponseType = ({
+  className,
+  methodName,
+}: {
+  className: string;
+  methodName: string;
+}) => {
+  /** Awaited<ReturnType<typeof myClass.myMethod>> */
   const awaitedResponseDataType = ts.factory.createTypeReferenceNode(
     ts.factory.createIdentifier("Awaited"),
     [
@@ -69,9 +35,10 @@ export const createUseQuery = (
       ),
     ]
   );
-  // DefaultResponseDataType
-  // export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
-  const defaultApiResponse = ts.factory.createTypeAliasDeclaration(
+  /** DefaultResponseDataType
+   * export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
+   */
+  const apiResponse = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
       `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
@@ -82,19 +49,76 @@ export const createUseQuery = (
     awaitedResponseDataType
   );
 
-  const TData = ts.factory.createIdentifier("TData");
-  const TError = ts.factory.createIdentifier("TError");
-
   const responseDataType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TData.text,
     undefined,
-    ts.factory.createTypeReferenceNode(defaultApiResponse.name)
+    ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name))
   );
 
-  // Return Type
-  // export const classNameMethodNameQueryResult<TData = MyClassMethodDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
-  const returnTypeExport = ts.factory.createTypeAliasDeclaration(
+  return {
+    /** DefaultResponseDataType
+     * export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
+     */
+    apiResponse,
+    /**
+     * will be the name of the type of the response type of the method
+     * MyClassMethodDefaultResponse
+     */
+    responseDataType,
+  };
+};
+
+export function getRequestParamFromMethod(
+  method: ts.MethodDeclaration,
+  node: ts.SourceFile
+) {
+  if (!method.parameters.length) {
+    return null;
+  }
+  return ts.factory.createParameterDeclaration(
+    undefined,
+    undefined,
+    ts.factory.createObjectBindingPattern(
+      method.parameters.map((param) =>
+        ts.factory.createBindingElement(
+          undefined,
+          undefined,
+          ts.factory.createIdentifier(param.name.getText(node)),
+          undefined
+        )
+      )
+    ),
+    undefined,
+    ts.factory.createTypeLiteralNode(
+      method.parameters.map((param) =>
+        ts.factory.createPropertySignature(
+          undefined,
+          ts.factory.createIdentifier(param.name.getText(node)),
+          param.questionToken ?? param.initializer
+            ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+            : param.questionToken,
+          param.type
+        )
+      )
+    )
+  );
+}
+
+/**
+ * Return Type
+ * export const classNameMethodNameQueryResult<TData = MyClassMethodDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+ */
+export function createReturnTypeExport({
+  className,
+  methodName,
+  defaultApiResponse,
+}: {
+  className: string;
+  methodName: string;
+  defaultApiResponse: ts.TypeAliasDeclaration;
+}) {
+  return ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
       `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
@@ -120,12 +144,24 @@ export const createUseQuery = (
       [
         ts.factory.createTypeReferenceNode(TData),
         ts.factory.createTypeReferenceNode(TError),
-      ],
-    ),
+      ]
+    )
   );
+}
 
-  // QueryKey
-  const queryKeyExport = ts.factory.createVariableStatement(
+/**
+ * QueryKey
+ */
+export function createQueryKeyExport({
+  className,
+  methodName,
+  queryKey,
+}: {
+  className: string;
+  methodName: string;
+  queryKey: string;
+}) {
+  return ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
       [
@@ -141,14 +177,67 @@ export const createUseQuery = (
       ts.NodeFlags.Const
     )
   );
+}
 
-  // Custom hook
+function hookNameFromMethod({
+  method,
+  node,
+  className,
+}: {
+  method: ts.MethodDeclaration;
+  node: ts.SourceFile;
+  className: string;
+}) {
+  const methodName = getNameFromMethod(method, node);
+  return `use${className}${capitalizeFirstLetter(methodName)}`;
+}
+
+function createQueryKeyFromMethod({
+  method,
+  node,
+  className,
+}: {
+  method: ts.MethodDeclaration;
+  node: ts.SourceFile;
+  className: string;
+}) {
+  const customHookName = hookNameFromMethod({ method, node, className });
+  const queryKey = `${customHookName}Key`;
+  return queryKey;
+}
+
+/**
+ * Creates a custom hook for a query
+ * @param queryString The type of query to use from react-query
+ * @param suffix The suffix to append to the hook name
+ */
+function createQueryHook({
+  queryString,
+  suffix,
+  responseDataType,
+  requestParams,
+  method,
+  node,
+  className,
+}: {
+  queryString: "useSuspenseQuery" | "useQuery";
+  suffix: string;
+  responseDataType: ts.TypeParameterDeclaration;
+  requestParams: ts.ParameterDeclaration[];
+  method: ts.MethodDeclaration;
+  node: ts.SourceFile;
+  className: string;
+}) {
+  const methodName = getNameFromMethod(method, node);
+  const customHookName = hookNameFromMethod({ method, node, className });
+  const queryKey = createQueryKeyFromMethod({ method, node, className });
+
   const hookExport = ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
       [
         ts.factory.createVariableDeclaration(
-          ts.factory.createIdentifier(customHookName),
+          ts.factory.createIdentifier(`${customHookName}${suffix}`),
           undefined,
           undefined,
           ts.factory.createArrowFunction(
@@ -171,7 +260,7 @@ export const createUseQuery = (
               ),
             ]),
             [
-              ...requestParam,
+              ...requestParams,
               ts.factory.createParameterDeclaration(
                 undefined,
                 undefined,
@@ -212,7 +301,7 @@ export const createUseQuery = (
             undefined,
             ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
             ts.factory.createCallExpression(
-              ts.factory.createIdentifier("useQuery"),
+              ts.factory.createIdentifier(queryString),
               [
                 ts.factory.createTypeReferenceNode(TData),
                 ts.factory.createTypeReferenceNode(TError),
@@ -223,7 +312,7 @@ export const createUseQuery = (
                     ts.factory.createIdentifier("queryKey"),
                     ts.factory.createArrayLiteralExpression(
                       [
-                        ts.factory.createIdentifier(queryKey),
+                        BuildCommonTypeName(queryKey),
                         ts.factory.createSpreadElement(
                           ts.factory.createParenthesizedExpression(
                             ts.factory.createBinaryExpression(
@@ -290,7 +379,72 @@ export const createUseQuery = (
       ts.NodeFlags.Const
     )
   );
-  const hookWithJsDoc = addJSDocToNode(hookExport, node, deprecated, jsDoc);
+  return hookExport;
+}
 
-  return [defaultApiResponse, returnTypeExport, queryKeyExport, hookWithJsDoc];
+export const createUseQuery = ({
+  node,
+  className,
+  method,
+  jsDoc = [],
+  isDeprecated: deprecated = false,
+}: MethodDescription) => {
+  const methodName = getNameFromMethod(method, node);
+  const queryKey = createQueryKeyFromMethod({ method, node, className });
+  const { apiResponse: defaultApiResponse, responseDataType } =
+    createApiResponseType({
+      className,
+      methodName,
+    });
+
+  const requestParam = getRequestParamFromMethod(method, node);
+
+  const requestParams = requestParam ? [requestParam] : [];
+
+  const queryHook = createQueryHook({
+    queryString: "useQuery",
+    suffix: "",
+    responseDataType,
+    requestParams,
+    method,
+    node,
+    className,
+  });
+  const suspenseQueryHook = createQueryHook({
+    queryString: "useSuspenseQuery",
+    suffix: "Suspense",
+    responseDataType,
+    requestParams,
+    method,
+    node,
+    className,
+  });
+
+  const hookWithJsDoc = addJSDocToNode(queryHook, node, deprecated, jsDoc);
+  const suspenseHookWithJsDoc = addJSDocToNode(
+    suspenseQueryHook,
+    node,
+    deprecated,
+    jsDoc
+  );
+
+  const returnTypeExport = createReturnTypeExport({
+    className,
+    methodName,
+    defaultApiResponse,
+  });
+
+  const queryKeyExport = createQueryKeyExport({
+    className,
+    methodName,
+    queryKey,
+  });
+
+  return {
+    apiResponse: defaultApiResponse,
+    returnType: returnTypeExport,
+    key: queryKeyExport,
+    queryHook: hookWithJsDoc,
+    suspenseQueryHook: suspenseHookWithJsDoc,
+  };
 };

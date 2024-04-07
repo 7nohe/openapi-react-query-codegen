@@ -2,7 +2,7 @@ import { generate as generateTSClients } from "openapi-typescript-codegen";
 import { print } from "./print";
 import { CLIOptions } from "./cli";
 import path from "path";
-import { createSource } from "./createSource";
+import { createSources } from "./createSource";
 import { defaultOutputPath, requestsOutputPath } from "./constants";
 
 export async function generate(options: CLIOptions) {
@@ -16,6 +16,6 @@ export async function generate(options: CLIOptions) {
     httpClient: options.client,
     output: openApiOutputPath,
   });
-  const source = createSource(openApiOutputPath);
-  print(source, options);
+  const sources = createSources(openApiOutputPath);
+  print(sources, options);
 }
