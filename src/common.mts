@@ -48,9 +48,26 @@ export async function exists(f: PathLike) {
 
 const Common = "Common";
 
+/**
+ * Build a common type name by prepending the Common namespace.
+ */
 export function BuildCommonTypeName(name: string | ts.Identifier) {
   if (typeof name === "string") {
     return ts.factory.createIdentifier(`${Common}.${name}`);
   }
   return ts.factory.createIdentifier(`${Common}.${name.text}`);
+}
+
+/**
+ * Safely parse a value into a number. Checks for NaN and Infinity.
+ * Returns NaN if the string is not a valid number.
+ * @param value The value to parse.
+ * @returns The parsed number or NaN if the value is not a valid number.
+ */
+export function safeParseNumber(value: unknown): number {
+  const parsed = Number(value);
+  if (!isNaN(parsed) && isFinite(parsed)) {
+    return parsed;
+  }
+  return NaN;
 }

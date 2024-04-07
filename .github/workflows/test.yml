@@ -24,23 +24,20 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'pnpm'
+          node-version: 18
+          cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm -w install
-      
+        run: pnpm install --frozen-lockfile
+
       - name: Build
         run: pnpm -w build
 
-      - name: Install dependencies in example app
-        run: pnpm --filter @7nohe/react-app install --no-frozen-lockfile
-      
       - name: Run codegen
         run: pnpm --filter @7nohe/react-app generate:api
 
       - name: Archive generated query file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: generated-query-file-${{ matrix.os }}
           path: examples/react-app/openapi/queries/index.ts

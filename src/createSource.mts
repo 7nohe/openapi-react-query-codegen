@@ -1,11 +1,17 @@
-import ts, { factory } from "typescript";
-import { createImports } from "./createImports";
-import { createExportsV2 } from "./createExports";
-import { version } from "../package.json";
+import ts from "typescript";
+import { createImports } from "./createImports.mjs";
+import { createExports } from "./createExports.mjs";
+import { getServices } from "./service.mjs";
 
-const createSourceFile = (outputPath: string) => {
-  const imports = createImports(outputPath);
-  const exports = createExportsV2(outputPath);
+const createSourceFile = async (outputPath: string, serviceEndName: string) => {
+  const service = await getServices(outputPath);
+
+  const imports = await createImports({
+    generatedClientsPath: outputPath,
+    service,
+    serviceEndName,
+  });
+  const exports = createExports(service);
 
   const commonSource = ts.factory.createSourceFile(
     [...imports, ...exports.allCommon],
@@ -66,7 +72,15 @@ const createSourceFile = (outputPath: string) => {
   };
 };
 
-export const createSources = (outputPath: string) => {
+export const createSource = async ({
+  outputPath,
+  version,
+  serviceEndName,
+}: {
+  outputPath: string;
+  version: string;
+  serviceEndName: string;
+}) => {
   const queriesFile = ts.createSourceFile(
     "queries.ts",
     "",
@@ -103,7 +117,7 @@ export const createSources = (outputPath: string) => {
   });
 
   const { commonSource, mainSource, suspenseSource, indexSource } =
-    createSourceFile(outputPath);
+    await createSourceFile(outputPath, serviceEndName);
 
   const commonResult =
     `// generated with @7nohe/openapi-react-query-codegen@${version} \n` +

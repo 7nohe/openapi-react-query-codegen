@@ -9,8 +9,8 @@
     "dev:mock": "prism mock ./petstore.yaml --dynamic",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate:api": "node ../../dist/src/cli.js -i ./petstore.yaml -c axios --exportSchemas=true --postfixServices=Client --request ./request.ts",
-    "test:generated": "tsc ./openapi/queries/index.ts --noEmit --target esnext --moduleResolution node"
+    "generate:api": "node ../../dist/cli.mjs -i ./petstore.yaml -c axios --request ./request.ts --postfixServices=Client",
+    "test:generated": "tsc -p ./tsconfig.openapi.json --noEmit"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.18.1",

@@ -1,16 +1,34 @@
 import ts from "typescript";
-import { sync } from "glob";
+import { glob } from "glob";
 import { extname, basename, posix } from "path";
+import { Service } from "./service.mjs";
 
 const { join } = posix;
 
-export const createImports = (generatedClientsPath: string) => {
-  const models = sync(
-    join(generatedClientsPath, "models", "*.ts").replace(/\\/g, "/")
+export const createImports = async ({
+  generatedClientsPath,
+  service,
+  serviceEndName,
+}: {
+  generatedClientsPath: string;
+  service: Service;
+  serviceEndName: string;
+}) => {
+  const { klasses } = service;
+  // get all class names
+  const classNames = klasses.map(({ className }) => className);
+  // remove duplicates
+  const uniqueClassNames = [...new Set(classNames)];
+
+  const modalsPath = join(generatedClientsPath, "models").replace(/\\/g, "/");
+  const servicesPath = join(generatedClientsPath, "services").replace(
+    /\\/g,
+    "/"
   );
-  const services = sync(
-    join(generatedClientsPath, "services", "*.ts").replace(/\\/g, "/")
-  );
+  const [models, services] = await Promise.all([
+    glob(join(modalsPath, "*.ts")),
+    glob(join(servicesPath, "*.ts")),
+  ]);
   return [
     ts.factory.createImportDeclaration(
       undefined,
@@ -95,6 +113,48 @@ export const createImports = (generatedClientsPath: string) => {
         ts.factory.createStringLiteral(
           join("../requests/services", serviceName)
         ),
+        undefined
+      );
+    }),
+    // import all class names from service file
+    ...uniqueClassNames.map((className) => {
+      return ts.factory.createImportDeclaration(
+        undefined,
+        ts.factory.createImportClause(
+          false,
+          undefined,
+          ts.factory.createNamedImports([
+            ts.factory.createImportSpecifier(
+              false,
+              undefined,
+              ts.factory.createIdentifier(className)
+            ),
+          ])
+        ),
+        ts.factory.createStringLiteral(join("../requests")),
+        undefined
+      );
+    }),
+    // import all data objects from service file
+    ...uniqueClassNames.map((className) => {
+      // remove serviceEndName from the end of class name
+      // TODO: we should use a better way to remove the serviceEndName  from the end of the class name
+      const classNameData = className.replace(serviceEndName, "");
+
+      return ts.factory.createImportDeclaration(
+        undefined,
+        ts.factory.createImportClause(
+          false,
+          undefined,
+          ts.factory.createNamedImports([
+            ts.factory.createImportSpecifier(
+              false,
+              undefined,
+              ts.factory.createIdentifier(`${classNameData}Data`)
+            ),
+          ])
+        ),
+        ts.factory.createStringLiteral(join("../requests")),
         undefined
       );
     }),

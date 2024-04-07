@@ -5,10 +5,11 @@ import {
   getNameFromMethod,
   queryKeyConstraint,
   queryKeyGenericType,
-} from "./common";
-import { addJSDocToNode } from "./util";
-import { type MethodDescription } from "./common";
-import { TData, TError } from "./common";
+  TData,
+  TError,
+} from "./common.mjs";
+import { addJSDocToNode } from "./util.mjs";
+import { type MethodDescription } from "./common.mjs";
 
 export const createApiResponseType = ({
   className,
@@ -76,18 +77,35 @@ export function getRequestParamFromMethod(
   if (!method.parameters.length) {
     return null;
   }
+
+  // we need to get the properties of the object
+
   return ts.factory.createParameterDeclaration(
     undefined,
     undefined,
     ts.factory.createObjectBindingPattern(
-      method.parameters.map((param) =>
-        ts.factory.createBindingElement(
+      method.parameters.map((param) => {
+        const type = param.type;
+        if (!type) {
+          throw new Error("No type found");
+        }
+        const subTypes = type?.getChildren();
+        if (!subTypes) {
+          throw new Error("No subType found");
+        }
+        console.log(param.type as ts.TypeNode);
+        // console.log(param.type?.getText(node));
+        // console.log(subType.getText(node));
+        subTypes.forEach((subType) => {
+          console.log(subType.kind);
+        });
+        return ts.factory.createBindingElement(
           undefined,
           undefined,
           ts.factory.createIdentifier(param.name.getText(node)),
           undefined
-        )
-      )
+        );
+      })
     ),
     undefined,
     ts.factory.createTypeLiteralNode(

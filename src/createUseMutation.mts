@@ -7,8 +7,8 @@ import {
   TError,
   capitalizeFirstLetter,
   getNameFromMethod,
-} from "./common";
-import { addJSDocToNode } from "./util";
+} from "./common.mjs";
+import { addJSDocToNode } from "./util.mjs";
 
 /**
  *  Awaited<ReturnType<typeof myClass.myMethod>>
