@@ -1,18 +1,15 @@
 import ts from "typescript";
-import { glob } from "glob";
-import { extname, basename, posix } from "path";
+import { posix } from "path";
 import { Service } from "./service.mjs";
 import { Project } from "ts-morph";
 
 const { join } = posix;
 
-export const createImports = async ({
-  generatedClientsPath,
+export const createImports = ({
   service,
   serviceEndName,
   project,
 }: {
-  generatedClientsPath: string;
   service: Service;
   serviceEndName: string;
   project: Project;
@@ -33,15 +30,6 @@ export const createImports = async ({
 
   const modalNames = Array.from(modelsFile.getExportedDeclarations().keys());
 
-  const modalsPath = join(generatedClientsPath, "models").replace(/\\/g, "/");
-  const servicesPath = join(generatedClientsPath, "services").replace(
-    /\\/g,
-    "/"
-  );
-  const [models, services] = await Promise.all([
-    glob(join(modalsPath, "*.ts")),
-    glob(join(servicesPath, "*.ts")),
-  ]);
   return [
     ts.factory.createImportDeclaration(
       undefined,
@@ -89,46 +77,6 @@ export const createImports = async ({
       ts.factory.createStringLiteral("@tanstack/react-query"),
       undefined
     ),
-    ...models.map((model) => {
-      const modelName = basename(model, extname(model));
-      return ts.factory.createImportDeclaration(
-        undefined,
-        ts.factory.createImportClause(
-          false,
-          undefined,
-          ts.factory.createNamedImports([
-            ts.factory.createImportSpecifier(
-              false,
-              undefined,
-              ts.factory.createIdentifier(modelName)
-            ),
-          ])
-        ),
-        ts.factory.createStringLiteral(join("../requests/models/", modelName)),
-        undefined
-      );
-    }),
-    ...services.map((service) => {
-      const serviceName = basename(service, extname(service));
-      return ts.factory.createImportDeclaration(
-        undefined,
-        ts.factory.createImportClause(
-          false,
-          undefined,
-          ts.factory.createNamedImports([
-            ts.factory.createImportSpecifier(
-              false,
-              undefined,
-              ts.factory.createIdentifier(serviceName)
-            ),
-          ])
-        ),
-        ts.factory.createStringLiteral(
-          join("../requests/services", serviceName)
-        ),
-        undefined
-      );
-    }),
     // import all class names from service file
     ...uniqueClassNames.map((className) => {
       return ts.factory.createImportDeclaration(

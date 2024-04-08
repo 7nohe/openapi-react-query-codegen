@@ -19,8 +19,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
 
   const service = await getServices(project);
 
-  const imports = await createImports({
-    generatedClientsPath: outputPath,
+  const imports = createImports({
     service,
     serviceEndName,
     project,
