@@ -1,6 +1,12 @@
 import { type PathLike } from "fs";
 import { stat } from "fs/promises";
-import ts, { JSDocComment, NodeArray, SourceFile } from "typescript";
+import ts from "typescript";
+import {
+  MethodDeclaration,
+  JSDoc,
+  SourceFile,
+  ParameterDeclaration,
+} from "ts-morph";
 
 export const TData = ts.factory.createIdentifier("TData");
 export const TError = ts.factory.createIdentifier("TError");
@@ -20,20 +26,17 @@ export const lowercaseFirstLetter = (str: string) => {
   return str.charAt(0).toLowerCase() + str.slice(1);
 };
 
-export const getNameFromMethod = (
-  method: ts.MethodDeclaration,
-  node: ts.SourceFile
-) => {
-  return method.name.getText(node);
+export const getNameFromMethod = (method: MethodDeclaration) => {
+  return method.getName();
 };
 
 export type MethodDescription = {
   className: string;
   node: SourceFile;
-  method: ts.MethodDeclaration;
+  method: MethodDeclaration;
   methodBlock: ts.Block;
   httpMethodName: string;
-  jsDoc: (string | NodeArray<JSDocComment> | undefined)[];
+  jsDoc: JSDoc[];
   isDeprecated: boolean;
 };
 
@@ -70,4 +73,19 @@ export function safeParseNumber(value: unknown): number {
     return parsed;
   }
   return NaN;
+}
+
+export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
+  const referenced = param.findReferences()[0];
+  const def = referenced.getDefinition();
+  const paramNodes = def
+    .getNode()
+    .getType()
+    .getProperties()
+    .map((prop) => ({
+      name: prop.getName(),
+      optional: prop.isOptional(),
+      type: prop.getValueDeclaration()?.getType()!,
+    }));
+  return paramNodes;
 }

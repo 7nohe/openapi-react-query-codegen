@@ -31,22 +31,9 @@ async function setupProgram() {
         .choices(["angular", "axios", "fetch", "node", "xhr"])
         .default("fetch")
     )
-    .option("--exportSchemas <value>", "Write schemas to disk")
-    .option("--postfixServices <value>", "Service name postfix", "Service")
-    .option(
-      "--postfixModels <value>",
-      "Depreciated - now unused - left for backwards compatibility"
-    )
     .option("--request <value>", "Path to custom request file")
-    .option(
-      "--exportCore <value>",
-      "Export core - Generate Core client classes?"
-    )
-    .option("--exportModels <value>", "Generate models?")
-    .option("--exportServices <value>", "Generate services?")
     .option("--format", "Process output folder with formatter?")
     .option("--lint", "Process output folder with linter?")
-    .option("--name", "Custom client class name")
     .option("--operationId", "Use operation ID to generate operation names?")
     .addOption(
       new Option(
@@ -62,26 +49,6 @@ async function setupProgram() {
     .option(
       "--useDateType",
       "Use Date type instead of string for date types for models, this will not convert the data to a Date object"
-    )
-    /* TODO: Implement this feature - useOptions
-     * currently this will not work because the options are new exports of the Services
-     * we new to be able to import any of the options from each service into the queries files
-     */
-    // .option("--useOptions <value>", "Use options or arguments functions")
-    .option("--write", "Write the files to disk (true or false)")
-    // TODO: remove these options in the next major release
-    .addOption(
-      new Option(
-        "--indent <value>",
-        "Depreciated - now unused - left for backwards compatibility"
-      ).hideHelp()
-    )
-    // TODO: remove these options in the next major release
-    .addOption(
-      new Option(
-        "--useUnionTypes <value>",
-        "Depreciated - now unused - left for backwards compatibility"
-      ).hideHelp()
     )
     .parse();
 

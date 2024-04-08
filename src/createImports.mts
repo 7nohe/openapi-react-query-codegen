@@ -2,6 +2,7 @@ import ts from "typescript";
 import { glob } from "glob";
 import { extname, basename, posix } from "path";
 import { Service } from "./service.mjs";
+import { Project } from "ts-morph";
 
 const { join } = posix;
 
@@ -9,16 +10,28 @@ export const createImports = async ({
   generatedClientsPath,
   service,
   serviceEndName,
+  project,
 }: {
   generatedClientsPath: string;
   service: Service;
   serviceEndName: string;
+  project: Project;
 }) => {
   const { klasses } = service;
   // get all class names
   const classNames = klasses.map(({ className }) => className);
   // remove duplicates
   const uniqueClassNames = [...new Set(classNames)];
+
+  const modelsFile = project
+    .getSourceFiles()
+    .find((sourceFile) => sourceFile.getFilePath().includes("models.ts"));
+
+  if (!modelsFile) {
+    throw new Error("No models file found");
+  }
+
+  const modalNames = Array.from(modelsFile.getExportedDeclarations().keys());
 
   const modalsPath = join(generatedClientsPath, "models").replace(/\\/g, "/");
   const servicesPath = join(generatedClientsPath, "services").replace(
@@ -158,5 +171,24 @@ export const createImports = async ({
         undefined
       );
     }),
+    // import all the models by name
+    ts.factory.createImportDeclaration(
+      undefined,
+      ts.factory.createImportClause(
+        false,
+        undefined,
+        ts.factory.createNamedImports([
+          ...modalNames.map((modelName) =>
+            ts.factory.createImportSpecifier(
+              false,
+              undefined,
+              ts.factory.createIdentifier(modelName)
+            )
+          ),
+        ])
+      ),
+      ts.factory.createStringLiteral(join("../requests/models")),
+      undefined
+    ),
   ];
 };

@@ -30,16 +30,20 @@ export async function generate(options: UserConfig, version: string) {
     },
     options
   );
-  await createClient({
+  const config: UserConfig = {
     ...formattedOptions,
     output: openApiOutputPath,
     useOptions: true,
-  });
-  const { postfixServices } = formattedOptions;
+    exportCore: true,
+    exportModels: true,
+    exportServices: true,
+    write: true,
+  };
+  await createClient(config);
   const source = await createSource({
     outputPath: openApiOutputPath,
     version,
-    serviceEndName: postfixServices!,
+    serviceEndName: "Service", // we are hard coding this because changing the service end name was depreciated in @hey-api/openapi-ts
   });
   await print(source, formattedOptions);
 }

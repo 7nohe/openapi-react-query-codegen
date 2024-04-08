@@ -1,10 +1,10 @@
 import "./App.css";
 import {
-  useDefaultClientAddPet,
-  useDefaultClientFindPets,
-  useDefaultClientFindPetsKey,
-  useDefaultClientGetNotDefined,
-  useDefaultClientPostNotDefined,
+  useDefaultServiceAddPet,
+  useDefaultServiceFindPets,
+  useDefaultServiceFindPetsKey,
+  useDefaultServiceGetNotDefined,
+  useDefaultServicePostNotDefined,
 } from "../openapi/queries";
 import { useState } from "react";
 import { queryClient } from "./queryClient";
@@ -14,18 +14,16 @@ function App() {
   const [tags, _setTags] = useState<string[]>([]);
   const [limit, _setLimit] = useState<number>(10);
 
-  const { data, error, refetch } = useDefaultClientFindPets({
-    data: { tags, limit },
-  });
+  const { data, error, refetch } = useDefaultServiceFindPets({ tags, limit });
 
   // This is an example of a query that is not defined in the OpenAPI spec
   // this defaults to any - here we are showing how to override the type
   // Note - this is marked as deprecated in the OpenAPI spec and being passed to the client
-  const { data: notDefined } = useDefaultClientGetNotDefined<undefined>();
+  const { data: notDefined } = useDefaultServiceGetNotDefined<undefined>();
   const { mutate: mutateNotDefined } =
-    useDefaultClientPostNotDefined<undefined>();
+    useDefaultServicePostNotDefined<undefined>();
 
-  const { mutate: addPet } = useDefaultClientAddPet();
+  const { mutate: addPet } = useDefaultServiceAddPet();
 
   if (error)
     return (
@@ -48,14 +46,12 @@ function App() {
         onClick={() => {
           addPet(
             {
-              data: {
-                requestBody: { name: "Duggy" },
-              },
+              requestBody: { name: "Duggy" },
             },
             {
               onSuccess: () => {
                 queryClient.invalidateQueries({
-                  queryKey: [useDefaultClientFindPetsKey],
+                  queryKey: [useDefaultServiceFindPetsKey],
                 });
                 console.log("success");
               },

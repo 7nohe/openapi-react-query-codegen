@@ -44,24 +44,14 @@ Options:
   -i, --input <value>        OpenAPI specification, can be a path, url or string content (required)
   -o, --output <value>       Output directory (default: "openapi")
   -c, --client <value>       HTTP client to generate [fetch, xhr, node, axios, angular] (default: "fetch")
-  --useUnionTypes            Unused, will be removed in the next major version
-  --exportSchemas <value>    Write schemas to disk (default: false)
-  --indent <value>           Unused, will be removed in the next major version
-  --postfixServices <value>  Service name postfix (default: "Service")
-  --postfixModels <value>    Unused, will be removed in the next major version
   --request <value>          Path to custom request file
-  --write <value>            Write the files to disk (true or false)
   --useDateType              Use Date type instead of string for date types for models, this will not convert the data to a Date object
   --enums                    Generate JavaScript objects from enum definitions?
   --base <value>             Manually set base in OpenAPI config instead of inferring from server value
   --serviceResponse <value>  Define shape of returned value from service calls ['body', 'generics', 'response']
   --operationId              Use operation ID to generate operation names?
   --lint                     Process output folder with linter?
-  --name                     Custom client class name
   --format                   Process output folder with formatter?
-  --exportCore <value>       Export core types
-  --exportModels <value>     Export models
-  --exportServices <value>   Export services
   -h, --help                 display help for command
 ```
 
@@ -155,6 +145,15 @@ function ParentComponent() {
         <ChildComponent />
       </Suspense>
     </>
+  );
+}
+
+function App() {
+  return (
+    <div className="App">
+      <h1>Pet List</h1>
+      <ParentComponent />
+    </div>
   );
 }
 

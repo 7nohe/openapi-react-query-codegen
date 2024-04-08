@@ -1,7 +1,9 @@
 import ts from "typescript";
+import { MethodDeclaration } from "ts-morph";
 import {
   BuildCommonTypeName,
   capitalizeFirstLetter,
+  extractPropertiesFromObjectParam,
   getNameFromMethod,
   queryKeyConstraint,
   queryKeyGenericType,
@@ -70,11 +72,8 @@ export const createApiResponseType = ({
   };
 };
 
-export function getRequestParamFromMethod(
-  method: ts.MethodDeclaration,
-  node: ts.SourceFile
-) {
-  if (!method.parameters.length) {
+export function getRequestParamFromMethod(method: MethodDeclaration) {
+  if (!method.getParameters().length) {
     return null;
   }
 
@@ -84,41 +83,42 @@ export function getRequestParamFromMethod(
     undefined,
     undefined,
     ts.factory.createObjectBindingPattern(
-      method.parameters.map((param) => {
-        const type = param.type;
-        if (!type) {
-          throw new Error("No type found");
-        }
-        const subTypes = type?.getChildren();
-        if (!subTypes) {
-          throw new Error("No subType found");
-        }
-        console.log(param.type as ts.TypeNode);
-        // console.log(param.type?.getText(node));
-        // console.log(subType.getText(node));
-        subTypes.forEach((subType) => {
-          console.log(subType.kind);
-        });
-        return ts.factory.createBindingElement(
-          undefined,
-          undefined,
-          ts.factory.createIdentifier(param.name.getText(node)),
-          undefined
-        );
-      })
+      method
+        .getParameters()
+        .map((param) => {
+          const paramNodes = extractPropertiesFromObjectParam(param);
+          return paramNodes.map((refParam) =>
+            ts.factory.createBindingElement(
+              undefined,
+              undefined,
+              ts.factory.createIdentifier(refParam.name),
+              undefined
+            )
+          );
+        })
+        .flat()
     ),
     undefined,
     ts.factory.createTypeLiteralNode(
-      method.parameters.map((param) =>
-        ts.factory.createPropertySignature(
-          undefined,
-          ts.factory.createIdentifier(param.name.getText(node)),
-          param.questionToken ?? param.initializer
-            ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-            : param.questionToken,
-          param.type
-        )
-      )
+      method
+        .getParameters()
+        .map((param) => {
+          const paramNodes = extractPropertiesFromObjectParam(param);
+          return paramNodes.map((refParam) => {
+            return ts.factory.createPropertySignature(
+              undefined,
+              ts.factory.createIdentifier(refParam.name),
+              refParam.optional
+                ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+                : undefined,
+              // param.hasQuestionToken() ?? param.getInitializer()?.compilerNode
+              //   ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+              //   : param.getQuestionTokenNode()?.compilerNode,
+              ts.factory.createTypeReferenceNode(refParam.type.getText())
+            );
+          });
+        })
+        .flat()
     )
   );
 }
@@ -199,27 +199,23 @@ export function createQueryKeyExport({
 
 function hookNameFromMethod({
   method,
-  node,
   className,
 }: {
-  method: ts.MethodDeclaration;
-  node: ts.SourceFile;
+  method: MethodDeclaration;
   className: string;
 }) {
-  const methodName = getNameFromMethod(method, node);
+  const methodName = getNameFromMethod(method);
   return `use${className}${capitalizeFirstLetter(methodName)}`;
 }
 
 function createQueryKeyFromMethod({
   method,
-  node,
   className,
 }: {
-  method: ts.MethodDeclaration;
-  node: ts.SourceFile;
+  method: MethodDeclaration;
   className: string;
 }) {
-  const customHookName = hookNameFromMethod({ method, node, className });
+  const customHookName = hookNameFromMethod({ method, className });
   const queryKey = `${customHookName}Key`;
   return queryKey;
 }
@@ -235,20 +231,18 @@ function createQueryHook({
   responseDataType,
   requestParams,
   method,
-  node,
   className,
 }: {
   queryString: "useSuspenseQuery" | "useQuery";
   suffix: string;
   responseDataType: ts.TypeParameterDeclaration;
   requestParams: ts.ParameterDeclaration[];
-  method: ts.MethodDeclaration;
-  node: ts.SourceFile;
+  method: MethodDeclaration;
   className: string;
 }) {
-  const methodName = getNameFromMethod(method, node);
-  const customHookName = hookNameFromMethod({ method, node, className });
-  const queryKey = createQueryKeyFromMethod({ method, node, className });
+  const methodName = getNameFromMethod(method);
+  const customHookName = hookNameFromMethod({ method, className });
+  const queryKey = createQueryKeyFromMethod({ method, className });
 
   const hookExport = ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -338,16 +332,23 @@ function createQueryHook({
                               ts.factory.createToken(
                                 ts.SyntaxKind.QuestionQuestionToken
                               ),
-                              method.parameters.length
+                              method.getParameters().length
                                 ? ts.factory.createArrayLiteralExpression([
                                     ts.factory.createObjectLiteralExpression(
-                                      method.parameters.map((param) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(
-                                            param.name.getText(node)
+                                      method
+                                        .getParameters()
+                                        .map((param) =>
+                                          extractPropertiesFromObjectParam(
+                                            param
+                                          ).map((p) =>
+                                            ts.factory.createShorthandPropertyAssignment(
+                                              ts.factory.createIdentifier(
+                                                p.name
+                                              )
+                                            )
                                           )
                                         )
-                                      )
+                                        .flat()
                                     ),
                                   ])
                                 : ts.factory.createArrayLiteralExpression([])
@@ -375,11 +376,24 @@ function createQueryHook({
                             ts.factory.createIdentifier(methodName)
                           ),
                           undefined,
-                          method.parameters.map((param) =>
-                            ts.factory.createIdentifier(
-                              param.name.getText(node)
-                            )
-                          )
+                          method.getParameters().length
+                            ? [
+                                ts.factory.createObjectLiteralExpression(
+                                  method
+                                    .getParameters()
+                                    .map((param) =>
+                                      extractPropertiesFromObjectParam(
+                                        param
+                                      ).map((p) =>
+                                        ts.factory.createShorthandPropertyAssignment(
+                                          ts.factory.createIdentifier(p.name)
+                                        )
+                                      )
+                                    )
+                                    .flat()
+                                ),
+                              ]
+                            : undefined
                         ),
                         ts.factory.createTypeReferenceNode(TData)
                       )
@@ -407,15 +421,15 @@ export const createUseQuery = ({
   jsDoc = [],
   isDeprecated: deprecated = false,
 }: MethodDescription) => {
-  const methodName = getNameFromMethod(method, node);
-  const queryKey = createQueryKeyFromMethod({ method, node, className });
+  const methodName = getNameFromMethod(method);
+  const queryKey = createQueryKeyFromMethod({ method, className });
   const { apiResponse: defaultApiResponse, responseDataType } =
     createApiResponseType({
       className,
       methodName,
     });
 
-  const requestParam = getRequestParamFromMethod(method, node);
+  const requestParam = getRequestParamFromMethod(method);
 
   const requestParams = requestParam ? [requestParam] : [];
 
@@ -425,7 +439,6 @@ export const createUseQuery = ({
     responseDataType,
     requestParams,
     method,
-    node,
     className,
   });
   const suspenseQueryHook = createQueryHook({
@@ -434,7 +447,6 @@ export const createUseQuery = ({
     responseDataType,
     requestParams,
     method,
-    node,
     className,
   });
 

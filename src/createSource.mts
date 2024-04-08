@@ -2,14 +2,28 @@ import ts from "typescript";
 import { createImports } from "./createImports.mjs";
 import { createExports } from "./createExports.mjs";
 import { getServices } from "./service.mjs";
+import { Project } from "ts-morph";
+import { join } from "path";
 
 const createSourceFile = async (outputPath: string, serviceEndName: string) => {
-  const service = await getServices(outputPath);
+  const project = new Project({
+    // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
+    // If you initialize with a tsconfig.json, then it will automatically populate the project
+    // with the associated source files.
+    // Read more: https://ts-morph.com/setup/
+    skipAddingFilesFromTsConfig: true,
+  });
+
+  const sourceFiles = join(process.cwd(), outputPath);
+  project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+
+  const service = await getServices(project);
 
   const imports = await createImports({
     generatedClientsPath: outputPath,
     service,
     serviceEndName,
+    project,
   });
   const exports = createExports(service);
 

@@ -6,6 +6,7 @@ import {
   TData,
   TError,
   capitalizeFirstLetter,
+  extractPropertiesFromObjectParam,
   getNameFromMethod,
 } from "./common.mjs";
 import { addJSDocToNode } from "./util.mjs";
@@ -46,7 +47,7 @@ export const createUseMutation = ({
   jsDoc = [],
   isDeprecated = false,
 }: MethodDescription) => {
-  const methodName = getNameFromMethod(method, node);
+  const methodName = getNameFromMethod(method);
   const awaitedResponseDataType = generateAwaitedReturnType({
     className,
     methodName,
@@ -69,18 +70,37 @@ export const createUseMutation = ({
   );
 
   const methodParameters =
-    method.parameters.length !== 0
+    method.getParameters().length !== 0
       ? ts.factory.createTypeLiteralNode(
-          method.parameters.map((param) => {
-            return ts.factory.createPropertySignature(
-              undefined,
-              ts.factory.createIdentifier(param.name.getText(node)),
-              param.questionToken ?? param.initializer
-                ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-                : param.questionToken,
-              param.type
-            );
-          })
+          method
+            .getParameters()
+            .map((param) => {
+              const paramNodes = extractPropertiesFromObjectParam(param);
+              return paramNodes.map((refParam) =>
+                ts.factory.createPropertySignature(
+                  undefined,
+                  ts.factory.createIdentifier(refParam.name),
+                  refParam.optional
+                    ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+                    : undefined,
+                  // refParam.questionToken ?? refParam.initializer
+                  //   ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+                  //   : refParam.questionToken,
+                  ts.factory.createTypeReferenceNode(
+                    refParam.type.getText(param)
+                  )
+                )
+              );
+            })
+            .flat()
+          // return ts.factory.createPropertySignature(
+          //   undefined,
+          //   ts.factory.createIdentifier(param.getName()),
+          //   param.compilerNode.questionToken ?? param.compilerNode.initializer
+          //     ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+          //     : param.compilerNode.questionToken,
+          //   param.compilerNode.type
+          // );
         )
       : ts.factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword);
 
@@ -154,22 +174,29 @@ export const createUseMutation = ({
                     ts.factory.createArrowFunction(
                       undefined,
                       undefined,
-                      method.parameters.length !== 0
+                      method.getParameters().length !== 0
                         ? [
                             ts.factory.createParameterDeclaration(
                               undefined,
                               undefined,
                               ts.factory.createObjectBindingPattern(
-                                method.parameters.map((param) => {
-                                  return ts.factory.createBindingElement(
-                                    undefined,
-                                    undefined,
-                                    ts.factory.createIdentifier(
-                                      param.name.getText(node)
-                                    ),
-                                    undefined
-                                  );
-                                })
+                                method
+                                  .getParameters()
+                                  .map((param) => {
+                                    const paramNodes =
+                                      extractPropertiesFromObjectParam(param);
+                                    return paramNodes.map((refParam) =>
+                                      ts.factory.createBindingElement(
+                                        undefined,
+                                        undefined,
+                                        ts.factory.createIdentifier(
+                                          refParam.name
+                                        ),
+                                        undefined
+                                      )
+                                    );
+                                  })
+                                  .flat()
                               ),
                               undefined,
                               undefined,
@@ -189,11 +216,26 @@ export const createUseMutation = ({
                               ts.factory.createIdentifier(methodName)
                             ),
                             undefined,
-                            method.parameters.map((params) =>
-                              ts.factory.createIdentifier(
-                                params.name.getText(node)
-                              )
-                            )
+                            method.getParameters().length !== 0
+                              ? [
+                                  ts.factory.createObjectLiteralExpression(
+                                    method
+                                      .getParameters()
+                                      .map((params) => {
+                                        const paramNodes =
+                                          extractPropertiesFromObjectParam(
+                                            params
+                                          );
+                                        return paramNodes.map((refParam) =>
+                                          ts.factory.createShorthandPropertyAssignment(
+                                            refParam.name
+                                          )
+                                        );
+                                      })
+                                      .flat()
+                                  ),
+                                ]
+                              : []
                           ),
                           ts.factory.createKeywordTypeNode(
                             ts.SyntaxKind.UnknownKeyword

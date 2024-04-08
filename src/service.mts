@@ -1,39 +1,29 @@
-import { readFile } from "fs/promises";
-import { join } from "path";
-import ts, { JSDoc } from "typescript";
+import ts from "typescript";
+import { ClassDeclaration, Project, SourceFile } from "ts-morph";
 import { MethodDescription } from "./common.mjs";
 
 export type Service = {
-  node: ts.SourceFile;
+  node: SourceFile;
   klasses: Array<{
     className: string;
-    klass: ts.ClassDeclaration;
+    klass: ClassDeclaration;
     methods: Array<MethodDescription>;
   }>;
 };
 
-export async function getServices(
-  generatedClientsPath: string
-): Promise<Service> {
-  const pathToService = join(generatedClientsPath, "services.ts").replace(
-    /\\/g,
-    "/"
-  );
-  const servicesPath = await readFile(
-    join(process.cwd(), pathToService),
-    "utf-8"
-  );
+export async function getServices(project: Project): Promise<Service> {
+  const node = project
+    .getSourceFiles()
+    .find((sourceFile) => sourceFile.getFilePath().includes("services.ts"));
 
-  const node = ts.createSourceFile(
-    pathToService, // fileName
-    servicesPath,
-    ts.ScriptTarget.Latest // languageVersion
-  );
+  if (!node) {
+    throw new Error("No service node found");
+  }
 
   const klasses = getClassesFromService(node);
   return {
     klasses: klasses.map(({ klass, className }) => ({
-      className: className,
+      className,
       klass,
       methods: getMethodsFromService(node, klass),
     })),
@@ -41,24 +31,18 @@ export async function getServices(
   } satisfies Service;
 }
 
-function getClassesFromService(node: ts.SourceFile) {
-  const nodeChildren = node.getChildren();
-  if (!nodeChildren.length) {
-    throw new Error("No children found");
-  }
+function getClassesFromService(node: SourceFile) {
+  const klasses = node.getClasses();
 
-  const subChildren = nodeChildren.map((child) => child.getChildren()).flat();
-
-  const foundKlasses = subChildren.filter(
-    (child) => child.kind === ts.SyntaxKind.ClassDeclaration
-  );
-
-  if (!foundKlasses.length) {
+  if (!klasses.length) {
     throw new Error("No classes found");
   }
-  const klasses = foundKlasses as ts.ClassDeclaration[];
+
   return klasses.map((klass) => {
-    const className = getClassNameFromClassNode(klass);
+    const className = klass.getName();
+    if (!className) {
+      throw new Error("Class name not found");
+    }
     return {
       className,
       klass,
@@ -66,8 +50,8 @@ function getClassesFromService(node: ts.SourceFile) {
   });
 }
 
-function getClassNameFromClassNode(klass: ts.ClassDeclaration) {
-  const className = String(klass.name?.escapedText);
+function getClassNameFromClassNode(klass: ClassDeclaration) {
+  const className = klass.getName();
 
   if (!className) {
     throw new Error("Class name not found");
@@ -75,19 +59,14 @@ function getClassNameFromClassNode(klass: ts.ClassDeclaration) {
   return className;
 }
 
-function getMethodsFromService(
-  node: ts.SourceFile,
-  klass: ts.ClassDeclaration
-) {
-  const methods = klass.members.filter(
-    (node) => node.kind === ts.SyntaxKind.MethodDeclaration
-  ) as ts.MethodDeclaration[];
+function getMethodsFromService(node: SourceFile, klass: ClassDeclaration) {
+  const methods = klass.getMethods();
   if (!methods.length) {
     throw new Error("No methods found");
   }
   return methods.map((method) => {
-    const methodBlockNode = method
-      .getChildren(node)
+    const methodBlockNode = method.compilerNode
+      .getChildren(node.compilerNode)
       .find((child) => child.kind === ts.SyntaxKind.Block);
 
     if (!methodBlockNode) {
@@ -110,15 +89,15 @@ function getMethodsFromService(
       callExpression.arguments[1] as ts.ObjectLiteralExpression
     ).properties as unknown as ts.PropertyAssignment[];
     const httpMethodName = properties
-      .find((p) => p.name?.getText(node) === "method")
-      ?.initializer?.getText(node);
+      .find((p) => p.name?.getText(node.compilerNode) === "method")
+      ?.initializer?.getText(node.compilerNode);
 
     if (!httpMethodName) {
       throw new Error("httpMethodName not found");
     }
 
     const getAllChildren = (tsNode: ts.Node): Array<ts.Node> => {
-      const childItems = tsNode.getChildren(node);
+      const childItems = tsNode.getChildren(node.compilerNode);
       if (childItems.length) {
         const allChildren = childItems.map(getAllChildren);
         return [tsNode].concat(allChildren.flat());
@@ -126,10 +105,8 @@ function getMethodsFromService(
       return [tsNode];
     };
 
-    const children = getAllChildren(method);
-    const jsDoc = children
-      .filter((c) => c.kind === ts.SyntaxKind.JSDoc)
-      .map((c) => (c as JSDoc).comment);
+    const children = getAllChildren(method.compilerNode);
+    const jsDoc = method.getJsDocs().map((jsDoc) => jsDoc);
     const isDeprecated = children.some(
       (c) => c.kind === ts.SyntaxKind.JSDocDeprecatedTag
     );
