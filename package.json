@@ -3,8 +3,12 @@
   "version": "0.5.3",
   "description": "OpenAPI React Query Codegen",
   "bin": {
-    "openapi-rq": "dist/src/cli.js"
+    "openapi-rq": "dist/cli.js"
   },
+  "type": "module",
+  "workspaces": [
+    "examples/*"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
@@ -27,21 +31,27 @@
     "openapi",
     "swagger",
     "typescript",
-    "openapi-typescript-codegen"
+    "openapi-typescript-codegen",
+    "@hey-api/openapi-ts"
   ],
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
   "devDependencies": {
+    "@hey-api/openapi-ts": "0.36.0",
     "@types/node": "^20.10.6",
     "commander": "^12.0.0",
     "glob": "^10.3.10",
-    "openapi-typescript-codegen": "0.25.0",
+    "ts-morph": "^22.0.0",
     "typescript": "^5.3.3"
   },
   "peerDependencies": {
+    "@hey-api/openapi-ts": "0.36.0",
     "commander": ">= 11 < 13",
     "glob": ">= 10",
-    "openapi-typescript-codegen": "^0.24.0",
+    "ts-morph": ">= 22 < 23",
     "typescript": ">= 4.8.3"
+  },
+  "engines": {
+    "node": ">=14"
   }
 }

@@ -1,15 +1,15 @@
-import { stat, mkdir, writeFile } from "fs/promises";
+import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import { CLIOptions } from "./cli";
-import { defaultOutputPath, queriesOutputPath } from "./constants";
-import { exists } from "./common";
+import { defaultOutputPath, queriesOutputPath } from "./constants.mjs";
+import { LimitedUserConfig } from "./cli.mjs";
+import { exists } from "./common.mjs";
 
 async function printGeneratedTS(
   result: {
     name: string;
     content: string;
   },
-  options: CLIOptions
+  options: LimitedUserConfig
 ) {
   const dir = path.join(options.output ?? defaultOutputPath, queriesOutputPath);
   const dirExists = await exists(dir);
@@ -24,7 +24,7 @@ export async function print(
     name: string;
     content: string;
   }[],
-  options: CLIOptions
+  options: LimitedUserConfig
 ) {
   const outputPath = options.output ?? defaultOutputPath;
   const dirExists = await exists(outputPath);

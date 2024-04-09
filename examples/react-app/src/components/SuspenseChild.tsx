@@ -1,7 +1,7 @@
-import { useDefaultClientFindPetsSuspense } from "../../openapi/queries/suspense";
+import { useDefaultServiceFindPetsSuspense } from "../../openapi/queries/suspense";
 
 export const SuspenseChild = () => {
-  const { data } = useDefaultClientFindPetsSuspense({ tags: [], limit: 10 });
+  const { data } = useDefaultServiceFindPetsSuspense({ tags: [], limit: 10 });
 
   if (!Array.isArray(data)) {
     return <div>Error!</div>;

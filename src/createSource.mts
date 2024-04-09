@@ -1,11 +1,30 @@
-import ts, { factory } from "typescript";
-import { createImports } from "./createImports";
-import { createExportsV2 } from "./createExports";
-import { version } from "../package.json";
+import ts from "typescript";
+import { createImports } from "./createImports.mjs";
+import { createExports } from "./createExports.mjs";
+import { getServices } from "./service.mjs";
+import { Project } from "ts-morph";
+import { join } from "path";
 
-const createSourceFile = (outputPath: string) => {
-  const imports = createImports(outputPath);
-  const exports = createExportsV2(outputPath);
+const createSourceFile = async (outputPath: string, serviceEndName: string) => {
+  const project = new Project({
+    // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
+    // If you initialize with a tsconfig.json, then it will automatically populate the project
+    // with the associated source files.
+    // Read more: https://ts-morph.com/setup/
+    skipAddingFilesFromTsConfig: true,
+  });
+
+  const sourceFiles = join(process.cwd(), outputPath);
+  project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+
+  const service = await getServices(project);
+
+  const imports = createImports({
+    service,
+    serviceEndName,
+    project,
+  });
+  const exports = createExports(service);
 
   const commonSource = ts.factory.createSourceFile(
     [...imports, ...exports.allCommon],
@@ -66,7 +85,15 @@ const createSourceFile = (outputPath: string) => {
   };
 };
 
-export const createSources = (outputPath: string) => {
+export const createSource = async ({
+  outputPath,
+  version,
+  serviceEndName,
+}: {
+  outputPath: string;
+  version: string;
+  serviceEndName: string;
+}) => {
   const queriesFile = ts.createSourceFile(
     "queries.ts",
     "",
@@ -103,7 +130,7 @@ export const createSources = (outputPath: string) => {
   });
 
   const { commonSource, mainSource, suspenseSource, indexSource } =
-    createSourceFile(outputPath);
+    await createSourceFile(outputPath, serviceEndName);
 
   const commonResult =
     `// generated with @7nohe/openapi-react-query-codegen@${version} \n` +

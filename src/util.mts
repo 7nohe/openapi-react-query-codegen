@@ -1,10 +1,11 @@
-import ts from 'typescript';
+import ts from "typescript";
+import { JSDoc, SourceFile } from "ts-morph";
 
 export function addJSDocToNode<T extends ts.Node>(
   node: T,
-  sourceFile: ts.SourceFile,
+  sourceFile: SourceFile,
   deprecated: boolean,
-  jsDoc: (string | ts.NodeArray<ts.JSDocComment> | undefined)[] = [],
+  jsDoc: JSDoc[] = []
 ): T {
   const deprecatedString = deprecated ? "@deprecated" : "";
 
@@ -39,6 +40,6 @@ export function addJSDocToNode<T extends ts.Node>(
         true
       )
     : node;
-  
+
   return nodeWithJSDoc;
 }
