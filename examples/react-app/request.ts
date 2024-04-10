@@ -23,7 +23,7 @@ axiosInstance.interceptors.request.use(
             return config;
         }
 
-        Object.entries(config.params).forEach(([key, value]) => {
+        Object.entries<any>(config.params).forEach(([key, value]) => {
             const stringToSearch = `{${key}}`;
             if(config.url !== undefined && config.url.search(stringToSearch) !== -1) {
                 config.url = config.url.replace(`{${key}}`, encodeURIComponent(value));
