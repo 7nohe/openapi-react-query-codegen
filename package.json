@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "OpenAPI React Query Codegen",
   "bin": {
-    "openapi-rq": "dist/cli.js"
+    "openapi-rq": "dist/cli.mjs"
   },
   "type": "module",
   "workspaces": [
