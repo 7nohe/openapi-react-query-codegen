@@ -1,17 +1,27 @@
 import ts from "typescript";
-import { capitalizeFirstLetter } from "./common";
-import { addJSDocToNode } from "./util";
+import {
+  BuildCommonTypeName,
+  MethodDescription,
+  TContext,
+  TData,
+  TError,
+  capitalizeFirstLetter,
+  extractPropertiesFromObjectParam,
+  getNameFromMethod,
+} from "./common.mjs";
+import { addJSDocToNode } from "./util.mjs";
 
-export const createUseMutation = (
-  node: ts.SourceFile,
-  className: string,
-  method: ts.MethodDeclaration,
-  jsDoc: (string | ts.NodeArray<ts.JSDocComment> | undefined)[] = [],
-  deprecated: boolean = false
-) => {
-  const methodName = method.name?.getText(node)!;
-  // Awaited<ReturnType<typeof myClass.myMethod>>
-  const awaitedResponseDataType = ts.factory.createTypeReferenceNode(
+/**
+ *  Awaited<ReturnType<typeof myClass.myMethod>>
+ */
+function generateAwaitedReturnType({
+  className,
+  methodName,
+}: {
+  className: string;
+  methodName: string;
+}) {
+  return ts.factory.createTypeReferenceNode(
     ts.factory.createIdentifier("Awaited"),
     [
       ts.factory.createTypeReferenceNode(
@@ -28,14 +38,26 @@ export const createUseMutation = (
       ),
     ]
   );
+}
 
-  const TData = ts.factory.createIdentifier("TData");
-  const TError = ts.factory.createIdentifier("TError");
-  const TContext = ts.factory.createIdentifier("TContext");
+export const createUseMutation = ({
+  node,
+  className,
+  method,
+  jsDoc = [],
+  isDeprecated = false,
+}: MethodDescription) => {
+  const methodName = getNameFromMethod(method);
+  const awaitedResponseDataType = generateAwaitedReturnType({
+    className,
+    methodName,
+  });
 
   const mutationResult = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createIdentifier(`${className}${capitalizeFirstLetter(methodName)}MutationResult`),
+    ts.factory.createIdentifier(
+      `${className}${capitalizeFirstLetter(methodName)}MutationResult`
+    ),
     undefined,
     awaitedResponseDataType
   );
@@ -44,22 +66,41 @@ export const createUseMutation = (
     undefined,
     TData,
     undefined,
-    ts.factory.createTypeReferenceNode(mutationResult.name)
+    ts.factory.createTypeReferenceNode(BuildCommonTypeName(mutationResult.name))
   );
 
   const methodParameters =
-    method.parameters.length !== 0
+    method.getParameters().length !== 0
       ? ts.factory.createTypeLiteralNode(
-          method.parameters.map((param) => {
-            return ts.factory.createPropertySignature(
-              undefined,
-              ts.factory.createIdentifier(param.name.getText(node)),
-              param.questionToken ?? param.initializer
-                ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-                : param.questionToken,
-              param.type
-            );
-          })
+          method
+            .getParameters()
+            .map((param) => {
+              const paramNodes = extractPropertiesFromObjectParam(param);
+              return paramNodes.map((refParam) =>
+                ts.factory.createPropertySignature(
+                  undefined,
+                  ts.factory.createIdentifier(refParam.name),
+                  refParam.optional
+                    ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+                    : undefined,
+                  // refParam.questionToken ?? refParam.initializer
+                  //   ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+                  //   : refParam.questionToken,
+                  ts.factory.createTypeReferenceNode(
+                    refParam.type.getText(param)
+                  )
+                )
+              );
+            })
+            .flat()
+          // return ts.factory.createPropertySignature(
+          //   undefined,
+          //   ts.factory.createIdentifier(param.getName()),
+          //   param.compilerNode.questionToken ?? param.compilerNode.initializer
+          //     ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+          //     : param.compilerNode.questionToken,
+          //   param.compilerNode.type
+          // );
         )
       : ts.factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword);
 
@@ -133,22 +174,29 @@ export const createUseMutation = (
                     ts.factory.createArrowFunction(
                       undefined,
                       undefined,
-                      method.parameters.length !== 0
+                      method.getParameters().length !== 0
                         ? [
                             ts.factory.createParameterDeclaration(
                               undefined,
                               undefined,
                               ts.factory.createObjectBindingPattern(
-                                method.parameters.map((param) => {
-                                  return ts.factory.createBindingElement(
-                                    undefined,
-                                    undefined,
-                                    ts.factory.createIdentifier(
-                                      param.name.getText(node)
-                                    ),
-                                    undefined
-                                  );
-                                })
+                                method
+                                  .getParameters()
+                                  .map((param) => {
+                                    const paramNodes =
+                                      extractPropertiesFromObjectParam(param);
+                                    return paramNodes.map((refParam) =>
+                                      ts.factory.createBindingElement(
+                                        undefined,
+                                        undefined,
+                                        ts.factory.createIdentifier(
+                                          refParam.name
+                                        ),
+                                        undefined
+                                      )
+                                    );
+                                  })
+                                  .flat()
                               ),
                               undefined,
                               undefined,
@@ -168,11 +216,26 @@ export const createUseMutation = (
                               ts.factory.createIdentifier(methodName)
                             ),
                             undefined,
-                            method.parameters.map((params) =>
-                              ts.factory.createIdentifier(
-                                params.name.getText(node)
-                              )
-                            )
+                            method.getParameters().length !== 0
+                              ? [
+                                  ts.factory.createObjectLiteralExpression(
+                                    method
+                                      .getParameters()
+                                      .map((params) => {
+                                        const paramNodes =
+                                          extractPropertiesFromObjectParam(
+                                            params
+                                          );
+                                        return paramNodes.map((refParam) =>
+                                          ts.factory.createShorthandPropertyAssignment(
+                                            refParam.name
+                                          )
+                                        );
+                                      })
+                                      .flat()
+                                  ),
+                                ]
+                              : []
                           ),
                           ts.factory.createKeywordTypeNode(
                             ts.SyntaxKind.UnknownKeyword
@@ -199,7 +262,10 @@ export const createUseMutation = (
     )
   );
 
-  const hookWithJsDoc = addJSDocToNode(exportHook, node, deprecated, jsDoc);
+  const hookWithJsDoc = addJSDocToNode(exportHook, node, isDeprecated, jsDoc);
 
-  return [mutationResult, hookWithJsDoc];
+  return {
+    mutationResult,
+    mutationHook: hookWithJsDoc,
+  };
 };

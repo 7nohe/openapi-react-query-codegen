@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { RawAxiosRequestHeaders } from "axios";
 
 import type { ApiRequestOptions } from "./ApiRequestOptions";
 import { CancelablePromise } from "./CancelablePromise";
@@ -12,7 +13,7 @@ const axiosInstance = axios.create({
   baseURL: "http://localhost:4010",
   headers: {
     // Your custom headers
-  },
+  } satisfies RawAxiosRequestHeaders,
 });
 
 // Add a request interceptor
@@ -60,12 +61,21 @@ export const request = <T>(
   return new CancelablePromise((resolve, reject, onCancel) => {
     onCancel(() => source.cancel("The user aborted a request."));
 
+    let formattedHeaders = options.headers as RawAxiosRequestHeaders;
+    if (options.mediaType) {
+      formattedHeaders = {
+        ...options.headers,
+        "Content-Type": options.mediaType,
+      } satisfies RawAxiosRequestHeaders;
+    }
+
     return axiosInstance
       .request({
         url: options.url,
         data: options.body,
         method: options.method,
         params: options.path,
+        headers: formattedHeaders,
         cancelToken: source.token,
       })
       .then((res) => {
