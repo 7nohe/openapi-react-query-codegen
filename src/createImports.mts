@@ -24,11 +24,31 @@ export const createImports = ({
     .getSourceFiles()
     .find((sourceFile) => sourceFile.getFilePath().includes("models.ts"));
 
+  const serviceFile = project
+    .getSourceFiles()
+    .find((sourceFile) => sourceFile.getFilePath().includes("services.ts"));
+
   if (!modelsFile) {
     throw new Error("No models file found");
   }
 
+  if (!serviceFile) {
+    throw new Error("No service file found");
+  }
+
   const modalNames = Array.from(modelsFile.getExportedDeclarations().keys());
+
+  const serviceExports = Array.from(
+    serviceFile.getExportedDeclarations().keys()
+  );
+
+  const serviceNames = serviceExports.filter((name) =>
+    name.endsWith(serviceEndName)
+  );
+
+  const serviceNamesData = serviceExports.filter((name) =>
+    name.endsWith("Data")
+  );
 
   return [
     ts.factory.createImportDeclaration(
@@ -77,48 +97,33 @@ export const createImports = ({
       ts.factory.createStringLiteral("@tanstack/react-query"),
       undefined
     ),
-    // import all class names from service file
-    ...uniqueClassNames.map((className) => {
-      return ts.factory.createImportDeclaration(
+    ts.factory.createImportDeclaration(
+      undefined,
+      ts.factory.createImportClause(
+        false,
         undefined,
-        ts.factory.createImportClause(
-          false,
-          undefined,
-          ts.factory.createNamedImports([
+        ts.factory.createNamedImports([
+          // import all class names from service file
+          ...serviceNames.map((serviceName) =>
             ts.factory.createImportSpecifier(
               false,
               undefined,
-              ts.factory.createIdentifier(className)
-            ),
-          ])
-        ),
-        ts.factory.createStringLiteral(join("../requests")),
-        undefined
-      );
-    }),
-    // import all data objects from service file
-    ...uniqueClassNames.map((className) => {
-      // remove serviceEndName from the end of class name
-      // TODO: we should use a better way to remove the serviceEndName  from the end of the class name
-      const classNameData = className.replace(serviceEndName, "");
-
-      return ts.factory.createImportDeclaration(
-        undefined,
-        ts.factory.createImportClause(
-          false,
-          undefined,
-          ts.factory.createNamedImports([
+              ts.factory.createIdentifier(serviceName)
+            )
+          ),
+          // import all data objects from service file
+          ...serviceNamesData.map((dataName) =>
             ts.factory.createImportSpecifier(
               false,
               undefined,
-              ts.factory.createIdentifier(`${classNameData}Data`)
-            ),
-          ])
-        ),
-        ts.factory.createStringLiteral(join("../requests")),
-        undefined
-      );
-    }),
+              ts.factory.createIdentifier(dataName)
+            )
+          ),
+        ])
+      ),
+      ts.factory.createStringLiteral(join("../requests")),
+      undefined
+    ),
     // import all the models by name
     ts.factory.createImportDeclaration(
       undefined,
