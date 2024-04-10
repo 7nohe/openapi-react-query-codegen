@@ -10,7 +10,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rimraf dist && tsc -p tsconfig.json",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
     "prepublishOnly": "npm run build",
     "release": "npx git-ensure -a && npx bumpp --commit --tag --push"
@@ -41,6 +41,7 @@
     "@types/node": "^20.10.6",
     "commander": "^12.0.0",
     "glob": "^10.3.10",
+    "rimraf": "^5.0.5",
     "ts-morph": "^22.0.0",
     "typescript": "^5.3.3"
   },

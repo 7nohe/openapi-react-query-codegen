@@ -20,6 +20,9 @@ importers:
       glob:
         specifier: ^10.3.10
         version: 10.3.12
+      rimraf:
+        specifier: ^5.0.5
+        version: 5.0.5
       ts-morph:
         specifier: ^22.0.0
         version: 22.0.0
@@ -2948,6 +2951,14 @@ packages:
   /reusify@1.0.4:
     resolution: {integrity: sha512-U9nH88a3fc/ekCF1l0/UP1IosiuIjyTh7hBvXVMHYgVcfGvt897Xguj2UOLDeI5BG2m7/uwyaLVT6fbtCwTyzw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
+    dev: true
+
+  /rimraf@5.0.5:
+    resolution: {integrity: sha512-CqDakW+hMe/Bz202FPEymy68P+G50RfMQK+Qo5YUqc9SPipvbGjCGKd0RSKEelbsfQuw3g5NZDSrlZZAJurH1A==}
+    engines: {node: '>=14'}
+    hasBin: true
+    dependencies:
+      glob: 10.3.12
     dev: true
 
   /rollup@4.13.2:
