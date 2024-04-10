@@ -102,7 +102,7 @@ You can also use pure TS clients.
 
 ```tsx
 import { useQuery } from "@tanstack/react-query";
-import { PetService } from "../openapi/requests/services/PetService";
+import { PetService } from "../openapi/requests/services";
 import { usePetServiceFindPetsByStatusKey } from "../openapi/queries";
 
 function App() {
