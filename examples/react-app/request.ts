@@ -18,14 +18,26 @@ const axiosInstance = axios.create({
 
 // Add a request interceptor
 axiosInstance.interceptors.request.use(
-  function (config) {
-    // Do something before request is sent
-    return config;
-  },
-  function (error) {
-    // Do something with request error
-    return Promise.reject(error);
-  }
+    function (config) {
+        // Do something before request is sent
+        if (!config.url || !config.params) {
+            return config;
+        }
+
+        Object.entries<any>(config.params).forEach(([key, value]) => {
+            const stringToSearch = `{${key}}`;
+            if(config.url !== undefined && config.url.search(stringToSearch) !== -1) {
+                config.url = config.url.replace(`{${key}}`, encodeURIComponent(value));
+                delete config.params[key];
+            }
+        });
+
+        return  config;
+    },
+    function (error) {
+        // Do something with request error
+        return Promise.reject(error);
+    }
 );
 
 // Add a response interceptor
@@ -62,6 +74,7 @@ export const request = <T>(
         url: options.url,
         data: options.body,
         method: options.method,
+        params: options.path,
         headers: formattedHeaders,
         cancelToken: source.token,
       })
