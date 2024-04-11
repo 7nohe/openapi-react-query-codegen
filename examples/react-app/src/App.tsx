@@ -15,6 +15,9 @@ function App() {
   const [limit, _setLimit] = useState<number>(10);
 
   const { data, error, refetch } = useDefaultServiceFindPets({ tags, limit });
+  // This is an example of using a hook that has all parameters optional;
+  // Here we do not have to pass in an object
+  const {} = useDefaultServiceFindPets();
 
   // This is an example of a query that is not defined in the OpenAPI spec
   // this defaults to any - here we are showing how to override the type

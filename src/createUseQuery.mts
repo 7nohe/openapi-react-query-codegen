@@ -79,47 +79,50 @@ export function getRequestParamFromMethod(method: MethodDeclaration) {
 
   // we need to get the properties of the object
 
+  const params = method
+    .getParameters()
+    .map((param) => {
+      const paramNodes = extractPropertiesFromObjectParam(param);
+      return paramNodes.map((refParam) => ({
+        name: refParam.name,
+        typeName: refParam.type.getText(),
+        optional: refParam.optional,
+      }));
+    })
+    .flat();
+
+  const areAllOptional = params.every((param) => param.optional);
+
   return ts.factory.createParameterDeclaration(
     undefined,
     undefined,
     ts.factory.createObjectBindingPattern(
-      method
-        .getParameters()
-        .map((param) => {
-          const paramNodes = extractPropertiesFromObjectParam(param);
-          return paramNodes.map((refParam) =>
-            ts.factory.createBindingElement(
-              undefined,
-              undefined,
-              ts.factory.createIdentifier(refParam.name),
-              undefined
-            )
-          );
-        })
-        .flat()
+      params.map((refParam) =>
+        ts.factory.createBindingElement(
+          undefined,
+          undefined,
+          ts.factory.createIdentifier(refParam.name),
+          undefined
+        )
+      )
     ),
     undefined,
     ts.factory.createTypeLiteralNode(
-      method
-        .getParameters()
-        .map((param) => {
-          const paramNodes = extractPropertiesFromObjectParam(param);
-          return paramNodes.map((refParam) => {
-            return ts.factory.createPropertySignature(
-              undefined,
-              ts.factory.createIdentifier(refParam.name),
-              refParam.optional
-                ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-                : undefined,
-              // param.hasQuestionToken() ?? param.getInitializer()?.compilerNode
-              //   ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-              //   : param.getQuestionTokenNode()?.compilerNode,
-              ts.factory.createTypeReferenceNode(refParam.type.getText())
-            );
-          });
-        })
-        .flat()
-    )
+      params.map((refParam) => {
+        return ts.factory.createPropertySignature(
+          undefined,
+          ts.factory.createIdentifier(refParam.name),
+          refParam.optional
+            ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+            : undefined,
+          // param.hasQuestionToken() ?? param.getInitializer()?.compilerNode
+          //   ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
+          //   : param.getQuestionTokenNode()?.compilerNode,
+          ts.factory.createTypeReferenceNode(refParam.typeName)
+        );
+      })
+    ),
+    areAllOptional ? ts.factory.createObjectLiteralExpression() : undefined
   );
 }
 
