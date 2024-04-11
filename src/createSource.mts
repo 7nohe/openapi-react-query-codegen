@@ -20,10 +20,10 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
   const service = await getServices(project);
 
   const imports = createImports({
-    service,
     serviceEndName,
     project,
   });
+
   const exports = createExports(service);
 
   const commonSource = ts.factory.createSourceFile(

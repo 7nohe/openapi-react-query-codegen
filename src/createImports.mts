@@ -1,25 +1,16 @@
 import ts from "typescript";
 import { posix } from "path";
-import { Service } from "./service.mjs";
 import { Project } from "ts-morph";
 
 const { join } = posix;
 
 export const createImports = ({
-  service,
   serviceEndName,
   project,
 }: {
-  service: Service;
   serviceEndName: string;
   project: Project;
 }) => {
-  const { klasses } = service;
-  // get all class names
-  const classNames = klasses.map(({ className }) => className);
-  // remove duplicates
-  const uniqueClassNames = [...new Set(classNames)];
-
   const modelsFile = project
     .getSourceFiles()
     .find((sourceFile) => sourceFile.getFilePath().includes("models.ts"));
