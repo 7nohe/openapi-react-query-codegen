@@ -72,12 +72,19 @@ export const createApiResponseType = ({
   };
 };
 
+/**
+ * Replace the import("...") surrounding the type if there is one.
+ * This can happen when the type is imported from another file, but
+ * we are already importing all the types from that file.
+ */
+function getShortType(type: string) {
+  return type.replaceAll(/import\("[a-zA-Z\/\.-]*"\)\./g, "");
+}
+
 export function getRequestParamFromMethod(method: MethodDeclaration) {
   if (!method.getParameters().length) {
     return null;
   }
-
-  // we need to get the properties of the object
 
   const params = method
     .getParameters()
@@ -85,13 +92,13 @@ export function getRequestParamFromMethod(method: MethodDeclaration) {
       const paramNodes = extractPropertiesFromObjectParam(param);
       return paramNodes.map((refParam) => ({
         name: refParam.name,
-        typeName: refParam.type.getText(),
+        typeName: getShortType(refParam.type.getText()),
         optional: refParam.optional,
       }));
     })
     .flat();
 
-  const areAllOptional = params.every((param) => param.optional);
+  const areAllPropertiesOptional = params.every((param) => param.optional);
 
   return ts.factory.createParameterDeclaration(
     undefined,
@@ -122,7 +129,11 @@ export function getRequestParamFromMethod(method: MethodDeclaration) {
         );
       })
     ),
-    areAllOptional ? ts.factory.createObjectLiteralExpression() : undefined
+    // if all params are optional, we create an empty object literal
+    // so the hook can be called without any parameters
+    areAllPropertiesOptional
+      ? ts.factory.createObjectLiteralExpression()
+      : undefined
   );
 }
 
