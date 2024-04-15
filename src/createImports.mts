@@ -21,8 +21,8 @@ export const createImports = ({
 
   if (!modelsFile) {
     console.warn(`
-WARNING: No models file found.
-This may be an error if you \`.components.schemas\` or \`.components.parameters\` is defined in your OpenAPI input.`);
+⚠️ WARNING: No models file found.
+  This may be an error if \`.components.schemas\` or \`.components.parameters\` is defined in your OpenAPI input.`);
   }
 
   if (!serviceFile) {
