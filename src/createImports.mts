@@ -20,14 +20,18 @@ export const createImports = ({
     .find((sourceFile) => sourceFile.getFilePath().includes("services.ts"));
 
   if (!modelsFile) {
-    throw new Error("No models file found");
+    console.warn(`
+WARNING: No models file found.
+This may be an error if you \`.components.schemas\` or \`.components.parameters\` is defined in your OpenAPI input.`);
   }
 
   if (!serviceFile) {
     throw new Error("No service file found");
   }
 
-  const modalNames = Array.from(modelsFile.getExportedDeclarations().keys());
+  const modelNames = modelsFile
+    ? Array.from(modelsFile.getExportedDeclarations().keys())
+    : [];
 
   const serviceExports = Array.from(
     serviceFile.getExportedDeclarations().keys()
@@ -41,7 +45,7 @@ export const createImports = ({
     name.endsWith("Data")
   );
 
-  return [
+  const imports = [
     ts.factory.createImportDeclaration(
       undefined,
       ts.factory.createImportClause(
@@ -115,24 +119,29 @@ export const createImports = ({
       ts.factory.createStringLiteral(join("../requests")),
       undefined
     ),
-    // import all the models by name
-    ts.factory.createImportDeclaration(
-      undefined,
-      ts.factory.createImportClause(
-        false,
-        undefined,
-        ts.factory.createNamedImports([
-          ...modalNames.map((modelName) =>
-            ts.factory.createImportSpecifier(
-              false,
-              undefined,
-              ts.factory.createIdentifier(modelName)
-            )
-          ),
-        ])
-      ),
-      ts.factory.createStringLiteral(join("../requests/models")),
-      undefined
-    ),
   ];
+  if (modelsFile) {
+    // import all the models by name
+    imports.push(
+      ts.factory.createImportDeclaration(
+        undefined,
+        ts.factory.createImportClause(
+          false,
+          undefined,
+          ts.factory.createNamedImports([
+            ...modelNames.map((modelName) =>
+              ts.factory.createImportSpecifier(
+                false,
+                undefined,
+                ts.factory.createIdentifier(modelName)
+              )
+            ),
+          ])
+        ),
+        ts.factory.createStringLiteral(join("../requests/models")),
+        undefined
+      )
+    );
+  }
+  return imports;
 };
