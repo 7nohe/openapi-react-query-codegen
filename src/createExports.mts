@@ -6,11 +6,36 @@ export const createExports = (service: Service) => {
   const { klasses } = service;
   const methods = klasses.map((k) => k.methods).flat();
 
-  const allGet = methods.filter((m) => m.httpMethodName === "'GET'");
-  const allPost = methods.filter((m) => m.httpMethodName === "'POST'");
+  const allGet = methods.filter(
+    (m) => m.httpMethodName.toUpperCase() === "'GET'"
+  );
+  const allPost = methods.filter(
+    (m) => m.httpMethodName.toUpperCase() === "'POST'"
+  );
+  const allPut = methods.filter(
+    (m) => m.httpMethodName.toUpperCase() === "'PUT'"
+  );
+  const allPatch = methods.filter(
+    (m) => m.httpMethodName.toUpperCase() === "'PATCH'"
+  );
+  const allDelete = methods.filter(
+    (m) => m.httpMethodName.toUpperCase() === "'DELETE'"
+  );
 
-  const allQueries = allGet.map((m) => createUseQuery(m));
-  const allMutations = allPost.map((m) => createUseMutation(m));
+  const allGetQueries = allGet.map((m) => createUseQuery(m));
+
+  const allPostMutations = allPost.map((m) => createUseMutation(m));
+  const allPutMutations = allPut.map((m) => createUseMutation(m));
+  const allPatchMutations = allPatch.map((m) => createUseMutation(m));
+  const allDeleteMutations = allDelete.map((m) => createUseMutation(m));
+
+  const allQueries = [...allGetQueries];
+  const allMutations = [
+    ...allPostMutations,
+    ...allPutMutations,
+    ...allPatchMutations,
+    ...allDeleteMutations,
+  ];
 
   const commonInQueries = allQueries
     .map(({ apiResponse, returnType, key }) => [apiResponse, returnType, key])
