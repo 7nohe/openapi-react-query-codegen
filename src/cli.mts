@@ -45,7 +45,12 @@ async function setupProgram() {
       "--base <value>",
       "Manually set base in OpenAPI config instead of inferring from server value"
     )
-    .option("--enums", "Generate JavaScript objects from enum definitions?")
+    .addOption(
+      new Option(
+        "--enums <value>",
+        "Generate JavaScript objects from enum definitions?"
+      ).choices(["javascript", "typescript"])
+    )
     .option(
       "--useDateType",
       "Use Date type instead of string for date types for models, this will not convert the data to a Date object"

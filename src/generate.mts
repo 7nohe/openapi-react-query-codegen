@@ -25,6 +25,8 @@ export async function generate(options: UserConfig, version: string) {
         (acc as any)[typedKey] = true;
       } else if (value === "false") {
         (acc as any)[typedKey] = false;
+      } else {
+        (acc as any)[typedKey] = typedValue;
       }
       return acc;
     },

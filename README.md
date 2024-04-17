@@ -46,7 +46,7 @@ Options:
   -c, --client <value>       HTTP client to generate [fetch, xhr, node, axios, angular] (default: "fetch")
   --request <value>          Path to custom request file
   --useDateType              Use Date type instead of string for date types for models, this will not convert the data to a Date object
-  --enums                    Generate JavaScript objects from enum definitions?
+  --enums <value>            Generate JavaScript objects from enum definitions? ['javascript', 'typescript']
   --base <value>             Manually set base in OpenAPI config instead of inferring from server value
   --serviceResponse <value>  Define shape of returned value from service calls ['body', 'generics', 'response']
   --operationId              Use operation ID to generate operation names?
