@@ -54,7 +54,7 @@ async function setupProgram() {
 
   const options = program.opts<LimitedUserConfig>();
 
-  generate(options, version);
+  await generate(options, version);
 }
 
 setupProgram();

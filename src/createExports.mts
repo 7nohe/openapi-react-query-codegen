@@ -6,20 +6,20 @@ export const createExports = (service: Service) => {
   const { klasses } = service;
   const methods = klasses.map((k) => k.methods).flat();
 
-  const allGet = methods.filter(
-    (m) => m.httpMethodName.toUpperCase() === "'GET'"
+  const allGet = methods.filter((m) =>
+    m.httpMethodName.toUpperCase().includes("GET")
   );
-  const allPost = methods.filter(
-    (m) => m.httpMethodName.toUpperCase() === "'POST'"
+  const allPost = methods.filter((m) =>
+    m.httpMethodName.toUpperCase().includes("POST")
   );
-  const allPut = methods.filter(
-    (m) => m.httpMethodName.toUpperCase() === "'PUT'"
+  const allPut = methods.filter((m) =>
+    m.httpMethodName.toUpperCase().includes("PUT")
   );
-  const allPatch = methods.filter(
-    (m) => m.httpMethodName.toUpperCase() === "'PATCH'"
+  const allPatch = methods.filter((m) =>
+    m.httpMethodName.toUpperCase().includes("PATCH")
   );
-  const allDelete = methods.filter(
-    (m) => m.httpMethodName.toUpperCase() === "'DELETE'"
+  const allDelete = methods.filter((m) =>
+    m.httpMethodName.toUpperCase().includes("DELETE")
   );
 
   const allGetQueries = allGet.map((m) => createUseQuery(m));
