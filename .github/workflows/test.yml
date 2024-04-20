@@ -44,3 +44,6 @@ jobs:
 
       - name: Run tsc
         run: pnpm --filter @7nohe/react-app test:generated
+
+      - name: Run biome
+        run: pnpm biome check .
