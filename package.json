@@ -11,7 +11,8 @@
     "build": "rimraf dist && tsc -p tsconfig.json",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
     "prepublishOnly": "npm run build",
-    "release": "npx git-ensure -a && npx bumpp --commit --tag --push"
+    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -41,7 +42,8 @@
     "lefthook": "^1.6.10",
     "rimraf": "^5.0.5",
     "ts-morph": "^22.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^1.5.0"
   },
   "peerDependencies": {
     "@hey-api/openapi-ts": "0.36.0",

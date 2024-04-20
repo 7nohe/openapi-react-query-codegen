@@ -48,3 +48,6 @@ jobs:
       - name: Run biome
         run: pnpm biome check .
         if: ${{ matrix.os == 'ubuntu-latest' }}
+
+      - name: Run test
+        run: pnpm test
