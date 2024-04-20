@@ -35,8 +35,12 @@ jobs:
       - name: Setup git
         run: git config --global user.email "support+actions@github.com" && git config --global user.name "github-actions-bot"
 
+      - name: random id for version
+        id: random_id
+        run: echo "::set-output name=id::$(date +%s)"
+
       - name: npm version
-        run: npm version prerelease --preid=canary
+        run: npm version prerelease --preid=${{ steps.random_id.outputs.id }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -44,10 +48,17 @@ jobs:
         uses: maxgfr/github-change-json@main
         with:
           key: "name"
-          value: "@${{ github.repository_owner }}/${{ github.repository_name }}"
+          value: "@${{ github.repository }}"
           path: package.json
-          commit: false # it will not commit the change
 
-      - run: pnpm publish --no-git-checks
+      - name: Modify repository of the package.json
+        uses: maxgfr/github-change-json@main
+        with:
+          value: '{"type": "git","url": "@${{ github.repositoryUrl }}"}'
+          path: package.json
+          key: "repository"
+
+      # publish to npm tag as next
+      - run: pnpm publish --no-git-checks --tag next
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
