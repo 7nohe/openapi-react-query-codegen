@@ -1,0 +1,53 @@
+name: release
+
+permissions:
+  contents: write
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  release:
+    if: ${{ github.event.issue.pull_request && github.event.comment.body == '/release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Setup git
+        run: git config --global user.email "support+actions@github.com" && git config --global user.name "github-actions-bot"
+
+      - name: npm version
+        run: npm version prerelease --preid=canary
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Modify name of the package.json
+        uses: maxgfr/github-change-json@main
+        with:
+          key: "name"
+          value: "@${{ github.repository_owner }}/${{ github.repository_name }}"
+          path: package.json
+          commit: false # it will not commit the change
+
+      - run: pnpm publish --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
