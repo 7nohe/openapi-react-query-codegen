@@ -316,9 +316,6 @@ function createQueryHook({
                       ts.factory.createLiteralTypeNode(
                         ts.factory.createStringLiteral("queryFn")
                       ),
-                      ts.factory.createLiteralTypeNode(
-                        ts.factory.createStringLiteral("initialData")
-                      ),
                     ]),
                   ]
                 )
