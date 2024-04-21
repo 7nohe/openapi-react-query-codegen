@@ -7,9 +7,9 @@ export default defineConfig({
       exclude: ['src/cli.mts', 'examples/**'],
       reportOnFailure: true,
       thresholds: {
-        lines: 85,
-        functions: 85,
-        statements: 85,
+        lines: 95,
+        functions: 95,
+        statements: 95,
         branches: 85,
       }
     }

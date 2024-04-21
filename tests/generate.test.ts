@@ -17,6 +17,8 @@ describe("generate", () => {
     const options: UserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
+      lint: true,
+      format: false,
     };
     await generate(options, "1.0.0");
   });
