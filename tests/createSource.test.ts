@@ -1,17 +1,15 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createSource } from '../src/createSource.mjs'
-import path from "path";
-import { cleanOutputs, generateTSClients } from "./utils";
-const outputPath = path.join("tests", "outputs");
+import { cleanOutputs, generateTSClients, outputPath } from "./utils";
 const fileName = "createSource";
 describe(fileName, () => {
   beforeAll(async () => await generateTSClients(fileName));
-  afterAll(() => cleanOutputs(fileName));
+  afterAll(async () => await cleanOutputs(fileName));
 
 
   test("createSource", async () => {
     const source = await createSource({
-      outputPath,
+      outputPath: outputPath(fileName),
       version: "1.0.0",
       serviceEndName: "Service",
     });

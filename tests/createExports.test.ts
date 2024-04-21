@@ -1,20 +1,21 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { cleanOutputs, generateTSClients } from "./utils";
+import { cleanOutputs, generateTSClients, outputPath } from "./utils";
 import { Project, SyntaxKind } from "ts-morph";
 import { createExports } from "../src/createExports.mts";
 import { getServices } from "../src/service.mts";
+import path from "path";
 
 const fileName = "createExports"
 
 describe(fileName, () => {
   beforeAll(async () => await generateTSClients(fileName));
-  afterAll(() => cleanOutputs(fileName));
+  afterAll(async () => await cleanOutputs(fileName));
 
   test("createExports", async () => {
     const project = new Project({
       skipAddingFilesFromTsConfig: true,
     });
-    project.addSourceFilesAtPaths(`tests/${fileName}-outputs/**/*`);
+    project.addSourceFilesAtPaths(path.join(outputPath(fileName), '**', '*'));
     const service = await getServices(project);
     const exports = createExports(service);
 
