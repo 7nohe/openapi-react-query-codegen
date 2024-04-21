@@ -1,8 +1,9 @@
-import { readFileSync, rmdirSync } from "node:fs";
+import { existsSync, readFileSync, rmdirSync } from "node:fs";
 import path from "node:path";
 import type { UserConfig } from "@hey-api/openapi-ts";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { generate } from "../src/generate.mjs";
+import { cleanOutputs } from "./utils";
 
 const readOutput = (fileName: string) => {
   return readFileSync(
@@ -21,8 +22,9 @@ describe("generate", () => {
   });
 
   afterAll(() => {
-    // cleanup
-    rmdirSync(path.join(__dirname, "outputs"), { recursive: true });
+    if (existsSync(path.join(__dirname, 'outputs'))) {
+      rmdirSync(path.join(__dirname, 'outputs'), { recursive: true });
+    }
   });
 
   test("common.ts", () => {
