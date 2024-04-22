@@ -47,3 +47,7 @@ jobs:
 
       - name: Run test
         run: pnpm test
+
+      - name: Report coverage
+        if: always() && matrix.os == 'ubuntu-latest'
+        uses:  davelosert/vitest-coverage-report-action@v2

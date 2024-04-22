@@ -1,0 +1,82 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`createSource > createSource 1`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+export * from "./common";
+export * from "./queries";
+"
+`;
+
+exports[`createSource > createSource 2`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { DefaultService, DefaultData } from "../requests";
+import { Pet, NewPet, Error } from "../requests/models";
+export type DefaultServiceFindPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPets>>;
+export type DefaultServiceFindPetsQueryResult<TData = DefaultServiceFindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+export const useDefaultServiceFindPetsKey = "DefaultServiceFindPets";
+export type DefaultServiceGetNotDefinedDefaultResponse = Awaited<ReturnType<typeof DefaultService.getNotDefined>>;
+export type DefaultServiceGetNotDefinedQueryResult<TData = DefaultServiceGetNotDefinedDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+export const useDefaultServiceGetNotDefinedKey = "DefaultServiceGetNotDefined";
+export type DefaultServiceFindPetByIdDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPetById>>;
+export type DefaultServiceFindPetByIdQueryResult<TData = DefaultServiceFindPetByIdDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+export const useDefaultServiceFindPetByIdKey = "DefaultServiceFindPetById";
+export type DefaultServiceAddPetMutationResult = Awaited<ReturnType<typeof DefaultService.addPet>>;
+export type DefaultServicePostNotDefinedMutationResult = Awaited<ReturnType<typeof DefaultService.postNotDefined>>;
+export type DefaultServiceDeletePetMutationResult = Awaited<ReturnType<typeof DefaultService.deletePet>>;
+"
+`;
+
+exports[`createSource > createSource 3`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+import * as Common from "./common";
+import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { DefaultService, DefaultData } from "../requests";
+import { Pet, NewPet, Error } from "../requests/models";
+export const useDefaultServiceFindPets = <TData = Common.DefaultServiceFindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
+    limit?: number;
+    tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetsKey, ...(queryKey ?? [{ limit, tags }])], queryFn: () => DefaultService.findPets({ limit, tags }) as TData, ...options });
+/**
+ * @deprecated
+ */
+export const useDefaultServiceGetNotDefined = <TData = Common.DefaultServiceGetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: [Common.useDefaultServiceGetNotDefinedKey, ...(queryKey ?? [])], queryFn: () => DefaultService.getNotDefined() as TData, ...options });
+export const useDefaultServiceFindPetById = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
+    id: number;
+}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetByIdKey, ...(queryKey ?? [{ id }])], queryFn: () => DefaultService.findPetById({ id }) as TData, ...options });
+export const useDefaultServiceAddPet = <TData = Common.DefaultServiceAddPetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
+    requestBody: NewPet;
+}, TContext>, "mutationFn">) => useMutation<TData, TError, {
+    requestBody: NewPet;
+}, TContext>({ mutationFn: ({ requestBody }) => DefaultService.addPet({ requestBody }) as unknown as Promise<TData>, ...options });
+/**
+ * @deprecated
+ */
+export const useDefaultServicePostNotDefined = <TData = Common.DefaultServicePostNotDefinedMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, void, TContext>, "mutationFn">) => useMutation<TData, TError, void, TContext>({ mutationFn: () => DefaultService.postNotDefined() as unknown as Promise<TData>, ...options });
+export const useDefaultServiceDeletePet = <TData = Common.DefaultServiceDeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
+    id: number;
+}, TContext>, "mutationFn">) => useMutation<TData, TError, {
+    id: number;
+}, TContext>({ mutationFn: ({ id }) => DefaultService.deletePet({ id }) as unknown as Promise<TData>, ...options });
+"
+`;
+
+exports[`createSource > createSource 4`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+import * as Common from "./common";
+import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { DefaultService, DefaultData } from "../requests";
+import { Pet, NewPet, Error } from "../requests/models";
+export const useDefaultServiceFindPetsSuspense = <TData = Common.DefaultServiceFindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
+    limit?: number;
+    tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetsKey, ...(queryKey ?? [{ limit, tags }])], queryFn: () => DefaultService.findPets({ limit, tags }) as TData, ...options });
+/**
+ * @deprecated
+ */
+export const useDefaultServiceGetNotDefinedSuspense = <TData = Common.DefaultServiceGetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: [Common.useDefaultServiceGetNotDefinedKey, ...(queryKey ?? [])], queryFn: () => DefaultService.getNotDefined() as TData, ...options });
+export const useDefaultServiceFindPetByIdSuspense = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
+    id: number;
+}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetByIdKey, ...(queryKey ?? [{ id }])], queryFn: () => DefaultService.findPetById({ id }) as TData, ...options });
+"
+`;

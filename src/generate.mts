@@ -19,12 +19,12 @@ export async function generate(options: UserConfig, version: string) {
       const typedKey = key as keyof UserConfig;
       const typedValue = value as (typeof options)[keyof UserConfig];
       const parsedNumber = safeParseNumber(typedValue);
-      if (!isNaN(parsedNumber)) {
-        (acc as any)[typedKey] = parsedNumber;
-      } else if (value === "true") {
+      if (value === "true" || value === true) {
         (acc as any)[typedKey] = true;
-      } else if (value === "false") {
+      } else if (value === "false" || value === false) {
         (acc as any)[typedKey] = false;
+      } else if (!isNaN(parsedNumber)) {
+          (acc as any)[typedKey] = parsedNumber;
       } else {
         (acc as any)[typedKey] = typedValue;
       }

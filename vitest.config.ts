@@ -1,5 +1,17 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  test: {},
+  test: {
+    coverage: {
+      reporter: ['text', 'json-summary', 'json', 'html'],
+      exclude: ['src/cli.mts', 'examples/**'],
+      reportOnFailure: true,
+      thresholds: {
+        lines: 95,
+        functions: 95,
+        statements: 95,
+        branches: 85,
+      }
+    }
+  },
 });

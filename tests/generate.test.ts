@@ -1,13 +1,14 @@
-import { readFileSync, rmdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { UserConfig } from "@hey-api/openapi-ts";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { generate } from "../src/generate.mjs";
+import { rmdir } from "node:fs/promises";
 
 const readOutput = (fileName: string) => {
   return readFileSync(
     path.join(__dirname, "outputs", "queries", fileName),
-    "utf-8",
+    "utf-8"
   );
 };
 
@@ -16,13 +17,16 @@ describe("generate", () => {
     const options: UserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
+      lint: true,
+      format: false,
     };
     await generate(options, "1.0.0");
   });
 
-  afterAll(() => {
-    // cleanup
-    rmdirSync(path.join(__dirname, "outputs"), { recursive: true });
+  afterAll(async () => {
+    if (existsSync(path.join(__dirname, "outputs"))) {
+      await rmdir(path.join(__dirname, "outputs"), { recursive: true });
+    }
   });
 
   test("common.ts", () => {
