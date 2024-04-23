@@ -1,6 +1,11 @@
 import ts from "typescript";
 import { ClassDeclaration, Project, SourceFile } from "ts-morph";
-import { MethodDescription } from "./common.mjs";
+import {
+  MethodDescription,
+  getClassNameFromClassNode,
+  getClassesFromService,
+} from "./common.mjs";
+import { serviceFileName } from "./constants.mjs";
 
 export type Service = {
   node: SourceFile;
@@ -14,7 +19,7 @@ export type Service = {
 export async function getServices(project: Project): Promise<Service> {
   const node = project
     .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes("services.ts"));
+    .find((sourceFile) => sourceFile.getFilePath().includes(serviceFileName));
 
   if (!node) {
     throw new Error("No service node found");
@@ -29,34 +34,6 @@ export async function getServices(project: Project): Promise<Service> {
     })),
     node,
   } satisfies Service;
-}
-
-function getClassesFromService(node: SourceFile) {
-  const klasses = node.getClasses();
-
-  if (!klasses.length) {
-    throw new Error("No classes found");
-  }
-
-  return klasses.map((klass) => {
-    const className = klass.getName();
-    if (!className) {
-      throw new Error("Class name not found");
-    }
-    return {
-      className,
-      klass,
-    };
-  });
-}
-
-function getClassNameFromClassNode(klass: ClassDeclaration) {
-  const className = klass.getName();
-
-  if (!className) {
-    throw new Error("Class name not found");
-  }
-  return className;
 }
 
 function getMethodsFromService(node: SourceFile, klass: ClassDeclaration) {
@@ -106,7 +83,13 @@ function getMethodsFromService(node: SourceFile, klass: ClassDeclaration) {
     };
 
     const children = getAllChildren(method.compilerNode);
-    const jsDoc = method.getJsDocs().map((jsDoc) => jsDoc);
+    // get all JSDoc comments
+    // this should be an array of 1 or 0
+    const jsDocs = children
+      .filter((c) => c.kind === ts.SyntaxKind.JSDoc)
+      .map((c) => c.getText(node.compilerNode));
+    // get the first JSDoc comment
+    const jsDoc = jsDocs?.[0];
     const isDeprecated = children.some(
       (c) => c.kind === ts.SyntaxKind.JSDocDeprecatedTag
     );

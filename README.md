@@ -45,13 +45,16 @@ Options:
   -o, --output <value>       Output directory (default: "openapi")
   -c, --client <value>       HTTP client to generate [fetch, xhr, node, axios, angular] (default: "fetch")
   --request <value>          Path to custom request file
-  --useDateType              Use Date type instead of string for date types for models, this will not convert the data to a Date object
-  --enums <value>            Generate JavaScript objects from enum definitions? ['javascript', 'typescript']
-  --base <value>             Manually set base in OpenAPI config instead of inferring from server value
-  --serviceResponse <value>  Define shape of returned value from service calls ['body', 'generics', 'response']
+  --format <value>           Process output folder with formatter? ['biome', 'prettier']
+  --lint   <value>           Process output folder with linter? ['eslint', 'biome']
   --operationId              Use operation ID to generate operation names?
-  --lint                     Process output folder with linter?
-  --format                   Process output folder with formatter?
+  --serviceResponse <value>  Define shape of returned value from service calls ['body', 'generics', 'response']
+  --base <value>             Manually set base in OpenAPI config instead of inferring from server value
+  --enums <value>            Generate JavaScript objects from enum definitions? ['javascript', 'typescript']
+  --useDateType              Use Date type instead of string for date types for models, this will not convert the data to a Date object
+  --debug                    Enable debug mode
+  --noSchemas                Disable generating schemas for request and response objects
+  --schemaTypes <value>      Define the type of schema generation ['form', 'json'] (default: "json")
   -h, --help                 display help for command
 ```
 
@@ -86,11 +89,7 @@ function App() {
   return (
     <div className="App">
       <h1>Pet List</h1>
-      <ul>
-        {data?.map((pet) => (
-          <li key={pet.id}>{pet.name}</li>
-        ))}
-      </ul>
+      <ul>{data?.map((pet) => <li key={pet.id}>{pet.name}</li>)}</ul>
     </div>
   );
 }
@@ -129,13 +128,7 @@ import { useDefaultClientFindPetsSuspense } from "../openapi/queries/suspense";
 function ChildComponent() {
   const { data } = useDefaultClientFindPetsSuspense({ tags: [], limit: 10 });
 
-  return (
-    <ul>
-      {data?.map((pet, index) => (
-        <li key={pet.id}>{pet.name}</li>
-      ))}
-    </ul>
-  );
+  return <ul>{data?.map((pet, index) => <li key={pet.id}>{pet.name}</li>)}</ul>;
 }
 
 function ParentComponent() {

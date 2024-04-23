@@ -1,6 +1,7 @@
 import ts from "typescript";
 import { posix } from "path";
 import { Project } from "ts-morph";
+import { modalsFileName, serviceFileName } from "./constants.mjs";
 
 const { join } = posix;
 
@@ -13,20 +14,14 @@ export const createImports = ({
 }) => {
   const modelsFile = project
     .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes("models.ts"));
+    .find((sourceFile) => sourceFile.getFilePath().includes(modalsFileName));
 
-  const serviceFile = project
-    .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes("services.ts"));
+  const serviceFile = project.getSourceFileOrThrow(`${serviceFileName}.ts`);
 
   if (!modelsFile) {
     console.warn(`
 ⚠️ WARNING: No models file found.
   This may be an error if \`.components.schemas\` or \`.components.parameters\` is defined in your OpenAPI input.`);
-  }
-
-  if (!serviceFile) {
-    throw new Error("No service file found");
   }
 
   const modelNames = modelsFile
@@ -39,10 +34,6 @@ export const createImports = ({
 
   const serviceNames = serviceExports.filter((name) =>
     name.endsWith(serviceEndName)
-  );
-
-  const serviceNamesData = serviceExports.filter((name) =>
-    name.endsWith("Data")
   );
 
   const imports = [
@@ -106,17 +97,9 @@ export const createImports = ({
               ts.factory.createIdentifier(serviceName)
             )
           ),
-          // import all data objects from service file
-          ...serviceNamesData.map((dataName) =>
-            ts.factory.createImportSpecifier(
-              false,
-              undefined,
-              ts.factory.createIdentifier(dataName)
-            )
-          ),
         ])
       ),
-      ts.factory.createStringLiteral(join("../requests")),
+      ts.factory.createStringLiteral(join("../requests", serviceFileName)),
       undefined
     ),
   ];
@@ -138,7 +121,7 @@ export const createImports = ({
             ),
           ])
         ),
-        ts.factory.createStringLiteral(join("../requests/models")),
+        ts.factory.createStringLiteral(join("../requests/", modalsFileName)),
         undefined
       )
     );

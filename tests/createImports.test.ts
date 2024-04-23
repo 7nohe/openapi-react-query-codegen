@@ -22,8 +22,8 @@ describe(fileName, () => {
     const moduleNames = imports.map((i) => i.moduleSpecifier.text);
     expect(moduleNames).toStrictEqual([
       "@tanstack/react-query",
-      "../requests",
-      "../requests/models",
+      "../requests/services.gen",
+      "../requests/types.gen",
     ]);
     await cleanOutputs(fileName);
   });
@@ -42,7 +42,11 @@ describe(fileName, () => {
 
     // @ts-ignore
     const moduleNames = imports.map((i) => i.moduleSpecifier.text);
-    expect(moduleNames).toStrictEqual(["@tanstack/react-query", "../requests"]);
+    expect(moduleNames).toStrictEqual([
+      "@tanstack/react-query",
+      "../requests/services.gen",
+      "../requests/types.gen",
+    ]);
     await cleanOutputs(fileName);
   });
 });

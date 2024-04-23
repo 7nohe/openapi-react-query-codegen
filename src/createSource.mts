@@ -132,20 +132,22 @@ export const createSource = async ({
   const { commonSource, mainSource, suspenseSource, indexSource } =
     await createSourceFile(outputPath, serviceEndName);
 
+  const comment = `// generated with @7nohe/openapi-react-query-codegen@${version} \n\n`;
+
   const commonResult =
-    `// generated with @7nohe/openapi-react-query-codegen@${version} \n` +
+    comment +
     printer.printNode(ts.EmitHint.Unspecified, commonSource, commonFile);
 
   const mainResult =
-    `// generated with @7nohe/openapi-react-query-codegen@${version} \n` +
+    comment +
     printer.printNode(ts.EmitHint.Unspecified, mainSource, queriesFile);
 
   const suspenseResult =
-    `// generated with @7nohe/openapi-react-query-codegen@${version} \n` +
+    comment +
     printer.printNode(ts.EmitHint.Unspecified, suspenseSource, suspenseFile);
 
   const indexResult =
-    `// generated with @7nohe/openapi-react-query-codegen@${version} \n` +
+    comment +
     printer.printNode(ts.EmitHint.Unspecified, indexSource, indexFile);
 
   return [

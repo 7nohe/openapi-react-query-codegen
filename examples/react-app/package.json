@@ -9,7 +9,7 @@
     "dev:mock": "prism mock ./petstore.yaml --dynamic",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate:api": "node ../../dist/cli.mjs -i ./petstore.yaml -c axios --request ./request.ts",
+    "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ./petstore.yaml -c axios --request ./request.ts",
     "test:generated": "tsc -p ./tsconfig.openapi.json --noEmit"
   },
   "dependencies": {
