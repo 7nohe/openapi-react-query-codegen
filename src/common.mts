@@ -9,7 +9,7 @@ import {
   ClassDeclaration,
 } from "ts-morph";
 import { LimitedUserConfig } from "./cli.mjs";
-import { requestsOutputPath } from "./constants.mjs";
+import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
 
 export const TData = ts.factory.createIdentifier("TData");
 export const TError = ts.factory.createIdentifier("TError");
@@ -163,6 +163,10 @@ export function formatOptions(options: LimitedUserConfig) {
   return formattedOptions;
 }
 
-export function buildOutputPath(outputPath: string) {
+export function buildRequestsOutputPath(outputPath: string) {
   return path.join(outputPath, requestsOutputPath);
+}
+
+export function buildQueriesOutputPath(outputPath: string) {
+  return path.join(outputPath, queriesOutputPath);
 }

@@ -2,9 +2,9 @@
 
 exports[`generate > common.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
-import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+
+import { UseQueryResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
 export type DefaultServiceFindPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPets>>;
 export type DefaultServiceFindPetsQueryResult<TData = DefaultServiceFindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useDefaultServiceFindPetsKey = "DefaultServiceFindPets";
@@ -22,6 +22,7 @@ export type DefaultServiceDeletePetMutationResult = Awaited<ReturnType<typeof De
 
 exports[`generate > index.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
 export * from "./common";
 export * from "./queries";
 "
@@ -29,10 +30,11 @@ export * from "./queries";
 
 exports[`generate > queries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
-import * as Common from "./common";
-import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+
+import { UseMutationOptions, UseQueryOptions, useMutation, useQuery } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
+import { NewPet } from "../requests/types.gen";
+import * as Common from "./common";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
@@ -47,8 +49,8 @@ import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
 * @throws ApiError
 */
 export const useDefaultServiceFindPets = <TData = Common.DefaultServiceFindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
-    limit?: number;
-    tags?: string[];
+  limit?: number;
+  tags?: string[];
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetsKey, ...(queryKey ?? [{ limit, tags }])], queryFn: () => DefaultService.findPets({ limit, tags }) as TData, ...options });
 /**
 * @deprecated
@@ -66,7 +68,7 @@ export const useDefaultServiceGetNotDefined = <TData = Common.DefaultServiceGetN
 * @throws ApiError
 */
 export const useDefaultServiceFindPetById = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
-    id: number;
+  id: number;
 }, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetByIdKey, ...(queryKey ?? [{ id }])], queryFn: () => DefaultService.findPetById({ id }) as TData, ...options });
 /**
 * Creates a new pet in the store. Duplicates are allowed
@@ -77,9 +79,9 @@ export const useDefaultServiceFindPetById = <TData = Common.DefaultServiceFindPe
 * @throws ApiError
 */
 export const useDefaultServiceAddPet = <TData = Common.DefaultServiceAddPetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
-    requestBody: NewPet;
+  requestBody: NewPet;
 }, TContext>, "mutationFn">) => useMutation<TData, TError, {
-    requestBody: NewPet;
+  requestBody: NewPet;
 }, TContext>({ mutationFn: ({ requestBody }) => DefaultService.addPet({ requestBody }) as unknown as Promise<TData>, ...options });
 /**
 * @deprecated
@@ -97,19 +99,19 @@ export const useDefaultServicePostNotDefined = <TData = Common.DefaultServicePos
 * @throws ApiError
 */
 export const useDefaultServiceDeletePet = <TData = Common.DefaultServiceDeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
-    id: number;
+  id: number;
 }, TContext>, "mutationFn">) => useMutation<TData, TError, {
-    id: number;
+  id: number;
 }, TContext>({ mutationFn: ({ id }) => DefaultService.deletePet({ id }) as unknown as Promise<TData>, ...options });
 "
 `;
 
 exports[`generate > suspense.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
-import * as Common from "./common";
-import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+
+import { UseQueryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
+import * as Common from "./common";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
@@ -124,8 +126,8 @@ import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
 * @throws ApiError
 */
 export const useDefaultServiceFindPetsSuspense = <TData = Common.DefaultServiceFindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
-    limit?: number;
-    tags?: string[];
+  limit?: number;
+  tags?: string[];
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetsKey, ...(queryKey ?? [{ limit, tags }])], queryFn: () => DefaultService.findPets({ limit, tags }) as TData, ...options });
 /**
 * @deprecated
@@ -143,7 +145,7 @@ export const useDefaultServiceGetNotDefinedSuspense = <TData = Common.DefaultSer
 * @throws ApiError
 */
 export const useDefaultServiceFindPetByIdSuspense = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
-    id: number;
+  id: number;
 }, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: [Common.useDefaultServiceFindPetByIdKey, ...(queryKey ?? [{ id }])], queryFn: () => DefaultService.findPetById({ id }) as TData, ...options });
 "
 `;

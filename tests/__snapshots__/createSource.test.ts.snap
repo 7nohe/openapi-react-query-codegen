@@ -2,6 +2,7 @@
 
 exports[`createSource > createSource 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
 export * from "./common";
 export * from "./queries";
 "
@@ -9,6 +10,7 @@ export * from "./queries";
 
 exports[`createSource > createSource 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
 import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
 import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
@@ -29,6 +31,7 @@ export type DefaultServiceDeletePetMutationResult = Awaited<ReturnType<typeof De
 
 exports[`createSource > createSource 3`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
 import * as Common from "./common";
 import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
@@ -106,6 +109,7 @@ export const useDefaultServiceDeletePet = <TData = Common.DefaultServiceDeletePe
 
 exports[`createSource > createSource 4`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
 import * as Common from "./common";
 import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";

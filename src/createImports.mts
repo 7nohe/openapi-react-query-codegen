@@ -16,18 +16,12 @@ export const createImports = ({
     .getSourceFiles()
     .find((sourceFile) => sourceFile.getFilePath().includes(modalsFileName));
 
-  const serviceFile = project
-    .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes(serviceFileName));
+  const serviceFile = project.getSourceFileOrThrow(`${serviceFileName}.ts`);
 
   if (!modelsFile) {
     console.warn(`
 ⚠️ WARNING: No models file found.
   This may be an error if \`.components.schemas\` or \`.components.parameters\` is defined in your OpenAPI input.`);
-  }
-
-  if (!serviceFile) {
-    throw new Error("No service file found");
   }
 
   const modelNames = modelsFile
@@ -40,10 +34,6 @@ export const createImports = ({
 
   const serviceNames = serviceExports.filter((name) =>
     name.endsWith(serviceEndName)
-  );
-
-  const serviceNamesData = serviceExports.filter((name) =>
-    name.endsWith("Data")
   );
 
   const imports = [
@@ -105,14 +95,6 @@ export const createImports = ({
               false,
               undefined,
               ts.factory.createIdentifier(serviceName)
-            )
-          ),
-          // import all data objects from service file
-          ...serviceNamesData.map((dataName) =>
-            ts.factory.createImportSpecifier(
-              false,
-              undefined,
-              ts.factory.createIdentifier(dataName)
             )
           ),
         ])
