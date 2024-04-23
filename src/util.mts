@@ -1,45 +1,28 @@
 import ts from "typescript";
-import { JSDoc, SourceFile } from "ts-morph";
 
 export function addJSDocToNode<T extends ts.Node>(
   node: T,
-  sourceFile: SourceFile,
-  deprecated: boolean,
-  jsDoc: JSDoc[] = []
+  jsDoc: string | undefined
 ): T {
-  const deprecatedString = deprecated ? "@deprecated" : "";
+  if (!jsDoc) {
+    return node;
+  }
+  // replace the first /** with *
+  // we do this because ts.addSyntheticLeadingComment will add /* to the beginning but we want /**
+  const removedFirstLine = jsDoc.trim().replace(/^\/\*\*/, "*");
+  // remove the last */ because ts.addSyntheticLeadingComment will add it
+  const removedSecondLine = removedFirstLine.replace(/\*\/$/, "");
 
-  const jsDocString = [deprecatedString]
-    .concat(
-      jsDoc.map((comment) => {
-        if (typeof comment === "string") {
-          return comment;
-        }
-        if (Array.isArray(comment)) {
-          return comment.map((c) => c.getText(sourceFile)).join("\n");
-        }
-        return "";
-      })
-    )
-    // remove empty lines
-    .filter(Boolean)
-    // trim
-    .map((comment) => comment.trim())
-    // add * to each line
-    .map((comment) => `* ${comment}`)
-    // join lines
-    .join("\n")
-    // replace new lines with \n *
-    .replace(/\n/g, "\n * ");
+  const split = removedSecondLine.split("\n");
+  const trimmed = split.map((line) => line.trim());
+  const joined = trimmed.join("\n");
 
-  const nodeWithJSDoc = jsDocString
-    ? ts.addSyntheticLeadingComment(
-        node,
-        ts.SyntaxKind.MultiLineCommentTrivia,
-        `*\n ${jsDocString}\n `,
-        true
-      )
-    : node;
+  const nodeWithJSDoc = ts.addSyntheticLeadingComment(
+    node,
+    ts.SyntaxKind.MultiLineCommentTrivia,
+    joined,
+    true
+  );
 
   return nodeWithJSDoc;
 }

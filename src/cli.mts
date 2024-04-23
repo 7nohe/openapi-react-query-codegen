@@ -1,14 +1,29 @@
 #!/usr/bin/env node
 import { generate } from "./generate.mjs";
 import { Command, Option } from "commander";
-import { UserConfig } from "@hey-api/openapi-ts";
 import { readFile } from "fs/promises";
 import { dirname, join } from "path";
 import { fileURLToPath } from "node:url";
+import { defaultOutputPath } from "./constants.mjs";
 
 const program = new Command();
 
-export type LimitedUserConfig = Omit<UserConfig, "useOptions">;
+export type LimitedUserConfig = {
+  input: string;
+  output: string;
+  client?: "angular" | "axios" | "fetch" | "node" | "xhr";
+  request?: string;
+  format?: "biome" | "prettier";
+  lint?: "biome" | "eslint";
+  operationId?: boolean;
+  serviceResponse?: "body" | "response";
+  base?: string;
+  enums?: "javascript" | "typescript";
+  useDateType?: boolean;
+  debug?: boolean;
+  noSchemas?: boolean;
+  schemaType?: "form" | "json";
+};
 
 async function setupProgram() {
   const __filename = fileURLToPath(import.meta.url);
@@ -25,21 +40,31 @@ async function setupProgram() {
       "-i, --input <value>",
       "OpenAPI specification, can be a path, url or string content (required)"
     )
-    .option("-o, --output <value>", "Output directory", "openapi")
+    .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
         .choices(["angular", "axios", "fetch", "node", "xhr"])
         .default("fetch")
     )
     .option("--request <value>", "Path to custom request file")
-    .option("--format", "Process output folder with formatter?")
-    .option("--lint", "Process output folder with linter?")
+    .addOption(
+      new Option(
+        "--format <value>",
+        "Process output folder with formatter?"
+      ).choices(["biome", "prettier"])
+    )
+    .addOption(
+      new Option(
+        "--lint <value>",
+        "Process output folder with linter?"
+      ).choices(["biome", "eslint"])
+    )
     .option("--operationId", "Use operation ID to generate operation names?")
     .addOption(
       new Option(
         "--serviceResponse <value>",
         "Define shape of returned value from service calls"
-      ).choices(["body", "generics", "response"])
+      ).choices(["body", "response"])
     )
     .option(
       "--base <value>",
@@ -54,6 +79,14 @@ async function setupProgram() {
     .option(
       "--useDateType",
       "Use Date type instead of string for date types for models, this will not convert the data to a Date object"
+    )
+    .option("--debug", "Run in debug mode?")
+    .option("--noSchemas", "Disable generating JSON schemas")
+    .addOption(
+      new Option(
+        "--schemaType <value>",
+        "Type of JSON schema [Default: 'json']"
+      ).choices(["form", "json"])
     )
     .parse();
 

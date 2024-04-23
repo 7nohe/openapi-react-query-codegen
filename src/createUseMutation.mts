@@ -8,6 +8,7 @@ import {
   capitalizeFirstLetter,
   extractPropertiesFromObjectParam,
   getNameFromMethod,
+  getShortType,
 } from "./common.mjs";
 import { addJSDocToNode } from "./util.mjs";
 
@@ -41,11 +42,9 @@ function generateAwaitedReturnType({
 }
 
 export const createUseMutation = ({
-  node,
   className,
   method,
-  jsDoc = [],
-  isDeprecated = false,
+  jsDoc,
 }: MethodDescription) => {
   const methodName = getNameFromMethod(method);
   const awaitedResponseDataType = generateAwaitedReturnType({
@@ -83,24 +82,13 @@ export const createUseMutation = ({
                   refParam.optional
                     ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
                     : undefined,
-                  // refParam.questionToken ?? refParam.initializer
-                  //   ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-                  //   : refParam.questionToken,
                   ts.factory.createTypeReferenceNode(
-                    refParam.type.getText(param)
+                    getShortType(refParam.type.getText(param))
                   )
                 )
               );
             })
             .flat()
-          // return ts.factory.createPropertySignature(
-          //   undefined,
-          //   ts.factory.createIdentifier(param.getName()),
-          //   param.compilerNode.questionToken ?? param.compilerNode.initializer
-          //     ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-          //     : param.compilerNode.questionToken,
-          //   param.compilerNode.type
-          // );
         )
       : ts.factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword);
 
@@ -262,7 +250,7 @@ export const createUseMutation = ({
     )
   );
 
-  const hookWithJsDoc = addJSDocToNode(exportHook, node, isDeprecated, jsDoc);
+  const hookWithJsDoc = addJSDocToNode(exportHook, jsDoc);
 
   return {
     mutationResult,

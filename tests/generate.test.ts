@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import type { UserConfig } from "@hey-api/openapi-ts";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { generate } from "../src/generate.mjs";
-import { rmdir } from "node:fs/promises";
+import { rm } from "node:fs/promises";
+import { LimitedUserConfig } from "../src/cli.mts";
 
 const readOutput = (fileName: string) => {
   return readFileSync(
@@ -14,18 +14,19 @@ const readOutput = (fileName: string) => {
 
 describe("generate", () => {
   beforeAll(async () => {
-    const options: UserConfig = {
+    const options: LimitedUserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
-      lint: true,
-      format: false,
+      lint: "eslint",
     };
     await generate(options, "1.0.0");
   });
 
   afterAll(async () => {
     if (existsSync(path.join(__dirname, "outputs"))) {
-      await rmdir(path.join(__dirname, "outputs"), { recursive: true });
+      await rm(path.join(__dirname, "outputs"), {
+        recursive: true,
+      });
     }
   });
 

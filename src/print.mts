@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import { defaultOutputPath, queriesOutputPath } from "./constants.mjs";
+import { queriesOutputPath } from "./constants.mjs";
 import { LimitedUserConfig } from "./cli.mjs";
 import { exists } from "./common.mjs";
 
@@ -9,9 +9,9 @@ async function printGeneratedTS(
     name: string;
     content: string;
   },
-  options: LimitedUserConfig
+  options: Pick<LimitedUserConfig, "output">
 ) {
-  const dir = path.join(options.output ?? defaultOutputPath, queriesOutputPath);
+  const dir = path.join(options.output, queriesOutputPath);
   const dirExists = await exists(dir);
   if (!dirExists) {
     await mkdir(dir, { recursive: true });
@@ -24,9 +24,9 @@ export async function print(
     name: string;
     content: string;
   }[],
-  options: LimitedUserConfig
+  options: Pick<LimitedUserConfig, "output">
 ) {
-  const outputPath = options.output ?? defaultOutputPath;
+  const outputPath = options.output;
   const dirExists = await exists(outputPath);
   if (!dirExists) {
     await mkdir(outputPath);

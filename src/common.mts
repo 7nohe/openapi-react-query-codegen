@@ -1,12 +1,15 @@
 import { type PathLike } from "fs";
 import { stat } from "fs/promises";
 import ts from "typescript";
+import path from "path";
 import {
   MethodDeclaration,
-  JSDoc,
   SourceFile,
   ParameterDeclaration,
+  ClassDeclaration,
 } from "ts-morph";
+import { LimitedUserConfig } from "./cli.mjs";
+import { requestsOutputPath } from "./constants.mjs";
 
 export const TData = ts.factory.createIdentifier("TData");
 export const TError = ts.factory.createIdentifier("TError");
@@ -27,7 +30,11 @@ export const lowercaseFirstLetter = (str: string) => {
 };
 
 export const getNameFromMethod = (method: MethodDeclaration) => {
-  return method.getName();
+  const methodName = method.getName();
+  if (!methodName) {
+    throw new Error("Method name not found");
+  }
+  return methodName;
 };
 
 export type MethodDescription = {
@@ -36,7 +43,7 @@ export type MethodDescription = {
   method: MethodDeclaration;
   methodBlock: ts.Block;
   httpMethodName: string;
-  jsDoc: JSDoc[];
+  jsDoc: string;
   isDeprecated: boolean;
 };
 
@@ -88,4 +95,74 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
       type: prop.getValueDeclaration()?.getType()!,
     }));
   return paramNodes;
+}
+
+/**
+ * Replace the import("...") surrounding the type if there is one.
+ * This can happen when the type is imported from another file, but
+ * we are already importing all the types from that file.
+ *
+ * https://regex101.com/r/3DyHaQ/1
+ *
+ * TODO: Replace with a more robust solution.
+ */
+export function getShortType(type: string) {
+  return type.replaceAll(/import\(".*"\)\./g, "");
+}
+
+export function getClassesFromService(node: SourceFile) {
+  const klasses = node.getClasses();
+
+  if (!klasses.length) {
+    throw new Error("No classes found");
+  }
+
+  return klasses.map((klass) => {
+    const className = klass.getName();
+    if (!className) {
+      throw new Error("Class name not found");
+    }
+    return {
+      className,
+      klass,
+    };
+  });
+}
+
+export function getClassNameFromClassNode(klass: ClassDeclaration) {
+  const className = klass.getName();
+
+  if (!className) {
+    throw new Error("Class name not found");
+  }
+  return className;
+}
+
+export function formatOptions(options: LimitedUserConfig) {
+  // loop through properties on the options object
+  // if the property is a string of number then convert it to a number
+  // if the property is a string of boolean then convert it to a boolean
+  const formattedOptions = Object.entries(options).reduce(
+    (acc, [key, value]) => {
+      const typedKey = key as keyof LimitedUserConfig;
+      const typedValue = value as (typeof options)[keyof LimitedUserConfig];
+      const parsedNumber = safeParseNumber(typedValue);
+      if (value === "true" || value === true) {
+        (acc as any)[typedKey] = true;
+      } else if (value === "false" || value === false) {
+        (acc as any)[typedKey] = false;
+      } else if (!isNaN(parsedNumber)) {
+        (acc as any)[typedKey] = parsedNumber;
+      } else {
+        (acc as any)[typedKey] = typedValue;
+      }
+      return acc;
+    },
+    options
+  );
+  return formattedOptions;
+}
+
+export function buildOutputPath(outputPath: string) {
+  return path.join(outputPath, requestsOutputPath);
 }

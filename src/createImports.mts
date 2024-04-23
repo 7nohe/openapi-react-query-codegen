@@ -1,6 +1,7 @@
 import ts from "typescript";
 import { posix } from "path";
 import { Project } from "ts-morph";
+import { modalsFileName, serviceFileName } from "./constants.mjs";
 
 const { join } = posix;
 
@@ -13,11 +14,11 @@ export const createImports = ({
 }) => {
   const modelsFile = project
     .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes("models.ts"));
+    .find((sourceFile) => sourceFile.getFilePath().includes(modalsFileName));
 
   const serviceFile = project
     .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes("services.ts"));
+    .find((sourceFile) => sourceFile.getFilePath().includes(serviceFileName));
 
   if (!modelsFile) {
     console.warn(`
@@ -116,7 +117,7 @@ export const createImports = ({
           ),
         ])
       ),
-      ts.factory.createStringLiteral(join("../requests")),
+      ts.factory.createStringLiteral(join("../requests", serviceFileName)),
       undefined
     ),
   ];
@@ -138,7 +139,7 @@ export const createImports = ({
             ),
           ])
         ),
-        ts.factory.createStringLiteral(join("../requests/models")),
+        ts.factory.createStringLiteral(join("../requests/", modalsFileName)),
         undefined
       )
     );
