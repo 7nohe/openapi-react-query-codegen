@@ -80,6 +80,8 @@ $ openapi-rq -i ./petstore.yaml
 
 ### In your app
 
+#### Using the generated hooks
+
 ```tsx
 // App.tsx
 import { usePetServiceFindPetsByStatus } from "../openapi/queries";
@@ -97,7 +99,7 @@ function App() {
 export default App;
 ```
 
-You can also use pure TS clients.
+#### Using the generated typescript client
 
 ```tsx
 import { useQuery } from "@tanstack/react-query";
@@ -120,7 +122,7 @@ function App() {
 export default App;
 ```
 
-You can also use suspense hooks.
+#### Using Suspense Hooks
 
 ```tsx
 // App.tsx
@@ -151,6 +153,34 @@ function App() {
 }
 
 export default App;
+```
+
+#### Runtime Configuration
+
+You can modify the default values used by the generated service calls by modifying the OpenAPI configuration singleton object.
+
+It's default location is `openapi/requests/core/OpenAPI.ts` and it is also exported from `openapi/index.ts`
+
+Import the constant into your runtime and modify it before setting up the react app.
+
+```typescript
+/** main.tsx */
+import { OpenAPI as OpenAPIConfig } from './openapi/requests/core/OpenAPI';
+...
+OpenAPIConfig.BASE = 'www.domain.com/api';
+OpenAPIConfig.HEADERS = {
+  'x-header-1': 'value-1',
+  'x-header-2': 'value-2',
+};
+...
+ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </React.StrictMode>
+);
+
 ```
 
 ## License
