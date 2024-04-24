@@ -48,7 +48,7 @@ Options:
   --format <value>           Process output folder with formatter? ['biome', 'prettier']
   --lint   <value>           Process output folder with linter? ['eslint', 'biome']
   --operationId              Use operation ID to generate operation names?
-  --serviceResponse <value>  Define shape of returned value from service calls ['body', 'generics', 'response']
+  --serviceResponse <value>  Define shape of returned value from service calls ['body', 'response']
   --base <value>             Manually set base in OpenAPI config instead of inferring from server value
   --enums <value>            Generate JavaScript objects from enum definitions? ['javascript', 'typescript']
   --useDateType              Use Date type instead of string for date types for models, this will not convert the data to a Date object
