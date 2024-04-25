@@ -1,0 +1,62 @@
+name: release
+
+permissions:
+  contents: write
+
+on:
+  issue_comment:
+    types:
+      - created
+
+jobs:
+  release:
+    if: ${{ github.event.issue.pull_request && github.event.comment.body == 'npm publish' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: npm version
+        run: npm version --no-git-tag-version 0.0.0-$(git rev-parse HEAD)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # publish to npm tag as next
+      - run: pnpm publish --no-git-checks --tag pre
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: "Update comment"
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { issue: { number: issue_number }, repo: { owner, repo }, payload  } = context;
+            const { name: packageName, version } = require(`${process.env.GITHUB_WORKSPACE}/package.json`);
+
+            await github.rest.issues.updateComment({
+              owner,
+              repo,
+              comment_id: payload.comment.id,
+              body: [
+                `npm package published to pre tag.`,
+                `\`\`\`bash\nnpm install ${packageName}@pre\n\`\`\``
+                `\`\`\`bash\nnpm install ${packageName}@${version}\n\`\`\``
+              ].join('\n\n'),
+            });
