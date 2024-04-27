@@ -1,6 +1,7 @@
 import { createUseQuery } from "./createUseQuery.mjs";
 import { createUseMutation } from "./createUseMutation.mjs";
 import { Service } from "./service.mjs";
+import { createPrefetch } from "./createPrefetch.mjs";
 
 export const createExports = (service: Service) => {
   const { klasses } = service;
@@ -23,6 +24,7 @@ export const createExports = (service: Service) => {
   );
 
   const allGetQueries = allGet.map((m) => createUseQuery(m));
+  const allPrefetchQueries = allGet.map((m) => createPrefetch(m));
 
   const allPostMutations = allPost.map((m) => createUseMutation(m));
   const allPutMutations = allPut.map((m) => createUseMutation(m));
@@ -59,6 +61,12 @@ export const createExports = (service: Service) => {
 
   const suspenseExports = [...suspenseQueries];
 
+  const allPrefetches = allPrefetchQueries
+    .map(({ prefetchHook }) => [prefetchHook])
+    .flat();
+
+  const allPrefetchExports = [...allPrefetches];
+
   return {
     /**
      * Common types and variables between queries (regular and suspense) and mutations
@@ -72,5 +80,9 @@ export const createExports = (service: Service) => {
      * Suspense exports are the hooks that are used in the suspense components
      */
     suspenseExports,
+    /**
+     * Prefetch exports are the hooks that are used in the prefetch components
+     */
+    allPrefetchExports,
   };
 };
