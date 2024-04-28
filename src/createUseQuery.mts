@@ -200,7 +200,7 @@ export function createQueryKeyExport({
   );
 }
 
-function hookNameFromMethod({
+export function hookNameFromMethod({
   method,
   className,
 }: {
@@ -211,7 +211,7 @@ function hookNameFromMethod({
   return `use${className}${capitalizeFirstLetter(methodName)}`;
 }
 
-function createQueryKeyFromMethod({
+export function createQueryKeyFromMethod({
   method,
   className,
 }: {
@@ -228,7 +228,7 @@ function createQueryKeyFromMethod({
  * @param queryString The type of query to use from react-query
  * @param suffix The suffix to append to the hook name
  */
-function createQueryHook({
+export function createQueryHook({
   queryString,
   suffix,
   responseDataType,

@@ -1,9 +1,10 @@
 import ts from "typescript";
+import { Project } from "ts-morph";
+import { join } from "path";
+import { OpenApiRqFiles } from "./constants.mjs";
 import { createImports } from "./createImports.mjs";
 import { createExports } from "./createExports.mjs";
 import { getServices } from "./service.mjs";
-import { Project } from "ts-morph";
-import { join } from "path";
 
 const createSourceFile = async (outputPath: string, serviceEndName: string) => {
   const project = new Project({
@@ -39,7 +40,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
       ts.factory.createIdentifier("* as Common"),
       undefined
     ),
-    ts.factory.createStringLiteral("./common"),
+    ts.factory.createStringLiteral(`./${OpenApiRqFiles.common}`),
     undefined
   );
 
@@ -47,7 +48,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     undefined,
     false,
     undefined,
-    ts.factory.createStringLiteral("./common"),
+    ts.factory.createStringLiteral(`./${OpenApiRqFiles.common}`),
     undefined
   );
 
@@ -55,7 +56,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     undefined,
     false,
     undefined,
-    ts.factory.createStringLiteral("./queries"),
+    ts.factory.createStringLiteral(`./${OpenApiRqFiles.queries}`),
     undefined
   );
 
@@ -77,11 +78,18 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     ts.NodeFlags.None
   );
 
+  const prefetchSource = ts.factory.createSourceFile(
+    [commonImport, ...imports, ...exports.allPrefetchExports],
+    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+    ts.NodeFlags.None
+  );
+
   return {
     commonSource,
     mainSource,
     suspenseSource,
     indexSource,
+    prefetchSource,
   };
 };
 
@@ -95,21 +103,21 @@ export const createSource = async ({
   serviceEndName: string;
 }) => {
   const queriesFile = ts.createSourceFile(
-    "queries.ts",
+    `${OpenApiRqFiles.queries}.ts`,
     "",
     ts.ScriptTarget.Latest,
     false,
     ts.ScriptKind.TS
   );
   const commonFile = ts.createSourceFile(
-    "common.ts",
+    `${OpenApiRqFiles.common}.ts`,
     "",
     ts.ScriptTarget.Latest,
     false,
     ts.ScriptKind.TS
   );
   const suspenseFile = ts.createSourceFile(
-    "suspense.ts",
+    `${OpenApiRqFiles.suspense}.ts`,
     "",
     ts.ScriptTarget.Latest,
     false,
@@ -117,7 +125,15 @@ export const createSource = async ({
   );
 
   const indexFile = ts.createSourceFile(
-    "index.ts",
+    `${OpenApiRqFiles.index}.ts`,
+    "",
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS
+  );
+
+  const prefetchFile = ts.createSourceFile(
+    `${OpenApiRqFiles.prefetch}.ts`,
     "",
     ts.ScriptTarget.Latest,
     false,
@@ -129,8 +145,13 @@ export const createSource = async ({
     removeComments: false,
   });
 
-  const { commonSource, mainSource, suspenseSource, indexSource } =
-    await createSourceFile(outputPath, serviceEndName);
+  const {
+    commonSource,
+    mainSource,
+    suspenseSource,
+    indexSource,
+    prefetchSource,
+  } = await createSourceFile(outputPath, serviceEndName);
 
   const comment = `// generated with @7nohe/openapi-react-query-codegen@${version} \n\n`;
 
@@ -150,22 +171,30 @@ export const createSource = async ({
     comment +
     printer.printNode(ts.EmitHint.Unspecified, indexSource, indexFile);
 
+  const prefetchResult =
+    comment +
+    printer.printNode(ts.EmitHint.Unspecified, prefetchSource, prefetchFile);
+
   return [
     {
-      name: "index.ts",
+      name: `${OpenApiRqFiles.index}.ts`,
       content: indexResult,
     },
     {
-      name: "common.ts",
+      name: `${OpenApiRqFiles.common}.ts`,
       content: commonResult,
     },
     {
-      name: "queries.ts",
+      name: `${OpenApiRqFiles.queries}.ts`,
       content: mainResult,
     },
     {
-      name: "suspense.ts",
+      name: `${OpenApiRqFiles.suspense}.ts`,
       content: suspenseResult,
+    },
+    {
+      name: `${OpenApiRqFiles.prefetch}.ts`,
+      content: prefetchResult,
     },
   ];
 };

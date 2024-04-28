@@ -1,11 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { createSource } from '../src/createSource.mjs'
+import { createSource } from "../src/createSource.mjs";
 import { cleanOutputs, generateTSClients, outputPath } from "./utils";
 const fileName = "createSource";
 describe(fileName, () => {
   beforeAll(async () => await generateTSClients(fileName));
   afterAll(async () => await cleanOutputs(fileName));
-
 
   test("createSource", async () => {
     const source = await createSource({
@@ -25,5 +24,8 @@ describe(fileName, () => {
 
     const suspenseTs = source.find((s) => s.name === "suspense.ts");
     expect(suspenseTs?.content).toMatchSnapshot();
+
+    const prefetchTs = source.find((s) => s.name === "prefetch.ts");
+    expect(prefetchTs?.content).toMatchSnapshot();
   });
 });

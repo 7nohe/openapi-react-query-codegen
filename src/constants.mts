@@ -4,3 +4,11 @@ export const requestsOutputPath = "requests";
 
 export const serviceFileName = "services.gen";
 export const modalsFileName = "types.gen";
+
+export const OpenApiRqFiles = {
+  queries: "queries",
+  common: "common",
+  suspense: "suspense",
+  index: "index",
+  prefetch: "prefetch",
+} as const;

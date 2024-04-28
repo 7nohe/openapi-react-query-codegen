@@ -45,4 +45,8 @@ describe("generate", () => {
   test("suspense.ts", () => {
     expect(readOutput("suspense.ts")).toMatchSnapshot();
   });
+
+  test("prefetch.ts", () => {
+    expect(readOutput("prefetch.ts")).toMatchSnapshot();
+  });
 });
