@@ -3,11 +3,13 @@ import { MethodDeclaration } from "ts-morph";
 import {
   BuildCommonTypeName,
   capitalizeFirstLetter,
+  EqualsOrGreaterThanToken,
   extractPropertiesFromObjectParam,
   getNameFromMethod,
   getShortType,
   queryKeyConstraint,
   queryKeyGenericType,
+  QuestionToken,
   TData,
   TError,
 } from "./common.mjs";
@@ -61,12 +63,15 @@ export const createApiResponseType = ({
   );
 
   return {
-    /** DefaultResponseDataType
+    /**
+     * DefaultResponseDataType
+     *
      * export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
      */
     apiResponse,
     /**
-     * will be the name of the type of the response type of the method
+     * This will be the name of the type of the response type of the method
+     *
      * MyClassMethodDefaultResponse
      */
     responseDataType,
@@ -128,6 +133,7 @@ export function getRequestParamFromMethod(method: MethodDeclaration) {
 
 /**
  * Return Type
+ *
  * export const classNameMethodNameQueryResult<TData = MyClassMethodDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
  */
 export function createReturnTypeExport({
@@ -311,7 +317,7 @@ export function createQueryHook({
               ),
             ],
             undefined,
-            ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            EqualsOrGreaterThanToken,
             ts.factory.createCallExpression(
               ts.factory.createIdentifier(queryString),
               [
@@ -322,41 +328,28 @@ export function createQueryHook({
                 ts.factory.createObjectLiteralExpression([
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryKey"),
-                    ts.factory.createArrayLiteralExpression(
-                      [
-                        BuildCommonTypeName(queryKey),
-                        ts.factory.createSpreadElement(
-                          ts.factory.createParenthesizedExpression(
-                            ts.factory.createBinaryExpression(
-                              ts.factory.createIdentifier("queryKey"),
-                              ts.factory.createToken(
-                                ts.SyntaxKind.QuestionQuestionToken
-                              ),
-                              method.getParameters().length
-                                ? ts.factory.createArrayLiteralExpression([
-                                    ts.factory.createObjectLiteralExpression(
-                                      method
-                                        .getParameters()
-                                        .map((param) =>
-                                          extractPropertiesFromObjectParam(
-                                            param
-                                          ).map((p) =>
-                                            ts.factory.createShorthandPropertyAssignment(
-                                              ts.factory.createIdentifier(
-                                                p.name
-                                              )
-                                            )
-                                          )
-                                        )
-                                        .flat()
-                                    ),
-                                  ])
-                                : ts.factory.createArrayLiteralExpression([])
-                            )
-                          )
-                        ),
-                      ],
-                      false
+                    ts.factory.createCallExpression(
+                      BuildCommonTypeName(getQueryKeyFnName(queryKey)),
+                      undefined,
+
+                      method.getParameters().length
+                        ? [
+                            ts.factory.createObjectLiteralExpression(
+                              method
+                                .getParameters()
+                                .map((param) =>
+                                  extractPropertiesFromObjectParam(param).map(
+                                    (p) =>
+                                      ts.factory.createShorthandPropertyAssignment(
+                                        ts.factory.createIdentifier(p.name)
+                                      )
+                                  )
+                                )
+                                .flat()
+                            ),
+                            ts.factory.createIdentifier("queryKey"),
+                          ]
+                        : []
                     )
                   ),
                   ts.factory.createPropertyAssignment(
@@ -366,9 +359,7 @@ export function createQueryHook({
                       undefined,
                       [],
                       undefined,
-                      ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken
-                      ),
+                      EqualsOrGreaterThanToken,
                       ts.factory.createAsExpression(
                         ts.factory.createCallExpression(
                           ts.factory.createPropertyAccessExpression(
@@ -463,11 +454,97 @@ export const createUseQuery = ({
     queryKey,
   });
 
+  const queryKeyFn = createQueryKeyFnExport(queryKey, method);
+
   return {
     apiResponse: defaultApiResponse,
     returnType: returnTypeExport,
     key: queryKeyExport,
     queryHook: hookWithJsDoc,
     suspenseQueryHook: suspenseHookWithJsDoc,
+    queryKeyFn,
   };
 };
+
+function getQueryKeyFnName(queryKey: string) {
+  return `${capitalizeFirstLetter(queryKey)}Fn`;
+}
+
+function createQueryKeyFnExport(queryKey: string, method: MethodDeclaration) {
+  const params = getRequestParamFromMethod(method);
+
+  // override key is used to allow the user to override the the queryKey values
+  const overrideKey = ts.factory.createParameterDeclaration(
+    undefined,
+    undefined,
+    ts.factory.createIdentifier("queryKey"),
+    QuestionToken,
+    ts.factory.createTypeReferenceNode("Array<unknown>", [])
+  );
+
+  return ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(getQueryKeyFnName(queryKey)),
+          undefined,
+          undefined,
+          ts.factory.createArrowFunction(
+            undefined,
+            undefined,
+            params ? [params, overrideKey] : [],
+            undefined,
+            EqualsOrGreaterThanToken,
+            queryKeyFn(queryKey, method)
+          )
+        ),
+      ],
+      ts.NodeFlags.Const
+    )
+  );
+}
+
+function queryKeyFn(
+  queryKey: string,
+  method: MethodDeclaration
+): ts.Expression {
+  const params = getRequestParamFromMethod(method);
+
+  if (!params) {
+    return ts.factory.createArrayLiteralExpression([
+      ts.factory.createIdentifier(queryKey),
+    ]);
+  }
+
+  return ts.factory.createArrayLiteralExpression(
+    [
+      ts.factory.createIdentifier(queryKey),
+      ts.factory.createSpreadElement(
+        ts.factory.createParenthesizedExpression(
+          ts.factory.createBinaryExpression(
+            ts.factory.createIdentifier("queryKey"),
+            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+            method.getParameters().length
+              ? ts.factory.createArrayLiteralExpression([
+                  ts.factory.createObjectLiteralExpression(
+                    method
+                      .getParameters()
+                      .map((param) =>
+                        extractPropertiesFromObjectParam(param).map((p) =>
+                          ts.factory.createShorthandPropertyAssignment(
+                            ts.factory.createIdentifier(p.name)
+                          )
+                        )
+                      )
+                      .flat()
+                  ),
+                ])
+              : ts.factory.createArrayLiteralExpression([])
+          )
+        )
+      ),
+    ],
+    false
+  );
+}

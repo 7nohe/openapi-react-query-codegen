@@ -40,7 +40,12 @@ export const createExports = (service: Service) => {
   ];
 
   const commonInQueries = allQueries
-    .map(({ apiResponse, returnType, key }) => [apiResponse, returnType, key])
+    .map(({ apiResponse, returnType, key, queryKeyFn }) => [
+      apiResponse,
+      returnType,
+      key,
+      queryKeyFn,
+    ])
     .flat();
   const commonInMutations = allMutations
     .map(({ mutationResult }) => [mutationResult])

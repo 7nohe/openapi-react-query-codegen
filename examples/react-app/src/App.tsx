@@ -2,7 +2,7 @@ import "./App.css";
 import {
   useDefaultServiceAddPet,
   useDefaultServiceFindPets,
-  useDefaultServiceFindPetsKey,
+  UseDefaultServiceFindPetsKeyFn,
   useDefaultServiceGetNotDefined,
   useDefaultServicePostNotDefined,
 } from "../openapi/queries";
@@ -54,7 +54,7 @@ function App() {
             {
               onSuccess: () => {
                 queryClient.invalidateQueries({
-                  queryKey: [useDefaultServiceFindPetsKey],
+                  queryKey: UseDefaultServiceFindPetsKeyFn(),
                 });
                 console.log("success");
               },
