@@ -17,6 +17,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: ⬇️ Checkout PR
+        run: |
+          git fetch origin pull/${{ github.event.issue.number }}/head:pr-find-commit
+          git checkout pr-find-commit
+
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -50,13 +55,15 @@ jobs:
             const { issue: { number: issue_number }, repo: { owner, repo }, payload  } = context;
             const { name: packageName, version } = require(`${process.env.GITHUB_WORKSPACE}/package.json`);
 
+            const body = [
+              `npm package published to pre tag.`,
+              `\`\`\`bash\nnpm install ${packageName}@pre\n\`\`\``
+              `\`\`\`bash\nnpm install ${packageName}@${version}\n\`\`\``
+            ].join('\n\n');
+
             await github.rest.issues.updateComment({
               owner,
               repo,
               comment_id: payload.comment.id,
-              body: [
-                `npm package published to pre tag.`,
-                `\`\`\`bash\nnpm install ${packageName}@pre\n\`\`\``
-                `\`\`\`bash\nnpm install ${packageName}@${version}\n\`\`\``
-              ].join('\n\n'),
+              body,
             });
