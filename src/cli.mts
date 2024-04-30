@@ -64,7 +64,9 @@ async function setupProgram() {
       new Option(
         "--serviceResponse <value>",
         "Define shape of returned value from service calls"
-      ).choices(["body", "response"])
+      )
+        .choices(["body", "response"])
+        .default("body")
     )
     .option(
       "--base <value>",
