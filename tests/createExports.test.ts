@@ -5,7 +5,7 @@ import { createExports } from "../src/createExports.mts";
 import { getServices } from "../src/service.mts";
 import path from "path";
 
-const fileName = "createExports"
+const fileName = "createExports";
 
 describe(fileName, () => {
   beforeAll(async () => await generateTSClients(fileName));
@@ -15,12 +15,12 @@ describe(fileName, () => {
     const project = new Project({
       skipAddingFilesFromTsConfig: true,
     });
-    project.addSourceFilesAtPaths(path.join(outputPath(fileName), '**', '*'));
+    project.addSourceFilesAtPaths(path.join(outputPath(fileName), "**", "*"));
     const service = await getServices(project);
     const exports = createExports(service);
 
     const commonTypes = exports.allCommon
-    .filter((c) => c.kind === SyntaxKind.TypeAliasDeclaration)
+      .filter((c) => c.kind === SyntaxKind.TypeAliasDeclaration)
       // @ts-ignore
       .map((e) => e.name.escapedText);
     expect(commonTypes).toStrictEqual([
@@ -36,13 +36,16 @@ describe(fileName, () => {
     ]);
 
     const constants = exports.allCommon
-    .filter((c) => c.kind === SyntaxKind.VariableStatement)
-    // @ts-ignore
+      .filter((c) => c.kind === SyntaxKind.VariableStatement)
+      // @ts-ignore
       .map((c) => c.declarationList.declarations[0].name.escapedText);
     expect(constants).toStrictEqual([
       "useDefaultServiceFindPetsKey",
+      "UseDefaultServiceFindPetsKeyFn",
       "useDefaultServiceGetNotDefinedKey",
+      "UseDefaultServiceGetNotDefinedKeyFn",
       "useDefaultServiceFindPetByIdKey",
+      "UseDefaultServiceFindPetByIdKeyFn",
     ]);
 
     const mainExports = exports.mainExports.map(

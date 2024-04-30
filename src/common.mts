@@ -15,6 +15,14 @@ export const TData = ts.factory.createIdentifier("TData");
 export const TError = ts.factory.createIdentifier("TError");
 export const TContext = ts.factory.createIdentifier("TContext");
 
+export const EqualsOrGreaterThanToken = ts.factory.createToken(
+  ts.SyntaxKind.EqualsGreaterThanToken
+);
+
+export const QuestionToken = ts.factory.createToken(
+  ts.SyntaxKind.QuestionToken
+);
+
 export const queryKeyGenericType =
   ts.factory.createTypeReferenceNode("TQueryKey");
 export const queryKeyConstraint = ts.factory.createTypeReferenceNode("Array", [

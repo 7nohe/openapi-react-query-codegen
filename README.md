@@ -160,6 +160,75 @@ function App() {
 export default App;
 ```
 
+##### Using Mutation hooks
+
+```tsx
+// App.tsx
+import { usePetServiceAddPet } from "../openapi/queries";
+
+function App() {
+  const { mutate } = usePetServiceAddPet();
+
+  const handleAddPet = () => {
+    mutate({ name: "Fluffy", status: "available" });
+  };
+
+  return (
+    <div className="App">
+      <h1>Add Pet</h1>
+      <button onClick={handleAddPet}>Add Pet</button>
+    </div>
+  );
+}
+
+export default App;
+```
+
+##### Invalidating queries after mutation
+
+Invalidating queries after a mutation is important to ensure the cache is updated with the new data. This is done by calling the `queryClient.invalidateQueries` function with the query key used by the query hook.
+
+Learn more about invalidating queries [here](https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation).
+
+To ensure the query key is created the same way as the query hook, you can use the query key function exported by the generated query hooks.
+
+```tsx
+import {
+  usePetServiceFindPetsByStatus,
+  usePetServiceAddPet,
+  UsePetServiceFindPetsByStatusKeyFn,
+} from "../openapi/queries";
+
+// App.tsx
+function App() {
+  const { data } = usePetServiceFindPetsByStatus({ status: ["available"] });
+  const { mutate } = usePetServiceAddPet({
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        // Call the query key function to get the query key, this is important to ensure the query key is created the same way as the query hook, this insures the cache is invalidated correctly and is typed correctly
+        queryKey: [UsePetServiceFindPetsByStatusKeyFn()],
+      });
+    },
+  });
+
+  return (
+    <div className="App">
+      <h1>Pet List</h1>
+      <ul>{data?.map((pet) => <li key={pet.id}>{pet.name}</li>)}</ul>
+      <button
+        onClick={() => {
+          mutate({ name: "Fluffy", status: "available" });
+        }}
+      >
+        Add Pet
+      </button>
+    </div>
+  );
+}
+
+export default App;
+```
+
 ##### Runtime Configuration
 
 You can modify the default values used by the generated service calls by modifying the OpenAPI configuration singleton object.
