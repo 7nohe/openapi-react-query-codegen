@@ -4,12 +4,15 @@ import {
   BuildCommonTypeName,
   extractPropertiesFromObjectParam,
   getNameFromMethod,
+  queryKeyConstraint,
+  queryKeyGenericType,
 } from "./common.mjs";
 import { type MethodDescription } from "./common.mjs";
 import {
   createQueryKeyFromMethod,
   getRequestParamFromMethod,
   hookNameFromMethod,
+  getQueryKeyFnName,
 } from "./createUseQuery.mjs";
 import { addJSDocToNode } from "./util.mjs";
 
@@ -42,7 +45,16 @@ function createPrefetchHook({
           undefined,
           ts.factory.createArrowFunction(
             undefined,
-            undefined,
+            ts.factory.createNodeArray([
+              ts.factory.createTypeParameterDeclaration(
+                undefined,
+                "TQueryKey",
+                queryKeyConstraint,
+                ts.factory.createArrayTypeNode(
+                  ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
+                )
+              ),
+            ]),
             [
               ts.factory.createParameterDeclaration(
                 undefined,
@@ -54,6 +66,13 @@ function createPrefetchHook({
                 )
               ),
               ...requestParams,
+              ts.factory.createParameterDeclaration(
+                undefined,
+                undefined,
+                ts.factory.createIdentifier("queryKey"),
+                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                queryKeyGenericType
+              ),
             ],
             undefined,
             ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
@@ -64,28 +83,28 @@ function createPrefetchHook({
                 ts.factory.createObjectLiteralExpression([
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryKey"),
-                    ts.factory.createArrayLiteralExpression(
-                      [
-                        BuildCommonTypeName(queryKey),
-                        method.getParameters().length
-                          ? ts.factory.createArrayLiteralExpression([
-                              ts.factory.createObjectLiteralExpression(
-                                method
-                                  .getParameters()
-                                  .map((param) =>
-                                    extractPropertiesFromObjectParam(param).map(
-                                      (p) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name)
-                                        )
-                                    )
+                    ts.factory.createCallExpression(
+                      BuildCommonTypeName(getQueryKeyFnName(queryKey)),
+                      undefined,
+
+                      method.getParameters().length
+                        ? [
+                            ts.factory.createObjectLiteralExpression(
+                              method
+                                .getParameters()
+                                .map((param) =>
+                                  extractPropertiesFromObjectParam(param).map(
+                                    (p) =>
+                                      ts.factory.createShorthandPropertyAssignment(
+                                        ts.factory.createIdentifier(p.name)
+                                      )
                                   )
-                                  .flat()
-                              ),
-                            ])
-                          : ts.factory.createArrayLiteralExpression([]),
-                      ],
-                      false
+                                )
+                                .flat()
+                            ),
+                            ts.factory.createIdentifier("queryKey"),
+                          ]
+                        : []
                     )
                   ),
                   ts.factory.createPropertyAssignment(

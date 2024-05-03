@@ -466,7 +466,7 @@ export const createUseQuery = ({
   };
 };
 
-function getQueryKeyFnName(queryKey: string) {
+export function getQueryKeyFnName(queryKey: string) {
   return `${capitalizeFirstLetter(queryKey)}Fn`;
 }
 
