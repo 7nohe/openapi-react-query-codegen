@@ -1,16 +1,17 @@
+import type { ClassDeclaration, MethodDeclaration, SourceFile } from "ts-morph";
 import { describe, expect, test, vi } from "vitest";
+import type { LimitedUserConfig } from "../src/cli.mts";
 import {
   BuildCommonTypeName,
   capitalizeFirstLetter,
-  lowercaseFirstLetter,
-  safeParseNumber,
-  getShortType,
   formatOptions,
   getClassNameFromClassNode,
   getClassesFromService,
   getNameFromMethod,
+  getShortType,
+  lowercaseFirstLetter,
+  safeParseNumber,
 } from "../src/common.mts";
-import { LimitedUserConfig } from "../src/cli.mts";
 
 describe("common", () => {
   test("safeParseNumber", () => {
@@ -85,6 +86,7 @@ describe("common", () => {
     const options: LimitedUserConfig = {
       input: "input",
       output: "output",
+      // biome-ignore lint: test
       debug: "false" as any,
     };
     const formatted = formatOptions(options);
@@ -96,6 +98,7 @@ describe("common", () => {
     const options: LimitedUserConfig = {
       input: "input",
       output: "output",
+      // biome-ignore lint: test
       debug: "true" as any,
     };
     const formatted = formatOptions(options);
@@ -117,6 +120,7 @@ describe("common", () => {
     const options: LimitedUserConfig = {
       input: "input",
       output: "output",
+      // biome-ignore lint: test
       debug: "123" as any,
     };
     const formatted = formatOptions(options);
@@ -128,6 +132,7 @@ describe("common", () => {
     const options: LimitedUserConfig = {
       input: "input",
       output: "output",
+      // biome-ignore lint: test
       debug: "123" as any,
       lint: "eslint",
     };
@@ -140,6 +145,7 @@ describe("common", () => {
     const options: LimitedUserConfig = {
       input: "input",
       output: "output",
+      // biome-ignore lint: test
       debug: Number.NaN as any,
     };
     const formatted = formatOptions(options);
@@ -172,7 +178,7 @@ describe("common", () => {
   test("getClassNameFromClassNode - get's name", () => {
     const klass = {
       getName: () => "Test",
-    } as any;
+    } as unknown as ClassDeclaration;
     const result = getClassNameFromClassNode(klass);
     expect(result).toBe("Test");
   });
@@ -180,9 +186,9 @@ describe("common", () => {
   test("getClassNameFromClassNode - no name", () => {
     const klass = {
       getName: () => undefined,
-    } as any;
+    } as unknown as ClassDeclaration;
     expect(() => getClassNameFromClassNode(klass)).toThrowError(
-      "Class name not found"
+      "Class name not found",
     );
   });
 
@@ -192,7 +198,7 @@ describe("common", () => {
     };
     const node = {
       getClasses: vi.fn(() => [klass]),
-    } as any;
+    } as unknown as SourceFile;
     const result = getClassesFromService(node);
     expect(result).toStrictEqual([
       {
@@ -205,7 +211,7 @@ describe("common", () => {
   test("getClassesFromService - no classes", () => {
     const node = {
       getClasses: vi.fn(() => []),
-    } as any;
+    } as unknown as SourceFile;
     expect(() => getClassesFromService(node)).toThrowError("No classes found");
   });
 
@@ -215,16 +221,16 @@ describe("common", () => {
     };
     const node = {
       getClasses: vi.fn(() => [klass]),
-    } as any;
+    } as unknown as SourceFile;
     expect(() => getClassesFromService(node)).toThrowError(
-      "Class name not found"
+      "Class name not found",
     );
   });
 
   test("getNameFromMethod - get method name", () => {
     const method = {
       getName: vi.fn(() => "test"),
-    } as any;
+    } as unknown as MethodDeclaration;
     const result = getNameFromMethod(method);
     expect(result).toBe("test");
   });
@@ -232,9 +238,9 @@ describe("common", () => {
   test("getNameFromMethod - no method name", () => {
     const method = {
       getName: vi.fn(() => undefined),
-    } as any;
+    } as unknown as MethodDeclaration;
     expect(() => getNameFromMethod(method)).toThrowError(
-      "Method name not found"
+      "Method name not found",
     );
   });
 });

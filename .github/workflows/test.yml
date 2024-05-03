@@ -45,6 +45,10 @@ jobs:
       - name: Run tsc
         run: pnpm --filter @7nohe/react-app test:generated
 
+      - name: Run biome
+        run: pnpm biome check .
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+
       - name: Run test
         run: pnpm test
 

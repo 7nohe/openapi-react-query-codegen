@@ -1,7 +1,7 @@
-import { UserConfig, createClient } from "@hey-api/openapi-ts";
 import { existsSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import path from "node:path";
+import { type UserConfig, createClient } from "@hey-api/openapi-ts";
 export const outputPath = (prefix: string) =>
   path.join("tests", `${prefix}-outputs`);
 

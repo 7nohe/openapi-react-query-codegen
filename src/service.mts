@@ -1,7 +1,7 @@
+import type { ClassDeclaration, Project, SourceFile } from "ts-morph";
 import ts from "typescript";
-import { ClassDeclaration, Project, SourceFile } from "ts-morph";
 import {
-  MethodDescription,
+  type MethodDescription,
   getClassNameFromClassNode,
   getClassesFromService,
 } from "./common.mjs";
@@ -51,7 +51,7 @@ function getMethodsFromService(node: SourceFile, klass: ClassDeclaration) {
     }
     const methodBlock = methodBlockNode as ts.Block;
     const foundReturnStatement = methodBlock.statements.find(
-      (s) => s.kind === ts.SyntaxKind.ReturnStatement
+      (s) => s.kind === ts.SyntaxKind.ReturnStatement,
     );
     if (!foundReturnStatement) {
       throw new Error("Return statement not found");
@@ -91,7 +91,7 @@ function getMethodsFromService(node: SourceFile, klass: ClassDeclaration) {
     // get the first JSDoc comment
     const jsDoc = jsDocs?.[0];
     const isDeprecated = children.some(
-      (c) => c.kind === ts.SyntaxKind.JSDocDeprecatedTag
+      (c) => c.kind === ts.SyntaxKind.JSDocDeprecatedTag,
     );
 
     const className = getClassNameFromClassNode(klass);

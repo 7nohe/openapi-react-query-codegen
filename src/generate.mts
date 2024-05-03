@@ -1,13 +1,13 @@
-import { createClient, UserConfig } from "@hey-api/openapi-ts";
-import { print } from "./print.mjs";
-import { createSource } from "./createSource.mjs";
+import { type UserConfig, createClient } from "@hey-api/openapi-ts";
+import type { LimitedUserConfig } from "./cli.mjs";
 import {
   buildQueriesOutputPath,
   buildRequestsOutputPath,
   formatOptions,
 } from "./common.mjs";
-import { LimitedUserConfig } from "./cli.mjs";
+import { createSource } from "./createSource.mjs";
 import { formatOutput } from "./format.mjs";
+import { print } from "./print.mjs";
 
 export async function generate(options: LimitedUserConfig, version: string) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);

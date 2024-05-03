@@ -1,14 +1,14 @@
 import "./App.css";
+import { useState } from "react";
 import {
+  UseDefaultServiceFindPetsKeyFn,
   useDefaultServiceAddPet,
   useDefaultServiceFindPets,
-  UseDefaultServiceFindPetsKeyFn,
   useDefaultServiceGetNotDefined,
   useDefaultServicePostNotDefined,
 } from "../openapi/queries";
-import { useState } from "react";
-import { queryClient } from "./queryClient";
 import { SuspenseParent } from "./components/SuspenseParent";
+import { queryClient } from "./queryClient";
 
 function App() {
   const [tags, _setTags] = useState<string[]>([]);
@@ -17,7 +17,7 @@ function App() {
   const { data, error, refetch } = useDefaultServiceFindPets({ tags, limit });
   // This is an example of using a hook that has all parameters optional;
   // Here we do not have to pass in an object
-  const {} = useDefaultServiceFindPets();
+  const { data: _ } = useDefaultServiceFindPets();
 
   // This is an example of a query that is not defined in the OpenAPI spec
   // this defaults to any - here we are showing how to override the type
@@ -32,7 +32,9 @@ function App() {
     return (
       <div>
         <p>Failed to fetch pets</p>
-        <button onClick={() => refetch()}>Retry</button>
+        <button type="button" onClick={() => refetch()}>
+          Retry
+        </button>
       </div>
     );
 
@@ -40,12 +42,13 @@ function App() {
     <div className="App">
       <h1>Pet List</h1>
       <ul>
-        {data instanceof Array &&
+        {Array.isArray(data) &&
           data?.map((pet, index) => (
-            <li key={pet.id + "-" + index}>{pet.name}</li>
+            <li key={`${pet.id}-${index}`}>{pet.name}</li>
           ))}
       </ul>
       <button
+        type="button"
         onClick={() => {
           addPet(
             {
@@ -59,7 +62,7 @@ function App() {
                 console.log("success");
               },
               onError: (error) => console.error(error),
-            }
+            },
           );
         }}
       >

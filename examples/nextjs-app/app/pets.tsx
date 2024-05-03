@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
 import { useDefaultServiceFindPets } from "@/openapi/queries";
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 export default function Pets() {
   const { data } = useDefaultServiceFindPets({
@@ -11,7 +11,7 @@ export default function Pets() {
 
   return (
     <>
-    <h1>Pet List</h1>
+      <h1>Pet List</h1>
       <ul>
         {Array.isArray(data) &&
           data?.map((pet, index) => (
@@ -20,5 +20,5 @@ export default function Pets() {
       </ul>
       <ReactQueryDevtools initialIsOpen={false} />
     </>
-  )
+  );
 }

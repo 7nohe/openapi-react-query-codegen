@@ -1,7 +1,6 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
-import { queriesOutputPath } from "./constants.mjs";
-import { LimitedUserConfig } from "./cli.mjs";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import type { LimitedUserConfig } from "./cli.mjs";
 import { buildQueriesOutputPath, exists } from "./common.mjs";
 
 async function printGeneratedTS(
@@ -9,7 +8,7 @@ async function printGeneratedTS(
     name: string;
     content: string;
   },
-  options: Pick<LimitedUserConfig, "output">
+  options: Pick<LimitedUserConfig, "output">,
 ) {
   const dir = buildQueriesOutputPath(options.output);
   const dirExists = await exists(dir);
@@ -24,7 +23,7 @@ export async function print(
     name: string;
     content: string;
   }[],
-  options: Pick<LimitedUserConfig, "output">
+  options: Pick<LimitedUserConfig, "output">,
 ) {
   const outputPath = options.output;
   const dirExists = await exists(outputPath);

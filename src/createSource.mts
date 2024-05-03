@@ -1,9 +1,9 @@
-import ts from "typescript";
+import { join } from "node:path";
 import { Project } from "ts-morph";
-import { join } from "path";
+import ts from "typescript";
 import { OpenApiRqFiles } from "./constants.mjs";
-import { createImports } from "./createImports.mjs";
 import { createExports } from "./createExports.mjs";
+import { createImports } from "./createImports.mjs";
 import { getServices } from "./service.mjs";
 
 const createSourceFile = async (outputPath: string, serviceEndName: string) => {
@@ -30,7 +30,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
   const commonSource = ts.factory.createSourceFile(
     [...imports, ...exports.allCommon],
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None
+    ts.NodeFlags.None,
   );
 
   const commonImport = ts.factory.createImportDeclaration(
@@ -38,10 +38,10 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     ts.factory.createImportClause(
       false,
       ts.factory.createIdentifier("* as Common"),
-      undefined
+      undefined,
     ),
     ts.factory.createStringLiteral(`./${OpenApiRqFiles.common}`),
-    undefined
+    undefined,
   );
 
   const commonExport = ts.factory.createExportDeclaration(
@@ -49,7 +49,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     false,
     undefined,
     ts.factory.createStringLiteral(`./${OpenApiRqFiles.common}`),
-    undefined
+    undefined,
   );
 
   const queriesExport = ts.factory.createExportDeclaration(
@@ -57,31 +57,31 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     false,
     undefined,
     ts.factory.createStringLiteral(`./${OpenApiRqFiles.queries}`),
-    undefined
+    undefined,
   );
 
   const mainSource = ts.factory.createSourceFile(
     [commonImport, ...imports, ...exports.mainExports],
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None
+    ts.NodeFlags.None,
   );
 
   const suspenseSource = ts.factory.createSourceFile(
     [commonImport, ...imports, ...exports.suspenseExports],
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None
+    ts.NodeFlags.None,
   );
 
   const indexSource = ts.factory.createSourceFile(
     [commonExport, queriesExport],
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None
+    ts.NodeFlags.None,
   );
 
   const prefetchSource = ts.factory.createSourceFile(
     [commonImport, ...imports, ...exports.allPrefetchExports],
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None
+    ts.NodeFlags.None,
   );
 
   return {
@@ -107,21 +107,21 @@ export const createSource = async ({
     "",
     ts.ScriptTarget.Latest,
     false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
   const commonFile = ts.createSourceFile(
     `${OpenApiRqFiles.common}.ts`,
     "",
     ts.ScriptTarget.Latest,
     false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
   const suspenseFile = ts.createSourceFile(
     `${OpenApiRqFiles.suspense}.ts`,
     "",
     ts.ScriptTarget.Latest,
     false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
 
   const indexFile = ts.createSourceFile(
@@ -129,7 +129,7 @@ export const createSource = async ({
     "",
     ts.ScriptTarget.Latest,
     false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
 
   const prefetchFile = ts.createSourceFile(
@@ -137,7 +137,7 @@ export const createSource = async ({
     "",
     ts.ScriptTarget.Latest,
     false,
-    ts.ScriptKind.TS
+    ts.ScriptKind.TS,
   );
 
   const printer = ts.createPrinter({
