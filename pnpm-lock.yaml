@@ -53,9 +53,6 @@ importers:
       form-data:
         specifier: ~4.0.0
         version: 4.0.0
-      prettier:
-        specifier: ^3.2.5
-        version: 3.2.5
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -63,6 +60,9 @@ importers:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
     devDependencies:
+      '@biomejs/biome':
+        specifier: 1.7.2
+        version: 1.7.2
       '@stoplight/prism-cli':
         specifier: ^5.5.2
         version: 5.7.0
@@ -1806,11 +1806,6 @@ packages:
   postman-url-encoder@3.0.5:
     resolution: {integrity: sha512-jOrdVvzUXBC7C+9gkIkpDJ3HIxOHTIqjpQ4C1EMt1ZGeMvSEpbFCKq23DEfgsj46vMnDgyQf+1ZLp2Wm+bKSsA==}
     engines: {node: '>=10'}
-
-  prettier@3.2.5:
-    resolution: {integrity: sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==}
-    engines: {node: '>=14'}
-    hasBin: true
 
   pretty-data@0.40.0:
     resolution: {integrity: sha512-YFLnEdDEDnkt/GEhet5CYZHCvALw6+Elyb/tp8kQG03ZSIuzeaDWpZYndCXwgqu4NAjh1PI534dhDS1mHarRnQ==}
@@ -4179,8 +4174,6 @@ snapshots:
   postman-url-encoder@3.0.5:
     dependencies:
       punycode: 2.3.1
-
-  prettier@3.2.5: {}
 
   pretty-data@0.40.0: {}
 
