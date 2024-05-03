@@ -11,7 +11,7 @@ export * from "./queries";
 exports[`createSource > createSource 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
-import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
 import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
 export type DefaultServiceFindPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPets>>;
@@ -41,7 +41,7 @@ exports[`createSource > createSource 3`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
 import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
 /**
@@ -119,7 +119,7 @@ exports[`createSource > createSource 4`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
 import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
 /**
@@ -164,7 +164,7 @@ exports[`createSource > createSource 5`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
 import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
 /**
