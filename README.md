@@ -201,12 +201,17 @@ import {
 
 // App.tsx
 function App() {
-  const { data } = usePetServiceFindPetsByStatus({ status: ["available"] });
+  const [status, setStatus] = React.useState(["available"]);
+  const { data } = usePetServiceFindPetsByStatus({ status });
   const { mutate } = usePetServiceAddPet({
     onSuccess: () => {
       queryClient.invalidateQueries({
-        // Call the query key function to get the query key, this is important to ensure the query key is created the same way as the query hook, this insures the cache is invalidated correctly and is typed correctly
-        queryKey: [UsePetServiceFindPetsByStatusKeyFn()],
+        // Call the query key function to get the query key
+        // This is important to ensure the query key is created the same way as the query hook
+        // This insures the cache is invalidated correctly and is typed correctly
+        queryKey: [UsePetServiceFindPetsByStatusKeyFn({
+          status
+        })],
       });
     },
   });
