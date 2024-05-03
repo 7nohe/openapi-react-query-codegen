@@ -39,6 +39,7 @@ export * from "./queries";
 exports[`generate > prefetch.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
+import { type QueryClient } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
 import * as Common from "./common";
 /**

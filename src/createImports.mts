@@ -44,6 +44,11 @@ export const createImports = ({
         undefined,
         ts.factory.createNamedImports([
           ts.factory.createImportSpecifier(
+            true,
+            undefined,
+            ts.factory.createIdentifier("QueryClient")
+          ),
+          ts.factory.createImportSpecifier(
             false,
             undefined,
             ts.factory.createIdentifier("useQuery")
