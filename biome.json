@@ -4,7 +4,13 @@
     "enabled": true
   },
   "files": {
-    "ignore": ["dist", "examples/react-app/openapi", "coverage"]
+    "ignore": [
+      "dist",
+      "examples/react-app/openapi",
+      "coverage",
+      "examples/nextjs-app/openapi",
+      "examples/nextjs-app/.next"
+    ]
   },
   "linter": {
     "enabled": true,
