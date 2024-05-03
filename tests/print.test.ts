@@ -1,7 +1,7 @@
-import { describe, test, expect, vi, beforeEach } from "vitest";
-import { print } from "../src/print.mjs";
+import { mkdir, writeFile } from "node:fs/promises";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import * as common from "../src/common.mjs";
-import { mkdir, writeFile } from "fs/promises";
+import { print } from "../src/print.mjs";
 
 vi.mock("fs/promises", () => {
   return {
@@ -26,7 +26,7 @@ describe("print", () => {
       ],
       {
         output: "dist",
-      }
+      },
     );
     expect(exists).toBeCalledTimes(2);
     expect(result).toBeUndefined();
@@ -46,7 +46,7 @@ describe("print", () => {
       ],
       {
         output: "dist",
-      }
+      },
     );
     expect(exists).toBeCalledTimes(2);
     expect(result).toBeUndefined();

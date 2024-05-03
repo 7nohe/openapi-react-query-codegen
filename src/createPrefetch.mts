@@ -1,11 +1,11 @@
+import type { MethodDeclaration } from "ts-morph";
 import ts from "typescript";
-import { MethodDeclaration } from "ts-morph";
 import {
   BuildCommonTypeName,
   extractPropertiesFromObjectParam,
   getNameFromMethod,
 } from "./common.mjs";
-import { type MethodDescription } from "./common.mjs";
+import type { MethodDescription } from "./common.mjs";
 import {
   createQueryKeyFromMethod,
   getRequestParamFromMethod,
@@ -27,7 +27,9 @@ function createPrefetchHook({
 }) {
   const methodName = getNameFromMethod(method);
   const queryName = hookNameFromMethod({ method, className });
-  const customHookName = `prefetch${queryName.charAt(0).toUpperCase() + queryName.slice(1)}`;
+  const customHookName = `prefetch${
+    queryName.charAt(0).toUpperCase() + queryName.slice(1)
+  }`;
   const queryKey = createQueryKeyFromMethod({ method, className });
 
   // const
@@ -50,8 +52,8 @@ function createPrefetchHook({
                 "queryClient",
                 undefined,
                 ts.factory.createTypeReferenceNode(
-                  ts.factory.createIdentifier("QueryClient")
-                )
+                  ts.factory.createIdentifier("QueryClient"),
+                ),
               ),
               ...requestParams,
             ],
@@ -72,21 +74,20 @@ function createPrefetchHook({
                               ts.factory.createObjectLiteralExpression(
                                 method
                                   .getParameters()
-                                  .map((param) =>
+                                  .flatMap((param) =>
                                     extractPropertiesFromObjectParam(param).map(
                                       (p) =>
                                         ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name)
-                                        )
-                                    )
-                                  )
-                                  .flat()
+                                          ts.factory.createIdentifier(p.name),
+                                        ),
+                                    ),
+                                  ),
                               ),
                             ])
                           : ts.factory.createArrayLiteralExpression([]),
                       ],
-                      false
-                    )
+                      false,
+                    ),
                   ),
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryFn"),
@@ -96,12 +97,12 @@ function createPrefetchHook({
                       [],
                       undefined,
                       ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken
+                        ts.SyntaxKind.EqualsGreaterThanToken,
                       ),
                       ts.factory.createCallExpression(
                         ts.factory.createPropertyAccessExpression(
                           ts.factory.createIdentifier(className),
-                          ts.factory.createIdentifier(methodName)
+                          ts.factory.createIdentifier(methodName),
                         ),
                         undefined,
                         method.getParameters().length
@@ -109,29 +110,28 @@ function createPrefetchHook({
                               ts.factory.createObjectLiteralExpression(
                                 method
                                   .getParameters()
-                                  .map((param) =>
+                                  .flatMap((param) =>
                                     extractPropertiesFromObjectParam(param).map(
                                       (p) =>
                                         ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name)
-                                        )
-                                    )
-                                  )
-                                  .flat()
+                                          ts.factory.createIdentifier(p.name),
+                                        ),
+                                    ),
+                                  ),
                               ),
                             ]
-                          : undefined
-                      )
-                    )
+                          : undefined,
+                      ),
+                    ),
                   ),
                 ]),
-              ]
-            )
-          )
+              ],
+            ),
+          ),
         ),
       ],
-      ts.NodeFlags.Const
-    )
+      ts.NodeFlags.Const,
+    ),
   );
   return hookExport;
 }

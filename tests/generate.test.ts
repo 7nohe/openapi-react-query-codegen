@@ -1,14 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import type { LimitedUserConfig } from "../src/cli.mts";
 import { generate } from "../src/generate.mjs";
-import { rm } from "node:fs/promises";
-import { LimitedUserConfig } from "../src/cli.mts";
 
 const readOutput = (fileName: string) => {
   return readFileSync(
     path.join(__dirname, "outputs", "queries", fileName),
-    "utf-8"
+    "utf-8",
   );
 };
 

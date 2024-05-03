@@ -1,8 +1,8 @@
-import { describe, expect, test } from "vitest";
-import { cleanOutputs, generateTSClients, outputPath } from "./utils";
+import path from "node:path";
 import { Project } from "ts-morph";
+import { describe, expect, test } from "vitest";
 import { createImports } from "../src/createImports.mts";
-import path from "path";
+import { cleanOutputs, generateTSClients, outputPath } from "./utils";
 
 const fileName = "createImports";
 

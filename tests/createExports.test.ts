@@ -1,9 +1,9 @@
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { cleanOutputs, generateTSClients, outputPath } from "./utils";
+import path from "node:path";
 import { Project, SyntaxKind } from "ts-morph";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createExports } from "../src/createExports.mts";
 import { getServices } from "../src/service.mts";
-import path from "path";
+import { cleanOutputs, generateTSClients, outputPath } from "./utils";
 
 const fileName = "createExports";
 
@@ -50,7 +50,7 @@ describe(fileName, () => {
 
     const mainExports = exports.mainExports.map(
       // @ts-ignore
-      (e) => e.declarationList.declarations[0].name.escapedText
+      (e) => e.declarationList.declarations[0].name.escapedText,
     );
     expect(mainExports).toStrictEqual([
       "useDefaultServiceFindPets",
@@ -63,7 +63,7 @@ describe(fileName, () => {
 
     const suspenseExports = exports.suspenseExports.map(
       // @ts-ignore
-      (e) => e.declarationList.declarations[0].name.escapedText
+      (e) => e.declarationList.declarations[0].name.escapedText,
     );
     expect(suspenseExports).toStrictEqual([
       "useDefaultServiceFindPetsSuspense",
