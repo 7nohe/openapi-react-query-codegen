@@ -9,10 +9,13 @@
   "workspaces": ["examples/*"],
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.json",
+    "lint": "biome check .",
+    "lint:fix": "biome check --apply .",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
     "prepublishOnly": "npm run build",
     "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
-    "test": "vitest --coverage.enabled true"
+    "test": "vitest --coverage.enabled true",
+    "snapshot": "vitest --update"
   },
   "repository": {
     "type": "git",
