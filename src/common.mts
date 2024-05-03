@@ -1,14 +1,15 @@
-import { type PathLike } from "fs";
-import { stat } from "fs/promises";
-import ts from "typescript";
-import path from "path";
-import {
-  MethodDeclaration,
-  SourceFile,
-  ParameterDeclaration,
+import type { PathLike } from "node:fs";
+import { stat } from "node:fs/promises";
+import path from "node:path";
+import type {
   ClassDeclaration,
+  MethodDeclaration,
+  ParameterDeclaration,
+  SourceFile,
+  Type,
 } from "ts-morph";
-import { LimitedUserConfig } from "./cli.mjs";
+import ts from "typescript";
+import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
 
 export const TData = ts.factory.createIdentifier("TData");
@@ -16,11 +17,11 @@ export const TError = ts.factory.createIdentifier("TError");
 export const TContext = ts.factory.createIdentifier("TContext");
 
 export const EqualsOrGreaterThanToken = ts.factory.createToken(
-  ts.SyntaxKind.EqualsGreaterThanToken
+  ts.SyntaxKind.EqualsGreaterThanToken,
 );
 
 export const QuestionToken = ts.factory.createToken(
-  ts.SyntaxKind.QuestionToken
+  ts.SyntaxKind.QuestionToken,
 );
 
 export const queryKeyGenericType =
@@ -84,10 +85,10 @@ export function BuildCommonTypeName(name: string | ts.Identifier) {
  */
 export function safeParseNumber(value: unknown): number {
   const parsed = Number(value);
-  if (!isNaN(parsed) && isFinite(parsed)) {
+  if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
     return parsed;
   }
-  return NaN;
+  return Number.NaN;
 }
 
 export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
@@ -100,7 +101,7 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
     .map((prop) => ({
       name: prop.getName(),
       optional: prop.isOptional(),
-      type: prop.getValueDeclaration()?.getType()!,
+      type: prop.getValueDeclaration()?.getType() as Type<ts.Type>,
     }));
   return paramNodes;
 }
@@ -156,17 +157,19 @@ export function formatOptions(options: LimitedUserConfig) {
       const typedValue = value as (typeof options)[keyof LimitedUserConfig];
       const parsedNumber = safeParseNumber(typedValue);
       if (value === "true" || value === true) {
-        (acc as any)[typedKey] = true;
+        (acc as unknown as Record<string, boolean>)[typedKey] = true;
       } else if (value === "false" || value === false) {
-        (acc as any)[typedKey] = false;
-      } else if (!isNaN(parsedNumber)) {
-        (acc as any)[typedKey] = parsedNumber;
+        (acc as unknown as Record<string, boolean>)[typedKey] = false;
+      } else if (!Number.isNaN(parsedNumber)) {
+        (acc as unknown as Record<string, number>)[typedKey] = parsedNumber;
       } else {
-        (acc as any)[typedKey] = typedValue;
+        (acc as unknown as Record<string, string | undefined | boolean>)[
+          typedKey
+        ] = typedValue;
       }
       return acc;
     },
-    options
+    options,
   );
   return formattedOptions;
 }

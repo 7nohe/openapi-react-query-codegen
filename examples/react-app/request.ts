@@ -18,45 +18,48 @@ const axiosInstance = axios.create({
 
 // Add a request interceptor
 axiosInstance.interceptors.request.use(
-    function (config) {
-        // Do something before request is sent
-        if (!config.url || !config.params) {
-            return config;
-        }
-
-        Object.entries<any>(config.params).forEach(([key, value]) => {
-            const stringToSearch = `{${key}}`;
-            if(config.url !== undefined && config.url.search(stringToSearch) !== -1) {
-                config.url = config.url.replace(`{${key}}`, encodeURIComponent(value));
-                delete config.params[key];
-            }
-        });
-
-        return  config;
-    },
-    function (error) {
-        // Do something with request error
-        return Promise.reject(error);
+  (config) => {
+    // Do something before request is sent
+    if (!config.url || !config.params) {
+      return config;
     }
+
+    for (const [key, value] of Object.entries<string>(config.params)) {
+      const stringToSearch = `{${key}}`;
+      if (
+        config.url !== undefined &&
+        config.url.search(stringToSearch) !== -1
+      ) {
+        config.url = config.url.replace(`{${key}}`, encodeURIComponent(value));
+        delete config.params[key];
+      }
+    }
+
+    return config;
+  },
+  (error) => {
+    // Do something with request error
+    return Promise.reject(error);
+  },
 );
 
 // Add a response interceptor
 axiosInstance.interceptors.response.use(
-  function (response) {
+  (response) => {
     // Any status code that lie within the range of 2xx cause this function to trigger
     // Do something with response data
     return response;
   },
-  function (error) {
+  (error) => {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
     // Do something with response error
     return Promise.reject(error);
-  }
+  },
 );
 
 export const request = <T>(
   config: OpenAPIConfig,
-  options: ApiRequestOptions
+  options: ApiRequestOptions,
 ): CancelablePromise<T> => {
   return new CancelablePromise((resolve, reject, onCancel) => {
     onCancel(() => source.cancel("The user aborted a request."));

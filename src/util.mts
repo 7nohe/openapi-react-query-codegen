@@ -2,7 +2,7 @@ import ts from "typescript";
 
 export function addJSDocToNode<T extends ts.Node>(
   node: T,
-  jsDoc: string | undefined
+  jsDoc: string | undefined,
 ): T {
   if (!jsDoc) {
     return node;
@@ -21,7 +21,7 @@ export function addJSDocToNode<T extends ts.Node>(
     node,
     ts.SyntaxKind.MultiLineCommentTrivia,
     joined,
-    true
+    true,
   );
 
   return nodeWithJSDoc;

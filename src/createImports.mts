@@ -1,6 +1,6 @@
+import { posix } from "node:path";
+import type { Project } from "ts-morph";
 import ts from "typescript";
-import { posix } from "path";
-import { Project } from "ts-morph";
 import { modalsFileName, serviceFileName } from "./constants.mjs";
 
 const { join } = posix;
@@ -29,11 +29,11 @@ export const createImports = ({
     : [];
 
   const serviceExports = Array.from(
-    serviceFile.getExportedDeclarations().keys()
+    serviceFile.getExportedDeclarations().keys(),
   );
 
   const serviceNames = serviceExports.filter((name) =>
-    name.endsWith(serviceEndName)
+    name.endsWith(serviceEndName),
   );
 
   const imports = [
@@ -51,42 +51,42 @@ export const createImports = ({
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier("useQuery")
+            ts.factory.createIdentifier("useQuery"),
           ),
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier("useSuspenseQuery")
+            ts.factory.createIdentifier("useSuspenseQuery"),
           ),
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier("useMutation")
+            ts.factory.createIdentifier("useMutation"),
           ),
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier("UseQueryResult")
+            ts.factory.createIdentifier("UseQueryResult"),
           ),
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier("UseQueryOptions")
+            ts.factory.createIdentifier("UseQueryOptions"),
           ),
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier("UseMutationOptions")
+            ts.factory.createIdentifier("UseMutationOptions"),
           ),
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier("UseMutationResult")
+            ts.factory.createIdentifier("UseMutationResult"),
           ),
-        ])
+        ]),
       ),
       ts.factory.createStringLiteral("@tanstack/react-query"),
-      undefined
+      undefined,
     ),
     ts.factory.createImportDeclaration(
       undefined,
@@ -99,13 +99,13 @@ export const createImports = ({
             ts.factory.createImportSpecifier(
               false,
               undefined,
-              ts.factory.createIdentifier(serviceName)
-            )
+              ts.factory.createIdentifier(serviceName),
+            ),
           ),
-        ])
+        ]),
       ),
       ts.factory.createStringLiteral(join("../requests", serviceFileName)),
-      undefined
+      undefined,
     ),
   ];
   if (modelsFile) {
@@ -121,14 +121,14 @@ export const createImports = ({
               ts.factory.createImportSpecifier(
                 false,
                 undefined,
-                ts.factory.createIdentifier(modelName)
-              )
+                ts.factory.createIdentifier(modelName),
+              ),
             ),
-          ])
+          ]),
         ),
         ts.factory.createStringLiteral(join("../requests/", modalsFileName)),
-        undefined
-      )
+        undefined,
+      ),
     );
   }
   return imports;

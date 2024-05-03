@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { generate } from "./generate.mjs";
-import { Command, Option } from "commander";
-import { readFile } from "fs/promises";
-import { dirname, join } from "path";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Command, Option } from "commander";
 import { defaultOutputPath } from "./constants.mjs";
+import { generate } from "./generate.mjs";
 
 const program = new Command();
 
@@ -38,57 +38,57 @@ async function setupProgram() {
     .description("Generate React Query code based on OpenAPI")
     .requiredOption(
       "-i, --input <value>",
-      "OpenAPI specification, can be a path, url or string content (required)"
+      "OpenAPI specification, can be a path, url or string content (required)",
     )
     .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
         .choices(["angular", "axios", "fetch", "node", "xhr"])
-        .default("fetch")
+        .default("fetch"),
     )
     .option("--request <value>", "Path to custom request file")
     .addOption(
       new Option(
         "--format <value>",
-        "Process output folder with formatter?"
-      ).choices(["biome", "prettier"])
+        "Process output folder with formatter?",
+      ).choices(["biome", "prettier"]),
     )
     .addOption(
       new Option(
         "--lint <value>",
-        "Process output folder with linter?"
-      ).choices(["biome", "eslint"])
+        "Process output folder with linter?",
+      ).choices(["biome", "eslint"]),
     )
     .option("--operationId", "Use operation ID to generate operation names?")
     .addOption(
       new Option(
         "--serviceResponse <value>",
-        "Define shape of returned value from service calls"
+        "Define shape of returned value from service calls",
       )
         .choices(["body", "response"])
-        .default("body")
+        .default("body"),
     )
     .option(
       "--base <value>",
-      "Manually set base in OpenAPI config instead of inferring from server value"
+      "Manually set base in OpenAPI config instead of inferring from server value",
     )
     .addOption(
       new Option(
         "--enums <value>",
-        "Generate JavaScript objects from enum definitions?"
-      ).choices(["javascript", "typescript"])
+        "Generate JavaScript objects from enum definitions?",
+      ).choices(["javascript", "typescript"]),
     )
     .option(
       "--useDateType",
-      "Use Date type instead of string for date types for models, this will not convert the data to a Date object"
+      "Use Date type instead of string for date types for models, this will not convert the data to a Date object",
     )
     .option("--debug", "Run in debug mode?")
     .option("--noSchemas", "Disable generating JSON schemas")
     .addOption(
       new Option(
         "--schemaType <value>",
-        "Type of JSON schema [Default: 'json']"
-      ).choices(["form", "json"])
+        "Type of JSON schema [Default: 'json']",
+      ).choices(["form", "json"]),
     )
     .parse();
 
