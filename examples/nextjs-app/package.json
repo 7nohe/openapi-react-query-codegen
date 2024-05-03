@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ./petstore.yaml -c axios --request ./request.ts"
+    "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ./petstore.yaml -c axios --request ./request.ts --format=biome --lint=biome"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.18.1",
