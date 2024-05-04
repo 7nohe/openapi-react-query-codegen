@@ -18,7 +18,6 @@ export async function generate(options: LimitedUserConfig, version: string) {
     client: formattedOptions.client,
     debug: formattedOptions.debug,
     dryRun: false,
-    enums: formattedOptions.enums,
     exportCore: true,
     format: formattedOptions.format,
     input: formattedOptions.input,
@@ -36,6 +35,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
     types: {
       dates: formattedOptions.useDateType,
       export: true,
+      enums: formattedOptions.enums,
     },
     useOptions: true,
   };

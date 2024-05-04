@@ -13,7 +13,7 @@ exports[`createSource > createSource 2`] = `
 
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, $OpenApiTs } from "../requests/types.gen";
 export type DefaultServiceFindPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPets>>;
 export type DefaultServiceFindPetsQueryResult<TData = DefaultServiceFindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useDefaultServiceFindPetsKey = "DefaultServiceFindPets";
@@ -43,7 +43,7 @@ exports[`createSource > createSource 3`] = `
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, $OpenApiTs } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
@@ -103,8 +103,8 @@ export const useDefaultServicePostNotDefined = <TData = Common.DefaultServicePos
 * deletes a single pet based on the ID supplied
 * @param data The data for the request.
 * @param data.id ID of pet to delete
-* @returns Error unexpected error
 * @returns void pet deleted
+* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceDeletePet = <TData = Common.DefaultServiceDeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
@@ -121,7 +121,7 @@ exports[`createSource > createSource 4`] = `
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, $OpenApiTs } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
@@ -166,7 +166,7 @@ exports[`createSource > createSource 5`] = `
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, $OpenApiTs } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
