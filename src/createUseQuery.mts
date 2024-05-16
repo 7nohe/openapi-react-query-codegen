@@ -347,7 +347,7 @@ export function createQueryHook({
                             ),
                             ts.factory.createIdentifier("queryKey"),
                           ]
-                        : [],
+                        : [ts.factory.createIdentifier("queryKey")],
                     ),
                   ),
                   ts.factory.createPropertyAssignment(
@@ -490,7 +490,7 @@ function createQueryKeyFnExport(queryKey: string, method: MethodDeclaration) {
           ts.factory.createArrowFunction(
             undefined,
             undefined,
-            params ? [params, overrideKey] : [],
+            params ? [params, overrideKey] : [overrideKey],
             undefined,
             EqualsOrGreaterThanToken,
             queryKeyFn(queryKey, method),
@@ -506,14 +506,6 @@ function queryKeyFn(
   queryKey: string,
   method: MethodDeclaration,
 ): ts.Expression {
-  const params = getRequestParamFromMethod(method);
-
-  if (!params) {
-    return ts.factory.createArrayLiteralExpression([
-      ts.factory.createIdentifier(queryKey),
-    ]);
-  }
-
   return ts.factory.createArrayLiteralExpression(
     [
       ts.factory.createIdentifier(queryKey),
