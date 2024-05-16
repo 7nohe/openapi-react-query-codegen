@@ -19,10 +19,12 @@ export async function generate(options: LimitedUserConfig, version: string) {
     debug: formattedOptions.debug,
     dryRun: false,
     exportCore: true,
-    format: formattedOptions.format,
+    output: {
+      format: formattedOptions.format,
+      lint: formattedOptions.lint,
+      path: openApiOutputPath,
+    },
     input: formattedOptions.input,
-    lint: formattedOptions.lint,
-    output: openApiOutputPath,
     request: formattedOptions.request,
     schemas: {
       export: !formattedOptions.noSchemas,
