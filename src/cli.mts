@@ -23,6 +23,8 @@ export type LimitedUserConfig = {
   debug?: boolean;
   noSchemas?: boolean;
   schemaType?: "form" | "json";
+  pageParam: string;
+  nextPageParam: string;
 };
 
 async function setupProgram() {
@@ -89,6 +91,16 @@ async function setupProgram() {
         "--schemaType <value>",
         "Type of JSON schema [Default: 'json']",
       ).choices(["form", "json"]),
+    )
+    .option(
+      "--pageParam <value>",
+      "Name of the query parameter used for pagination",
+      "page",
+    )
+    .option(
+      "--nextPageParam <value>",
+      "Name of the response parameter used for next page",
+      "nextPage",
     )
     .parse();
 

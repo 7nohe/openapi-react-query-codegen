@@ -1,4 +1,4 @@
-import type { MethodDeclaration } from "ts-morph";
+import type { MethodDeclaration, ParameterDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
@@ -33,13 +33,13 @@ export const createApiResponseType = ({
           ts.factory.createTypeQueryNode(
             ts.factory.createQualifiedName(
               ts.factory.createIdentifier(className),
-              ts.factory.createIdentifier(methodName),
+              ts.factory.createIdentifier(methodName)
             ),
-            undefined,
+            undefined
           ),
-        ],
+        ]
       ),
-    ],
+    ]
   );
   /** DefaultResponseDataType
    * export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
@@ -48,18 +48,18 @@ export const createApiResponseType = ({
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
       `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
-        methodName,
-      )}DefaultResponse`,
+        methodName
+      )}DefaultResponse`
     ),
     undefined,
-    awaitedResponseDataType,
+    awaitedResponseDataType
   );
 
   const responseDataType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TData.text,
     undefined,
-    ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name)),
+    ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name))
   );
 
   return {
@@ -78,18 +78,24 @@ export const createApiResponseType = ({
   };
 };
 
-export function getRequestParamFromMethod(method: MethodDeclaration) {
+export function getRequestParamFromMethod(
+  method: MethodDeclaration,
+  pageParam?: string
+) {
   if (!method.getParameters().length) {
     return null;
   }
 
   const params = method.getParameters().flatMap((param) => {
     const paramNodes = extractPropertiesFromObjectParam(param);
-    return paramNodes.map((refParam) => ({
-      name: refParam.name,
-      typeName: getShortType(refParam.type.getText()),
-      optional: refParam.optional,
-    }));
+
+    return paramNodes
+      .filter((p) => p.name !== pageParam)
+      .map((refParam) => ({
+        name: refParam.name,
+        typeName: getShortType(refParam.type.getText()),
+        optional: refParam.optional,
+      }));
   });
 
   const areAllPropertiesOptional = params.every((param) => param.optional);
@@ -103,9 +109,9 @@ export function getRequestParamFromMethod(method: MethodDeclaration) {
           undefined,
           undefined,
           ts.factory.createIdentifier(refParam.name),
-          undefined,
-        ),
-      ),
+          undefined
+        )
+      )
     ),
     undefined,
     ts.factory.createTypeLiteralNode(
@@ -116,15 +122,15 @@ export function getRequestParamFromMethod(method: MethodDeclaration) {
           refParam.optional
             ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
             : undefined,
-          ts.factory.createTypeReferenceNode(refParam.typeName),
+          ts.factory.createTypeReferenceNode(refParam.typeName)
         );
-      }),
+      })
     ),
     // if all params are optional, we create an empty object literal
     // so the hook can be called without any parameters
     areAllPropertiesOptional
       ? ts.factory.createObjectLiteralExpression()
-      : undefined,
+      : undefined
   );
 }
 
@@ -146,21 +152,21 @@ export function createReturnTypeExport({
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
       `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
-        methodName,
-      )}QueryResult`,
+        methodName
+      )}QueryResult`
     ),
     [
       ts.factory.createTypeParameterDeclaration(
         undefined,
         TData,
         undefined,
-        ts.factory.createTypeReferenceNode(defaultApiResponse.name),
+        ts.factory.createTypeReferenceNode(defaultApiResponse.name)
       ),
       ts.factory.createTypeParameterDeclaration(
         undefined,
         TError,
         undefined,
-        ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
       ),
     ],
     ts.factory.createTypeReferenceNode(
@@ -168,8 +174,8 @@ export function createReturnTypeExport({
       [
         ts.factory.createTypeReferenceNode(TData),
         ts.factory.createTypeReferenceNode(TError),
-      ],
-    ),
+      ]
+    )
   );
 }
 
@@ -194,12 +200,12 @@ export function createQueryKeyExport({
           undefined,
           undefined,
           ts.factory.createStringLiteral(
-            `${className}${capitalizeFirstLetter(methodName)}`,
-          ),
+            `${className}${capitalizeFirstLetter(methodName)}`
+          )
         ),
       ],
-      ts.NodeFlags.Const,
-    ),
+      ts.NodeFlags.Const
+    )
   );
 }
 
@@ -238,17 +244,24 @@ export function createQueryHook({
   requestParams,
   method,
   className,
+  pageParam,
+  nextPageParam,
 }: {
-  queryString: "useSuspenseQuery" | "useQuery";
+  queryString: "useSuspenseQuery" | "useQuery" | "useInfiniteQuery";
   suffix: string;
   responseDataType: ts.TypeParameterDeclaration;
   requestParams: ts.ParameterDeclaration[];
   method: MethodDeclaration;
   className: string;
+  pageParam?: string;
+  nextPageParam?: string;
 }) {
   const methodName = getNameFromMethod(method);
   const customHookName = hookNameFromMethod({ method, className });
   const queryKey = createQueryKeyFromMethod({ method, className });
+
+  const isInfiniteQuery =
+    pageParam !== undefined && nextPageParam !== undefined;
 
   const hookExport = ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -266,17 +279,15 @@ export function createQueryHook({
                 undefined,
                 TError,
                 undefined,
-                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
+                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
               ),
               ts.factory.createTypeParameterDeclaration(
                 undefined,
                 "TQueryKey",
                 queryKeyConstraint,
                 ts.factory.createArrayTypeNode(
-                  ts.factory.createKeywordTypeNode(
-                    ts.SyntaxKind.UnknownKeyword,
-                  ),
-                ),
+                  ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
+                )
               ),
             ]),
             [
@@ -286,7 +297,7 @@ export function createQueryHook({
                 undefined,
                 ts.factory.createIdentifier("queryKey"),
                 ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-                queryKeyGenericType,
+                queryKeyGenericType
               ),
               ts.factory.createParameterDeclaration(
                 undefined,
@@ -297,22 +308,26 @@ export function createQueryHook({
                   ts.factory.createIdentifier("Omit"),
                   [
                     ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("UseQueryOptions"),
+                      ts.factory.createIdentifier(
+                        isInfiniteQuery
+                          ? "UseInfiniteQueryOptions"
+                          : "UseQueryOptions"
+                      ),
                       [
                         ts.factory.createTypeReferenceNode(TData),
                         ts.factory.createTypeReferenceNode(TError),
-                      ],
+                      ]
                     ),
                     ts.factory.createUnionTypeNode([
                       ts.factory.createLiteralTypeNode(
-                        ts.factory.createStringLiteral("queryKey"),
+                        ts.factory.createStringLiteral("queryKey")
                       ),
                       ts.factory.createLiteralTypeNode(
-                        ts.factory.createStringLiteral("queryFn"),
+                        ts.factory.createStringLiteral("queryFn")
                       ),
                     ]),
-                  ],
-                ),
+                  ]
+                )
               ),
             ],
             undefined,
@@ -340,15 +355,15 @@ export function createQueryHook({
                                   extractPropertiesFromObjectParam(param).map(
                                     (p) =>
                                       ts.factory.createShorthandPropertyAssignment(
-                                        ts.factory.createIdentifier(p.name),
-                                      ),
-                                  ),
-                                ),
+                                        ts.factory.createIdentifier(p.name)
+                                      )
+                                  )
+                                )
                             ),
                             ts.factory.createIdentifier("queryKey"),
                           ]
-                        : [ts.factory.createIdentifier("queryKey")],
-                    ),
+                        : [ts.factory.createIdentifier("queryKey")]
+                    )
                   ),
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryFn"),
@@ -362,7 +377,7 @@ export function createQueryHook({
                         ts.factory.createCallExpression(
                           ts.factory.createPropertyAccessExpression(
                             ts.factory.createIdentifier(className),
-                            ts.factory.createIdentifier(methodName),
+                            ts.factory.createIdentifier(methodName)
                           ),
                           undefined,
                           method.getParameters().length
@@ -372,41 +387,81 @@ export function createQueryHook({
                                     .getParameters()
                                     .flatMap((param) =>
                                       extractPropertiesFromObjectParam(
-                                        param,
+                                        param
                                       ).map((p) =>
                                         ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name),
-                                        ),
-                                      ),
-                                    ),
+                                          ts.factory.createIdentifier(p.name)
+                                        )
+                                      )
+                                    )
                                 ),
                               ]
-                            : undefined,
+                            : undefined
                         ),
-                        ts.factory.createTypeReferenceNode(TData),
-                      ),
-                    ),
+                        ts.factory.createTypeReferenceNode(TData)
+                      )
+                    )
                   ),
+                  ...(pageParam !== undefined && nextPageParam !== undefined
+                    ? [
+                        ts.factory.createPropertyAssignment(
+                          ts.factory.createIdentifier("initialPageParam"),
+                          ts.factory.createNumericLiteral(1)
+                        ),
+                        ts.factory.createPropertyAssignment(
+                          ts.factory.createIdentifier("getNextPageParam"),
+                          // (response) => (response as { nextPage: number }).nextPage,
+                          ts.factory.createArrowFunction(
+                            undefined,
+                            undefined,
+                            [
+                              ts.factory.createParameterDeclaration(
+                                undefined,
+                                undefined,
+                                ts.factory.createIdentifier("response"),
+                                undefined,
+                                undefined
+                              ),
+                            ],
+                            undefined,
+                            EqualsOrGreaterThanToken,
+                            ts.factory.createPropertyAccessExpression(
+                              ts.factory.createParenthesizedExpression(
+                                ts.factory.createAsExpression(
+                                  ts.factory.createIdentifier("response"),
+                                  ts.factory.createTypeReferenceNode(
+                                    ts.factory.createIdentifier(
+                                      `{ ${nextPageParam}: number }`
+                                    )
+                                  )
+                                )
+                              ),
+                              ts.factory.createIdentifier(nextPageParam)
+                            )
+                          )
+                        ),
+                      ]
+                    : []),
                   ts.factory.createSpreadAssignment(
-                    ts.factory.createIdentifier("options"),
+                    ts.factory.createIdentifier("options")
                   ),
                 ]),
-              ],
-            ),
-          ),
+              ]
+            )
+          )
         ),
       ],
-      ts.NodeFlags.Const,
-    ),
+      ts.NodeFlags.Const
+    )
   );
   return hookExport;
 }
 
-export const createUseQuery = ({
-  className,
-  method,
-  jsDoc,
-}: MethodDescription) => {
+export const createUseQuery = (
+  { className, method, jsDoc }: MethodDescription,
+  pageParam: string,
+  nextPageParam: string
+) => {
   const methodName = getNameFromMethod(method);
   const queryKey = createQueryKeyFromMethod({ method, className });
   const { apiResponse: defaultApiResponse, responseDataType } =
@@ -416,8 +471,17 @@ export const createUseQuery = ({
     });
 
   const requestParam = getRequestParamFromMethod(method);
+  const infiniteRequestParam = getRequestParamFromMethod(method, pageParam);
 
   const requestParams = requestParam ? [requestParam] : [];
+
+  const requestParamNames = requestParams
+    .filter((p) => p.name.kind === ts.SyntaxKind.ObjectBindingPattern)
+    .map((p) => p.name as ts.ObjectBindingPattern);
+  const requestParamTexts = requestParamNames
+    .at(0)
+    ?.elements.filter((e) => e.name.kind === ts.SyntaxKind.Identifier)
+    .map((e) => (e.name as ts.Identifier).escapedText as string);
 
   const queryHook = createQueryHook({
     queryString: "useQuery",
@@ -427,6 +491,7 @@ export const createUseQuery = ({
     method,
     className,
   });
+
   const suspenseQueryHook = createQueryHook({
     queryString: "useSuspenseQuery",
     suffix: "Suspense",
@@ -435,9 +500,25 @@ export const createUseQuery = ({
     method,
     className,
   });
+  const isInfiniteQuery = requestParamTexts?.includes(pageParam) ?? false;
+  const infiniteQueryHook = isInfiniteQuery
+    ? createQueryHook({
+        queryString: "useInfiniteQuery",
+        suffix: "Infinite",
+        responseDataType,
+        requestParams: infiniteRequestParam ? [infiniteRequestParam] : [],
+        method,
+        className,
+        pageParam,
+        nextPageParam,
+      })
+    : undefined;
 
   const hookWithJsDoc = addJSDocToNode(queryHook, jsDoc);
   const suspenseHookWithJsDoc = addJSDocToNode(suspenseQueryHook, jsDoc);
+  const infiniteHookWithJsDoc = infiniteQueryHook
+    ? addJSDocToNode(infiniteQueryHook, jsDoc)
+    : undefined;
 
   const returnTypeExport = createReturnTypeExport({
     className,
@@ -459,6 +540,7 @@ export const createUseQuery = ({
     key: queryKeyExport,
     queryHook: hookWithJsDoc,
     suspenseQueryHook: suspenseHookWithJsDoc,
+    infiniteQueryHook: infiniteHookWithJsDoc,
     queryKeyFn,
   };
 };
@@ -476,7 +558,7 @@ function createQueryKeyFnExport(queryKey: string, method: MethodDeclaration) {
     undefined,
     ts.factory.createIdentifier("queryKey"),
     QuestionToken,
-    ts.factory.createTypeReferenceNode("Array<unknown>", []),
+    ts.factory.createTypeReferenceNode("Array<unknown>", [])
   );
 
   return ts.factory.createVariableStatement(
@@ -493,18 +575,18 @@ function createQueryKeyFnExport(queryKey: string, method: MethodDeclaration) {
             params ? [params, overrideKey] : [overrideKey],
             undefined,
             EqualsOrGreaterThanToken,
-            queryKeyFn(queryKey, method),
-          ),
+            queryKeyFn(queryKey, method)
+          )
         ),
       ],
-      ts.NodeFlags.Const,
-    ),
+      ts.NodeFlags.Const
+    )
   );
 }
 
 function queryKeyFn(
   queryKey: string,
-  method: MethodDeclaration,
+  method: MethodDeclaration
 ): ts.Expression {
   return ts.factory.createArrayLiteralExpression(
     [
@@ -522,17 +604,17 @@ function queryKeyFn(
                       .flatMap((param) =>
                         extractPropertiesFromObjectParam(param).map((p) =>
                           ts.factory.createShorthandPropertyAssignment(
-                            ts.factory.createIdentifier(p.name),
-                          ),
-                        ),
-                      ),
+                            ts.factory.createIdentifier(p.name)
+                          )
+                        )
+                      )
                   ),
                 ])
-              : ts.factory.createArrayLiteralExpression([]),
-          ),
-        ),
+              : ts.factory.createArrayLiteralExpression([])
+          )
+        )
       ),
     ],
-    false,
+    false
   );
 }
