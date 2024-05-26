@@ -55,8 +55,8 @@ function createPrefetchHook({
                 "queryClient",
                 undefined,
                 ts.factory.createTypeReferenceNode(
-                  ts.factory.createIdentifier("QueryClient")
-                )
+                  ts.factory.createIdentifier("QueryClient"),
+                ),
               ),
               ...requestParams,
             ],
@@ -82,14 +82,14 @@ function createPrefetchHook({
                                   extractPropertiesFromObjectParam(param).map(
                                     (p) =>
                                       ts.factory.createShorthandPropertyAssignment(
-                                        ts.factory.createIdentifier(p.name)
-                                      )
-                                  )
-                                )
+                                        ts.factory.createIdentifier(p.name),
+                                      ),
+                                  ),
+                                ),
                             ),
                           ]
-                        : []
-                    )
+                        : [],
+                    ),
                   ),
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryFn"),
@@ -99,12 +99,12 @@ function createPrefetchHook({
                       [],
                       undefined,
                       ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken
+                        ts.SyntaxKind.EqualsGreaterThanToken,
                       ),
                       ts.factory.createCallExpression(
                         ts.factory.createPropertyAccessExpression(
                           ts.factory.createIdentifier(className),
-                          ts.factory.createIdentifier(methodName)
+                          ts.factory.createIdentifier(methodName),
                         ),
                         undefined,
                         method.getParameters().length
@@ -116,24 +116,24 @@ function createPrefetchHook({
                                     extractPropertiesFromObjectParam(param).map(
                                       (p) =>
                                         ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name)
-                                        )
-                                    )
-                                  )
+                                          ts.factory.createIdentifier(p.name),
+                                        ),
+                                    ),
+                                  ),
                               ),
                             ]
-                          : undefined
-                      )
-                    )
+                          : undefined,
+                      ),
+                    ),
                   ),
                 ]),
-              ]
-            )
-          )
+              ],
+            ),
+          ),
         ),
       ],
-      ts.NodeFlags.Const
-    )
+      ts.NodeFlags.Const,
+    ),
   );
   return hookExport;
 }
