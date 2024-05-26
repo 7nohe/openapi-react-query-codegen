@@ -1,26 +1,26 @@
-import { createUseQuery } from "./createUseQuery.mjs";
-import { createUseMutation } from "./createUseMutation.mjs";
-import { Service } from "./service.mjs";
 import { createPrefetch } from "./createPrefetch.mjs";
+import { createUseMutation } from "./createUseMutation.mjs";
+import { createUseQuery } from "./createUseQuery.mjs";
+import type { Service } from "./service.mjs";
 
 export const createExports = (service: Service) => {
   const { klasses } = service;
-  const methods = klasses.map((k) => k.methods).flat();
+  const methods = klasses.flatMap((k) => k.methods);
 
   const allGet = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("GET")
+    m.httpMethodName.toUpperCase().includes("GET"),
   );
   const allPost = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("POST")
+    m.httpMethodName.toUpperCase().includes("POST"),
   );
   const allPut = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("PUT")
+    m.httpMethodName.toUpperCase().includes("PUT"),
   );
   const allPatch = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("PATCH")
+    m.httpMethodName.toUpperCase().includes("PATCH"),
   );
   const allDelete = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("DELETE")
+    m.httpMethodName.toUpperCase().includes("DELETE"),
   );
 
   const allGetQueries = allGet.map((m) => createUseQuery(m));
@@ -39,36 +39,36 @@ export const createExports = (service: Service) => {
     ...allDeleteMutations,
   ];
 
-  const commonInQueries = allQueries
-    .map(({ apiResponse, returnType, key, queryKeyFn }) => [
+  const commonInQueries = allQueries.flatMap(
+    ({ apiResponse, returnType, key, queryKeyFn }) => [
       apiResponse,
       returnType,
       key,
       queryKeyFn,
-    ])
-    .flat();
-  const commonInMutations = allMutations
-    .map(({ mutationResult }) => [mutationResult])
-    .flat();
+    ],
+  );
+  const commonInMutations = allMutations.flatMap(({ mutationResult }) => [
+    mutationResult,
+  ]);
 
   const allCommon = [...commonInQueries, ...commonInMutations];
 
-  const mainQueries = allQueries.map(({ queryHook }) => [queryHook]).flat();
-  const mainMutations = allMutations
-    .map(({ mutationHook }) => [mutationHook])
-    .flat();
+  const mainQueries = allQueries.flatMap(({ queryHook }) => [queryHook]);
+  const mainMutations = allMutations.flatMap(({ mutationHook }) => [
+    mutationHook,
+  ]);
 
   const mainExports = [...mainQueries, ...mainMutations];
 
-  const suspenseQueries = allQueries
-    .map(({ suspenseQueryHook }) => [suspenseQueryHook])
-    .flat();
+  const suspenseQueries = allQueries.flatMap(({ suspenseQueryHook }) => [
+    suspenseQueryHook,
+  ]);
 
   const suspenseExports = [...suspenseQueries];
 
-  const allPrefetches = allPrefetchQueries
-    .map(({ prefetchHook }) => [prefetchHook])
-    .flat();
+  const allPrefetches = allPrefetchQueries.flatMap(({ prefetchHook }) => [
+    prefetchHook,
+  ]);
 
   const allPrefetchExports = [...allPrefetches];
 

@@ -1,13 +1,13 @@
-import { createClient, UserConfig } from "@hey-api/openapi-ts";
-import { print } from "./print.mjs";
-import { createSource } from "./createSource.mjs";
+import { type UserConfig, createClient } from "@hey-api/openapi-ts";
+import type { LimitedUserConfig } from "./cli.mjs";
 import {
   buildQueriesOutputPath,
   buildRequestsOutputPath,
   formatOptions,
 } from "./common.mjs";
-import { LimitedUserConfig } from "./cli.mjs";
+import { createSource } from "./createSource.mjs";
 import { formatOutput } from "./format.mjs";
+import { print } from "./print.mjs";
 
 export async function generate(options: LimitedUserConfig, version: string) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
@@ -18,12 +18,13 @@ export async function generate(options: LimitedUserConfig, version: string) {
     client: formattedOptions.client,
     debug: formattedOptions.debug,
     dryRun: false,
-    enums: formattedOptions.enums,
     exportCore: true,
-    format: formattedOptions.format,
+    output: {
+      format: formattedOptions.format,
+      lint: formattedOptions.lint,
+      path: openApiOutputPath,
+    },
     input: formattedOptions.input,
-    lint: formattedOptions.lint,
-    output: openApiOutputPath,
     request: formattedOptions.request,
     schemas: {
       export: !formattedOptions.noSchemas,
@@ -36,6 +37,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
     types: {
       dates: formattedOptions.useDateType,
       export: true,
+      enums: formattedOptions.enums,
     },
     useOptions: true,
   };

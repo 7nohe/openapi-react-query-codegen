@@ -15,7 +15,7 @@ export const UseDefaultServiceFindPetsKeyFn = ({ limit, tags }: {
 export type DefaultServiceGetNotDefinedDefaultResponse = Awaited<ReturnType<typeof DefaultService.getNotDefined>>;
 export type DefaultServiceGetNotDefinedQueryResult<TData = DefaultServiceGetNotDefinedDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useDefaultServiceGetNotDefinedKey = "DefaultServiceGetNotDefined";
-export const UseDefaultServiceGetNotDefinedKeyFn = () => [useDefaultServiceGetNotDefinedKey];
+export const UseDefaultServiceGetNotDefinedKeyFn = (queryKey?: Array<unknown>) => [useDefaultServiceGetNotDefinedKey, ...(queryKey ?? [])];
 export type DefaultServiceFindPetByIdDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPetById>>;
 export type DefaultServiceFindPetByIdQueryResult<TData = DefaultServiceFindPetByIdDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useDefaultServiceFindPetByIdKey = "DefaultServiceFindPetById";
@@ -39,6 +39,7 @@ export * from "./queries";
 exports[`generate > prefetch.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
+import { type QueryClient } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
 import * as Common from "./common";
 /**
@@ -109,7 +110,7 @@ export const useDefaultServiceFindPets = <TData = Common.DefaultServiceFindPetsD
 * @returns unknown unexpected error
 * @throws ApiError
 */
-export const useDefaultServiceGetNotDefined = <TData = Common.DefaultServiceGetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceGetNotDefinedKeyFn(), queryFn: () => DefaultService.getNotDefined() as TData, ...options });
+export const useDefaultServiceGetNotDefined = <TData = Common.DefaultServiceGetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceGetNotDefinedKeyFn(queryKey), queryFn: () => DefaultService.getNotDefined() as TData, ...options });
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 * @param data The data for the request.
@@ -145,8 +146,8 @@ export const useDefaultServicePostNotDefined = <TData = Common.DefaultServicePos
 * deletes a single pet based on the ID supplied
 * @param data The data for the request.
 * @param data.id ID of pet to delete
-* @returns Error unexpected error
 * @returns void pet deleted
+* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceDeletePet = <TData = Common.DefaultServiceDeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
@@ -186,7 +187,7 @@ export const useDefaultServiceFindPetsSuspense = <TData = Common.DefaultServiceF
 * @returns unknown unexpected error
 * @throws ApiError
 */
-export const useDefaultServiceGetNotDefinedSuspense = <TData = Common.DefaultServiceGetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceGetNotDefinedKeyFn(), queryFn: () => DefaultService.getNotDefined() as TData, ...options });
+export const useDefaultServiceGetNotDefinedSuspense = <TData = Common.DefaultServiceGetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceGetNotDefinedKeyFn(queryKey), queryFn: () => DefaultService.getNotDefined() as TData, ...options });
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 * @param data The data for the request.

@@ -1,5 +1,5 @@
+import type { MethodDeclaration } from "ts-morph";
 import ts from "typescript";
-import { MethodDeclaration } from "ts-morph";
 import {
   BuildCommonTypeName,
   extractPropertiesFromObjectParam,
@@ -7,12 +7,12 @@ import {
   queryKeyConstraint,
   queryKeyGenericType,
 } from "./common.mjs";
-import { type MethodDescription } from "./common.mjs";
+import type { MethodDescription } from "./common.mjs";
 import {
   createQueryKeyFromMethod,
+  getQueryKeyFnName,
   getRequestParamFromMethod,
   hookNameFromMethod,
-  getQueryKeyFnName,
 } from "./createUseQuery.mjs";
 import { addJSDocToNode } from "./util.mjs";
 
@@ -30,7 +30,9 @@ function createPrefetchHook({
 }) {
   const methodName = getNameFromMethod(method);
   const queryName = hookNameFromMethod({ method, className });
-  const customHookName = `prefetch${queryName.charAt(0).toUpperCase() + queryName.slice(1)}`;
+  const customHookName = `prefetch${
+    queryName.charAt(0).toUpperCase() + queryName.slice(1)
+  }`;
   const queryKey = createQueryKeyFromMethod({ method, className });
 
   // const
@@ -51,8 +53,10 @@ function createPrefetchHook({
                 "TQueryKey",
                 queryKeyConstraint,
                 ts.factory.createArrayTypeNode(
-                  ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)
-                )
+                  ts.factory.createKeywordTypeNode(
+                    ts.SyntaxKind.UnknownKeyword,
+                  ),
+                ),
               ),
             ]),
             [
@@ -62,8 +66,8 @@ function createPrefetchHook({
                 "queryClient",
                 undefined,
                 ts.factory.createTypeReferenceNode(
-                  ts.factory.createIdentifier("QueryClient")
-                )
+                  ts.factory.createIdentifier("QueryClient"),
+                ),
               ),
               ...requestParams,
               ts.factory.createParameterDeclaration(
@@ -71,7 +75,7 @@ function createPrefetchHook({
                 undefined,
                 ts.factory.createIdentifier("queryKey"),
                 ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-                queryKeyGenericType
+                queryKeyGenericType,
               ),
             ],
             undefined,
@@ -92,20 +96,19 @@ function createPrefetchHook({
                             ts.factory.createObjectLiteralExpression(
                               method
                                 .getParameters()
-                                .map((param) =>
+                                .flatMap((param) =>
                                   extractPropertiesFromObjectParam(param).map(
                                     (p) =>
                                       ts.factory.createShorthandPropertyAssignment(
-                                        ts.factory.createIdentifier(p.name)
-                                      )
-                                  )
-                                )
-                                .flat()
+                                        ts.factory.createIdentifier(p.name),
+                                      ),
+                                  ),
+                                ),
                             ),
                             ts.factory.createIdentifier("queryKey"),
                           ]
-                        : []
-                    )
+                        : [],
+                    ),
                   ),
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryFn"),
@@ -115,12 +118,12 @@ function createPrefetchHook({
                       [],
                       undefined,
                       ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken
+                        ts.SyntaxKind.EqualsGreaterThanToken,
                       ),
                       ts.factory.createCallExpression(
                         ts.factory.createPropertyAccessExpression(
                           ts.factory.createIdentifier(className),
-                          ts.factory.createIdentifier(methodName)
+                          ts.factory.createIdentifier(methodName),
                         ),
                         undefined,
                         method.getParameters().length
@@ -128,29 +131,28 @@ function createPrefetchHook({
                               ts.factory.createObjectLiteralExpression(
                                 method
                                   .getParameters()
-                                  .map((param) =>
+                                  .flatMap((param) =>
                                     extractPropertiesFromObjectParam(param).map(
                                       (p) =>
                                         ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name)
-                                        )
-                                    )
-                                  )
-                                  .flat()
+                                          ts.factory.createIdentifier(p.name),
+                                        ),
+                                    ),
+                                  ),
                               ),
                             ]
-                          : undefined
-                      )
-                    )
+                          : undefined,
+                      ),
+                    ),
                   ),
                 ]),
-              ]
-            )
-          )
+              ],
+            ),
+          ),
         ),
       ],
-      ts.NodeFlags.Const
-    )
+      ts.NodeFlags.Const,
+    ),
   );
   return hookExport;
 }

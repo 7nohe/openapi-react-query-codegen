@@ -1,7 +1,7 @@
+import { Project } from "ts-morph";
 import ts from "typescript";
 import { describe, expect, test } from "vitest";
 import { addJSDocToNode } from "../src/util.mts";
-import { Project } from "ts-morph";
 
 describe("utils", () => {
   test("addJSDocToNode - deprecated", () => {
@@ -15,7 +15,7 @@ describe("utils", () => {
       "TestClass",
       undefined,
       undefined,
-      []
+      [],
     );
     // create file source
     const tsFile = ts.createSourceFile(
@@ -23,14 +23,14 @@ describe("utils", () => {
       "",
       ts.ScriptTarget.Latest,
       false,
-      ts.ScriptKind.TS
+      ts.ScriptKind.TS,
     );
 
     // create source file
     const tsSource = ts.factory.createSourceFile(
       [node],
       ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-      ts.NodeFlags.None
+      ts.NodeFlags.None,
     );
 
     // print source file
@@ -55,7 +55,7 @@ describe("utils", () => {
     const deprecated = true;
 
     // find class node
-    const foundNode = sourceFile.getClasses()[0]!;
+    const foundNode = sourceFile.getClasses()[0];
 
     // add jsdoc to node
     const nodeWithJSDoc = addJSDocToNode(foundNode.compilerNode, jsDoc);
@@ -87,7 +87,7 @@ export class TestClass {
       "TestClass",
       undefined,
       undefined,
-      []
+      [],
     );
     // create file source
     const tsFile = ts.createSourceFile(
@@ -95,14 +95,14 @@ export class TestClass {
       "",
       ts.ScriptTarget.Latest,
       false,
-      ts.ScriptKind.TS
+      ts.ScriptKind.TS,
     );
 
     // create source file
     const tsSource = ts.factory.createSourceFile(
       [node],
       ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-      ts.NodeFlags.None
+      ts.NodeFlags.None,
     );
 
     // print source file
@@ -124,7 +124,7 @@ export class TestClass {
  */`;
 
     // find class node
-    const foundNode = sourceFile.getClasses()[0]!;
+    const foundNode = sourceFile.getClasses()[0];
 
     // add jsdoc to node
     const nodeWithJSDoc = addJSDocToNode(foundNode.compilerNode, jsDoc);
@@ -155,7 +155,7 @@ export class TestClass {
       "TestClass",
       undefined,
       undefined,
-      []
+      [],
     );
     // create file source
     const tsFile = ts.createSourceFile(
@@ -163,14 +163,14 @@ export class TestClass {
       "",
       ts.ScriptTarget.Latest,
       false,
-      ts.ScriptKind.TS
+      ts.ScriptKind.TS,
     );
 
     // create source file
     const tsSource = ts.factory.createSourceFile(
       [node],
       ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-      ts.NodeFlags.None
+      ts.NodeFlags.None,
     );
 
     // print source file
@@ -189,7 +189,7 @@ export class TestClass {
     const jsDoc = undefined;
 
     // find class node
-    const foundNode = sourceFile.getClasses()[0]!;
+    const foundNode = sourceFile.getClasses()[0];
 
     // add jsdoc to node
     const nodeWithJSDoc = addJSDocToNode(foundNode.compilerNode, jsDoc);
@@ -216,7 +216,7 @@ export class TestClass {
       "TestClass",
       undefined,
       undefined,
-      []
+      [],
     );
     // create file source
     const tsFile = ts.createSourceFile(
@@ -224,14 +224,14 @@ export class TestClass {
       "",
       ts.ScriptTarget.Latest,
       false,
-      ts.ScriptKind.TS
+      ts.ScriptKind.TS,
     );
 
     // create source file
     const tsSource = ts.factory.createSourceFile(
       [node],
       ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-      ts.NodeFlags.None
+      ts.NodeFlags.None,
     );
 
     // print source file
@@ -250,7 +250,7 @@ export class TestClass {
     const jsDoc = undefined;
 
     // find class node
-    const foundNode = sourceFile.getClasses()[0]!;
+    const foundNode = sourceFile.getClasses()[0];
 
     // add jsdoc to node
     const nodeWithJSDoc = addJSDocToNode(foundNode.compilerNode, jsDoc);

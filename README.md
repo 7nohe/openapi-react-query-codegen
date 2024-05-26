@@ -201,12 +201,17 @@ import {
 
 // App.tsx
 function App() {
-  const { data } = usePetServiceFindPetsByStatus({ status: ["available"] });
+  const [status, setStatus] = React.useState(["available"]);
+  const { data } = usePetServiceFindPetsByStatus({ status });
   const { mutate } = usePetServiceAddPet({
     onSuccess: () => {
       queryClient.invalidateQueries({
-        // Call the query key function to get the query key, this is important to ensure the query key is created the same way as the query hook, this insures the cache is invalidated correctly and is typed correctly
-        queryKey: [UsePetServiceFindPetsByStatusKeyFn()],
+        // Call the query key function to get the query key
+        // This is important to ensure the query key is created the same way as the query hook
+        // This insures the cache is invalidated correctly and is typed correctly
+        queryKey: [UsePetServiceFindPetsByStatusKeyFn({
+          status
+        })],
       });
     },
   });
@@ -255,6 +260,39 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   </React.StrictMode>
 );
 
+```
+
+## Development
+
+### Install dependencies
+
+```bash
+pnpm install
+```
+
+### Run tests
+```bash
+pnpm test
+```
+
+### Run linter
+```bash
+pnpm lint
+```
+
+### Run linter and fix
+```bash
+pnpm lint:fix
+```
+
+### Update snapshots
+```bash
+pnpm snapshot
+```
+
+### Build example and validate generated code
+```bash
+npm run build && pnpm --filter @7nohe/react-app generate:api && pnpm --filter @7nohe/react-app test:generated 
 ```
 
 ## License
