@@ -47,18 +47,7 @@ function createPrefetchHook({
           undefined,
           ts.factory.createArrowFunction(
             undefined,
-            ts.factory.createNodeArray([
-              ts.factory.createTypeParameterDeclaration(
-                undefined,
-                "TQueryKey",
-                queryKeyConstraint,
-                ts.factory.createArrayTypeNode(
-                  ts.factory.createKeywordTypeNode(
-                    ts.SyntaxKind.UnknownKeyword,
-                  ),
-                ),
-              ),
-            ]),
+            undefined,
             [
               ts.factory.createParameterDeclaration(
                 undefined,
@@ -66,17 +55,10 @@ function createPrefetchHook({
                 "queryClient",
                 undefined,
                 ts.factory.createTypeReferenceNode(
-                  ts.factory.createIdentifier("QueryClient"),
-                ),
+                  ts.factory.createIdentifier("QueryClient")
+                )
               ),
               ...requestParams,
-              ts.factory.createParameterDeclaration(
-                undefined,
-                undefined,
-                ts.factory.createIdentifier("queryKey"),
-                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
-                queryKeyGenericType,
-              ),
             ],
             undefined,
             ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
@@ -100,15 +82,14 @@ function createPrefetchHook({
                                   extractPropertiesFromObjectParam(param).map(
                                     (p) =>
                                       ts.factory.createShorthandPropertyAssignment(
-                                        ts.factory.createIdentifier(p.name),
-                                      ),
-                                  ),
-                                ),
+                                        ts.factory.createIdentifier(p.name)
+                                      )
+                                  )
+                                )
                             ),
-                            ts.factory.createIdentifier("queryKey"),
                           ]
-                        : [],
-                    ),
+                        : []
+                    )
                   ),
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryFn"),
@@ -118,12 +99,12 @@ function createPrefetchHook({
                       [],
                       undefined,
                       ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken,
+                        ts.SyntaxKind.EqualsGreaterThanToken
                       ),
                       ts.factory.createCallExpression(
                         ts.factory.createPropertyAccessExpression(
                           ts.factory.createIdentifier(className),
-                          ts.factory.createIdentifier(methodName),
+                          ts.factory.createIdentifier(methodName)
                         ),
                         undefined,
                         method.getParameters().length
@@ -135,24 +116,24 @@ function createPrefetchHook({
                                     extractPropertiesFromObjectParam(param).map(
                                       (p) =>
                                         ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name),
-                                        ),
-                                    ),
-                                  ),
+                                          ts.factory.createIdentifier(p.name)
+                                        )
+                                    )
+                                  )
                               ),
                             ]
-                          : undefined,
-                      ),
-                    ),
+                          : undefined
+                      )
+                    )
                   ),
                 ]),
-              ],
-            ),
-          ),
+              ]
+            )
+          )
         ),
       ],
-      ts.NodeFlags.Const,
-    ),
+      ts.NodeFlags.Const
+    )
   );
   return hookExport;
 }
