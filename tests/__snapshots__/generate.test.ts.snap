@@ -58,14 +58,14 @@ import * as Common from "./common";
 export const prefetchUseDefaultServiceFindPets = (queryClient: QueryClient, { limit, tags }: {
   limit?: number;
   tags?: string[];
-} = {}) => queryClient.prefetchQuery({ queryKey: [Common.useDefaultServiceFindPetsKey, [{ limit, tags }]], queryFn: () => DefaultService.findPets({ limit, tags }) });
+} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindPetsKeyFn({ limit, tags }), queryFn: () => DefaultService.findPets({ limit, tags }) });
 /**
 * @deprecated
 * This path is not fully defined.
 * @returns unknown unexpected error
 * @throws ApiError
 */
-export const prefetchUseDefaultServiceGetNotDefined = (queryClient: QueryClient) => queryClient.prefetchQuery({ queryKey: [Common.useDefaultServiceGetNotDefinedKey, []], queryFn: () => DefaultService.getNotDefined() });
+export const prefetchUseDefaultServiceGetNotDefined = (queryClient: QueryClient) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceGetNotDefinedKeyFn(), queryFn: () => DefaultService.getNotDefined() });
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 * @param data The data for the request.
@@ -76,7 +76,7 @@ export const prefetchUseDefaultServiceGetNotDefined = (queryClient: QueryClient)
 */
 export const prefetchUseDefaultServiceFindPetById = (queryClient: QueryClient, { id }: {
   id: number;
-}) => queryClient.prefetchQuery({ queryKey: [Common.useDefaultServiceFindPetByIdKey, [{ id }]], queryFn: () => DefaultService.findPetById({ id }) });
+}) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindPetByIdKeyFn({ id }), queryFn: () => DefaultService.findPetById({ id }) });
 "
 `;
 
