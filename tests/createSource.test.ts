@@ -11,6 +11,8 @@ describe(fileName, () => {
       outputPath: outputPath(fileName),
       version: "1.0.0",
       serviceEndName: "Service",
+      pageParam: "page",
+      nextPageParam: "nextPage",
     });
 
     const indexTs = source.find((s) => s.name === "index.ts");

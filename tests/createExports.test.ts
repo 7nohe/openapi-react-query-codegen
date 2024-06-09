@@ -17,7 +17,7 @@ describe(fileName, () => {
     });
     project.addSourceFilesAtPaths(path.join(outputPath(fileName), "**", "*"));
     const service = await getServices(project);
-    const exports = createExports(service);
+    const exports = createExports(service, "page", "nextPage");
 
     const commonTypes = exports.allCommon
       .filter((c) => c.kind === SyntaxKind.TypeAliasDeclaration)
@@ -30,6 +30,8 @@ describe(fileName, () => {
       "DefaultServiceGetNotDefinedQueryResult",
       "DefaultServiceFindPetByIdDefaultResponse",
       "DefaultServiceFindPetByIdQueryResult",
+      "DefaultServiceFindPaginatedPetsDefaultResponse",
+      "DefaultServiceFindPaginatedPetsQueryResult",
       "DefaultServiceAddPetMutationResult",
       "DefaultServicePostNotDefinedMutationResult",
       "DefaultServiceDeletePetMutationResult",
@@ -46,6 +48,8 @@ describe(fileName, () => {
       "UseDefaultServiceGetNotDefinedKeyFn",
       "useDefaultServiceFindPetByIdKey",
       "UseDefaultServiceFindPetByIdKeyFn",
+      "useDefaultServiceFindPaginatedPetsKey",
+      "UseDefaultServiceFindPaginatedPetsKeyFn",
     ]);
 
     const mainExports = exports.mainExports.map(
@@ -56,6 +60,7 @@ describe(fileName, () => {
       "useDefaultServiceFindPets",
       "useDefaultServiceGetNotDefined",
       "useDefaultServiceFindPetById",
+      "useDefaultServiceFindPaginatedPets",
       "useDefaultServiceAddPet",
       "useDefaultServicePostNotDefined",
       "useDefaultServiceDeletePet",
@@ -69,6 +74,7 @@ describe(fileName, () => {
       "useDefaultServiceFindPetsSuspense",
       "useDefaultServiceGetNotDefinedSuspense",
       "useDefaultServiceFindPetByIdSuspense",
+      "useDefaultServiceFindPaginatedPetsSuspense",
     ]);
   });
 });
