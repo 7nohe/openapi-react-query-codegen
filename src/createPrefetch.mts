@@ -8,6 +8,7 @@ import {
 import type { MethodDescription } from "./common.mjs";
 import {
   createQueryKeyFromMethod,
+  getQueryKeyFnName,
   getRequestParamFromMethod,
   hookNameFromMethod,
 } from "./createUseQuery.mjs";
@@ -66,27 +67,26 @@ function createPrefetchHook({
                 ts.factory.createObjectLiteralExpression([
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("queryKey"),
-                    ts.factory.createArrayLiteralExpression(
-                      [
-                        BuildCommonTypeName(queryKey),
-                        method.getParameters().length
-                          ? ts.factory.createArrayLiteralExpression([
-                              ts.factory.createObjectLiteralExpression(
-                                method
-                                  .getParameters()
-                                  .flatMap((param) =>
-                                    extractPropertiesFromObjectParam(param).map(
-                                      (p) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name),
-                                        ),
-                                    ),
+                    ts.factory.createCallExpression(
+                      BuildCommonTypeName(getQueryKeyFnName(queryKey)),
+                      undefined,
+
+                      method.getParameters().length
+                        ? [
+                            ts.factory.createObjectLiteralExpression(
+                              method
+                                .getParameters()
+                                .flatMap((param) =>
+                                  extractPropertiesFromObjectParam(param).map(
+                                    (p) =>
+                                      ts.factory.createShorthandPropertyAssignment(
+                                        ts.factory.createIdentifier(p.name),
+                                      ),
                                   ),
-                              ),
-                            ])
-                          : ts.factory.createArrayLiteralExpression([]),
-                      ],
-                      false,
+                                ),
+                            ),
+                          ]
+                        : [],
                     ),
                   ),
                   ts.factory.createPropertyAssignment(
