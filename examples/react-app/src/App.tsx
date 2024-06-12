@@ -1,11 +1,12 @@
 import "./App.css";
 import { useState } from "react";
+
 import {
-  UseDefaultServiceFindPetsKeyFn,
-  useDefaultServiceAddPet,
-  useDefaultServiceFindPets,
-  useDefaultServiceGetNotDefined,
-  useDefaultServicePostNotDefined,
+  UseFindPetsKeyFn,
+  useAddPet,
+  useFindPets,
+  useGetNotDefined,
+  usePostNotDefined,
 } from "../openapi/queries";
 import { SuspenseParent } from "./components/SuspenseParent";
 import { queryClient } from "./queryClient";
@@ -14,19 +15,18 @@ function App() {
   const [tags, _setTags] = useState<string[]>([]);
   const [limit, _setLimit] = useState<number>(10);
 
-  const { data, error, refetch } = useDefaultServiceFindPets({ tags, limit });
+  const { data, error, refetch } = useFindPets({ tags, limit });
   // This is an example of using a hook that has all parameters optional;
   // Here we do not have to pass in an object
-  const { data: _ } = useDefaultServiceFindPets();
+  const { data: _ } = useFindPets();
 
   // This is an example of a query that is not defined in the OpenAPI spec
   // this defaults to any - here we are showing how to override the type
   // Note - this is marked as deprecated in the OpenAPI spec and being passed to the client
-  const { data: notDefined } = useDefaultServiceGetNotDefined<undefined>();
-  const { mutate: mutateNotDefined } =
-    useDefaultServicePostNotDefined<undefined>();
+  const { data: notDefined } = useGetNotDefined<undefined>();
+  const { mutate: mutateNotDefined } = usePostNotDefined<undefined>();
 
-  const { mutate: addPet } = useDefaultServiceAddPet();
+  const { mutate: addPet } = useAddPet();
 
   if (error)
     return (
@@ -42,8 +42,8 @@ function App() {
     <div className="App">
       <h1>Pet List</h1>
       <ul>
-        {Array.isArray(data) &&
-          data?.map((pet, index) => (
+        {Array.isArray(data?.data) &&
+          data?.data.map((pet, index) => (
             <li key={`${pet.id}-${index}`}>{pet.name}</li>
           ))}
       </ul>
@@ -57,7 +57,7 @@ function App() {
             {
               onSuccess: () => {
                 queryClient.invalidateQueries({
-                  queryKey: UseDefaultServiceFindPetsKeyFn(),
+                  queryKey: UseFindPetsKeyFn(),
                 });
                 console.log("success");
               },

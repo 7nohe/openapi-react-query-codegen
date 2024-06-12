@@ -45,7 +45,6 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const source = await createSource({
     outputPath: openApiOutputPath,
     version,
-    serviceEndName: "Service", // we are hard coding this because changing the service end name was depreciated in @hey-api/openapi-ts
   });
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);

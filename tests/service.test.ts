@@ -16,9 +16,8 @@ describe(fileName, () => {
       path.join("tests", `${fileName}-outputs`, "**", "*"),
     );
     const service = await getServices(project);
-    const klass = service.klasses[0];
-    expect(klass.className).toBe("DefaultService");
-    const methodNames = klass.methods.map((m) => m.method.getName());
+
+    const methodNames = service.methods.map((m) => m.method.getName());
     expect(methodNames).toEqual([
       "findPets",
       "addPet",

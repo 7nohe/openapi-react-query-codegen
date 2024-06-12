@@ -17,6 +17,7 @@ describe("generate", () => {
     const options: LimitedUserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
+      client: "@hey-api/client-fetch",
       lint: "eslint",
     };
     await generate(options, "1.0.0");

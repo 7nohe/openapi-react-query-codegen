@@ -10,7 +10,6 @@ describe(fileName, () => {
     const source = await createSource({
       outputPath: outputPath(fileName),
       version: "1.0.0",
-      serviceEndName: "Service",
     });
 
     const indexTs = source.find((s) => s.name === "index.ts");
