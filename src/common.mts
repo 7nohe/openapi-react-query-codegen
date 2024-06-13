@@ -111,11 +111,14 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
     .getNode()
     .getType()
     .getProperties()
-    .map((prop) => ({
-      name: prop.getName(),
-      optional: prop.isOptional(),
-      type: prop.getValueDeclaration()?.getType() as Type<ts.Type>,
-    }));
+    .filter((prop) => prop.getValueDeclaration()?.getType())
+    .map((prop) => {
+      return {
+        name: prop.getName(),
+        optional: prop.isOptional(),
+        type: prop.getValueDeclaration()?.getType() as Type<ts.Type>,
+      };
+    });
   return paramNodes;
 }
 
