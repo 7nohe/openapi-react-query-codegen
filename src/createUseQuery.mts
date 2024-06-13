@@ -23,9 +23,8 @@ export const createApiResponseType = ({
   methodName: string;
 }) => {
   /** Awaited<ReturnType<typeof myClass.myMethod>> */
-  const awaitedResponseDataType = ts.factory.createTypeReferenceNode(
-    ts.factory.createIdentifier("Awaited"),
-    [
+  const awaitedResponseDataType = ts.factory.createIndexedAccessTypeNode(
+    ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("Awaited"), [
       ts.factory.createTypeReferenceNode(
         ts.factory.createIdentifier("ReturnType"),
         [
@@ -35,7 +34,8 @@ export const createApiResponseType = ({
           ),
         ],
       ),
-    ],
+    ]),
+    ts.factory.createLiteralTypeNode(ts.factory.createStringLiteral("data")),
   );
   /** DefaultResponseDataType
    * export type MyClassMethodDefaultResponse = Awaited<ReturnType<typeof myClass.myMethod>>
@@ -312,7 +312,6 @@ export function createQueryHook({
                     ts.factory.createCallExpression(
                       BuildCommonTypeName(getQueryKeyFnName(queryKey)),
                       undefined,
-
                       getVariableArrowFunctionParameters(method).length
                         ? [
                             ts.factory.createObjectLiteralExpression(
@@ -342,24 +341,56 @@ export function createQueryHook({
                       EqualsOrGreaterThanToken,
                       ts.factory.createAsExpression(
                         ts.factory.createCallExpression(
-                          ts.factory.createIdentifier(methodName),
-                          undefined,
-                          getVariableArrowFunctionParameters(method).length
-                            ? [
-                                ts.factory.createObjectLiteralExpression(
-                                  getVariableArrowFunctionParameters(
-                                    method,
-                                  ).flatMap((param) =>
-                                    extractPropertiesFromObjectParam(param).map(
-                                      (p) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name),
+                          ts.factory.createPropertyAccessExpression(
+                            ts.factory.createCallExpression(
+                              ts.factory.createIdentifier(methodName),
+                              undefined,
+                              getVariableArrowFunctionParameters(method).length
+                                ? [
+                                    ts.factory.createObjectLiteralExpression(
+                                      getVariableArrowFunctionParameters(
+                                        method,
+                                      ).flatMap((param) =>
+                                        extractPropertiesFromObjectParam(
+                                          param,
+                                        ).map((p) =>
+                                          ts.factory.createShorthandPropertyAssignment(
+                                            ts.factory.createIdentifier(p.name),
+                                          ),
                                         ),
+                                      ),
                                     ),
-                                  ),
+                                  ]
+                                : undefined,
+                            ),
+                            ts.factory.createIdentifier("then"),
+                          ),
+                          undefined,
+                          [
+                            ts.factory.createArrowFunction(
+                              undefined,
+                              undefined,
+                              [
+                                ts.factory.createParameterDeclaration(
+                                  undefined,
+                                  undefined,
+                                  ts.factory.createIdentifier("response"),
+                                  undefined,
+                                  undefined,
+                                  undefined,
                                 ),
-                              ]
-                            : undefined,
+                              ],
+                              undefined,
+                              EqualsOrGreaterThanToken,
+                              ts.factory.createAsExpression(
+                                ts.factory.createPropertyAccessExpression(
+                                  ts.factory.createIdentifier("response"),
+                                  ts.factory.createIdentifier("data"),
+                                ),
+                                ts.factory.createTypeReferenceNode(TData),
+                              ),
+                            ),
+                          ],
                         ),
                         ts.factory.createTypeReferenceNode(TData),
                       ),

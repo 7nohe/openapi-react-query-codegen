@@ -1,5 +1,3 @@
-createClient({ baseUrl: "http://localhost:4010" });
-import { createClient } from "@hey-api/client-fetch";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";

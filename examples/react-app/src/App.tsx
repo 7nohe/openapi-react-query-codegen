@@ -1,6 +1,7 @@
 import "./App.css";
 import { useState } from "react";
 
+import { createClient } from "@hey-api/client-fetch";
 import {
   UseFindPetsKeyFn,
   useAddPet,
@@ -12,10 +13,12 @@ import { SuspenseParent } from "./components/SuspenseParent";
 import { queryClient } from "./queryClient";
 
 function App() {
+  createClient({ baseUrl: "http://localhost:4010" });
+
   const [tags, _setTags] = useState<string[]>([]);
   const [limit, _setLimit] = useState<number>(10);
 
-  const { data, error, refetch } = useFindPets({ tags, limit });
+  const { data, error, refetch } = useFindPets({ query: { tags, limit } });
   // This is an example of using a hook that has all parameters optional;
   // Here we do not have to pass in an object
   const { data: _ } = useFindPets();
@@ -42,8 +45,8 @@ function App() {
     <div className="App">
       <h1>Pet List</h1>
       <ul>
-        {Array.isArray(data?.data) &&
-          data?.data.map((pet, index) => (
+        {Array.isArray(data) &&
+          data?.map((pet, index) => (
             <li key={`${pet.id}-${index}`}>{pet.name}</li>
           ))}
       </ul>
@@ -52,12 +55,12 @@ function App() {
         onClick={() => {
           addPet(
             {
-              requestBody: { name: "Duggy" },
+              body: { name: "Duggy" },
             },
             {
               onSuccess: () => {
                 queryClient.invalidateQueries({
-                  queryKey: UseFindPetsKeyFn(),
+                  queryKey: UseFindPetsKeyFn({ query: { tags, limit } }),
                 });
                 console.log("success");
               },
