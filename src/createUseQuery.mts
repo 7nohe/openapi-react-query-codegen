@@ -382,13 +382,10 @@ export function createQueryHook({
                               ],
                               undefined,
                               EqualsOrGreaterThanToken,
-                              ts.factory.createAsExpression(
                                 ts.factory.createPropertyAccessExpression(
                                   ts.factory.createIdentifier("response"),
                                   ts.factory.createIdentifier("data"),
                                 ),
-                                ts.factory.createTypeReferenceNode(TData),
-                              ),
                             ),
                           ],
                         ),
