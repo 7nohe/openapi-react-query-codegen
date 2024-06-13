@@ -1,6 +1,6 @@
 {
   "name": "openapi-react-query-codegen",
-  "version": "1.4.2-beta.3",
+  "version": "1.4.2-beta.4",
   "description": "OpenAPI React Query Codegen",
   "bin": {
     "openapi-rq": "dist/cli.mjs"
@@ -21,7 +21,8 @@
   "exports": [
     {
       "import": "./dist/generate.mjs",
-      "require": "./dist/generate.mjs"
+      "require": "./dist/generate.mjs",
+      "types": "./dist/generate.d.mts"
     }
   ],
   "repository": {
