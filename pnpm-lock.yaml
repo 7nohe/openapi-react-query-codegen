@@ -94,9 +94,6 @@ importers:
 
   examples/react-app:
     dependencies:
-      '@hey-api/client-fetch':
-        specifier: ^0.1.3
-        version: 0.1.3
       '@tanstack/react-query':
         specifier: ^5.32.1
         version: 5.45.0(react@18.3.1)
@@ -700,10 +697,6 @@ packages:
     resolution: {integrity: sha512-8YXBE2ZcU/pImVOHX7MWrSR/X5up7t6rPWZlk34RwZEcdr3ua6X+32pSd6XuOQRN+vbuvYNfA6iey8NbrjuMFQ==}
     engines: {node: '>=14.0.0', npm: '>=6.0.0'}
     dev: true
-
-  /@hey-api/client-fetch@0.1.3:
-    resolution: {integrity: sha512-mHXioGM/aMbPvDzPfyT9eA90QrTYc1J3QaQU6Rij1yuxSqUOxnnjU/RmhYbCiA+Szb9nQmjXyY85wUDIjEiB0g==}
-    dev: false
 
   /@hey-api/openapi-ts@0.46.3(typescript@5.4.5):
     resolution: {integrity: sha512-2C0tmzUq6m9518uDMHBooqiS7wvWy9UD6SepudWU+9fB6lZvC+yxbK/viaMfwvCv4l1hKuBZZZQNP0xrNcyRsQ==}
