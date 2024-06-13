@@ -1,6 +1,6 @@
 {
-  "name": "@7nohe/openapi-react-query-codegen",
-  "version": "1.4.1",
+  "name": "@omridevk/openapi-react-query-codegen",
+  "version": "1.4.2-beta.1",
   "description": "OpenAPI React Query Codegen",
   "bin": {
     "openapi-rq": "dist/cli.mjs"
@@ -13,7 +13,7 @@
     "lint:fix": "biome check --apply .",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
     "prepublishOnly": "npm run build",
-    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
+    "release": "npx bumpp --commit --tag --push",
     "test": "vitest --coverage.enabled true",
     "snapshot": "vitest --update"
   },
