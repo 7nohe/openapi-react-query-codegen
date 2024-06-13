@@ -1,10 +1,11 @@
 {
-  "name": "@omridevk/openapi-react-query-codegen",
-  "version": "1.4.2-beta.1",
+  "name": "openapi-react-query-codegen",
+  "version": "1.4.2-beta.2",
   "description": "OpenAPI React Query Codegen",
   "bin": {
     "openapi-rq": "dist/cli.mjs"
   },
+  "private": false,
   "type": "module",
   "workspaces": ["examples/*"],
   "scripts": {
@@ -38,11 +39,11 @@
   "license": "MIT",
   "dependencies": {
     "@hey-api/openapi-ts": "0.46.3",
+    "@types/cross-spawn": "^6.0.6",
     "cross-spawn": "^7.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.7.2",
-    "@types/cross-spawn": "^6.0.6",
     "@types/node": "^20.10.6",
     "@vitest/coverage-v8": "^1.5.0",
     "commander": "^12.0.0",
