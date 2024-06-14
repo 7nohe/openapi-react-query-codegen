@@ -1,6 +1,6 @@
 {
   "name": "openapi-react-query-codegen",
-  "version": "1.4.2-beta.4",
+  "version": "1.4.2-beta.5",
   "description": "OpenAPI React Query Codegen",
   "bin": {
     "openapi-rq": "dist/cli.mjs"
