@@ -4,8 +4,8 @@ import { createUseQuery } from "./createUseQuery.mjs";
 import type { Service } from "./service.mjs";
 
 export const createExports = (service: Service) => {
-  const { klasses } = service;
-  const methods = klasses.flatMap((k) => k.methods);
+  const { methods } = service;
+  // const methods = klasses.flatMap((k) => k.methods);
 
   const allGet = methods.filter((m) =>
     m.httpMethodName.toUpperCase().includes("GET"),

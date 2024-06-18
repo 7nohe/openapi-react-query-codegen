@@ -6,7 +6,7 @@ import { createExports } from "./createExports.mjs";
 import { createImports } from "./createImports.mjs";
 import { getServices } from "./service.mjs";
 
-const createSourceFile = async (outputPath: string, serviceEndName: string) => {
+const createSourceFile = async (outputPath: string) => {
   const project = new Project({
     // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
     // If you initialize with a tsconfig.json, then it will automatically populate the project
@@ -21,7 +21,6 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
   const service = await getServices(project);
 
   const imports = createImports({
-    serviceEndName,
     project,
   });
 
@@ -96,11 +95,9 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
 export const createSource = async ({
   outputPath,
   version,
-  serviceEndName,
 }: {
   outputPath: string;
   version: string;
-  serviceEndName: string;
 }) => {
   const queriesFile = ts.createSourceFile(
     `${OpenApiRqFiles.queries}.ts`,
@@ -151,7 +148,7 @@ export const createSource = async ({
     suspenseSource,
     indexSource,
     prefetchSource,
-  } = await createSourceFile(outputPath, serviceEndName);
+  } = await createSourceFile(outputPath);
 
   const comment = `// generated with @7nohe/openapi-react-query-codegen@${version} \n\n`;
 

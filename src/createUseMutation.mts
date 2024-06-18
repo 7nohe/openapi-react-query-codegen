@@ -1,14 +1,15 @@
 import ts from "typescript";
 import {
   BuildCommonTypeName,
-  type MethodDescription,
+  type FunctionDescription,
   TContext,
   TData,
   TError,
   capitalizeFirstLetter,
   extractPropertiesFromObjectParam,
-  getNameFromMethod,
+  getNameFromVariable,
   getShortType,
+  getVariableArrowFunctionParameters,
 } from "./common.mjs";
 import { addJSDocToNode } from "./util.mjs";
 
@@ -16,10 +17,8 @@ import { addJSDocToNode } from "./util.mjs";
  *  Awaited<ReturnType<typeof myClass.myMethod>>
  */
 function generateAwaitedReturnType({
-  className,
   methodName,
 }: {
-  className: string;
   methodName: string;
 }) {
   return ts.factory.createTypeReferenceNode(
@@ -29,10 +28,8 @@ function generateAwaitedReturnType({
         ts.factory.createIdentifier("ReturnType"),
         [
           ts.factory.createTypeQueryNode(
-            ts.factory.createQualifiedName(
-              ts.factory.createIdentifier(className),
-              ts.factory.createIdentifier(methodName),
-            ),
+            ts.factory.createIdentifier(methodName),
+
             undefined,
           ),
         ],
@@ -41,21 +38,16 @@ function generateAwaitedReturnType({
   );
 }
 
-export const createUseMutation = ({
-  className,
-  method,
-  jsDoc,
-}: MethodDescription) => {
-  const methodName = getNameFromMethod(method);
+export const createUseMutation = ({ method, jsDoc }: FunctionDescription) => {
+  const methodName = getNameFromVariable(method);
   const awaitedResponseDataType = generateAwaitedReturnType({
-    className,
     methodName,
   });
 
   const mutationResult = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
-      `${className}${capitalizeFirstLetter(methodName)}MutationResult`,
+      `${capitalizeFirstLetter(methodName)}MutationResult`,
     ),
     undefined,
     awaitedResponseDataType,
@@ -71,9 +63,9 @@ export const createUseMutation = ({
   );
 
   const methodParameters =
-    method.getParameters().length !== 0
+    getVariableArrowFunctionParameters(method).length !== 0
       ? ts.factory.createTypeLiteralNode(
-          method.getParameters().flatMap((param) => {
+          getVariableArrowFunctionParameters(method).flatMap((param) => {
             const paramNodes = extractPropertiesFromObjectParam(param);
             return paramNodes.map((refParam) =>
               ts.factory.createPropertySignature(
@@ -97,7 +89,7 @@ export const createUseMutation = ({
       [
         ts.factory.createVariableDeclaration(
           ts.factory.createIdentifier(
-            `use${className}${capitalizeFirstLetter(methodName)}`,
+            `use${capitalizeFirstLetter(methodName)}`,
           ),
           undefined,
           undefined,
@@ -161,13 +153,15 @@ export const createUseMutation = ({
                     ts.factory.createArrowFunction(
                       undefined,
                       undefined,
-                      method.getParameters().length !== 0
+                      getVariableArrowFunctionParameters(method).length !== 0
                         ? [
                             ts.factory.createParameterDeclaration(
                               undefined,
                               undefined,
                               ts.factory.createObjectBindingPattern(
-                                method.getParameters().flatMap((param) => {
+                                getVariableArrowFunctionParameters(
+                                  method,
+                                ).flatMap((param) => {
                                   const paramNodes =
                                     extractPropertiesFromObjectParam(param);
                                   return paramNodes.map((refParam) =>
@@ -195,15 +189,16 @@ export const createUseMutation = ({
                       ts.factory.createAsExpression(
                         ts.factory.createAsExpression(
                           ts.factory.createCallExpression(
-                            ts.factory.createPropertyAccessExpression(
-                              ts.factory.createIdentifier(className),
-                              ts.factory.createIdentifier(methodName),
-                            ),
+                            ts.factory.createIdentifier(methodName),
+
                             undefined,
-                            method.getParameters().length !== 0
+                            getVariableArrowFunctionParameters(method)
+                              .length !== 0
                               ? [
                                   ts.factory.createObjectLiteralExpression(
-                                    method.getParameters().flatMap((params) => {
+                                    getVariableArrowFunctionParameters(
+                                      method,
+                                    ).flatMap((params) => {
                                       const paramNodes =
                                         extractPropertiesFromObjectParam(
                                           params,

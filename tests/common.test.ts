@@ -1,4 +1,9 @@
-import type { ClassDeclaration, MethodDeclaration, SourceFile } from "ts-morph";
+import type {
+  ClassDeclaration,
+  MethodDeclaration,
+  SourceFile,
+  VariableDeclaration,
+} from "ts-morph";
 import { describe, expect, test, vi } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
 import {
@@ -7,7 +12,7 @@ import {
   formatOptions,
   getClassNameFromClassNode,
   getClassesFromService,
-  getNameFromMethod,
+  getNameFromVariable,
   getShortType,
   lowercaseFirstLetter,
   safeParseNumber,
@@ -230,17 +235,17 @@ describe("common", () => {
   test("getNameFromMethod - get method name", () => {
     const method = {
       getName: vi.fn(() => "test"),
-    } as unknown as MethodDeclaration;
-    const result = getNameFromMethod(method);
+    } as unknown as VariableDeclaration;
+    const result = getNameFromVariable(method);
     expect(result).toBe("test");
   });
 
   test("getNameFromMethod - no method name", () => {
     const method = {
       getName: vi.fn(() => undefined),
-    } as unknown as MethodDeclaration;
-    expect(() => getNameFromMethod(method)).toThrowError(
-      "Method name not found",
+    } as unknown as VariableDeclaration;
+    expect(() => getNameFromVariable(method)).toThrowError(
+      "Variable name not found",
     );
   });
 });

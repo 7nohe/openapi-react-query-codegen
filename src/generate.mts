@@ -6,7 +6,7 @@ import {
   formatOptions,
 } from "./common.mjs";
 import { createSource } from "./createSource.mjs";
-import { formatOutput } from "./format.mjs";
+import { formatOutput, processOutput } from "./format.mjs";
 import { print } from "./print.mjs";
 
 export async function generate(options: LimitedUserConfig, version: string) {
@@ -45,9 +45,13 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const source = await createSource({
     outputPath: openApiOutputPath,
     version,
-    serviceEndName: "Service", // we are hard coding this because changing the service end name was depreciated in @hey-api/openapi-ts
   });
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);
   await formatOutput(queriesOutputPath);
+  await processOutput({
+    output: queriesOutputPath,
+    format: formattedOptions.format,
+    lint: formattedOptions.lint,
+  });
 }
