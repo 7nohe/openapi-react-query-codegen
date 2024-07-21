@@ -53,7 +53,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { issue: { number: issue_number }, repo: { owner, repo }, payload  } = context;
-            const { name: packageName, version } = require(`${process.env.GITHUB_WORKSPACE}/package.json`);
+            const fs = require('fs')
+            const jsonString = fs.readFileSync(`${process.env.GITHUB_WORKSPACE}/package.json`)
+            var packageJson = JSON.parse(jsonString)
+            const { name: packageName, version } = packageJson;
 
             const body = [
               `npm package published to pre tag.`,

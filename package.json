@@ -1,10 +1,11 @@
 {
   "name": "@7nohe/openapi-react-query-codegen",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "description": "OpenAPI React Query Codegen",
   "bin": {
     "openapi-rq": "dist/cli.mjs"
   },
+  "private": false,
   "type": "module",
   "workspaces": ["examples/*"],
   "scripts": {
@@ -13,10 +14,17 @@
     "lint:fix": "biome check --apply .",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
     "prepublishOnly": "npm run build",
-    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
+    "release": "npx bumpp --commit --tag --push",
     "test": "vitest --coverage.enabled true",
     "snapshot": "vitest --update"
   },
+  "exports": [
+    {
+      "import": "./dist/generate.mjs",
+      "require": "./dist/generate.mjs",
+      "types": "./dist/generate.d.mts"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git"
@@ -37,7 +45,10 @@
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
   "dependencies": {
-    "@hey-api/openapi-ts": "0.45.1"
+    "@hey-api/client-fetch": "0.1.10",
+    "@hey-api/openapi-ts": "0.49.0",
+    "@types/cross-spawn": "^6.0.6",
+    "cross-spawn": "^7.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.7.2",
@@ -47,15 +58,15 @@
     "glob": "^10.3.10",
     "lefthook": "^1.6.10",
     "rimraf": "^5.0.5",
-    "ts-morph": "^22.0.0",
+    "ts-morph": "^23.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3",
+    "typescript": "^5.5.3",
     "vitest": "^1.5.0"
   },
   "peerDependencies": {
     "commander": "12.x",
     "glob": "10.x",
-    "ts-morph": "22.x",
+    "ts-morph": "23.x",
     "typescript": "5.x"
   },
   "engines": {

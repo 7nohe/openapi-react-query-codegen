@@ -14,7 +14,6 @@ describe(fileName, () => {
     });
     project.addSourceFilesAtPaths(path.join(outputPath(fileName), "**", "*"));
     const imports = createImports({
-      serviceEndName: "Service",
       project,
     });
 
@@ -36,7 +35,6 @@ describe(fileName, () => {
     });
     project.addSourceFilesAtPaths(path.join(outputPath(fileName), "**", "*"));
     const imports = createImports({
-      serviceEndName: "Service",
       project,
     });
 

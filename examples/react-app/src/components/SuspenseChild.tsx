@@ -1,15 +1,17 @@
-import { useDefaultServiceFindPetsSuspense } from "../../openapi/queries/suspense";
+import { useFindPetsSuspense } from "../../openapi/queries/suspense";
 
 export const SuspenseChild = () => {
-  const { data } = useDefaultServiceFindPetsSuspense({ tags: [], limit: 10 });
-
+  const { data, error } = useFindPetsSuspense({
+    query: { tags: [], limit: 10 },
+  });
+  console.log({ error });
   if (!Array.isArray(data)) {
     return <div>Error!</div>;
   }
 
   return (
     <ul>
-      {data?.map((pet, index) => (
+      {data?.map((pet) => (
         <li key={pet.id}>{pet.name}</li>
       ))}
     </ul>

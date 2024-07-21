@@ -21,7 +21,7 @@ Register the command to the `scripts` property in your package.json file.
 ```json
 {
   "scripts": {
-    "codegen": "openapi-rq -i ./petstore.yaml -c axios"
+    "codegen": "openapi-rq -i ./petstore.yaml -c @hey-api/client-fetch"
   }
 }
 ```
@@ -29,7 +29,7 @@ Register the command to the `scripts` property in your package.json file.
 You can also run the command without installing it in your project using the npx command.
 
 ```bash
-$ npx --package @7nohe/openapi-react-query-codegen openapi-rq -i ./petstore.yaml -c axios
+$ npx --package @7nohe/openapi-react-query-codegen openapi-rq -i ./petstore.yaml -c @hey-api/client-fetch
 ```
 
 ## Usage
@@ -45,7 +45,7 @@ Options:
   -V, --version              output the version number
   -i, --input <value>        OpenAPI specification, can be a path, url or string content (required)
   -o, --output <value>       Output directory (default: "openapi")
-  -c, --client <value>       HTTP client to generate [fetch, xhr, node, axios, angular] (default: "fetch")
+  -c, --client <value>       HTTP client to generate [@hey-api/client-fetch, @hey-api/client-axios] (default: "@hey-api/client-fetch")
   --request <value>          Path to custom request file
   --format <value>           Process output folder with formatter? ['biome', 'prettier']
   --lint   <value>           Process output folder with linter? ['eslint', 'biome']
