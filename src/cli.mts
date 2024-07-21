@@ -49,15 +49,8 @@ async function setupProgram() {
     .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
-        .choices([
-          "angular",
-          "axios",
-          "fetch",
-          "node",
-          "xhr",
-          "@hey-api/client-fetch",
-        ])
-        .default("fetch"),
+        .choices(["@hey-api/client-fetch", "@hey-api/client-axios"])
+        .default("@hey-api/client-fetch"),
     )
     .option("--request <value>", "Path to custom request file")
     .addOption(

@@ -1,5 +1,5 @@
 {
-  "name": "openapi-react-query-codegen",
+  "name": "@7nohe/openapi-react-query-codegen",
   "version": "2.0.0",
   "description": "OpenAPI React Query Codegen",
   "bin": {
@@ -45,7 +45,8 @@
   "author": "Daiki Urata (@7nohe)",
   "license": "MIT",
   "dependencies": {
-    "@hey-api/openapi-ts": "0.46.3",
+    "@hey-api/client-fetch": "0.1.10",
+    "@hey-api/openapi-ts": "0.49.0",
     "@types/cross-spawn": "^6.0.6",
     "cross-spawn": "^7.0.3"
   },
@@ -57,15 +58,15 @@
     "glob": "^10.3.10",
     "lefthook": "^1.6.10",
     "rimraf": "^5.0.5",
-    "ts-morph": "^22.0.0",
+    "ts-morph": "^23.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3",
+    "typescript": "^5.5.3",
     "vitest": "^1.5.0"
   },
   "peerDependencies": {
     "commander": "12.x",
     "glob": "10.x",
-    "ts-morph": "22.x",
+    "ts-morph": "23.x",
     "typescript": "5.x"
   },
   "engines": {

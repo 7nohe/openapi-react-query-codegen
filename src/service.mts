@@ -1,16 +1,6 @@
-import {
-  ClassDeclaration,
-  type Project,
-  type SourceFile,
-  SyntaxKind,
-  VariableDeclaration,
-} from "ts-morph";
+import type { Project, SourceFile } from "ts-morph";
 import ts from "typescript";
-import {
-  type FunctionDescription,
-  getClassNameFromClassNode,
-  getClassesFromService,
-} from "./common.mjs";
+import type { FunctionDescription } from "./common.mjs";
 import { serviceFileName } from "./constants.mjs";
 
 export type Service = {
