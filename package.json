@@ -59,6 +59,8 @@
     "typescript": "5.x"
   },
   "engines": {
-    "node": ">=14"
-  }
+    "node": ">=14",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.5.0"
 }
