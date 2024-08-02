@@ -116,7 +116,7 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
  * TODO: Replace with a more robust solution.
  */
 export function getShortType(type: string) {
-  return type.replaceAll(/import\(".*?"\)\./g, "");
+  return type.replaceAll(/import\(".*"\)\./g, "");
 }
 
 export function getClassesFromService(node: SourceFile) {
