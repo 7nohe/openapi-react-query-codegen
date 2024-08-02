@@ -87,7 +87,7 @@ export function getRequestParamFromMethod(method: MethodDeclaration) {
     const paramNodes = extractPropertiesFromObjectParam(param);
     return paramNodes.map((refParam) => ({
       name: refParam.name,
-      typeName: getShortType(refParam.type.getText()),
+      typeName: getShortType(refParam.type?.getText() ?? ""),
       optional: refParam.optional,
     }));
   });
