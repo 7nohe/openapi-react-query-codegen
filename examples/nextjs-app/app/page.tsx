@@ -4,7 +4,8 @@ import {
   QueryClient,
   dehydrate,
 } from "@tanstack/react-query";
-import Pets from "./pets";
+import Link from "next/link";
+import Pets from "./components/Pets";
 
 export default async function Home() {
   const queryClient = new QueryClient();
@@ -19,6 +20,9 @@ export default async function Home() {
       <HydrationBoundary state={dehydrate(queryClient)}>
         <Pets />
       </HydrationBoundary>
+      <Link href="/infinite-loader" className="underline">
+        Go to Infinite Loader &rarr;
+      </Link>
     </main>
   );
 }

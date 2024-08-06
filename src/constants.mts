@@ -7,6 +7,7 @@ export const modalsFileName = "types.gen";
 
 export const OpenApiRqFiles = {
   queries: "queries",
+  infiniteQueries: "infiniteQueries",
   common: "common",
   suspense: "suspense",
   index: "index",

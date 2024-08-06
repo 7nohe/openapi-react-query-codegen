@@ -1,9 +1,14 @@
+import type ts from "typescript";
 import { createPrefetch } from "./createPrefetch.mjs";
 import { createUseMutation } from "./createUseMutation.mjs";
 import { createUseQuery } from "./createUseQuery.mjs";
 import type { Service } from "./service.mjs";
 
-export const createExports = (service: Service) => {
+export const createExports = (
+  service: Service,
+  pageParam: string,
+  nextPageParam: string,
+) => {
   const { klasses } = service;
   const methods = klasses.flatMap((k) => k.methods);
 
@@ -23,7 +28,9 @@ export const createExports = (service: Service) => {
     m.httpMethodName.toUpperCase().includes("DELETE"),
   );
 
-  const allGetQueries = allGet.map((m) => createUseQuery(m));
+  const allGetQueries = allGet.map((m) =>
+    createUseQuery(m, pageParam, nextPageParam),
+  );
   const allPrefetchQueries = allGet.map((m) => createPrefetch(m));
 
   const allPostMutations = allPost.map((m) => createUseMutation(m));
@@ -60,6 +67,10 @@ export const createExports = (service: Service) => {
 
   const mainExports = [...mainQueries, ...mainMutations];
 
+  const infiniteQueriesExports = allQueries
+    .flatMap(({ infiniteQueryHook }) => [infiniteQueryHook])
+    .filter(Boolean) as ts.VariableStatement[];
+
   const suspenseQueries = allQueries.flatMap(({ suspenseQueryHook }) => [
     suspenseQueryHook,
   ]);
@@ -81,6 +92,10 @@ export const createExports = (service: Service) => {
      * Main exports are the hooks that are used in the components
      */
     mainExports,
+    /**
+     * Infinite queries exports are the hooks that are used in the infinite scroll components
+     */
+    infiniteQueriesExports,
     /**
      * Suspense exports are the hooks that are used in the suspense components
      */

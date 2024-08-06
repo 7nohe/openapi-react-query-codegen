@@ -77,7 +77,10 @@ export const request = <T>(
         url: options.url,
         data: options.body,
         method: options.method,
-        params: options.path,
+        params: {
+          ...options.query,
+          ...options.path,
+        },
         headers: formattedHeaders,
         cancelToken: source.token,
       })

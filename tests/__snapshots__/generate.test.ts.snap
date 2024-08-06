@@ -22,6 +22,14 @@ export const useDefaultServiceFindPetByIdKey = "DefaultServiceFindPetById";
 export const UseDefaultServiceFindPetByIdKeyFn = ({ id }: {
   id: number;
 }, queryKey?: Array<unknown>) => [useDefaultServiceFindPetByIdKey, ...(queryKey ?? [{ id }])];
+export type DefaultServiceFindPaginatedPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPaginatedPets>>;
+export type DefaultServiceFindPaginatedPetsQueryResult<TData = DefaultServiceFindPaginatedPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+export const useDefaultServiceFindPaginatedPetsKey = "DefaultServiceFindPaginatedPets";
+export const UseDefaultServiceFindPaginatedPetsKeyFn = ({ limit, page, tags }: {
+  limit?: number;
+  page?: number;
+  tags?: string[];
+} = {}, queryKey?: Array<unknown>) => [useDefaultServiceFindPaginatedPetsKey, ...(queryKey ?? [{ limit, page, tags }])];
 export type DefaultServiceAddPetMutationResult = Awaited<ReturnType<typeof DefaultService.addPet>>;
 export type DefaultServicePostNotDefinedMutationResult = Awaited<ReturnType<typeof DefaultService.postNotDefined>>;
 export type DefaultServiceDeletePetMutationResult = Awaited<ReturnType<typeof DefaultService.deletePet>>;
@@ -33,6 +41,28 @@ exports[`generate > index.ts 1`] = `
 
 export * from "./common";
 export * from "./queries";
+"
+`;
+
+exports[`generate > infiniteQueries.ts 1`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
+import { DefaultService } from "../requests/services.gen";
+import * as Common from "./common";
+/**
+* Returns paginated pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page page number
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindPaginatedPetsInfinite = <TData = InfiniteData<Common.DefaultServiceFindPaginatedPetsDefaultResponse>, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
+  limit?: number;
+  tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useInfiniteQuery({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, tags }, queryKey), queryFn: ({ pageParam }) => DefaultService.findPaginatedPets({ limit, page: pageParam as number, tags }) as TData, initialPageParam: 1, getNextPageParam: response => (response as { nextPage: number }).nextPage, ...options });
 "
 `;
 
@@ -77,6 +107,21 @@ export const prefetchUseDefaultServiceGetNotDefined = (queryClient: QueryClient)
 export const prefetchUseDefaultServiceFindPetById = (queryClient: QueryClient, { id }: {
   id: number;
 }) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindPetByIdKeyFn({ id }), queryFn: () => DefaultService.findPetById({ id }) });
+/**
+* Returns paginated pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page page number
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const prefetchUseDefaultServiceFindPaginatedPets = (queryClient: QueryClient, { limit, page, tags }: {
+  limit?: number;
+  page?: number;
+  tags?: string[];
+} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) });
 "
 `;
 
@@ -122,6 +167,21 @@ export const useDefaultServiceGetNotDefined = <TData = Common.DefaultServiceGetN
 export const useDefaultServiceFindPetById = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
   id: number;
 }, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPetByIdKeyFn({ id }, queryKey), queryFn: () => DefaultService.findPetById({ id }) as TData, ...options });
+/**
+* Returns paginated pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page page number
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindPaginatedPets = <TData = Common.DefaultServiceFindPaginatedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, page, tags }: {
+  limit?: number;
+  page?: number;
+  tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) as TData, ...options });
 /**
 * Creates a new pet in the store. Duplicates are allowed
 * @param data The data for the request.
@@ -199,5 +259,20 @@ export const useDefaultServiceGetNotDefinedSuspense = <TData = Common.DefaultSer
 export const useDefaultServiceFindPetByIdSuspense = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
   id: number;
 }, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPetByIdKeyFn({ id }, queryKey), queryFn: () => DefaultService.findPetById({ id }) as TData, ...options });
+/**
+* Returns paginated pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page page number
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindPaginatedPetsSuspense = <TData = Common.DefaultServiceFindPaginatedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, page, tags }: {
+  limit?: number;
+  page?: number;
+  tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) as TData, ...options });
 "
 `;
