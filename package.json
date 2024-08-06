@@ -24,12 +24,8 @@
   "bin": {
     "openapi-rq": "dist/cli.mjs"
   },
-  "files": [
-    "dist"
-  ],
-  "workspaces": [
-    "examples/*"
-  ],
+  "files": ["dist"],
+  "workspaces": ["examples/*"],
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.json",
     "lint": "biome check .",
@@ -62,7 +58,7 @@
     "ts-morph": "22.x",
     "typescript": "5.x"
   },
-  "packageManager": "pnpm@9.5.0",
+  "packageManager": "pnpm@9.6.0",
   "engines": {
     "node": ">=14",
     "pnpm": ">=9"
