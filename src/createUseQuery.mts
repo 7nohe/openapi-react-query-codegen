@@ -1,4 +1,4 @@
-import type { MethodDeclaration, ParameterDeclaration } from "ts-morph";
+import type { MethodDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
@@ -260,8 +260,16 @@ export function createQueryHook({
   const customHookName = hookNameFromMethod({ method, className });
   const queryKey = createQueryKeyFromMethod({ method, className });
 
-  const isInfiniteQuery =
-    pageParam !== undefined && nextPageParam !== undefined;
+  if (
+    queryString === "useInfiniteQuery" &&
+    (pageParam === undefined || nextPageParam === undefined)
+  ) {
+    throw new Error(
+      "pageParam and nextPageParam are required for infinite queries",
+    );
+  }
+
+  const isInfiniteQuery = queryString === "useInfiniteQuery";
 
   const responseDataTypeRef = responseDataType.default as ts.TypeReferenceNode;
   const responseDataTypeIdentifier =
