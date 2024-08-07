@@ -6,7 +6,12 @@ import { createExports } from "./createExports.mjs";
 import { createImports } from "./createImports.mjs";
 import { getServices } from "./service.mjs";
 
-const createSourceFile = async (outputPath: string, serviceEndName: string) => {
+const createSourceFile = async (
+  outputPath: string,
+  serviceEndName: string,
+  pageParam: string,
+  nextPageParam: string,
+) => {
   const project = new Project({
     // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
     // If you initialize with a tsconfig.json, then it will automatically populate the project
@@ -25,7 +30,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     project,
   });
 
-  const exports = createExports(service);
+  const exports = createExports(service, pageParam, nextPageParam);
 
   const commonSource = ts.factory.createSourceFile(
     [...imports, ...exports.allCommon],
@@ -66,6 +71,12 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
     ts.NodeFlags.None,
   );
 
+  const infiniteQueriesSource = ts.factory.createSourceFile(
+    [commonImport, ...imports, ...exports.infiniteQueriesExports],
+    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+    ts.NodeFlags.None,
+  );
+
   const suspenseSource = ts.factory.createSourceFile(
     [commonImport, ...imports, ...exports.suspenseExports],
     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
@@ -86,6 +97,7 @@ const createSourceFile = async (outputPath: string, serviceEndName: string) => {
 
   return {
     commonSource,
+    infiniteQueriesSource,
     mainSource,
     suspenseSource,
     indexSource,
@@ -97,13 +109,24 @@ export const createSource = async ({
   outputPath,
   version,
   serviceEndName,
+  pageParam,
+  nextPageParam,
 }: {
   outputPath: string;
   version: string;
   serviceEndName: string;
+  pageParam: string;
+  nextPageParam: string;
 }) => {
   const queriesFile = ts.createSourceFile(
     `${OpenApiRqFiles.queries}.ts`,
+    "",
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS,
+  );
+  const infiniteQueriesFile = ts.createSourceFile(
+    `${OpenApiRqFiles.infiniteQueries}.ts`,
     "",
     ts.ScriptTarget.Latest,
     false,
@@ -148,10 +171,16 @@ export const createSource = async ({
   const {
     commonSource,
     mainSource,
+    infiniteQueriesSource,
     suspenseSource,
     indexSource,
     prefetchSource,
-  } = await createSourceFile(outputPath, serviceEndName);
+  } = await createSourceFile(
+    outputPath,
+    serviceEndName,
+    pageParam,
+    nextPageParam,
+  );
 
   const comment = `// generated with @7nohe/openapi-react-query-codegen@${version} \n\n`;
 
@@ -162,6 +191,14 @@ export const createSource = async ({
   const mainResult =
     comment +
     printer.printNode(ts.EmitHint.Unspecified, mainSource, queriesFile);
+
+  const infiniteQueriesResult =
+    comment +
+    printer.printNode(
+      ts.EmitHint.Unspecified,
+      infiniteQueriesSource,
+      infiniteQueriesFile,
+    );
 
   const suspenseResult =
     comment +
@@ -183,6 +220,10 @@ export const createSource = async ({
     {
       name: `${OpenApiRqFiles.common}.ts`,
       content: commonResult,
+    },
+    {
+      name: `${OpenApiRqFiles.infiniteQueries}.ts`,
+      content: infiniteQueriesResult,
     },
     {
       name: `${OpenApiRqFiles.queries}.ts`,

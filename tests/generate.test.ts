@@ -19,6 +19,8 @@ describe("generate", () => {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
       lint: "eslint",
+      pageParam: "page",
+      nextPageParam: "nextPage",
     };
     await generate(options, "1.0.0");
   });
@@ -37,6 +39,10 @@ describe("generate", () => {
 
   test("queries.ts", () => {
     expect(readOutput("queries.ts")).toMatchSnapshot();
+  });
+
+  test("infiniteQueries.ts", () => {
+    expect(readOutput("infiniteQueries.ts")).toMatchSnapshot();
   });
 
   test("index.ts", () => {
