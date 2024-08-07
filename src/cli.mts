@@ -18,7 +18,7 @@ export type LimitedUserConfig = {
   operationId?: boolean;
   serviceResponse?: "body" | "response";
   base?: string;
-  enums?: "javascript" | "typescript";
+  enums?: "javascript" | "typescript" | "typescript+namespace";
   useDateType?: boolean;
   debug?: boolean;
   noSchemas?: boolean;
@@ -78,7 +78,7 @@ async function setupProgram() {
       new Option(
         "--enums <value>",
         "Generate JavaScript objects from enum definitions?",
-      ).choices(["javascript", "typescript"]),
+      ).choices(["javascript", "typescript", "typescript+namespace"]),
     )
     .option(
       "--useDateType",

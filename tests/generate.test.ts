@@ -15,6 +15,7 @@ const readOutput = (fileName: string) => {
 describe("generate", () => {
   beforeAll(async () => {
     const options: LimitedUserConfig = {
+      client: "fetch",
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
       lint: "eslint",

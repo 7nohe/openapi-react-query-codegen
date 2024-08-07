@@ -19,10 +19,7 @@ import { addJSDocToNode } from "./util.mjs";
 export const createApiResponseType = ({
   className,
   methodName,
-}: {
-  className: string;
-  methodName: string;
-}) => {
+}: { className: string; methodName: string }) => {
   /** Awaited<ReturnType<typeof myClass.myMethod>> */
   const awaitedResponseDataType = ts.factory.createTypeReferenceNode(
     ts.factory.createIdentifier("Awaited"),
@@ -47,9 +44,7 @@ export const createApiResponseType = ({
   const apiResponse = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
-      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
-        methodName,
-      )}DefaultResponse`,
+      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(methodName)}DefaultResponse`,
     ),
     undefined,
     awaitedResponseDataType,
@@ -93,7 +88,7 @@ export function getRequestParamFromMethod(
       .filter((p) => p.name !== pageParam)
       .map((refParam) => ({
         name: refParam.name,
-        typeName: getShortType(refParam.type.getText()),
+        typeName: getShortType(refParam.type?.getText() ?? ""),
         optional: refParam.optional,
       }));
   });
@@ -151,9 +146,7 @@ export function createReturnTypeExport({
   return ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
-      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
-        methodName,
-      )}QueryResult`,
+      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(methodName)}QueryResult`,
     ),
     [
       ts.factory.createTypeParameterDeclaration(
@@ -186,11 +179,7 @@ export function createQueryKeyExport({
   className,
   methodName,
   queryKey,
-}: {
-  className: string;
-  methodName: string;
-  queryKey: string;
-}) {
+}: { className: string; methodName: string; queryKey: string }) {
   return ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
@@ -212,10 +201,7 @@ export function createQueryKeyExport({
 export function hookNameFromMethod({
   method,
   className,
-}: {
-  method: MethodDeclaration;
-  className: string;
-}) {
+}: { method: MethodDeclaration; className: string }) {
   const methodName = getNameFromMethod(method);
   return `use${className}${capitalizeFirstLetter(methodName)}`;
 }
@@ -223,10 +209,7 @@ export function hookNameFromMethod({
 export function createQueryKeyFromMethod({
   method,
   className,
-}: {
-  method: MethodDeclaration;
-  className: string;
-}) {
+}: { method: MethodDeclaration; className: string }) {
   const customHookName = hookNameFromMethod({ method, className });
   const queryKey = `${customHookName}Key`;
   return queryKey;

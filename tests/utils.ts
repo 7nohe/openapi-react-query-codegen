@@ -9,6 +9,13 @@ export const generateTSClients = async (prefix: string, inputFile?: string) => {
   const options: UserConfig = {
     input: path.join(__dirname, "inputs", inputFile ?? "petstore.yaml"),
     output: outputPath(prefix),
+    client: {
+      name: "fetch",
+      bundle: false,
+    },
+    services: {
+      asClass: true,
+    },
   };
   await createClient(options);
 };

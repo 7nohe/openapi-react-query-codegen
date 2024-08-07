@@ -62,7 +62,6 @@ import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetR
 * @param data.tags tags to filter by
 * @param data.limit maximum number of results to return
 * @returns Pet pet response
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceFindPets = <TData = Common.DefaultServiceFindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
@@ -81,7 +80,6 @@ export const useDefaultServiceGetNotDefined = <TData = Common.DefaultServiceGetN
 * @param data The data for the request.
 * @param data.id ID of pet to fetch
 * @returns Pet pet response
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceFindPetById = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
@@ -107,7 +105,6 @@ export const useDefaultServiceFindPaginatedPets = <TData = Common.DefaultService
 * @param data The data for the request.
 * @param data.requestBody Pet to add to the store
 * @returns Pet pet response
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceAddPet = <TData = Common.DefaultServiceAddPetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
@@ -127,7 +124,6 @@ export const useDefaultServicePostNotDefined = <TData = Common.DefaultServicePos
 * @param data The data for the request.
 * @param data.id ID of pet to delete
 * @returns void pet deleted
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceDeletePet = <TData = Common.DefaultServiceDeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
@@ -155,7 +151,6 @@ import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetR
 * @param data.tags tags to filter by
 * @param data.limit maximum number of results to return
 * @returns Pet pet response
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceFindPetsSuspense = <TData = Common.DefaultServiceFindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
@@ -174,7 +169,6 @@ export const useDefaultServiceGetNotDefinedSuspense = <TData = Common.DefaultSer
 * @param data The data for the request.
 * @param data.id ID of pet to fetch
 * @returns Pet pet response
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const useDefaultServiceFindPetByIdSuspense = <TData = Common.DefaultServiceFindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ id }: {
@@ -215,7 +209,6 @@ import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetR
 * @param data.tags tags to filter by
 * @param data.limit maximum number of results to return
 * @returns Pet pet response
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const prefetchUseDefaultServiceFindPets = (queryClient: QueryClient, { limit, tags }: {
@@ -234,7 +227,6 @@ export const prefetchUseDefaultServiceGetNotDefined = (queryClient: QueryClient)
 * @param data The data for the request.
 * @param data.id ID of pet to fetch
 * @returns Pet pet response
-* @returns Error unexpected error
 * @throws ApiError
 */
 export const prefetchUseDefaultServiceFindPetById = (queryClient: QueryClient, { id }: {
