@@ -2,28 +2,6 @@
   "name": "@7nohe/openapi-react-query-codegen",
   "version": "1.4.1",
   "description": "OpenAPI React Query Codegen",
-  "bin": {
-    "openapi-rq": "dist/cli.mjs"
-  },
-  "type": "module",
-  "workspaces": ["examples/*"],
-  "scripts": {
-    "build": "rimraf dist && tsc -p tsconfig.json",
-    "lint": "biome check .",
-    "lint:fix": "biome check --apply .",
-    "preview": "npm run build && npm -C examples/react-app run generate:api",
-    "prepublishOnly": "npm run build",
-    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
-    "test": "vitest --coverage.enabled true",
-    "snapshot": "vitest --update"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git"
-  },
-  "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
-  "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
-  "files": ["dist"],
   "keywords": [
     "codegen",
     "react-query",
@@ -34,8 +12,30 @@
     "openapi-typescript-codegen",
     "@hey-api/openapi-ts"
   ],
-  "author": "Daiki Urata (@7nohe)",
+  "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
+  "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git"
+  },
   "license": "MIT",
+  "author": "Daiki Urata (@7nohe)",
+  "type": "module",
+  "bin": {
+    "openapi-rq": "dist/cli.mjs"
+  },
+  "files": ["dist"],
+  "workspaces": ["examples/*"],
+  "scripts": {
+    "build": "rimraf dist && tsc -p tsconfig.json",
+    "lint": "biome check .",
+    "lint:fix": "biome check --apply .",
+    "prepublishOnly": "npm run build",
+    "preview": "npm run build && npm -C examples/react-app run generate:api",
+    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
+    "snapshot": "vitest --update",
+    "test": "vitest --coverage.enabled true"
+  },
   "dependencies": {
     "@hey-api/openapi-ts": "0.45.1"
   },
@@ -58,7 +58,9 @@
     "ts-morph": "22.x",
     "typescript": "5.x"
   },
+  "packageManager": "pnpm@9.6.0",
   "engines": {
-    "node": ">=14"
+    "node": ">=14",
+    "pnpm": ">=9"
   }
 }
