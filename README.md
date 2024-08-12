@@ -52,6 +52,7 @@ Options:
   --operationId              Use operation ID to generate operation names?
   --serviceResponse <value>  Define shape of returned value from service calls (choices: "body", "response", default: "body")
   --base <value>             Manually set base in OpenAPI config instead of inferring from server value
+  --enums <value>            Generate JavaScript objects from enum definitions? ['javascript', 'typescript', 'typescript+namespace']
   --enums <value>            Generate JavaScript objects from enum definitions? (choices: "javascript", "typescript")
   --useDateType              Use Date type instead of string for date types for models, this will not convert the data to a Date object
   --debug                    Run in debug mode?

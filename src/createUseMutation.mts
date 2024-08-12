@@ -83,7 +83,7 @@ export const createUseMutation = ({
                   ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
                   : undefined,
                 ts.factory.createTypeReferenceNode(
-                  getShortType(refParam.type.getText(param)),
+                  getShortType(refParam.type?.getText(param) ?? ""),
                 ),
               ),
             );
