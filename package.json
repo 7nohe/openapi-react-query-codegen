@@ -1,6 +1,6 @@
 {
   "name": "@7nohe/openapi-react-query-codegen",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "OpenAPI React Query Codegen",
   "keywords": [
     "codegen",
