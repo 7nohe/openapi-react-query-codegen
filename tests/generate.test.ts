@@ -21,6 +21,7 @@ describe("generate", () => {
       lint: "eslint",
       pageParam: "page",
       nextPageParam: "nextPage",
+      initialPageParam: "initial",
     };
     await generate(options, "1.0.0");
   });

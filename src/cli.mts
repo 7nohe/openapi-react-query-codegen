@@ -25,6 +25,7 @@ export type LimitedUserConfig = {
   schemaType?: "form" | "json";
   pageParam: string;
   nextPageParam: string;
+  initialPageParam: string | number;
 };
 
 async function setupProgram() {
@@ -101,6 +102,11 @@ async function setupProgram() {
       "--nextPageParam <value>",
       "Name of the response parameter used for next page",
       "nextPage",
+    )
+    .option(
+      "--initialPageParam <value>",
+      "Initial page value to query",
+      "initialPageParam",
     )
     .parse();
 

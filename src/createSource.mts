@@ -11,6 +11,7 @@ const createSourceFile = async (
   serviceEndName: string,
   pageParam: string,
   nextPageParam: string,
+  initialPageParam: string,
 ) => {
   const project = new Project({
     // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
@@ -30,7 +31,12 @@ const createSourceFile = async (
     project,
   });
 
-  const exports = createExports(service, pageParam, nextPageParam);
+  const exports = createExports(
+    service,
+    pageParam,
+    nextPageParam,
+    initialPageParam,
+  );
 
   const commonSource = ts.factory.createSourceFile(
     [...imports, ...exports.allCommon],
@@ -111,12 +117,14 @@ export const createSource = async ({
   serviceEndName,
   pageParam,
   nextPageParam,
+  initialPageParam,
 }: {
   outputPath: string;
   version: string;
   serviceEndName: string;
   pageParam: string;
   nextPageParam: string;
+  initialPageParam: string;
 }) => {
   const queriesFile = ts.createSourceFile(
     `${OpenApiRqFiles.queries}.ts`,
@@ -180,6 +188,7 @@ export const createSource = async ({
     serviceEndName,
     pageParam,
     nextPageParam,
+    initialPageParam,
   );
 
   const comment = `// generated with @7nohe/openapi-react-query-codegen@${version} \n\n`;
