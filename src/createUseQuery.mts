@@ -667,9 +667,18 @@ function createInfiniteQueryParams(
           ts.factory.createParenthesizedExpression(
             ts.factory.createAsExpression(
               ts.factory.createIdentifier("response"),
-              ts.factory.createTypeReferenceNode(
-                ts.factory.createIdentifier(`{ ${nextPageParam}: number }`),
-              ),
+              nextPageParam.split(".").reduceRight((acc, segment) => {
+                return ts.factory.createTypeLiteralNode([
+                  ts.factory.createPropertySignature(
+                    undefined,
+                    ts.factory.createIdentifier(segment),
+                    undefined,
+                    acc,
+                  ),
+                ]);
+              }, ts.factory.createKeywordTypeNode(
+                ts.SyntaxKind.NumberKeyword,
+              ) as ts.TypeNode),
             ),
           ),
           ts.factory.createIdentifier(nextPageParam),
