@@ -241,6 +241,8 @@ export default App;
 
 This feature will generate a function in infiniteQueries.ts when the name specified by the `pageParam` option exists in the query parameters and the name specified by the `nextPageParam` option exists in the response.
 
+The `initialPageParam` option can be specified to set the intial page to load, defaults to 1. The `nextPageParam` supports dot notation for nested values (i.e. `meta.next`).
+
 Example Schema:
 
 ```yml
