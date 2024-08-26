@@ -20,7 +20,7 @@ describe("generate", () => {
       output: path.join("tests", "outputs"),
       lint: "eslint",
       pageParam: "page",
-      nextPageParam: "nextPage",
+      nextPageParam: "meta.next",
       initialPageParam: "initial",
     };
     await generate(options, "1.0.0");

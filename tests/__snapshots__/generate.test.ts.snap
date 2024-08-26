@@ -63,11 +63,11 @@ export const useDefaultServiceFindPaginatedPetsInfinite = <TData = InfiniteData<
   limit?: number;
   tags?: string[];
 } = {}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useInfiniteQuery({
-  queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, tags }, queryKey), queryFn: ({ pageParam }) => DefaultService.findPaginatedPets({ limit, page: pageParam as number, tags }) as TData, initialPageParam: 1, getNextPageParam: response => (response as {
+  queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, tags }, queryKey), queryFn: ({ pageParam }) => DefaultService.findPaginatedPets({ limit, page: pageParam as number, tags }) as TData, initialPageParam: "initial", getNextPageParam: response => (response as {
     meta: {
-      nextPage: number;
+      next: number;
     };
-  }).meta.nextPage, ...options
+  }).meta.next, ...options
 });
 "
 `;
