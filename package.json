@@ -29,7 +29,7 @@
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.json",
     "lint": "biome check .",
-    "lint:fix": "biome check --apply .",
+    "lint:fix": "biome check --write .",
     "prepublishOnly": "npm run build",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
     "release": "npx git-ensure -a && npx bumpp --commit --tag --push",

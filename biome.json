@@ -9,7 +9,8 @@
       "examples/react-app/openapi",
       "coverage",
       "examples/nextjs-app/openapi",
-      "examples/nextjs-app/.next"
+      "examples/nextjs-app/.next",
+      ".vscode"
     ]
   },
   "linter": {
