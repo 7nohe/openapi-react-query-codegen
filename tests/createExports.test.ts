@@ -17,7 +17,7 @@ describe(fileName, () => {
     });
     project.addSourceFilesAtPaths(path.join(outputPath(fileName), "**", "*"));
     const service = await getServices(project);
-    const exports = createExports(service, "page", "nextPage");
+    const exports = createExports(service, "page", "nextPage", "initial");
 
     const commonTypes = exports.allCommon
       .filter((c) => c.kind === SyntaxKind.TypeAliasDeclaration)

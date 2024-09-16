@@ -62,7 +62,13 @@ import * as Common from "./common";
 export const useDefaultServiceFindPaginatedPetsInfinite = <TData = InfiniteData<Common.DefaultServiceFindPaginatedPetsDefaultResponse>, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
   limit?: number;
   tags?: string[];
-} = {}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useInfiniteQuery({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, tags }, queryKey), queryFn: ({ pageParam }) => DefaultService.findPaginatedPets({ limit, page: pageParam as number, tags }) as TData, initialPageParam: 1, getNextPageParam: response => (response as { nextPage: number }).nextPage, ...options });
+} = {}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useInfiniteQuery({
+  queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, tags }, queryKey), queryFn: ({ pageParam }) => DefaultService.findPaginatedPets({ limit, page: pageParam as number, tags }) as TData, initialPageParam: "initial", getNextPageParam: response => (response as {
+    meta: {
+      next: number;
+    };
+  }).meta.next, ...options
+});
 "
 `;
 

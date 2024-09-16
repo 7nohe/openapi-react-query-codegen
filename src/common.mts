@@ -163,9 +163,12 @@ export function formatOptions(options: LimitedUserConfig) {
       } else if (!Number.isNaN(parsedNumber)) {
         (acc as unknown as Record<string, number>)[typedKey] = parsedNumber;
       } else {
-        (acc as unknown as Record<string, string | undefined | boolean>)[
-          typedKey
-        ] = typedValue;
+        (
+          acc as unknown as Record<
+            string,
+            string | number | undefined | boolean
+          >
+        )[typedKey] = typedValue;
       }
       return acc;
     },

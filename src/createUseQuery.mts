@@ -229,6 +229,7 @@ export function createQueryHook({
   className,
   pageParam,
   nextPageParam,
+  initialPageParam,
 }: {
   queryString: "useSuspenseQuery" | "useQuery" | "useInfiniteQuery";
   suffix: string;
@@ -238,6 +239,7 @@ export function createQueryHook({
   className: string;
   pageParam?: string;
   nextPageParam?: string;
+  initialPageParam?: string;
 }) {
   const methodName = getNameFromMethod(method);
   const customHookName = hookNameFromMethod({ method, className });
@@ -447,7 +449,11 @@ export function createQueryHook({
                       ),
                     ),
                   ),
-                  ...createInfiniteQueryParams(pageParam, nextPageParam),
+                  ...createInfiniteQueryParams(
+                    pageParam,
+                    nextPageParam,
+                    initialPageParam,
+                  ),
                   ts.factory.createSpreadAssignment(
                     ts.factory.createIdentifier("options"),
                   ),
@@ -467,6 +473,7 @@ export const createUseQuery = (
   { className, method, jsDoc }: MethodDescription,
   pageParam: string,
   nextPageParam: string,
+  initialPageParam: string,
 ) => {
   const methodName = getNameFromMethod(method);
   const queryKey = createQueryKeyFromMethod({ method, className });
@@ -517,6 +524,7 @@ export const createUseQuery = (
         className,
         pageParam,
         nextPageParam,
+        initialPageParam,
       })
     : undefined;
 
@@ -625,14 +633,18 @@ function queryKeyFn(
   );
 }
 
-function createInfiniteQueryParams(pageParam?: string, nextPageParam?: string) {
+function createInfiniteQueryParams(
+  pageParam?: string,
+  nextPageParam?: string,
+  initialPageParam = "1",
+) {
   if (pageParam === undefined || nextPageParam === undefined) {
     return [];
   }
   return [
     ts.factory.createPropertyAssignment(
       ts.factory.createIdentifier("initialPageParam"),
-      ts.factory.createNumericLiteral(1),
+      ts.factory.createStringLiteral(initialPageParam),
     ),
     ts.factory.createPropertyAssignment(
       ts.factory.createIdentifier("getNextPageParam"),
@@ -655,9 +667,18 @@ function createInfiniteQueryParams(pageParam?: string, nextPageParam?: string) {
           ts.factory.createParenthesizedExpression(
             ts.factory.createAsExpression(
               ts.factory.createIdentifier("response"),
-              ts.factory.createTypeReferenceNode(
-                ts.factory.createIdentifier(`{ ${nextPageParam}: number }`),
-              ),
+              nextPageParam.split(".").reduceRight((acc, segment) => {
+                return ts.factory.createTypeLiteralNode([
+                  ts.factory.createPropertySignature(
+                    undefined,
+                    ts.factory.createIdentifier(segment),
+                    undefined,
+                    acc,
+                  ),
+                ]);
+              }, ts.factory.createKeywordTypeNode(
+                ts.SyntaxKind.NumberKeyword,
+              ) as ts.TypeNode),
             ),
           ),
           ts.factory.createIdentifier(nextPageParam),

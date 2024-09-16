@@ -8,6 +8,7 @@ export const createExports = (
   service: Service,
   pageParam: string,
   nextPageParam: string,
+  initialPageParam: string,
 ) => {
   const { klasses } = service;
   const methods = klasses.flatMap((k) => k.methods);
@@ -29,7 +30,7 @@ export const createExports = (
   );
 
   const allGetQueries = allGet.map((m) =>
-    createUseQuery(m, pageParam, nextPageParam),
+    createUseQuery(m, pageParam, nextPageParam, initialPageParam),
   );
   const allPrefetchQueries = allGet.map((m) => createPrefetch(m));
 
