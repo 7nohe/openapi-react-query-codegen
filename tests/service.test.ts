@@ -27,6 +27,7 @@ describe(fileName, () => {
       "findPetById",
       "deletePet",
       "findPaginatedPets",
+      "findCursorBasedPets",
     ]);
   });
 

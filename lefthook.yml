@@ -2,7 +2,7 @@ pre-commit:
   commands:
     check:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: npx biome check --apply --no-errors-on-unmatched --files-ignore-unknown=true ./ && git update-index --again
+      run: npx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true ./ && git update-index --again
     test:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
       run: npx vitest run

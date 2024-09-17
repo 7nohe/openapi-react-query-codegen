@@ -1,4 +1,4 @@
-import type { MethodDeclaration } from "ts-morph";
+import type { MethodDeclaration, Symbol as TMSymbol } from "ts-morph";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
@@ -19,7 +19,10 @@ import { addJSDocToNode } from "./util.mjs";
 export const createApiResponseType = ({
   className,
   methodName,
-}: { className: string; methodName: string }) => {
+}: {
+  className: string;
+  methodName: string;
+}) => {
   /** Awaited<ReturnType<typeof myClass.myMethod>> */
   const awaitedResponseDataType = ts.factory.createTypeReferenceNode(
     ts.factory.createIdentifier("Awaited"),
@@ -44,7 +47,9 @@ export const createApiResponseType = ({
   const apiResponse = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
-      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(methodName)}DefaultResponse`,
+      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
+        methodName,
+      )}DefaultResponse`,
     ),
     undefined,
     awaitedResponseDataType,
@@ -146,7 +151,9 @@ export function createReturnTypeExport({
   return ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
-      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(methodName)}QueryResult`,
+      `${capitalizeFirstLetter(className)}${capitalizeFirstLetter(
+        methodName,
+      )}QueryResult`,
     ),
     [
       ts.factory.createTypeParameterDeclaration(
@@ -179,7 +186,11 @@ export function createQueryKeyExport({
   className,
   methodName,
   queryKey,
-}: { className: string; methodName: string; queryKey: string }) {
+}: {
+  className: string;
+  methodName: string;
+  queryKey: string;
+}) {
   return ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createVariableDeclarationList(
@@ -201,7 +212,10 @@ export function createQueryKeyExport({
 export function hookNameFromMethod({
   method,
   className,
-}: { method: MethodDeclaration; className: string }) {
+}: {
+  method: MethodDeclaration;
+  className: string;
+}) {
   const methodName = getNameFromMethod(method);
   return `use${className}${capitalizeFirstLetter(methodName)}`;
 }
@@ -209,10 +223,43 @@ export function hookNameFromMethod({
 export function createQueryKeyFromMethod({
   method,
   className,
-}: { method: MethodDeclaration; className: string }) {
+}: {
+  method: MethodDeclaration;
+  className: string;
+}) {
   const customHookName = hookNameFromMethod({ method, className });
   const queryKey = `${customHookName}Key`;
   return queryKey;
+}
+
+/**
+ * Extracts the type of the next page parameter from the given properties.
+ *
+ * @param properties The properties to search through.
+ * @param nextPageParam The name of the next page parameter.
+ * @returns The type of the next page parameter, if found.
+ */
+function findNextPageParamType(
+  properties: TMSymbol[] | undefined,
+  nextPageParam: string,
+): string | undefined {
+  if (!properties) return undefined;
+
+  for (const property of properties) {
+    if (property.getName() === nextPageParam) {
+      return property?.getDeclarations()?.at(0)?.getType()?.getText();
+    }
+
+    const type = property.getDeclarations().at(0)?.getType();
+    const nestedProperties = type?.getProperties();
+
+    if (!type?.isObject() || type.isArray()) continue;
+
+    const result = findNextPageParamType(nestedProperties, nextPageParam);
+    if (result) return result;
+  }
+
+  return undefined;
 }
 
 /**
@@ -259,6 +306,18 @@ export function createQueryHook({
   const responseDataTypeRef = responseDataType.default as ts.TypeReferenceNode;
   const responseDataTypeIdentifier =
     responseDataTypeRef.typeName as ts.Identifier;
+
+  const arg = method.getReturnType().getTypeArguments().at(0);
+
+  const nextPageParamTypePropetires = arg?.getProperties();
+
+  const nextPageParamType = // if arg is object, we need to find the type of the nextPageParam
+    arg?.isObject() && nextPageParam
+      ? findNextPageParamType(
+          nextPageParamTypePropetires,
+          nextPageParam.split(".").at(-1) ?? "",
+        )
+      : undefined;
 
   const hookExport = ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -430,7 +489,11 @@ export function createQueryHook({
                                                   "pageParam",
                                                 ),
                                                 ts.factory.createKeywordTypeNode(
-                                                  ts.SyntaxKind.NumberKeyword,
+                                                  p.type?.getText() === "number"
+                                                    ? ts.SyntaxKind
+                                                        .NumberKeyword
+                                                    : ts.SyntaxKind
+                                                        .StringKeyword,
                                                 ),
                                               ),
                                             )
@@ -453,6 +516,7 @@ export function createQueryHook({
                     pageParam,
                     nextPageParam,
                     initialPageParam,
+                    nextPageParamType,
                   ),
                   ts.factory.createSpreadAssignment(
                     ts.factory.createIdentifier("options"),
@@ -637,6 +701,7 @@ function createInfiniteQueryParams(
   pageParam?: string,
   nextPageParam?: string,
   initialPageParam = "1",
+  type?: string,
 ) {
   if (pageParam === undefined || nextPageParam === undefined) {
     return [];
@@ -667,18 +732,23 @@ function createInfiniteQueryParams(
           ts.factory.createParenthesizedExpression(
             ts.factory.createAsExpression(
               ts.factory.createIdentifier("response"),
-              nextPageParam.split(".").reduceRight((acc, segment) => {
-                return ts.factory.createTypeLiteralNode([
-                  ts.factory.createPropertySignature(
-                    undefined,
-                    ts.factory.createIdentifier(segment),
-                    undefined,
-                    acc,
-                  ),
-                ]);
-              }, ts.factory.createKeywordTypeNode(
-                ts.SyntaxKind.NumberKeyword,
-              ) as ts.TypeNode),
+              nextPageParam.split(".").reduceRight(
+                (acc, segment) => {
+                  return ts.factory.createTypeLiteralNode([
+                    ts.factory.createPropertySignature(
+                      undefined,
+                      ts.factory.createIdentifier(segment),
+                      undefined,
+                      acc,
+                    ),
+                  ]);
+                },
+                ts.factory.createKeywordTypeNode(
+                  type === "number"
+                    ? ts.SyntaxKind.NumberKeyword
+                    : ts.SyntaxKind.StringKeyword,
+                ) as ts.TypeNode,
+              ),
             ),
           ),
           ts.factory.createIdentifier(nextPageParam),
