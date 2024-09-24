@@ -1,5 +1,5 @@
 import type ts from "typescript";
-import { createPrefetch } from "./createPrefetch.mjs";
+import { createPrefetchOrEnsure } from "./createPrefetchOrEnsure.mjs";
 import { createUseMutation } from "./createUseMutation.mjs";
 import { createUseQuery } from "./createUseQuery.mjs";
 import type { Service } from "./service.mjs";
@@ -32,7 +32,12 @@ export const createExports = (
   const allGetQueries = allGet.map((m) =>
     createUseQuery(m, pageParam, nextPageParam, initialPageParam),
   );
-  const allPrefetchQueries = allGet.map((m) => createPrefetch(m));
+  const allPrefetchQueries = allGet.map((m) =>
+    createPrefetchOrEnsure({ ...m, functionType: "prefetch" }),
+  );
+  const allEnsureQueries = allGet.map((m) =>
+    createPrefetchOrEnsure({ ...m, functionType: "ensure" }),
+  );
 
   const allPostMutations = allPost.map((m) => createUseMutation(m));
   const allPutMutations = allPut.map((m) => createUseMutation(m));
@@ -78,9 +83,9 @@ export const createExports = (
 
   const suspenseExports = [...suspenseQueries];
 
-  const allPrefetches = allPrefetchQueries.flatMap(({ prefetchHook }) => [
-    prefetchHook,
-  ]);
+  const allPrefetches = allPrefetchQueries.flatMap(({ hook }) => [hook]);
+
+  const allEnsures = allEnsureQueries.flatMap(({ hook }) => [hook]);
 
   const allPrefetchExports = [...allPrefetches];
 
@@ -105,5 +110,10 @@ export const createExports = (
      * Prefetch exports are the hooks that are used in the prefetch components
      */
     allPrefetchExports,
+
+    /**
+     * Ensure exports are the hooks that are used in the loader components
+     */
+    allEnsures,
   };
 };
