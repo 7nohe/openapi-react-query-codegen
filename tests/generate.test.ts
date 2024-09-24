@@ -22,6 +22,7 @@ describe("generate", () => {
       pageParam: "page",
       nextPageParam: "meta.next",
       initialPageParam: "initial",
+      operationId: true,
     };
     await generate(options, "1.0.0");
   });
