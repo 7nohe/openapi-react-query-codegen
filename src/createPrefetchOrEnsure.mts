@@ -15,22 +15,31 @@ import {
 import { addJSDocToNode } from "./util.mjs";
 
 /**
- * Creates a prefetch function for a query
+ * Creates a prefetch/ensure function for a query
  */
-function createPrefetchHook({
+function createPrefetchOrEnsureHook({
   requestParams,
   method,
   className,
+  functionType,
 }: {
   requestParams: ts.ParameterDeclaration[];
   method: MethodDeclaration;
   className: string;
+  functionType: "prefetch" | "ensure";
 }) {
   const methodName = getNameFromMethod(method);
   const queryName = hookNameFromMethod({ method, className });
-  const customHookName = `prefetch${
+  let customHookName = `prefetch${
     queryName.charAt(0).toUpperCase() + queryName.slice(1)
   }`;
+
+  if (functionType === "ensure") {
+    customHookName = `ensure${
+      queryName.charAt(0).toUpperCase() + queryName.slice(1)
+    }Data`;
+  }
+
   const queryKey = createQueryKeyFromMethod({ method, className });
 
   // const
@@ -61,7 +70,9 @@ function createPrefetchHook({
             undefined,
             ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
             ts.factory.createCallExpression(
-              ts.factory.createIdentifier("queryClient.prefetchQuery"),
+              ts.factory.createIdentifier(
+                `queryClient.${functionType === "prefetch" ? "prefetchQuery" : "ensureQueryData"}`,
+              ),
               undefined,
               [
                 ts.factory.createObjectLiteralExpression([
@@ -136,24 +147,26 @@ function createPrefetchHook({
   return hookExport;
 }
 
-export const createPrefetch = ({
+export const createPrefetchOrEnsure = ({
   className,
   method,
   jsDoc,
-}: MethodDescription) => {
+  functionType,
+}: MethodDescription & { functionType: "prefetch" | "ensure" }) => {
   const requestParam = getRequestParamFromMethod(method);
 
   const requestParams = requestParam ? [requestParam] : [];
 
-  const prefetchHook = createPrefetchHook({
+  const prefetchOrEnsureHook = createPrefetchOrEnsureHook({
     requestParams,
     method,
     className,
+    functionType,
   });
 
-  const hookWithJsDoc = addJSDocToNode(prefetchHook, jsDoc);
+  const hookWithJsDoc = addJSDocToNode(prefetchOrEnsureHook, jsDoc);
 
   return {
-    prefetchHook: hookWithJsDoc,
+    hook: hookWithJsDoc,
   };
 };

@@ -12,4 +12,5 @@ export const OpenApiRqFiles = {
   suspense: "suspense",
   index: "index",
   prefetch: "prefetch",
+  ensureQueryData: "ensureQueryData",
 } as const;
