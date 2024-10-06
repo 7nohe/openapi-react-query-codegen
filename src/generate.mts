@@ -36,7 +36,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
       asClass: true,
     },
     types: {
-      dates: formattedOptions.useDateType,
+      dates: formattedOptions.useDateType ? "types+transform" : false,
       export: true,
       enums: formattedOptions.enums,
     },
