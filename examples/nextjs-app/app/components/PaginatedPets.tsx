@@ -22,7 +22,7 @@ export default function PaginatedPets() {
           </React.Fragment>
         ))}
       </ul>
-      {data?.pages.at(-1)?.nextPage && (
+      {data?.pages.at(-1)?.meta?.next && (
         <button
           type="button"
           onClick={() => fetchNextPage()}

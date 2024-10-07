@@ -13,7 +13,7 @@ exports[`createSource > createSource 2`] = `
 
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, FindCursorBasedPetsData, FindCursorBasedPetsResponse, $OpenApiTs } from "../requests/types.gen";
 export type DefaultServiceFindPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findPets>>;
 export type DefaultServiceFindPetsQueryResult<TData = DefaultServiceFindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useDefaultServiceFindPetsKey = "DefaultServiceFindPets";
@@ -39,6 +39,14 @@ export const UseDefaultServiceFindPaginatedPetsKeyFn = ({ limit, page, tags }: {
     page?: number;
     tags?: string[];
 } = {}, queryKey?: Array<unknown>) => [useDefaultServiceFindPaginatedPetsKey, ...(queryKey ?? [{ limit, page, tags }])];
+export type DefaultServiceFindCursorBasedPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findCursorBasedPets>>;
+export type DefaultServiceFindCursorBasedPetsQueryResult<TData = DefaultServiceFindCursorBasedPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+export const useDefaultServiceFindCursorBasedPetsKey = "DefaultServiceFindCursorBasedPets";
+export const UseDefaultServiceFindCursorBasedPetsKeyFn = ({ limit, page, tags }: {
+    limit?: number;
+    page?: string;
+    tags?: string[];
+} = {}, queryKey?: Array<unknown>) => [useDefaultServiceFindCursorBasedPetsKey, ...(queryKey ?? [{ limit, page, tags }])];
 export type DefaultServiceAddPetMutationResult = Awaited<ReturnType<typeof DefaultService.addPet>>;
 export type DefaultServicePostNotDefinedMutationResult = Awaited<ReturnType<typeof DefaultService.postNotDefined>>;
 export type DefaultServiceDeletePetMutationResult = Awaited<ReturnType<typeof DefaultService.deletePet>>;
@@ -51,7 +59,7 @@ exports[`createSource > createSource 3`] = `
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, FindCursorBasedPetsData, FindCursorBasedPetsResponse, $OpenApiTs } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
@@ -101,6 +109,21 @@ export const useDefaultServiceFindPaginatedPets = <TData = Common.DefaultService
     tags?: string[];
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) as TData, ...options });
 /**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindCursorBasedPets = <TData = Common.DefaultServiceFindCursorBasedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, page, tags }: {
+    limit?: number;
+    page?: string;
+    tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findCursorBasedPets({ limit, page, tags }) as TData, ...options });
+/**
 * Creates a new pet in the store. Duplicates are allowed
 * @param data The data for the request.
 * @param data.requestBody Pet to add to the store
@@ -140,7 +163,7 @@ exports[`createSource > createSource 4`] = `
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, FindCursorBasedPetsData, FindCursorBasedPetsResponse, $OpenApiTs } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
@@ -189,6 +212,21 @@ export const useDefaultServiceFindPaginatedPetsSuspense = <TData = Common.Defaul
     page?: number;
     tags?: string[];
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) as TData, ...options });
+/**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindCursorBasedPetsSuspense = <TData = Common.DefaultServiceFindCursorBasedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, page, tags }: {
+    limit?: number;
+    page?: string;
+    tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findCursorBasedPets({ limit, page, tags }) as TData, ...options });
 "
 `;
 
@@ -198,7 +236,7 @@ exports[`createSource > createSource 5`] = `
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
 import { DefaultService } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, $OpenApiTs } from "../requests/types.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, AddPetData, AddPetResponse, GetNotDefinedResponse, PostNotDefinedResponse, FindPetByIdData, FindPetByIdResponse, DeletePetData, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponse, FindCursorBasedPetsData, FindCursorBasedPetsResponse, $OpenApiTs } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
 * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
@@ -247,5 +285,20 @@ export const prefetchUseDefaultServiceFindPaginatedPets = (queryClient: QueryCli
     page?: number;
     tags?: string[];
 } = {}) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) });
+/**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const prefetchUseDefaultServiceFindCursorBasedPets = (queryClient: QueryClient, { limit, page, tags }: {
+    limit?: number;
+    page?: string;
+    tags?: string[];
+} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, page, tags }), queryFn: () => DefaultService.findCursorBasedPets({ limit, page, tags }) });
 "
 `;

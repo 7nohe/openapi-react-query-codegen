@@ -32,6 +32,8 @@ describe(fileName, () => {
       "DefaultServiceFindPetByIdQueryResult",
       "DefaultServiceFindPaginatedPetsDefaultResponse",
       "DefaultServiceFindPaginatedPetsQueryResult",
+      "DefaultServiceFindCursorBasedPetsDefaultResponse",
+      "DefaultServiceFindCursorBasedPetsQueryResult",
       "DefaultServiceAddPetMutationResult",
       "DefaultServicePostNotDefinedMutationResult",
       "DefaultServiceDeletePetMutationResult",
@@ -50,6 +52,8 @@ describe(fileName, () => {
       "UseDefaultServiceFindPetByIdKeyFn",
       "useDefaultServiceFindPaginatedPetsKey",
       "UseDefaultServiceFindPaginatedPetsKeyFn",
+      "useDefaultServiceFindCursorBasedPetsKey",
+      "UseDefaultServiceFindCursorBasedPetsKeyFn",
     ]);
 
     const mainExports = exports.mainExports.map(
@@ -61,6 +65,7 @@ describe(fileName, () => {
       "useDefaultServiceGetNotDefined",
       "useDefaultServiceFindPetById",
       "useDefaultServiceFindPaginatedPets",
+      "useDefaultServiceFindCursorBasedPets",
       "useDefaultServiceAddPet",
       "useDefaultServicePostNotDefined",
       "useDefaultServiceDeletePet",
@@ -75,6 +80,7 @@ describe(fileName, () => {
       "useDefaultServiceGetNotDefinedSuspense",
       "useDefaultServiceFindPetByIdSuspense",
       "useDefaultServiceFindPaginatedPetsSuspense",
+      "useDefaultServiceFindCursorBasedPetsSuspense",
     ]);
   });
 });
