@@ -1,7 +1,7 @@
 "use client";
 
+import { useFindPets } from "@/openapi/queries";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { useFindPets } from "../openapi/queries";
 
 export default function Pets() {
   const { data } = useFindPets({

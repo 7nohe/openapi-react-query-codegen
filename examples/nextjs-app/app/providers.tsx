@@ -1,7 +1,8 @@
 "use client";
 
-import { createClient } from "@hey-api/client-fetch";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "../fetchClient";
+
 // We can not useState or useRef in a server component, which is why we are
 // extracting this part out into
 
@@ -31,10 +32,6 @@ function getQueryClient() {
   if (!browserQueryClient) browserQueryClient = makeQueryClient();
   return browserQueryClient;
 }
-
-export const client = createClient({
-  baseUrl: "http://localhost:4010",
-});
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // NOTE: Avoid useState when initializing the query client if you don't
