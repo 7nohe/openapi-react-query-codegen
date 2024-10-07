@@ -12,7 +12,7 @@ export const createExports = (
   project: Project,
   pageParam: string,
   nextPageParam: string,
-  initialPageParam: string,
+  initialPageParam: string
 ) => {
   const { methods } = service;
   const methodDataNames = methods.reduce(
@@ -21,7 +21,7 @@ export const createExports = (
       acc[`${capitalizeFirstLetter(methodName)}Data`] = methodName;
       return acc;
     },
-    {} as { [key: string]: string },
+    {} as { [key: string]: string }
   );
   const modelsFile = project
     .getSourceFiles?.()
@@ -39,7 +39,7 @@ export const createExports = (
         const query = (typeAliasDeclaration as ts.TypeLiteralNode).members.find(
           (m) =>
             m.kind === ts.SyntaxKind.PropertySignature &&
-            m.name?.getText() === "query",
+            m.name?.getText() === "query"
         );
         if (
           query &&
@@ -54,19 +54,19 @@ export const createExports = (
   }
 
   const allGet = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("GET"),
+    m.httpMethodName.toUpperCase().includes("GET")
   );
   const allPost = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("POST"),
+    m.httpMethodName.toUpperCase().includes("POST")
   );
   const allPut = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("PUT"),
+    m.httpMethodName.toUpperCase().includes("PUT")
   );
   const allPatch = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("PATCH"),
+    m.httpMethodName.toUpperCase().includes("PATCH")
   );
   const allDelete = methods.filter((m) =>
-    m.httpMethodName.toUpperCase().includes("DELETE"),
+    m.httpMethodName.toUpperCase().includes("DELETE")
   );
 
   const allGetQueries = allGet.map((m) =>
@@ -75,14 +75,14 @@ export const createExports = (
       pageParam,
       nextPageParam,
       initialPageParam,
-      paginatableMethods,
-    ),
+      paginatableMethods
+    )
   );
   const allPrefetchQueries = allGet.map((m) =>
-    createPrefetchOrEnsure({ ...m, functionType: "prefetch" }),
+    createPrefetchOrEnsure({ ...m, functionType: "prefetch" })
   );
   const allEnsureQueries = allGet.map((m) =>
-    createPrefetchOrEnsure({ ...m, functionType: "ensure" }),
+    createPrefetchOrEnsure({ ...m, functionType: "ensure" })
   );
 
   const allPostMutations = allPost.map((m) => createUseMutation(m));
@@ -104,7 +104,7 @@ export const createExports = (
       returnType,
       key,
       queryKeyFn,
-    ],
+    ]
   );
   const commonInMutations = allMutations.flatMap(({ mutationResult }) => [
     mutationResult,
