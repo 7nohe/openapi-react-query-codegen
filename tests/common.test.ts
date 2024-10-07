@@ -85,6 +85,15 @@ describe("common", () => {
       const result = getShortType(type);
       expect(result).toBe("MyType");
     });
+
+    test("json", () => {
+      const type =
+        '{ import1?: import("/path/to/import1").Import1; import2: import("/path/to/import2").Import2; import3: import("/path/to/import3").Import3; }';
+      const result = getShortType(type);
+      expect(result).toBe(
+        "{ import1?: Import1; import2: Import2; import3: Import3; }",
+      );
+    });
   });
 
   test("formatOptions - converts string boolean to boolean (false)", () => {

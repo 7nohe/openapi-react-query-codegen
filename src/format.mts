@@ -62,7 +62,7 @@ const linters: Record<
   OutputProcesser
 > = {
   biome: {
-    args: (path) => ["lint", "--apply", path],
+    args: (path) => ["lint", "--write", path],
     command: "biome",
     name: "Biome (Lint)",
   },

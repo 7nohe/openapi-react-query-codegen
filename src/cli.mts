@@ -12,23 +12,27 @@ export type LimitedUserConfig = {
   input: string;
   output: string;
   client?:
-    | "angular"
-    | "axios"
-    | "fetch"
-    | "node"
-    | "xhr"
-    | "@hey-api/client-fetch";
+    | "legacy/angular"
+    | "legacy/axios"
+    | "legacy/fetch"
+    | "legacy/node"
+    | "legacy/xhr"
+    | "@hey-api/client-fetch"
+    | "@hey-api/client-axios";
   request?: string;
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
   operationId?: boolean;
   serviceResponse?: "body" | "response";
   base?: string;
-  enums?: "javascript" | "typescript";
+  enums?: "javascript" | "typescript" | false;
   useDateType?: boolean;
   debug?: boolean;
   noSchemas?: boolean;
   schemaType?: "form" | "json";
+  pageParam: string;
+  nextPageParam: string;
+  initialPageParam: string | number;
 };
 
 async function setupProgram() {
@@ -95,6 +99,21 @@ async function setupProgram() {
         "--schemaType <value>",
         "Type of JSON schema [Default: 'json']",
       ).choices(["form", "json"]),
+    )
+    .option(
+      "--pageParam <value>",
+      "Name of the query parameter used for pagination",
+      "page",
+    )
+    .option(
+      "--nextPageParam <value>",
+      "Name of the response parameter used for next page",
+      "nextPage",
+    )
+    .option(
+      "--initialPageParam <value>",
+      "Initial page value to query",
+      "initialPageParam",
     )
     .parse();
 

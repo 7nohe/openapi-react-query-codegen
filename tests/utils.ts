@@ -10,6 +10,9 @@ export const generateTSClients = async (prefix: string, inputFile?: string) => {
     input: path.join(__dirname, "inputs", inputFile ?? "petstore.yaml"),
     client: "@hey-api/client-fetch",
     output: outputPath(prefix),
+    services: {
+      asClass: false,
+    },
   };
   await createClient(options);
 };

@@ -1,4 +1,4 @@
-import type { MethodDeclaration, VariableDeclaration } from "ts-morph";
+import type { VariableDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
@@ -72,18 +72,24 @@ export const createApiResponseType = ({
   };
 };
 
-export function getRequestParamFromMethod(method: VariableDeclaration) {
+export function getRequestParamFromMethod(
+  method: VariableDeclaration,
+  pageParam?: string,
+) {
   if (!getVariableArrowFunctionParameters(method).length) {
     return null;
   }
 
   const params = getVariableArrowFunctionParameters(method).flatMap((param) => {
     const paramNodes = extractPropertiesFromObjectParam(param);
-    return paramNodes.map((refParam) => ({
-      name: refParam.name,
-      typeName: getShortType(refParam.type.getText()),
-      optional: refParam.optional,
-    }));
+
+    return paramNodes
+      .filter((p) => p.name !== pageParam)
+      .map((refParam) => ({
+        name: refParam.name,
+        typeName: getShortType(refParam.type?.getText() ?? ""),
+        optional: refParam.optional,
+      }));
   });
 
   const areAllPropertiesOptional = params.every((param) => param.optional);
@@ -221,16 +227,37 @@ export function createQueryHook({
   responseDataType,
   requestParams,
   method,
+  pageParam,
+  nextPageParam,
+  initialPageParam,
 }: {
-  queryString: "useSuspenseQuery" | "useQuery";
+  queryString: "useSuspenseQuery" | "useQuery" | "useInfiniteQuery";
   suffix: string;
   responseDataType: ts.TypeParameterDeclaration;
   requestParams: ts.ParameterDeclaration[];
   method: VariableDeclaration;
+  pageParam?: string;
+  nextPageParam?: string;
+  initialPageParam?: string;
 }) {
   const methodName = getNameFromVariable(method);
   const customHookName = hookNameFromMethod({ method });
   const queryKey = createQueryKeyFromMethod({ method });
+
+  if (
+    queryString === "useInfiniteQuery" &&
+    (pageParam === undefined || nextPageParam === undefined)
+  ) {
+    throw new Error(
+      "pageParam and nextPageParam are required for infinite queries",
+    );
+  }
+
+  const isInfiniteQuery = queryString === "useInfiniteQuery";
+
+  const responseDataTypeRef = responseDataType.default as ts.TypeReferenceNode;
+  const responseDataTypeIdentifier =
+    responseDataTypeRef.typeName as ts.Identifier;
 
   const hookExport = ts.factory.createVariableStatement(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
@@ -243,7 +270,21 @@ export function createQueryHook({
           ts.factory.createArrowFunction(
             undefined,
             ts.factory.createNodeArray([
-              responseDataType,
+              isInfiniteQuery
+                ? ts.factory.createTypeParameterDeclaration(
+                    undefined,
+                    TData,
+                    undefined,
+                    ts.factory.createTypeReferenceNode(
+                      ts.factory.createIdentifier("InfiniteData"),
+                      [
+                        ts.factory.createTypeReferenceNode(
+                          responseDataTypeIdentifier,
+                        ),
+                      ],
+                    ),
+                  )
+                : responseDataType,
               ts.factory.createTypeParameterDeclaration(
                 undefined,
                 TError,
@@ -279,7 +320,11 @@ export function createQueryHook({
                   ts.factory.createIdentifier("Omit"),
                   [
                     ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("UseQueryOptions"),
+                      ts.factory.createIdentifier(
+                        isInfiniteQuery
+                          ? "UseInfiniteQueryOptions"
+                          : "UseQueryOptions",
+                      ),
                       [
                         ts.factory.createTypeReferenceNode(TData),
                         ts.factory.createTypeReferenceNode(TError),
@@ -301,10 +346,12 @@ export function createQueryHook({
             EqualsOrGreaterThanToken,
             ts.factory.createCallExpression(
               ts.factory.createIdentifier(queryString),
-              [
-                ts.factory.createTypeReferenceNode(TData),
-                ts.factory.createTypeReferenceNode(TError),
-              ],
+              isInfiniteQuery
+                ? []
+                : [
+                    ts.factory.createTypeReferenceNode(TData),
+                    ts.factory.createTypeReferenceNode(TError),
+                  ],
               [
                 ts.factory.createObjectLiteralExpression([
                   ts.factory.createPropertyAssignment(
@@ -318,12 +365,13 @@ export function createQueryHook({
                               getVariableArrowFunctionParameters(
                                 method,
                               ).flatMap((param) =>
-                                extractPropertiesFromObjectParam(param).map(
-                                  (p) =>
+                                extractPropertiesFromObjectParam(param)
+                                  .filter((p) => p.name !== pageParam)
+                                  .map((p) =>
                                     ts.factory.createShorthandPropertyAssignment(
                                       ts.factory.createIdentifier(p.name),
                                     ),
-                                ),
+                                  ),
                               ),
                             ),
                             ts.factory.createIdentifier("queryKey"),
@@ -336,7 +384,24 @@ export function createQueryHook({
                     ts.factory.createArrowFunction(
                       undefined,
                       undefined,
-                      [],
+                      isInfiniteQuery
+                        ? [
+                            ts.factory.createParameterDeclaration(
+                              undefined,
+                              undefined,
+                              ts.factory.createObjectBindingPattern([
+                                ts.factory.createBindingElement(
+                                  undefined,
+                                  undefined,
+                                  ts.factory.createIdentifier("pageParam"),
+                                  undefined,
+                                ),
+                              ]),
+                              undefined,
+                              undefined,
+                            ),
+                          ]
+                        : [],
                       undefined,
                       EqualsOrGreaterThanToken,
                       ts.factory.createAsExpression(
@@ -354,9 +419,25 @@ export function createQueryHook({
                                         extractPropertiesFromObjectParam(
                                           param,
                                         ).map((p) =>
-                                          ts.factory.createShorthandPropertyAssignment(
-                                            ts.factory.createIdentifier(p.name),
-                                          ),
+                                          p.name === pageParam
+                                            ? ts.factory.createPropertyAssignment(
+                                                ts.factory.createIdentifier(
+                                                  p.name,
+                                                ),
+                                                ts.factory.createAsExpression(
+                                                  ts.factory.createIdentifier(
+                                                    "pageParam",
+                                                  ),
+                                                  ts.factory.createKeywordTypeNode(
+                                                    ts.SyntaxKind.NumberKeyword,
+                                                  ),
+                                                ),
+                                              )
+                                            : ts.factory.createShorthandPropertyAssignment(
+                                                ts.factory.createIdentifier(
+                                                  p.name,
+                                                ),
+                                              ),
                                         ),
                                       ),
                                     ),
@@ -396,6 +477,11 @@ export function createQueryHook({
                       ),
                     ),
                   ),
+                  ...createInfiniteQueryParams(
+                    pageParam,
+                    nextPageParam,
+                    initialPageParam,
+                  ),
                   ts.factory.createSpreadAssignment(
                     ts.factory.createIdentifier("options"),
                   ),
@@ -411,7 +497,12 @@ export function createQueryHook({
   return hookExport;
 }
 
-export const createUseQuery = ({ method, jsDoc }: FunctionDescription) => {
+export const createUseQuery = (
+  { method, jsDoc }: FunctionDescription,
+  pageParam: string,
+  nextPageParam: string,
+  initialPageParam: string,
+) => {
   const methodName = getNameFromVariable(method);
   const queryKey = createQueryKeyFromMethod({ method });
   const { apiResponse: defaultApiResponse, responseDataType } =
@@ -420,8 +511,17 @@ export const createUseQuery = ({ method, jsDoc }: FunctionDescription) => {
     });
 
   const requestParam = getRequestParamFromMethod(method);
+  const infiniteRequestParam = getRequestParamFromMethod(method, pageParam);
 
   const requestParams = requestParam ? [requestParam] : [];
+
+  const requestParamNames = requestParams
+    .filter((p) => p.name.kind === ts.SyntaxKind.ObjectBindingPattern)
+    .map((p) => p.name as ts.ObjectBindingPattern);
+  const requestParamTexts = requestParamNames
+    .at(0)
+    ?.elements.filter((e) => e.name.kind === ts.SyntaxKind.Identifier)
+    .map((e) => (e.name as ts.Identifier).escapedText as string);
 
   const queryHook = createQueryHook({
     queryString: "useQuery",
@@ -430,6 +530,7 @@ export const createUseQuery = ({ method, jsDoc }: FunctionDescription) => {
     requestParams,
     method,
   });
+
   const suspenseQueryHook = createQueryHook({
     queryString: "useSuspenseQuery",
     suffix: "Suspense",
@@ -437,9 +538,25 @@ export const createUseQuery = ({ method, jsDoc }: FunctionDescription) => {
     requestParams,
     method,
   });
+  const isInfiniteQuery = requestParamTexts?.includes(pageParam) ?? false;
+  const infiniteQueryHook = isInfiniteQuery
+    ? createQueryHook({
+        queryString: "useInfiniteQuery",
+        suffix: "Infinite",
+        responseDataType,
+        requestParams: infiniteRequestParam ? [infiniteRequestParam] : [],
+        method,
+        pageParam,
+        nextPageParam,
+        initialPageParam,
+      })
+    : undefined;
 
   const hookWithJsDoc = addJSDocToNode(queryHook, jsDoc);
   const suspenseHookWithJsDoc = addJSDocToNode(suspenseQueryHook, jsDoc);
+  const infiniteHookWithJsDoc = infiniteQueryHook
+    ? addJSDocToNode(infiniteQueryHook, jsDoc)
+    : undefined;
 
   const returnTypeExport = createReturnTypeExport({
     methodName,
@@ -459,6 +576,7 @@ export const createUseQuery = ({ method, jsDoc }: FunctionDescription) => {
     key: queryKeyExport,
     queryHook: hookWithJsDoc,
     suspenseQueryHook: suspenseHookWithJsDoc,
+    infiniteQueryHook: infiniteHookWithJsDoc,
     queryKeyFn,
   };
 };
@@ -534,4 +652,59 @@ function queryKeyFn(
     ],
     false,
   );
+}
+
+function createInfiniteQueryParams(
+  pageParam?: string,
+  nextPageParam?: string,
+  initialPageParam = "1",
+) {
+  if (pageParam === undefined || nextPageParam === undefined) {
+    return [];
+  }
+  return [
+    ts.factory.createPropertyAssignment(
+      ts.factory.createIdentifier("initialPageParam"),
+      ts.factory.createStringLiteral(initialPageParam),
+    ),
+    ts.factory.createPropertyAssignment(
+      ts.factory.createIdentifier("getNextPageParam"),
+      // (response) => (response as { nextPage: number }).nextPage,
+      ts.factory.createArrowFunction(
+        undefined,
+        undefined,
+        [
+          ts.factory.createParameterDeclaration(
+            undefined,
+            undefined,
+            ts.factory.createIdentifier("response"),
+            undefined,
+            undefined,
+          ),
+        ],
+        undefined,
+        EqualsOrGreaterThanToken,
+        ts.factory.createPropertyAccessExpression(
+          ts.factory.createParenthesizedExpression(
+            ts.factory.createAsExpression(
+              ts.factory.createIdentifier("response"),
+              nextPageParam.split(".").reduceRight((acc, segment) => {
+                return ts.factory.createTypeLiteralNode([
+                  ts.factory.createPropertySignature(
+                    undefined,
+                    ts.factory.createIdentifier(segment),
+                    undefined,
+                    acc,
+                  ),
+                ]);
+              }, ts.factory.createKeywordTypeNode(
+                ts.SyntaxKind.NumberKeyword,
+              ) as ts.TypeNode),
+            ),
+          ),
+          ts.factory.createIdentifier(nextPageParam),
+        ),
+      ),
+    ),
+  ];
 }

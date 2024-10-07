@@ -19,6 +19,9 @@ describe("generate", () => {
       output: path.join("tests", "outputs"),
       client: "@hey-api/client-fetch",
       lint: "eslint",
+      pageParam: "page",
+      nextPageParam: "meta.next",
+      initialPageParam: "initial",
     };
     await generate(options, "1.0.0");
   });
@@ -39,6 +42,10 @@ describe("generate", () => {
     expect(readOutput("queries.ts")).toMatchSnapshot();
   });
 
+  test("infiniteQueries.ts", () => {
+    expect(readOutput("infiniteQueries.ts")).toMatchSnapshot();
+  });
+
   test("index.ts", () => {
     expect(readOutput("index.ts")).toMatchSnapshot();
   });
@@ -49,5 +56,9 @@ describe("generate", () => {
 
   test("prefetch.ts", () => {
     expect(readOutput("prefetch.ts")).toMatchSnapshot();
+  });
+
+  test("ensureQueryData.ts", () => {
+    expect(readOutput("ensureQueryData.ts")).toMatchSnapshot();
   });
 });

@@ -1,11 +1,16 @@
-import { createPrefetch } from "./createPrefetch.mjs";
+import type ts from "typescript";
+import { createPrefetchOrEnsure } from "./createPrefetchOrEnsure.mjs";
 import { createUseMutation } from "./createUseMutation.mjs";
 import { createUseQuery } from "./createUseQuery.mjs";
 import type { Service } from "./service.mjs";
 
-export const createExports = (service: Service) => {
+export const createExports = (
+  service: Service,
+  pageParam: string,
+  nextPageParam: string,
+  initialPageParam: string,
+) => {
   const { methods } = service;
-  // const methods = klasses.flatMap((k) => k.methods);
 
   const allGet = methods.filter((m) =>
     m.httpMethodName.toUpperCase().includes("GET"),
@@ -23,8 +28,15 @@ export const createExports = (service: Service) => {
     m.httpMethodName.toUpperCase().includes("DELETE"),
   );
 
-  const allGetQueries = allGet.map((m) => createUseQuery(m));
-  const allPrefetchQueries = allGet.map((m) => createPrefetch(m));
+  const allGetQueries = allGet.map((m) =>
+    createUseQuery(m, pageParam, nextPageParam, initialPageParam),
+  );
+  const allPrefetchQueries = allGet.map((m) =>
+    createPrefetchOrEnsure({ ...m, functionType: "prefetch" }),
+  );
+  const allEnsureQueries = allGet.map((m) =>
+    createPrefetchOrEnsure({ ...m, functionType: "ensure" }),
+  );
 
   const allPostMutations = allPost.map((m) => createUseMutation(m));
   const allPutMutations = allPut.map((m) => createUseMutation(m));
@@ -60,15 +72,19 @@ export const createExports = (service: Service) => {
 
   const mainExports = [...mainQueries, ...mainMutations];
 
+  const infiniteQueriesExports = allQueries
+    .flatMap(({ infiniteQueryHook }) => [infiniteQueryHook])
+    .filter(Boolean) as ts.VariableStatement[];
+
   const suspenseQueries = allQueries.flatMap(({ suspenseQueryHook }) => [
     suspenseQueryHook,
   ]);
 
   const suspenseExports = [...suspenseQueries];
 
-  const allPrefetches = allPrefetchQueries.flatMap(({ prefetchHook }) => [
-    prefetchHook,
-  ]);
+  const allPrefetches = allPrefetchQueries.flatMap(({ hook }) => [hook]);
+
+  const allEnsures = allEnsureQueries.flatMap(({ hook }) => [hook]);
 
   const allPrefetchExports = [...allPrefetches];
 
@@ -82,6 +98,10 @@ export const createExports = (service: Service) => {
      */
     mainExports,
     /**
+     * Infinite queries exports are the hooks that are used in the infinite scroll components
+     */
+    infiniteQueriesExports,
+    /**
      * Suspense exports are the hooks that are used in the suspense components
      */
     suspenseExports,
@@ -89,5 +109,10 @@ export const createExports = (service: Service) => {
      * Prefetch exports are the hooks that are used in the prefetch components
      */
     allPrefetchExports,
+
+    /**
+     * Ensure exports are the hooks that are used in the loader components
+     */
+    allEnsures,
   };
 };

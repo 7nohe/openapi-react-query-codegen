@@ -25,6 +25,7 @@ describe(fileName, () => {
       "postNotDefined",
       "findPetById",
       "deletePet",
+      "findPaginatedPets",
     ]);
   });
 

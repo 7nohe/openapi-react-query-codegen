@@ -116,7 +116,7 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
       return {
         name: prop.getName(),
         optional: prop.isOptional(),
-        type: prop.getValueDeclaration()?.getType() as Type<ts.Type>,
+        type: prop.getValueDeclaration()?.getType(),
       };
     });
   return paramNodes;
@@ -132,7 +132,7 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
  * TODO: Replace with a more robust solution.
  */
 export function getShortType(type: string) {
-  return type.replaceAll(/import\(".*"\)\./g, "");
+  return type.replaceAll(/import\(".*?"\)\./g, "");
 }
 
 export function getClassesFromService(node: SourceFile) {
@@ -179,9 +179,12 @@ export function formatOptions(options: LimitedUserConfig) {
       } else if (!Number.isNaN(parsedNumber)) {
         (acc as unknown as Record<string, number>)[typedKey] = parsedNumber;
       } else {
-        (acc as unknown as Record<string, string | undefined | boolean>)[
-          typedKey
-        ] = typedValue;
+        (
+          acc as unknown as Record<
+            string,
+            string | number | undefined | boolean
+          >
+        )[typedKey] = typedValue;
       }
       return acc;
     },

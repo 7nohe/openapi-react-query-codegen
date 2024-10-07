@@ -12,14 +12,14 @@ exports[`createSource > createSource 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, $OpenApiTs } from "../requests/types.gen";
+import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 export type FindPetsDefaultResponse = Awaited<ReturnType<typeof findPets>>["data"];
 export type FindPetsQueryResult<TData = FindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useFindPetsKey = "FindPets";
 export const UseFindPetsKeyFn = ({ query, client }: {
     query?: { limit?: number; tags?: string[]; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 } = {}, queryKey?: Array<unknown>) => [useFindPetsKey, ...(queryKey ?? [{ query, client }])];
 export type GetNotDefinedDefaultResponse = Awaited<ReturnType<typeof getNotDefined>>["data"];
 export type GetNotDefinedQueryResult<TData = GetNotDefinedDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
@@ -30,8 +30,15 @@ export type FindPetByIdQueryResult<TData = FindPetByIdDefaultResponse, TError = 
 export const useFindPetByIdKey = "FindPetById";
 export const UseFindPetByIdKeyFn = ({ path, client }: {
     path: { id: number; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 }, queryKey?: Array<unknown>) => [useFindPetByIdKey, ...(queryKey ?? [{ path, client }])];
+export type FindPaginatedPetsDefaultResponse = Awaited<ReturnType<typeof findPaginatedPets>>["data"];
+export type FindPaginatedPetsQueryResult<TData = FindPaginatedPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+export const useFindPaginatedPetsKey = "FindPaginatedPets";
+export const UseFindPaginatedPetsKeyFn = ({ query, client }: {
+    query?: { limit?: number; page?: number; tags?: string[]; };
+    client?: Client<Request, Response, unknown, RequestOptions>;
+} = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsKey, ...(queryKey ?? [{ query, client }])];
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
 export type PostNotDefinedMutationResult = Awaited<ReturnType<typeof postNotDefined>>;
 export type DeletePetMutationResult = Awaited<ReturnType<typeof deletePet>>;
@@ -43,17 +50,21 @@ exports[`createSource > createSource 3`] = `
 
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, $OpenApiTs } from "../requests/types.gen";
+import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 export const useFindPets = <TData = Common.FindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ query, client }: {
     query?: { limit?: number; tags?: string[]; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn({ query, client }, queryKey), queryFn: () => findPets({ query, client }).then(response => response.data as TData) as TData, ...options });
 export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({}: {} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn({}, queryKey), queryFn: () => getNotDefined({}).then(response => response.data as TData) as TData, ...options });
 export const useFindPetById = <TData = Common.FindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ path, client }: {
     path: { id: number; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 }, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn({ path, client }, queryKey), queryFn: () => findPetById({ path, client }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPets = <TData = Common.FindPaginatedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ query, client }: {
+    query?: { limit?: number; page?: number; tags?: string[]; };
+    client?: Client<Request, Response, unknown, RequestOptions>;
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }, queryKey), queryFn: () => findPaginatedPets({ query, client }).then(response => response.data as TData) as TData, ...options });
 export const useAddPet = <TData = Common.AddPetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
     body: NewPet;
 }, TContext>, "mutationFn">) => useMutation<TData, TError, {
@@ -62,10 +73,10 @@ export const useAddPet = <TData = Common.AddPetMutationResult, TError = unknown,
 export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {}, TContext>, "mutationFn">) => useMutation<TData, TError, {}, TContext>({ mutationFn: ({}) => postNotDefined({}) as unknown as Promise<TData>, ...options });
 export const useDeletePet = <TData = Common.DeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
     path: { id: number; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptionsBase<false> & Config<false> & { headers: Headers; }>;
 }, TContext>, "mutationFn">) => useMutation<TData, TError, {
     path: { id: number; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptionsBase<false> & Config<false> & { headers: Headers; }>;
 }, TContext>({ mutationFn: ({ path, client }) => deletePet({ path, client }) as unknown as Promise<TData>, ...options });
 "
 `;
@@ -75,17 +86,21 @@ exports[`createSource > createSource 4`] = `
 
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, $OpenApiTs } from "../requests/types.gen";
+import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 export const useFindPetsSuspense = <TData = Common.FindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ query, client }: {
     query?: { limit?: number; tags?: string[]; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn({ query, client }, queryKey), queryFn: () => findPets({ query, client }).then(response => response.data as TData) as TData, ...options });
 export const useGetNotDefinedSuspense = <TData = Common.GetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({}: {} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn({}, queryKey), queryFn: () => getNotDefined({}).then(response => response.data as TData) as TData, ...options });
 export const useFindPetByIdSuspense = <TData = Common.FindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ path, client }: {
     path: { id: number; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 }, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn({ path, client }, queryKey), queryFn: () => findPetById({ path, client }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPetsSuspense = <TData = Common.FindPaginatedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ query, client }: {
+    query?: { limit?: number; page?: number; tags?: string[]; };
+    client?: Client<Request, Response, unknown, RequestOptions>;
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }, queryKey), queryFn: () => findPaginatedPets({ query, client }).then(response => response.data as TData) as TData, ...options });
 "
 `;
 
@@ -94,16 +109,20 @@ exports[`createSource > createSource 5`] = `
 
 import * as Common from "./common";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet } from "../requests/services.gen";
-import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, $OpenApiTs } from "../requests/types.gen";
+import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
+import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 export const prefetchUseFindPets = (queryClient: QueryClient, { query, client }: {
     query?: { limit?: number; tags?: string[]; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 } = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetsKeyFn({ query, client }), queryFn: () => findPets({ query, client }) });
 export const prefetchUseGetNotDefined = (queryClient: QueryClient, {}: {} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseGetNotDefinedKeyFn({}), queryFn: () => getNotDefined({}) });
 export const prefetchUseFindPetById = (queryClient: QueryClient, { path, client }: {
     path: { id: number; };
-    client?: Client;
+    client?: Client<Request, Response, unknown, RequestOptions>;
 }) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn({ path, client }), queryFn: () => findPetById({ path, client }) });
+export const prefetchUseFindPaginatedPets = (queryClient: QueryClient, { query, client }: {
+    query?: { limit?: number; page?: number; tags?: string[]; };
+    client?: Client<Request, Response, unknown, RequestOptions>;
+} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }), queryFn: () => findPaginatedPets({ query, client }) });
 "
 `;

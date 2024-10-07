@@ -16,6 +16,7 @@ export async function getServices(project: Project): Promise<Service> {
   if (!node) {
     throw new Error("No service node found");
   }
+
   const methods = getMethodsFromService(node);
   return {
     methods,
@@ -25,9 +26,9 @@ export async function getServices(project: Project): Promise<Service> {
 
 function getMethodsFromService(node: SourceFile): FunctionDescription[] {
   const variableStatements = node.getVariableStatements();
-  // const methodDescriptions: FunctionDescription[] = [];
 
-  return variableStatements.flatMap((variableStatement) => {
+  // The first variable statement is `const client = createClient(createConfig())`, so we skip it
+  return variableStatements.splice(1).flatMap((variableStatement) => {
     const declarations = variableStatement.getDeclarations();
     return declarations.map((declaration) => {
       if (!ts.isVariableDeclaration(declaration.compilerNode)) {

@@ -1,4 +1,4 @@
-import type { MethodDeclaration, VariableDeclaration } from "ts-morph";
+import type { VariableDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
@@ -16,20 +16,28 @@ import {
 import { addJSDocToNode } from "./util.mjs";
 
 /**
- * Creates a prefetch function for a query
+ * Creates a prefetch/ensure function for a query
  */
-function createPrefetchHook({
+function createPrefetchOrEnsureHook({
   requestParams,
   method,
+  functionType,
 }: {
   requestParams: ts.ParameterDeclaration[];
   method: VariableDeclaration;
+  functionType: "prefetch" | "ensure";
 }) {
   const methodName = getNameFromVariable(method);
   const queryName = hookNameFromMethod({ method });
-  const customHookName = `prefetch${
+  let customHookName = `prefetch${
     queryName.charAt(0).toUpperCase() + queryName.slice(1)
   }`;
+
+  if (functionType === "ensure") {
+    customHookName = `ensure${
+      queryName.charAt(0).toUpperCase() + queryName.slice(1)
+    }Data`;
+  }
   const queryKey = createQueryKeyFromMethod({ method });
 
   // const
@@ -60,7 +68,9 @@ function createPrefetchHook({
             undefined,
             ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
             ts.factory.createCallExpression(
-              ts.factory.createIdentifier("queryClient.prefetchQuery"),
+              ts.factory.createIdentifier(
+                `queryClient.${functionType === "prefetch" ? "prefetchQuery" : "ensureQueryData"}`,
+              ),
               undefined,
               [
                 ts.factory.createObjectLiteralExpression([
@@ -133,19 +143,24 @@ function createPrefetchHook({
   return hookExport;
 }
 
-export const createPrefetch = ({ method, jsDoc }: FunctionDescription) => {
+export const createPrefetchOrEnsure = ({
+  method,
+  jsDoc,
+  functionType,
+}: FunctionDescription & { functionType: "prefetch" | "ensure" }) => {
   const requestParam = getRequestParamFromMethod(method);
 
   const requestParams = requestParam ? [requestParam] : [];
 
-  const prefetchHook = createPrefetchHook({
+  const prefetchOrEnsureHook = createPrefetchOrEnsureHook({
     requestParams,
     method,
+    functionType,
   });
 
-  const hookWithJsDoc = addJSDocToNode(prefetchHook, jsDoc);
+  const hookWithJsDoc = addJSDocToNode(prefetchOrEnsureHook, jsDoc);
 
   return {
-    prefetchHook: hookWithJsDoc,
+    hook: hookWithJsDoc,
   };
 };

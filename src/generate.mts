@@ -33,6 +33,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
     services: {
       export: true,
       response: formattedOptions.serviceResponse,
+      asClass: false,
     },
     types: {
       dates: formattedOptions.useDateType,
@@ -45,6 +46,9 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const source = await createSource({
     outputPath: openApiOutputPath,
     version,
+    pageParam: formattedOptions.pageParam,
+    nextPageParam: formattedOptions.nextPageParam,
+    initialPageParam: formattedOptions.initialPageParam.toString(),
   });
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);

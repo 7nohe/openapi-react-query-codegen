@@ -17,7 +17,7 @@ describe(fileName, () => {
     });
     project.addSourceFilesAtPaths(path.join(outputPath(fileName), "**", "*"));
     const service = await getServices(project);
-    const exports = createExports(service);
+    const exports = createExports(service, "page", "nextPage", "initial");
 
     const commonTypes = exports.allCommon
       .filter((c) => c.kind === SyntaxKind.TypeAliasDeclaration)
@@ -30,6 +30,8 @@ describe(fileName, () => {
       "GetNotDefinedQueryResult",
       "FindPetByIdDefaultResponse",
       "FindPetByIdQueryResult",
+      "FindPaginatedPetsDefaultResponse",
+      "FindPaginatedPetsQueryResult",
       "AddPetMutationResult",
       "PostNotDefinedMutationResult",
       "DeletePetMutationResult",
@@ -46,6 +48,8 @@ describe(fileName, () => {
       "UseGetNotDefinedKeyFn",
       "useFindPetByIdKey",
       "UseFindPetByIdKeyFn",
+      "useFindPaginatedPetsKey",
+      "UseFindPaginatedPetsKeyFn",
     ]);
 
     const mainExports = exports.mainExports.map(
@@ -56,6 +60,7 @@ describe(fileName, () => {
       "useFindPets",
       "useGetNotDefined",
       "useFindPetById",
+      "useFindPaginatedPets",
       "useAddPet",
       "usePostNotDefined",
       "useDeletePet",
@@ -69,6 +74,7 @@ describe(fileName, () => {
       "useFindPetsSuspense",
       "useGetNotDefinedSuspense",
       "useFindPetByIdSuspense",
+      "useFindPaginatedPetsSuspense",
     ]);
   });
 });
