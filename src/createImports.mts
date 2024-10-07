@@ -6,10 +6,8 @@ import { modalsFileName, serviceFileName } from "./constants.mjs";
 const { join } = posix;
 
 export const createImports = ({
-  serviceEndName,
   project,
 }: {
-  serviceEndName: string;
   project: Project;
 }) => {
   const modelsFile = project
@@ -32,9 +30,7 @@ export const createImports = ({
     serviceFile.getExportedDeclarations().keys(),
   );
 
-  const serviceNames = serviceExports.filter((name) =>
-    name.endsWith(serviceEndName),
-  );
+  const serviceNames = serviceExports;
 
   const imports = [
     ts.factory.createImportDeclaration(

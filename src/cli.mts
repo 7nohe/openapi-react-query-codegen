@@ -11,14 +11,21 @@ const program = new Command();
 export type LimitedUserConfig = {
   input: string;
   output: string;
-  client?: "angular" | "axios" | "fetch" | "node" | "xhr";
+  client?:
+    | "legacy/angular"
+    | "legacy/axios"
+    | "legacy/fetch"
+    | "legacy/node"
+    | "legacy/xhr"
+    | "@hey-api/client-fetch"
+    | "@hey-api/client-axios";
   request?: string;
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
   operationId?: boolean;
   serviceResponse?: "body" | "response";
   base?: string;
-  enums?: "javascript" | "typescript" | "typescript+namespace";
+  enums?: "javascript" | "typescript" | false;
   useDateType?: boolean;
   debug?: boolean;
   noSchemas?: boolean;
@@ -46,8 +53,8 @@ async function setupProgram() {
     .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
-        .choices(["angular", "axios", "fetch", "node", "xhr"])
-        .default("fetch"),
+        .choices(["@hey-api/client-fetch", "@hey-api/client-axios"])
+        .default("@hey-api/client-fetch"),
     )
     .option("--request <value>", "Path to custom request file")
     .addOption(
@@ -79,7 +86,7 @@ async function setupProgram() {
       new Option(
         "--enums <value>",
         "Generate JavaScript objects from enum definitions?",
-      ).choices(["javascript", "typescript", "typescript+namespace"]),
+      ).choices(["javascript", "typescript"]),
     )
     .option(
       "--useDateType",

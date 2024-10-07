@@ -1,12 +1,11 @@
 "use client";
 
-import { useDefaultServiceFindPets } from "@/openapi/queries";
+import { useFindPets } from "@/openapi/queries";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 export default function Pets() {
-  const { data } = useDefaultServiceFindPets({
-    limit: 10,
-    tags: [],
+  const { data } = useFindPets({
+    query: { tags: [], limit: 10 },
   });
 
   return (

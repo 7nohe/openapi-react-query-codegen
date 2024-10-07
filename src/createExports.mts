@@ -10,8 +10,7 @@ export const createExports = (
   nextPageParam: string,
   initialPageParam: string,
 ) => {
-  const { klasses } = service;
-  const methods = klasses.flatMap((k) => k.methods);
+  const { methods } = service;
 
   const allGet = methods.filter((m) =>
     m.httpMethodName.toUpperCase().includes("GET"),

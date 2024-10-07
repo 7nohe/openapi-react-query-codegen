@@ -22,7 +22,7 @@ Register the command to the `scripts` property in your package.json file.
 ```json
 {
   "scripts": {
-    "codegen": "openapi-rq -i ./petstore.yaml -c axios"
+    "codegen": "openapi-rq -i ./petstore.yaml -c @hey-api/client-fetch"
   }
 }
 ```
@@ -30,7 +30,7 @@ Register the command to the `scripts` property in your package.json file.
 You can also run the command without installing it in your project using the npx command.
 
 ```bash
-$ npx --package @7nohe/openapi-react-query-codegen openapi-rq -i ./petstore.yaml -c axios
+$ npx --package @7nohe/openapi-react-query-codegen openapi-rq -i ./petstore.yaml -c @hey-api/client-fetch
 ```
 
 ## Usage
@@ -46,14 +46,13 @@ Options:
   -V, --version               output the version number
   -i, --input <value>         OpenAPI specification, can be a path, url or string content (required)
   -o, --output <value>        Output directory (default: "openapi")
-  -c, --client <value>        HTTP client to generate (choices: "angular", "axios", "fetch", "node", "xhr", default: "fetch")
+  -c, --client <value>        HTTP client to generate (choices: "@hey-api/client-fetch", "@hey-api/client-axios", default: "@hey-api/client-fetch")
   --request <value>           Path to custom request file
   --format <value>            Process output folder with formatter? (choices: "biome", "prettier")
   --lint <value>              Process output folder with linter? (choices: "biome", "eslint")
   --operationId               Use operation ID to generate operation names?
   --serviceResponse <value>   Define shape of returned value from service calls (choices: "body", "response", default: "body")
   --base <value>              Manually set base in OpenAPI config instead of inferring from server value
-  --enums <value>             Generate JavaScript objects from enum definitions? ['javascript', 'typescript', 'typescript+namespace']
   --enums <value>             Generate JavaScript objects from enum definitions? (choices: "javascript", "typescript")
   --useDateType               Use Date type instead of string for date types for models, this will not convert the data to a Date object
   --debug                     Run in debug mode?
@@ -61,8 +60,8 @@ Options:
   --schemaType <value>        Type of JSON schema [Default: 'json'] (choices: "form", "json")
   --pageParam <value>         Name of the query parameter used for pagination (default: "page")
   --nextPageParam <value>     Name of the response parameter used for next page (default: "nextPage")
-  --initialPageParam <value>  Initial value for the pagination parameter (default: "1")
-  -h, --help                 display help for command
+  --initialPageParam <value>  Initial page value to query (default: "initialPageParam")
+  -h, --help                  display help for command
 ```
 
 ### Example Usage

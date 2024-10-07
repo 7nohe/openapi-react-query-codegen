@@ -3,11 +3,12 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import type {
   ClassDeclaration,
-  MethodDeclaration,
   ParameterDeclaration,
   SourceFile,
   Type,
+  VariableDeclaration,
 } from "ts-morph";
+import { ArrowFunction } from "ts-morph";
 import ts from "typescript";
 import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
@@ -38,18 +39,30 @@ export const lowercaseFirstLetter = (str: string) => {
   return str.charAt(0).toLowerCase() + str.slice(1);
 };
 
-export const getNameFromMethod = (method: MethodDeclaration) => {
-  const methodName = method.getName();
-  if (!methodName) {
-    throw new Error("Method name not found");
+export const getVariableArrowFunctionParameters = (
+  variable: VariableDeclaration,
+) => {
+  const initializer = variable.getInitializer();
+  if (!initializer) {
+    throw new Error("Initializer not found");
   }
-  return methodName;
+  if (!ArrowFunction.isArrowFunction(initializer)) {
+    throw new Error("Initializer is not an arrow function");
+  }
+  return initializer.getParameters();
 };
 
-export type MethodDescription = {
-  className: string;
+export const getNameFromVariable = (variable: VariableDeclaration) => {
+  const variableName = variable.getName();
+  if (!variableName) {
+    throw new Error("Variable name not found");
+  }
+  return variableName;
+};
+
+export type FunctionDescription = {
   node: SourceFile;
-  method: MethodDeclaration;
+  method: VariableDeclaration;
   methodBlock: ts.Block;
   httpMethodName: string;
   jsDoc: string;
@@ -98,11 +111,14 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
     .getNode()
     .getType()
     .getProperties()
-    .map((prop) => ({
-      name: prop.getName(),
-      optional: prop.isOptional(),
-      type: prop.getValueDeclaration()?.getType(),
-    }));
+    .filter((prop) => prop.getValueDeclaration()?.getType())
+    .map((prop) => {
+      return {
+        name: prop.getName(),
+        optional: prop.isOptional(),
+        type: prop.getValueDeclaration()?.getType(),
+      };
+    });
   return paramNodes;
 }
 

@@ -24,17 +24,17 @@ describe(fileName, () => {
       // @ts-ignore
       .map((e) => e.name.escapedText);
     expect(commonTypes).toStrictEqual([
-      "DefaultServiceFindPetsDefaultResponse",
-      "DefaultServiceFindPetsQueryResult",
-      "DefaultServiceGetNotDefinedDefaultResponse",
-      "DefaultServiceGetNotDefinedQueryResult",
-      "DefaultServiceFindPetByIdDefaultResponse",
-      "DefaultServiceFindPetByIdQueryResult",
-      "DefaultServiceFindPaginatedPetsDefaultResponse",
-      "DefaultServiceFindPaginatedPetsQueryResult",
-      "DefaultServiceAddPetMutationResult",
-      "DefaultServicePostNotDefinedMutationResult",
-      "DefaultServiceDeletePetMutationResult",
+      "FindPetsDefaultResponse",
+      "FindPetsQueryResult",
+      "GetNotDefinedDefaultResponse",
+      "GetNotDefinedQueryResult",
+      "FindPetByIdDefaultResponse",
+      "FindPetByIdQueryResult",
+      "FindPaginatedPetsDefaultResponse",
+      "FindPaginatedPetsQueryResult",
+      "AddPetMutationResult",
+      "PostNotDefinedMutationResult",
+      "DeletePetMutationResult",
     ]);
 
     const constants = exports.allCommon
@@ -42,14 +42,14 @@ describe(fileName, () => {
       // @ts-ignore
       .map((c) => c.declarationList.declarations[0].name.escapedText);
     expect(constants).toStrictEqual([
-      "useDefaultServiceFindPetsKey",
-      "UseDefaultServiceFindPetsKeyFn",
-      "useDefaultServiceGetNotDefinedKey",
-      "UseDefaultServiceGetNotDefinedKeyFn",
-      "useDefaultServiceFindPetByIdKey",
-      "UseDefaultServiceFindPetByIdKeyFn",
-      "useDefaultServiceFindPaginatedPetsKey",
-      "UseDefaultServiceFindPaginatedPetsKeyFn",
+      "useFindPetsKey",
+      "UseFindPetsKeyFn",
+      "useGetNotDefinedKey",
+      "UseGetNotDefinedKeyFn",
+      "useFindPetByIdKey",
+      "UseFindPetByIdKeyFn",
+      "useFindPaginatedPetsKey",
+      "UseFindPaginatedPetsKeyFn",
     ]);
 
     const mainExports = exports.mainExports.map(
@@ -57,13 +57,13 @@ describe(fileName, () => {
       (e) => e.declarationList.declarations[0].name.escapedText,
     );
     expect(mainExports).toStrictEqual([
-      "useDefaultServiceFindPets",
-      "useDefaultServiceGetNotDefined",
-      "useDefaultServiceFindPetById",
-      "useDefaultServiceFindPaginatedPets",
-      "useDefaultServiceAddPet",
-      "useDefaultServicePostNotDefined",
-      "useDefaultServiceDeletePet",
+      "useFindPets",
+      "useGetNotDefined",
+      "useFindPetById",
+      "useFindPaginatedPets",
+      "useAddPet",
+      "usePostNotDefined",
+      "useDeletePet",
     ]);
 
     const suspenseExports = exports.suspenseExports.map(
@@ -71,10 +71,10 @@ describe(fileName, () => {
       (e) => e.declarationList.declarations[0].name.escapedText,
     );
     expect(suspenseExports).toStrictEqual([
-      "useDefaultServiceFindPetsSuspense",
-      "useDefaultServiceGetNotDefinedSuspense",
-      "useDefaultServiceFindPetByIdSuspense",
-      "useDefaultServiceFindPaginatedPetsSuspense",
+      "useFindPetsSuspense",
+      "useGetNotDefinedSuspense",
+      "useFindPetByIdSuspense",
+      "useFindPaginatedPetsSuspense",
     ]);
   });
 });

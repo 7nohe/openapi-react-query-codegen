@@ -8,7 +8,6 @@ import { getServices } from "./service.mjs";
 
 const createSourceFile = async (
   outputPath: string,
-  serviceEndName: string,
   pageParam: string,
   nextPageParam: string,
   initialPageParam: string,
@@ -27,7 +26,6 @@ const createSourceFile = async (
   const service = await getServices(project);
 
   const imports = createImports({
-    serviceEndName,
     project,
   });
 
@@ -121,14 +119,12 @@ const createSourceFile = async (
 export const createSource = async ({
   outputPath,
   version,
-  serviceEndName,
   pageParam,
   nextPageParam,
   initialPageParam,
 }: {
   outputPath: string;
   version: string;
-  serviceEndName: string;
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;
@@ -201,7 +197,6 @@ export const createSource = async ({
     ensureSource,
   } = await createSourceFile(
     outputPath,
-    serviceEndName,
     pageParam,
     nextPageParam,
     initialPageParam,
