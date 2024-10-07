@@ -47,16 +47,16 @@ import * as Common from "./common";
 export const ensureUseFindPetsData = (queryClient: QueryClient, { query, client }: {
   query?: { limit?: number; tags?: string[]; };
   client?: Client<Request, Response, unknown, RequestOptions>;
-} = {}) => queryClient.ensureQueryData({ queryKey: Common.UseFindPetsKeyFn({ query, client }), queryFn: () => findPets({ query, client }) });
-export const ensureUseGetNotDefinedData = (queryClient: QueryClient, { }: {} = {}) => queryClient.ensureQueryData({ queryKey: Common.UseGetNotDefinedKeyFn({}), queryFn: () => getNotDefined({}) });
+} = {}) => queryClient.ensureQueryData({ queryKey: Common.UseFindPetsKeyFn({ query, client }), queryFn: () => findPets({ query, client }).then(response => response.data) });
+export const ensureUseGetNotDefinedData = (queryClient: QueryClient, { }: {} = {}) => queryClient.ensureQueryData({ queryKey: Common.UseGetNotDefinedKeyFn({}), queryFn: () => getNotDefined({}).then(response => response.data) });
 export const ensureUseFindPetByIdData = (queryClient: QueryClient, { path, client }: {
   path: { id: number; };
   client?: Client<Request, Response, unknown, RequestOptions>;
-}) => queryClient.ensureQueryData({ queryKey: Common.UseFindPetByIdKeyFn({ path, client }), queryFn: () => findPetById({ path, client }) });
+}) => queryClient.ensureQueryData({ queryKey: Common.UseFindPetByIdKeyFn({ path, client }), queryFn: () => findPetById({ path, client }).then(response => response.data) });
 export const ensureUseFindPaginatedPetsData = (queryClient: QueryClient, { query, client }: {
   query?: { limit?: number; page?: number; tags?: string[]; };
   client?: Client<Request, Response, unknown, RequestOptions>;
-} = {}) => queryClient.ensureQueryData({ queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }), queryFn: () => findPaginatedPets({ query, client }) });
+} = {}) => queryClient.ensureQueryData({ queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }), queryFn: () => findPaginatedPets({ query, client }).then(response => response.data) });
 "
 `;
 
@@ -97,16 +97,16 @@ import * as Common from "./common";
 export const prefetchUseFindPets = (queryClient: QueryClient, { query, client }: {
   query?: { limit?: number; tags?: string[]; };
   client?: Client<Request, Response, unknown, RequestOptions>;
-} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetsKeyFn({ query, client }), queryFn: () => findPets({ query, client }) });
-export const prefetchUseGetNotDefined = (queryClient: QueryClient, { }: {} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseGetNotDefinedKeyFn({}), queryFn: () => getNotDefined({}) });
+} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetsKeyFn({ query, client }), queryFn: () => findPets({ query, client }).then(response => response.data) });
+export const prefetchUseGetNotDefined = (queryClient: QueryClient, { }: {} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseGetNotDefinedKeyFn({}), queryFn: () => getNotDefined({}).then(response => response.data) });
 export const prefetchUseFindPetById = (queryClient: QueryClient, { path, client }: {
   path: { id: number; };
   client?: Client<Request, Response, unknown, RequestOptions>;
-}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn({ path, client }), queryFn: () => findPetById({ path, client }) });
+}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn({ path, client }), queryFn: () => findPetById({ path, client }).then(response => response.data) });
 export const prefetchUseFindPaginatedPets = (queryClient: QueryClient, { query, client }: {
   query?: { limit?: number; page?: number; tags?: string[]; };
   client?: Client<Request, Response, unknown, RequestOptions>;
-} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }), queryFn: () => findPaginatedPets({ query, client }) });
+} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }), queryFn: () => findPaginatedPets({ query, client }).then(response => response.data) });
 "
 `;
 

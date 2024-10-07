@@ -2,6 +2,7 @@ import type { VariableDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
+  EqualsOrGreaterThanToken,
   extractPropertiesFromObjectParam,
   getNameFromVariable,
   getVariableArrowFunctionParameters,
@@ -66,7 +67,7 @@ function createPrefetchOrEnsureHook({
               ...requestParams,
             ],
             undefined,
-            ts.factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            EqualsOrGreaterThanToken,
             ts.factory.createCallExpression(
               ts.factory.createIdentifier(
                 `queryClient.${functionType === "prefetch" ? "prefetchQuery" : "ensureQueryData"}`,
@@ -105,29 +106,58 @@ function createPrefetchOrEnsureHook({
                       undefined,
                       [],
                       undefined,
-                      ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken,
-                      ),
+                      EqualsOrGreaterThanToken,
                       ts.factory.createCallExpression(
-                        ts.factory.createIdentifier(methodName),
+                        ts.factory.createPropertyAccessExpression(
+                          ts.factory.createCallExpression(
+                            ts.factory.createIdentifier(methodName),
 
-                        undefined,
-                        getVariableArrowFunctionParameters(method).length
-                          ? [
-                              ts.factory.createObjectLiteralExpression(
-                                getVariableArrowFunctionParameters(
-                                  method,
-                                ).flatMap((param) =>
-                                  extractPropertiesFromObjectParam(param).map(
-                                    (p) =>
-                                      ts.factory.createShorthandPropertyAssignment(
-                                        ts.factory.createIdentifier(p.name),
+                            undefined,
+                            getVariableArrowFunctionParameters(method).length
+                              ? [
+                                  ts.factory.createObjectLiteralExpression(
+                                    getVariableArrowFunctionParameters(
+                                      method,
+                                    ).flatMap((param) =>
+                                      extractPropertiesFromObjectParam(
+                                        param,
+                                      ).map((p) =>
+                                        ts.factory.createShorthandPropertyAssignment(
+                                          ts.factory.createIdentifier(p.name),
+                                        ),
                                       ),
+                                    ),
                                   ),
-                                ),
+                                ]
+                              : undefined,
+                          ),
+                          ts.factory.createIdentifier("then"),
+                        ),
+                        undefined,
+                        [
+                          ts.factory.createArrowFunction(
+                            undefined,
+                            undefined,
+                            [
+                              ts.factory.createParameterDeclaration(
+                                undefined,
+                                undefined,
+                                ts.factory.createIdentifier("response"),
+                                undefined,
+                                undefined,
+                                undefined,
                               ),
-                            ]
-                          : undefined,
+                            ],
+                            undefined,
+                            ts.factory.createToken(
+                              ts.SyntaxKind.EqualsGreaterThanToken,
+                            ),
+                            ts.factory.createPropertyAccessExpression(
+                              ts.factory.createIdentifier("response"),
+                              ts.factory.createIdentifier("data"),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
