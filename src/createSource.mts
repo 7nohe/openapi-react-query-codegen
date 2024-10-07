@@ -31,6 +31,7 @@ const createSourceFile = async (
 
   const exports = createExports(
     service,
+    project,
     pageParam,
     nextPageParam,
     initialPageParam,

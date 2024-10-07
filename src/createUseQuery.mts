@@ -418,27 +418,56 @@ export function createQueryHook({
                                       ).flatMap((param) =>
                                         extractPropertiesFromObjectParam(
                                           param,
-                                        ).map((p) =>
-                                          p.name === pageParam
+                                        ).map((p) => {
+                                          if (p.name !== "query") {
+                                            return ts.factory.createShorthandPropertyAssignment(
+                                              ts.factory.createIdentifier(
+                                                p.name,
+                                              ),
+                                            );
+                                          }
+
+                                          const propertyNames = p.type
+                                            ?.getProperties()
+                                            .map((p) => p.getName());
+
+                                          return pageParam &&
+                                            propertyNames?.includes(pageParam)
                                             ? ts.factory.createPropertyAssignment(
                                                 ts.factory.createIdentifier(
                                                   p.name,
                                                 ),
-                                                ts.factory.createAsExpression(
-                                                  ts.factory.createIdentifier(
-                                                    "pageParam",
-                                                  ),
-                                                  ts.factory.createKeywordTypeNode(
-                                                    ts.SyntaxKind.NumberKeyword,
-                                                  ),
+                                                // { ...query, [pageParam]: pageParam as number }
+                                                ts.factory.createObjectLiteralExpression(
+                                                  [
+                                                    ts.factory.createSpreadAssignment(
+                                                      ts.factory.createIdentifier(
+                                                        "query",
+                                                      ),
+                                                    ),
+                                                    ts.factory.createPropertyAssignment(
+                                                      ts.factory.createIdentifier(
+                                                        pageParam,
+                                                      ),
+                                                      ts.factory.createAsExpression(
+                                                        ts.factory.createIdentifier(
+                                                          "pageParam",
+                                                        ),
+                                                        ts.factory.createKeywordTypeNode(
+                                                          ts.SyntaxKind
+                                                            .NumberKeyword,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               )
                                             : ts.factory.createShorthandPropertyAssignment(
                                                 ts.factory.createIdentifier(
                                                   p.name,
                                                 ),
-                                              ),
-                                        ),
+                                              );
+                                        }),
                                       ),
                                     ),
                                   ]
@@ -502,6 +531,7 @@ export const createUseQuery = (
   pageParam: string,
   nextPageParam: string,
   initialPageParam: string,
+  paginatableMethods: string[],
 ) => {
   const methodName = getNameFromVariable(method);
   const queryKey = createQueryKeyFromMethod({ method });
@@ -514,14 +544,6 @@ export const createUseQuery = (
   const infiniteRequestParam = getRequestParamFromMethod(method, pageParam);
 
   const requestParams = requestParam ? [requestParam] : [];
-
-  const requestParamNames = requestParams
-    .filter((p) => p.name.kind === ts.SyntaxKind.ObjectBindingPattern)
-    .map((p) => p.name as ts.ObjectBindingPattern);
-  const requestParamTexts = requestParamNames
-    .at(0)
-    ?.elements.filter((e) => e.name.kind === ts.SyntaxKind.Identifier)
-    .map((e) => (e.name as ts.Identifier).escapedText as string);
 
   const queryHook = createQueryHook({
     queryString: "useQuery",
@@ -538,7 +560,8 @@ export const createUseQuery = (
     requestParams,
     method,
   });
-  const isInfiniteQuery = requestParamTexts?.includes(pageParam) ?? false;
+  const isInfiniteQuery = paginatableMethods.includes(methodName);
+
   const infiniteQueryHook = isInfiniteQuery
     ? createQueryHook({
         queryString: "useInfiniteQuery",

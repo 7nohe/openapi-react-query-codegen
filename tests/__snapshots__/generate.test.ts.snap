@@ -71,6 +71,19 @@ export * from "./queries";
 exports[`generate > infiniteQueries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
+import { Client } from "@hey-api/client-fetch";
+import { findPaginatedPets } from "../requests/services.gen";
+import * as Common from "./common";
+export const useFindPaginatedPetsInfinite = <TData = InfiniteData<Common.FindPaginatedPetsDefaultResponse>, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ query, client }: {
+  query?: { limit?: number; page?: number; tags?: string[]; };
+  client?: Client<Request, Response, unknown, RequestOptions>;
+} = {}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useInfiniteQuery({
+  queryKey: Common.UseFindPaginatedPetsKeyFn({ query, client }, queryKey), queryFn: ({ pageParam }) => findPaginatedPets({ query: { ...query, page: pageParam as number }, client }).then(response => response.data as TData) as TData, initialPageParam: "initial", getNextPageParam: response => (response as {
+    meta: {
+      next: number;
+    };
+  }).meta.next, ...options
+});
 "
 `;
 
