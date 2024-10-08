@@ -75,10 +75,12 @@ export const createApiResponseType = ({
 export function getRequestParamFromMethod(
   method: VariableDeclaration,
   pageParam?: string,
+  modelNames: string[] = [],
 ) {
   if (!getVariableArrowFunctionParameters(method).length) {
     return null;
   }
+  const methodName = getNameFromVariable(method);
 
   const params = getVariableArrowFunctionParameters(method).flatMap((param) => {
     const paramNodes = extractPropertiesFromObjectParam(param);
@@ -98,29 +100,17 @@ export function getRequestParamFromMethod(
   return ts.factory.createParameterDeclaration(
     undefined,
     undefined,
-    ts.factory.createObjectBindingPattern(
-      params.map((refParam) =>
-        ts.factory.createBindingElement(
-          undefined,
-          undefined,
-          ts.factory.createIdentifier(refParam.name),
-          undefined,
-        ),
-      ),
-    ),
+    // options
+    ts.factory.createIdentifier("clientOptions"),
     undefined,
-    ts.factory.createTypeLiteralNode(
-      params.map((refParam) => {
-        return ts.factory.createPropertySignature(
-          undefined,
-          ts.factory.createIdentifier(refParam.name),
-          refParam.optional
-            ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-            : undefined,
-          ts.factory.createTypeReferenceNode(refParam.typeName),
-        );
-      }),
-    ),
+    ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("Options"), [
+      ts.factory.createTypeReferenceNode(
+        modelNames.includes(`${capitalizeFirstLetter(methodName)}Data`)
+          ? `${capitalizeFirstLetter(methodName)}Data`
+          : "unknown",
+      ),
+      ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("true")),
+    ]),
     // if all params are optional, we create an empty object literal
     // so the hook can be called without any parameters
     areAllPropertiesOptional
@@ -360,24 +350,10 @@ export function createQueryHook({
                     ts.factory.createCallExpression(
                       BuildCommonTypeName(getQueryKeyFnName(queryKey)),
                       undefined,
-                      getVariableArrowFunctionParameters(method).length
-                        ? [
-                            ts.factory.createObjectLiteralExpression(
-                              getVariableArrowFunctionParameters(
-                                method,
-                              ).flatMap((param) =>
-                                extractPropertiesFromObjectParam(param)
-                                  .filter((p) => p.name !== pageParam)
-                                  .map((p) =>
-                                    ts.factory.createShorthandPropertyAssignment(
-                                      ts.factory.createIdentifier(p.name),
-                                    ),
-                                  ),
-                              ),
-                            ),
-                            ts.factory.createIdentifier("queryKey"),
-                          ]
-                        : [ts.factory.createIdentifier("queryKey")],
+                      [
+                        ts.factory.createIdentifier("clientOptions"),
+                        ts.factory.createIdentifier("queryKey"),
+                      ],
                     ),
                   ),
                   ts.factory.createPropertyAssignment(
@@ -411,68 +387,60 @@ export function createQueryHook({
                             ts.factory.createCallExpression(
                               ts.factory.createIdentifier(methodName),
                               undefined,
-                              getVariableArrowFunctionParameters(method).length
+                              pageParam && isInfiniteQuery
                                 ? [
-                                    ts.factory.createObjectLiteralExpression(
-                                      getVariableArrowFunctionParameters(
-                                        method,
-                                      ).flatMap((param) =>
-                                        extractPropertiesFromObjectParam(
-                                          param,
-                                        ).map((p) => {
-                                          if (p.name !== "query") {
-                                            return ts.factory.createShorthandPropertyAssignment(
-                                              ts.factory.createIdentifier(
-                                                p.name,
-                                              ),
-                                            );
-                                          }
-
-                                          const propertyNames = p.type
-                                            ?.getProperties()
-                                            .map((p) => p.getName());
-
-                                          return pageParam &&
-                                            propertyNames?.includes(pageParam)
-                                            ? ts.factory.createPropertyAssignment(
-                                                ts.factory.createIdentifier(
-                                                  p.name,
-                                                ),
-                                                // { ...query, [pageParam]: pageParam as number }
-                                                ts.factory.createObjectLiteralExpression(
-                                                  [
-                                                    ts.factory.createSpreadAssignment(
-                                                      ts.factory.createIdentifier(
-                                                        "query",
-                                                      ),
-                                                    ),
-                                                    ts.factory.createPropertyAssignment(
-                                                      ts.factory.createIdentifier(
-                                                        pageParam,
-                                                      ),
-                                                      ts.factory.createAsExpression(
-                                                        ts.factory.createIdentifier(
-                                                          "pageParam",
-                                                        ),
-                                                        ts.factory.createKeywordTypeNode(
-                                                          ts.SyntaxKind
-                                                            .NumberKeyword,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              )
-                                            : ts.factory.createShorthandPropertyAssignment(
-                                                ts.factory.createIdentifier(
-                                                  p.name,
-                                                ),
-                                              );
-                                        }),
+                                    // { ...clientOptions, query: { ...clientOptions.query, page: pageParam as number } }
+                                    ts.factory.createObjectLiteralExpression([
+                                      ts.factory.createSpreadAssignment(
+                                        ts.factory.createIdentifier(
+                                          "clientOptions",
+                                        ),
                                       ),
-                                    ),
+                                      ts.factory.createPropertyAssignment(
+                                        ts.factory.createIdentifier("query"),
+                                        ts.factory.createObjectLiteralExpression(
+                                          [
+                                            ts.factory.createSpreadAssignment(
+                                              ts.factory.createPropertyAccessExpression(
+                                                ts.factory.createIdentifier(
+                                                  "clientOptions",
+                                                ),
+                                                ts.factory.createIdentifier(
+                                                  "query",
+                                                ),
+                                              ),
+                                            ),
+                                            ts.factory.createPropertyAssignment(
+                                              ts.factory.createIdentifier(
+                                                pageParam,
+                                              ),
+                                              ts.factory.createAsExpression(
+                                                ts.factory.createIdentifier(
+                                                  "pageParam",
+                                                ),
+                                                ts.factory.createKeywordTypeNode(
+                                                  ts.SyntaxKind.NumberKeyword,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ]),
                                   ]
-                                : undefined,
+                                : // { ...clientOptions }
+                                  getVariableArrowFunctionParameters(method)
+                                      .length
+                                  ? [
+                                      ts.factory.createObjectLiteralExpression([
+                                        ts.factory.createSpreadAssignment(
+                                          ts.factory.createIdentifier(
+                                            "clientOptions",
+                                          ),
+                                        ),
+                                      ]),
+                                    ]
+                                  : undefined,
                             ),
                             ts.factory.createIdentifier("then"),
                           ),
@@ -533,6 +501,7 @@ export const createUseQuery = (
   nextPageParam: string,
   initialPageParam: string,
   paginatableMethods: string[],
+  modelNames: string[],
 ) => {
   const methodName = getNameFromVariable(method);
   const queryKey = createQueryKeyFromMethod({ method });
@@ -541,8 +510,12 @@ export const createUseQuery = (
       methodName,
     });
 
-  const requestParam = getRequestParamFromMethod(method);
-  const infiniteRequestParam = getRequestParamFromMethod(method, pageParam);
+  const requestParam = getRequestParamFromMethod(method, undefined, modelNames);
+  const infiniteRequestParam = getRequestParamFromMethod(
+    method,
+    pageParam,
+    modelNames,
+  );
 
   const requestParams = requestParam ? [requestParam] : [];
 
@@ -657,19 +630,12 @@ function queryKeyFn(
             ts.factory.createIdentifier("queryKey"),
             ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
             getVariableArrowFunctionParameters(method)
-              ? ts.factory.createArrayLiteralExpression([
-                  ts.factory.createObjectLiteralExpression(
-                    getVariableArrowFunctionParameters(method).flatMap(
-                      (param) =>
-                        extractPropertiesFromObjectParam(param).map((p) =>
-                          ts.factory.createShorthandPropertyAssignment(
-                            ts.factory.createIdentifier(p.name),
-                          ),
-                        ),
-                    ),
-                  ),
+              ? // [...clientOptions]
+                ts.factory.createArrayLiteralExpression([
+                  ts.factory.createIdentifier("clientOptions"),
                 ])
-              : ts.factory.createArrayLiteralExpression([]),
+              : // []
+                ts.factory.createArrayLiteralExpression(),
           ),
         ),
       ),

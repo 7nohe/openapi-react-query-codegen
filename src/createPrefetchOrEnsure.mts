@@ -81,22 +81,7 @@ function createPrefetchOrEnsureHook({
                       BuildCommonTypeName(getQueryKeyFnName(queryKey)),
                       undefined,
 
-                      getVariableArrowFunctionParameters(method).length
-                        ? [
-                            ts.factory.createObjectLiteralExpression(
-                              getVariableArrowFunctionParameters(
-                                method,
-                              ).flatMap((param) =>
-                                extractPropertiesFromObjectParam(param).map(
-                                  (p) =>
-                                    ts.factory.createShorthandPropertyAssignment(
-                                      ts.factory.createIdentifier(p.name),
-                                    ),
-                                ),
-                              ),
-                            ),
-                          ]
-                        : [],
+                      [ts.factory.createIdentifier("clientOptions")],
                     ),
                   ),
                   ts.factory.createPropertyAssignment(
@@ -113,21 +98,16 @@ function createPrefetchOrEnsureHook({
                             ts.factory.createIdentifier(methodName),
 
                             undefined,
+                            // { ...clientOptions }
                             getVariableArrowFunctionParameters(method).length
                               ? [
-                                  ts.factory.createObjectLiteralExpression(
-                                    getVariableArrowFunctionParameters(
-                                      method,
-                                    ).flatMap((param) =>
-                                      extractPropertiesFromObjectParam(
-                                        param,
-                                      ).map((p) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          ts.factory.createIdentifier(p.name),
-                                        ),
+                                  ts.factory.createObjectLiteralExpression([
+                                    ts.factory.createSpreadAssignment(
+                                      ts.factory.createIdentifier(
+                                        "clientOptions",
                                       ),
                                     ),
-                                  ),
+                                  ]),
                                 ]
                               : undefined,
                           ),
@@ -177,8 +157,12 @@ export const createPrefetchOrEnsure = ({
   method,
   jsDoc,
   functionType,
-}: FunctionDescription & { functionType: "prefetch" | "ensure" }) => {
-  const requestParam = getRequestParamFromMethod(method);
+  modelNames,
+}: FunctionDescription & {
+  functionType: "prefetch" | "ensure";
+  modelNames: string[];
+}) => {
+  const requestParam = getRequestParamFromMethod(method, undefined, modelNames);
 
   const requestParams = requestParam ? [requestParam] : [];
 

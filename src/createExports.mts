@@ -29,8 +29,10 @@ export const createExports = (
 
   const modelDeclarations = modelsFile?.getExportedDeclarations();
   const entries = modelDeclarations?.entries();
+  const modelNames: string[] = [];
   const paginatableMethods: string[] = [];
   for (const [key, value] of entries ?? []) {
+    modelNames.push(key);
     const node = value[0].compilerNode;
     if (ts.isTypeAliasDeclaration(node) && methodDataNames[key] !== undefined) {
       // get the type alias declaration
@@ -76,13 +78,14 @@ export const createExports = (
       nextPageParam,
       initialPageParam,
       paginatableMethods,
+      modelNames,
     ),
   );
   const allPrefetchQueries = allGet.map((m) =>
-    createPrefetchOrEnsure({ ...m, functionType: "prefetch" }),
+    createPrefetchOrEnsure({ ...m, functionType: "prefetch", modelNames }),
   );
   const allEnsureQueries = allGet.map((m) =>
-    createPrefetchOrEnsure({ ...m, functionType: "ensure" }),
+    createPrefetchOrEnsure({ ...m, functionType: "ensure", modelNames }),
   );
 
   const allPostMutations = allPost.map((m) => createUseMutation(m));
