@@ -351,12 +351,14 @@ describe("common", () => {
   test("buildRequestsOutputPath", async () => {
     const output = "output";
     const result = buildRequestsOutputPath(output);
-    expect(result).toBe("output/requests");
+    // windows: output\requests | linux/mac: output/requests
+    expect(result).toMatch(/output[/\\]requests/);
   });
 
   test("buildQueriesOutputPath", async () => {
     const output = "output";
     const result = buildQueriesOutputPath(output);
-    expect(result).toBe("output/queries");
+    // windows: output\queries | linux/mac: output/queries
+    expect(result).toMatch(/output[/\\]queries/);
   });
 });
