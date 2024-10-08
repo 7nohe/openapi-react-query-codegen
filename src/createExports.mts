@@ -88,10 +88,18 @@ export const createExports = (
     createPrefetchOrEnsure({ ...m, functionType: "ensure", modelNames }),
   );
 
-  const allPostMutations = allPost.map((m) => createUseMutation(m));
-  const allPutMutations = allPut.map((m) => createUseMutation(m));
-  const allPatchMutations = allPatch.map((m) => createUseMutation(m));
-  const allDeleteMutations = allDelete.map((m) => createUseMutation(m));
+  const allPostMutations = allPost.map((m) =>
+    createUseMutation({ ...m, modelNames }),
+  );
+  const allPutMutations = allPut.map((m) =>
+    createUseMutation({ ...m, modelNames }),
+  );
+  const allPatchMutations = allPatch.map((m) =>
+    createUseMutation({ ...m, modelNames }),
+  );
+  const allDeleteMutations = allDelete.map((m) =>
+    createUseMutation({ ...m, modelNames }),
+  );
 
   const allQueries = [...allGetQueries];
   const allMutations = [

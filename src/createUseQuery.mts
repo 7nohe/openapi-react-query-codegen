@@ -430,7 +430,7 @@ export function createQueryHook({
                                   ]
                                 : // { ...clientOptions }
                                   getVariableArrowFunctionParameters(method)
-                                      .length
+                                      .length > 0
                                   ? [
                                       ts.factory.createObjectLiteralExpression([
                                         ts.factory.createSpreadAssignment(

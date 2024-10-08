@@ -86,28 +86,18 @@ export const prefetchUseFindPaginatedPets = (queryClient: QueryClient, clientOpt
 exports[`generate > queries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
-import { Client, Config, Options, RequestOptionsBase } from "@hey-api/client-fetch";
+import { Options } from "@hey-api/client-fetch";
 import { useMutation, UseMutationOptions, useQuery, UseQueryOptions } from "@tanstack/react-query";
 import { addPet, deletePet, findPaginatedPets, findPetById, findPets, getNotDefined, postNotDefined } from "../requests/services.gen";
-import { FindPaginatedPetsData, FindPetByIdData, FindPetsData, NewPet } from "../requests/types.gen";
+import { AddPetData, DeletePetData, FindPaginatedPetsData, FindPetByIdData, FindPetsData } from "../requests/types.gen";
 import * as Common from "./common";
 export const useFindPets = <TData = Common.FindPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey), queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<unknown, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 export const useFindPetById = <TData = Common.FindPetByIdDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 export const useFindPaginatedPets = <TData = Common.FindPaginatedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
-export const useAddPet = <TData = Common.AddPetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
-  body: NewPet;
-}, TContext>, "mutationFn">) => useMutation<TData, TError, {
-  body: NewPet;
-}, TContext>({ mutationFn: ({ body }) => addPet({ body }) as unknown as Promise<TData>, ...options });
-export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {}, TContext>, "mutationFn">) => useMutation<TData, TError, {}, TContext>({ mutationFn: ({ }) => postNotDefined({}) as unknown as Promise<TData>, ...options });
-export const useDeletePet = <TData = Common.DeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, {
-  path: { id: number; };
-  client?: Client<Request, Response, unknown, RequestOptionsBase<false> & Config<false> & { headers: Headers; }>;
-}, TContext>, "mutationFn">) => useMutation<TData, TError, {
-  path: { id: number; };
-  client?: Client<Request, Response, unknown, RequestOptionsBase<false> & Config<false> & { headers: Headers; }>;
-}, TContext>({ mutationFn: ({ path, client }) => deletePet({ path, client }) as unknown as Promise<TData>, ...options });
+export const useAddPet = <TData = Common.AddPetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, Options<AddPetData, true>, TContext>, "mutationFn">) => useMutation<TData, TError, Options<AddPetData, true>, TContext>({ mutationFn: clientOptions => addPet(clientOptions) as unknown as Promise<TData>, ...options });
+export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, Options<unknown, true>, TContext>, "mutationFn">) => useMutation<TData, TError, Options<unknown, true>, TContext>({ mutationFn: clientOptions => postNotDefined(clientOptions) as unknown as Promise<TData>, ...options });
+export const useDeletePet = <TData = Common.DeletePetMutationResult, TError = unknown, TContext = unknown>(options?: Omit<UseMutationOptions<TData, TError, Options<DeletePetData, true>, TContext>, "mutationFn">) => useMutation<TData, TError, Options<DeletePetData, true>, TContext>({ mutationFn: clientOptions => deletePet(clientOptions) as unknown as Promise<TData>, ...options });
 "
 `;
 

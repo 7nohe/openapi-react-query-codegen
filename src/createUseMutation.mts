@@ -1,14 +1,13 @@
 import ts from "typescript";
 import {
   BuildCommonTypeName,
+  EqualsOrGreaterThanToken,
   type FunctionDescription,
   TContext,
   TData,
   TError,
   capitalizeFirstLetter,
-  extractPropertiesFromObjectParam,
   getNameFromVariable,
-  getShortType,
   getVariableArrowFunctionParameters,
 } from "./common.mjs";
 import { addJSDocToNode } from "./util.mjs";
@@ -38,7 +37,11 @@ function generateAwaitedReturnType({
   );
 }
 
-export const createUseMutation = ({ method, jsDoc }: FunctionDescription) => {
+export const createUseMutation = ({
+  method,
+  jsDoc,
+  modelNames,
+}: FunctionDescription & { modelNames: string[] }) => {
   const methodName = getNameFromVariable(method);
   const awaitedResponseDataType = generateAwaitedReturnType({
     methodName,
@@ -64,22 +67,16 @@ export const createUseMutation = ({ method, jsDoc }: FunctionDescription) => {
 
   const methodParameters =
     getVariableArrowFunctionParameters(method).length !== 0
-      ? ts.factory.createTypeLiteralNode(
-          getVariableArrowFunctionParameters(method).flatMap((param) => {
-            const paramNodes = extractPropertiesFromObjectParam(param);
-            return paramNodes.map((refParam) =>
-              ts.factory.createPropertySignature(
-                undefined,
-                ts.factory.createIdentifier(refParam.name),
-                refParam.optional
-                  ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-                  : undefined,
-                ts.factory.createTypeReferenceNode(
-                  getShortType(refParam.type?.getText(param) ?? ""),
-                ),
-              ),
-            );
-          }),
+      ? ts.factory.createTypeReferenceNode(
+          ts.factory.createIdentifier("Options"),
+          [
+            ts.factory.createTypeReferenceNode(
+              modelNames.includes(`${capitalizeFirstLetter(methodName)}Data`)
+                ? `${capitalizeFirstLetter(methodName)}Data`
+                : "unknown",
+            ),
+            ts.factory.createLiteralTypeNode(ts.factory.createTrue()),
+          ],
         )
       : ts.factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword);
 
@@ -150,68 +147,31 @@ export const createUseMutation = ({ method, jsDoc }: FunctionDescription) => {
                 ts.factory.createObjectLiteralExpression([
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("mutationFn"),
+                    // (clientOptions) => addPet(clientOptions).then(response => response.data as TData) as unknown as Promise<TData>
                     ts.factory.createArrowFunction(
                       undefined,
                       undefined,
-                      getVariableArrowFunctionParameters(method).length !== 0
-                        ? [
-                            ts.factory.createParameterDeclaration(
-                              undefined,
-                              undefined,
-                              ts.factory.createObjectBindingPattern(
-                                getVariableArrowFunctionParameters(
-                                  method,
-                                ).flatMap((param) => {
-                                  const paramNodes =
-                                    extractPropertiesFromObjectParam(param);
-                                  return paramNodes.map((refParam) =>
-                                    ts.factory.createBindingElement(
-                                      undefined,
-                                      undefined,
-                                      ts.factory.createIdentifier(
-                                        refParam.name,
-                                      ),
-                                      undefined,
-                                    ),
-                                  );
-                                }),
-                              ),
-                              undefined,
-                              undefined,
-                              undefined,
-                            ),
-                          ]
-                        : [],
+                      [
+                        ts.factory.createParameterDeclaration(
+                          undefined,
+                          undefined,
+                          ts.factory.createIdentifier("clientOptions"),
+                          undefined,
+                          undefined,
+                          undefined,
+                        ),
+                      ],
                       undefined,
-                      ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken,
-                      ),
+                      EqualsOrGreaterThanToken,
                       ts.factory.createAsExpression(
                         ts.factory.createAsExpression(
                           ts.factory.createCallExpression(
                             ts.factory.createIdentifier(methodName),
-
                             undefined,
-                            getVariableArrowFunctionParameters(method)
-                              .length !== 0
-                              ? [
-                                  ts.factory.createObjectLiteralExpression(
-                                    getVariableArrowFunctionParameters(
-                                      method,
-                                    ).flatMap((params) => {
-                                      const paramNodes =
-                                        extractPropertiesFromObjectParam(
-                                          params,
-                                        );
-                                      return paramNodes.map((refParam) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          refParam.name,
-                                        ),
-                                      );
-                                    }),
-                                  ),
-                                ]
-                              : [],
+                            getVariableArrowFunctionParameters(method).length >
+                              0
+                              ? [ts.factory.createIdentifier("clientOptions")]
+                              : undefined,
                           ),
                           ts.factory.createKeywordTypeNode(
                             ts.SyntaxKind.UnknownKeyword,
