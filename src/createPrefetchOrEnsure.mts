@@ -3,7 +3,6 @@ import ts from "typescript";
 import {
   BuildCommonTypeName,
   EqualsOrGreaterThanToken,
-  extractPropertiesFromObjectParam,
   getNameFromVariable,
   getVariableArrowFunctionParameters,
 } from "./common.mjs";
