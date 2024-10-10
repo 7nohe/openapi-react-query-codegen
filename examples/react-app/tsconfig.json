@@ -18,7 +18,8 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "./tsconfig.node.json" },
-    { "path": "./tsconfig.openapi.json" }
+    {
+      "path": "./tsconfig.node.json"
+    }
   ]
 }

@@ -47,12 +47,10 @@ Options:
   -i, --input <value>         OpenAPI specification, can be a path, url or string content (required)
   -o, --output <value>        Output directory (default: "openapi")
   -c, --client <value>        HTTP client to generate (choices: "@hey-api/client-fetch", "@hey-api/client-axios", default: "@hey-api/client-fetch")
-  --request <value>           Path to custom request file
   --format <value>            Process output folder with formatter? (choices: "biome", "prettier")
   --lint <value>              Process output folder with linter? (choices: "biome", "eslint")
   --operationId               Use operation ID to generate operation names?
   --serviceResponse <value>   Define shape of returned value from service calls (choices: "body", "response", default: "body")
-  --base <value>              Manually set base in OpenAPI config instead of inferring from server value
   --enums <value>             Generate JavaScript objects from enum definitions? (choices: "javascript", "typescript")
   --useDateType               Use Date type instead of string for date types for models, this will not convert the data to a Date object
   --debug                     Run in debug mode?
@@ -94,9 +92,9 @@ $ openapi-rq -i ./petstore.yaml
 
 ```tsx
 // App.tsx
-import { usePetServiceFindPetsByStatus } from "../openapi/queries";
+import { useFindPets } from "../openapi/queries";
 function App() {
-  const { data } = usePetServiceFindPetsByStatus({ status: ["available"] });
+  const { data } = useFindPets();
 
   return (
     <div className="App">
@@ -113,16 +111,16 @@ export default App;
 
 ```tsx
 import { useQuery } from "@tanstack/react-query";
-import { PetService } from "../openapi/requests/services";
-import { usePetServiceFindPetsByStatusKey } from "../openapi/queries";
+import { findPets } from "../openapi/requests/services.gen";
+import { useFindPetsKey } from "../openapi/queries";
 
 function App() {
   // You can still use the auto-generated query key
   const { data } = useQuery({
-    queryKey: [usePetServiceFindPetsByStatusKey],
+    queryKey: [useFindPetsKey],
     queryFn: () => {
       // Do something here
-      return PetService.findPetsByStatus(["available"]);
+      return findPets();
     },
   });
 
@@ -136,9 +134,11 @@ export default App;
 
 ```tsx
 // App.tsx
-import { useDefaultClientFindPetsSuspense } from "../openapi/queries/suspense";
+import { useFindPetsSuspense } from "../openapi/queries/suspense";
 function ChildComponent() {
-  const { data } = useDefaultClientFindPetsSuspense({ tags: [], limit: 10 });
+  const { data } = useFindPetsSuspense({
+    query: { tags: [], limit: 10 },
+  });
 
   return <ul>{data?.map((pet, index) => <li key={pet.id}>{pet.name}</li>)}</ul>;
 }
@@ -169,13 +169,13 @@ export default App;
 
 ```tsx
 // App.tsx
-import { usePetServiceAddPet } from "../openapi/queries";
+import { useAddPet } from "../openapi/queries";
 
 function App() {
-  const { mutate } = usePetServiceAddPet();
+  const { mutate } = useAddPet();
 
   const handleAddPet = () => {
-    mutate({ name: "Fluffy", status: "available" });
+    mutate({ body: { name: "Fluffy" } });
   };
 
   return (
@@ -199,22 +199,22 @@ To ensure the query key is created the same way as the query hook, you can use t
 
 ```tsx
 import {
-  usePetServiceFindPetsByStatus,
-  usePetServiceAddPet,
-  UsePetServiceFindPetsByStatusKeyFn,
+  useFindPetsByStatus,
+  useAddPet,
+  UseFindPetsByStatusKeyFn,
 } from "../openapi/queries";
 
 // App.tsx
 function App() {
   const [status, setStatus] = React.useState(["available"]);
-  const { data } = usePetServiceFindPetsByStatus({ status });
-  const { mutate } = usePetServiceAddPet({
+  const { data } = useFindPetsByStatus({ status });
+  const { mutate } = useAddPet({
     onSuccess: () => {
       queryClient.invalidateQueries({
         // Call the query key function to get the query key
         // This is important to ensure the query key is created the same way as the query hook
         // This insures the cache is invalidated correctly and is typed correctly
-        queryKey: [UsePetServiceFindPetsByStatusKeyFn({
+        queryKey: [UseFindPetsByStatusKeyFn({
           status
         })],
       });
@@ -299,40 +299,11 @@ paths:
 Usage of Generated Hooks:
 
 ```ts
-import { useDefaultServiceFindPaginatedPetsInfinite } from "@/openapi/queries/infiniteQueries";
+import { useFindPaginatedPetsInfinite } from "@/openapi/queries/infiniteQueries";
 
-const { data, fetchNextPage } = useDefaultServiceFindPaginatedPetsInfinite({
-  limit: 10,
-  tags: [],
+const { data, fetchNextPage } = useFindPaginatedPetsInfinite({
+  query: { tags: [], limit: 10 }
 });
-```
-
-##### Runtime Configuration
-
-You can modify the default values used by the generated service calls by modifying the OpenAPI configuration singleton object.
-
-It's default location is `openapi/requests/core/OpenAPI.ts` and it is also exported from `openapi/index.ts`
-
-Import the constant into your runtime and modify it before setting up the react app.
-
-```typescript
-/** main.tsx */
-import { OpenAPI as OpenAPIConfig } from './openapi/requests/core/OpenAPI';
-...
-OpenAPIConfig.BASE = 'www.domain.com/api';
-OpenAPIConfig.HEADERS = {
-  'x-header-1': 'value-1',
-  'x-header-2': 'value-2',
-};
-...
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </React.StrictMode>
-);
-
 ```
 
 ## Development
@@ -364,6 +335,7 @@ pnpm snapshot
 ```
 
 ### Build example and validate generated code
+
 ```bash
 npm run build && pnpm --filter @7nohe/react-app generate:api && pnpm --filter @7nohe/react-app test:generated 
 ```

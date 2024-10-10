@@ -11,20 +11,11 @@ const program = new Command();
 export type LimitedUserConfig = {
   input: string;
   output: string;
-  client?:
-    | "legacy/angular"
-    | "legacy/axios"
-    | "legacy/fetch"
-    | "legacy/node"
-    | "legacy/xhr"
-    | "@hey-api/client-fetch"
-    | "@hey-api/client-axios";
-  request?: string;
+  client?: "@hey-api/client-fetch" | "@hey-api/client-axios";
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
   operationId?: boolean;
   serviceResponse?: "body" | "response";
-  base?: string;
   enums?: "javascript" | "typescript" | false;
   useDateType?: boolean;
   debug?: boolean;
@@ -56,7 +47,6 @@ async function setupProgram() {
         .choices(["@hey-api/client-fetch", "@hey-api/client-axios"])
         .default("@hey-api/client-fetch"),
     )
-    .option("--request <value>", "Path to custom request file")
     .addOption(
       new Option(
         "--format <value>",
@@ -77,10 +67,6 @@ async function setupProgram() {
       )
         .choices(["body", "response"])
         .default("body"),
-    )
-    .option(
-      "--base <value>",
-      "Manually set base in OpenAPI config instead of inferring from server value",
     )
     .addOption(
       new Option(

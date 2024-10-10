@@ -15,11 +15,7 @@ import { addJSDocToNode } from "./util.mjs";
 /**
  *  Awaited<ReturnType<typeof myClass.myMethod>>
  */
-function generateAwaitedReturnType({
-  methodName,
-}: {
-  methodName: string;
-}) {
+function generateAwaitedReturnType({ methodName }: { methodName: string }) {
   return ts.factory.createTypeReferenceNode(
     ts.factory.createIdentifier("Awaited"),
     [
@@ -98,7 +94,9 @@ export const createUseMutation = ({
                 undefined,
                 TError,
                 undefined,
-                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
+                ts.factory.createTypeReferenceNode(
+                  `${capitalizeFirstLetter(methodName)}Error`,
+                ),
               ),
               ts.factory.createTypeParameterDeclaration(
                 undefined,

@@ -64,7 +64,7 @@ function App() {
                 });
                 console.log("success");
               },
-              onError: (error) => console.error(error),
+              onError: (error) => console.error(error.message),
             },
           );
         }}
