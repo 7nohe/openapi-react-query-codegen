@@ -15,7 +15,6 @@
   "dependencies": {
     "@tanstack/react-query": "^5.32.1",
     "@tanstack/react-query-devtools": "^5.32.1",
-    "axios": "^1.6.7",
     "next": "^14.2.3",
     "react": "^18",
     "react-dom": "^18"
