@@ -110,11 +110,7 @@ async function setupProgram() {
       "Name of the response parameter used for next page",
       "nextPage",
     )
-    .option(
-      "--initialPageParam <value>",
-      "Initial page value to query",
-      "initialPageParam",
-    )
+    .option("--initialPageParam <value>", "Initial page value to query", "1")
     .parse();
 
   const options = program.opts<LimitedUserConfig>();

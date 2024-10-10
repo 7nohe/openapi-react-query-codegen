@@ -1,7 +1,7 @@
 import { posix } from "node:path";
 import type { Project } from "ts-morph";
 import ts from "typescript";
-import { modalsFileName, serviceFileName } from "./constants.mjs";
+import { modelsFileName, serviceFileName } from "./constants.mjs";
 
 const { join } = posix;
 
@@ -12,7 +12,7 @@ export const createImports = ({
 }) => {
   const modelsFile = project
     .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes(modalsFileName));
+    .find((sourceFile) => sourceFile.getFilePath().includes(modelsFileName));
 
   const serviceFile = project.getSourceFileOrThrow(`${serviceFileName}.ts`);
 
@@ -122,7 +122,7 @@ export const createImports = ({
             ),
           ]),
         ),
-        ts.factory.createStringLiteral(join("../requests/", modalsFileName)),
+        ts.factory.createStringLiteral(join("../requests/", modelsFileName)),
         undefined,
       ),
     );

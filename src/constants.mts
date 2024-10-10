@@ -3,7 +3,7 @@ export const queriesOutputPath = "queries";
 export const requestsOutputPath = "requests";
 
 export const serviceFileName = "services.gen";
-export const modalsFileName = "types.gen";
+export const modelsFileName = "types.gen";
 
 export const OpenApiRqFiles = {
   queries: "queries",

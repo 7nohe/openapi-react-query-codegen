@@ -1,19 +1,25 @@
-import type {
-  ClassDeclaration,
-  MethodDeclaration,
-  SourceFile,
-  VariableDeclaration,
+import {
+  type ClassDeclaration,
+  Project,
+  type SourceFile,
+  type VariableDeclaration,
 } from "ts-morph";
+import { factory } from "typescript";
 import { describe, expect, test, vi } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
 import {
   BuildCommonTypeName,
+  buildQueriesOutputPath,
+  buildRequestsOutputPath,
   capitalizeFirstLetter,
+  exists,
+  extractPropertiesFromObjectParam,
   formatOptions,
   getClassNameFromClassNode,
   getClassesFromService,
   getNameFromVariable,
   getShortType,
+  getVariableArrowFunctionParameters,
   lowercaseFirstLetter,
   safeParseNumber,
 } from "../src/common.mts";
@@ -45,6 +51,12 @@ describe("common", () => {
 
   test("buildCommonTypeName", () => {
     const name = "Name";
+    const result = BuildCommonTypeName(name);
+    expect(result.escapedText).toBe("Common.Name");
+  });
+
+  test("buildCommonTypeName - identifier", () => {
+    const name = factory.createIdentifier("Name");
     const result = BuildCommonTypeName(name);
     expect(result.escapedText).toBe("Common.Name");
   });
@@ -102,6 +114,9 @@ describe("common", () => {
       output: "output",
       // biome-ignore lint: test
       debug: "false" as any,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -114,6 +129,9 @@ describe("common", () => {
       output: "output",
       // biome-ignore lint: test
       debug: "true" as any,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -124,6 +142,9 @@ describe("common", () => {
     const options: LimitedUserConfig = {
       input: "input",
       output: "output",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -136,6 +157,9 @@ describe("common", () => {
       output: "output",
       // biome-ignore lint: test
       debug: "123" as any,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -149,6 +173,9 @@ describe("common", () => {
       // biome-ignore lint: test
       debug: "123" as any,
       lint: "eslint",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -161,6 +188,9 @@ describe("common", () => {
       output: "output",
       // biome-ignore lint: test
       debug: Number.NaN as any,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -172,6 +202,9 @@ describe("common", () => {
       input: "input",
       output: "output",
       debug: true,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -183,6 +216,9 @@ describe("common", () => {
       input: "input",
       output: "output",
       debug: false,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
     };
     const formatted = formatOptions(options);
 
@@ -256,5 +292,73 @@ describe("common", () => {
     expect(() => getNameFromVariable(method)).toThrowError(
       "Variable name not found",
     );
+  });
+
+  test("getVariableArrowFunctionParameters", async () => {
+    const source = "const test = (queryClient: QueryClient) => {}";
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const method = sourceFile.getVariableDeclarations()[0];
+    const result = getVariableArrowFunctionParameters(method);
+    expect(result[0].getName()).toStrictEqual("queryClient");
+  });
+
+  test('getVariableArrowFunctionParameters - throw error "Initializer is not an arrow function"', async () => {
+    const source = 'const foo = "bar"';
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const method = sourceFile.getVariableDeclarations()[0];
+    expect(() => getVariableArrowFunctionParameters(method)).toThrowError(
+      "Initializer is not an arrow function",
+    );
+  });
+
+  test('getVariableArrowFunctionParameters - throw error "Initializer not found"', async () => {
+    const source = "const foo";
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const method = sourceFile.getVariableDeclarations()[0];
+    expect(() => getVariableArrowFunctionParameters(method)).toThrowError(
+      "Initializer not found",
+    );
+  });
+
+  test("extractPropertiesFromObjectParam", async () => {
+    const source = `
+    type Params = { limit: number; offset: number; };
+    const test = (params: Params) => {}
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const method = sourceFile.getVariableDeclarations()[0];
+    const params = getVariableArrowFunctionParameters(method);
+    const props = extractPropertiesFromObjectParam(params[0]);
+    expect(props.map((p) => p.name)).toStrictEqual(["limit", "offset"]);
+  });
+
+  test("exists - file exists", async () => {
+    const f = "tests/common.test.ts";
+    const result = await exists(f);
+    expect(result).toBe(true);
+  });
+
+  test("exists - file does not exist", async () => {
+    const f = "tests/nonexistent.test.ts";
+    const result = await exists(f);
+    expect(result).toBe(false);
+  });
+
+  test("buildRequestsOutputPath", async () => {
+    const output = "output";
+    const result = buildRequestsOutputPath(output);
+    // windows: output\requests | linux/mac: output/requests
+    expect(result).toMatch(/output[/\\]requests/);
+  });
+
+  test("buildQueriesOutputPath", async () => {
+    const output = "output";
+    const result = buildQueriesOutputPath(output);
+    // windows: output\queries | linux/mac: output/queries
+    expect(result).toMatch(/output[/\\]queries/);
   });
 });

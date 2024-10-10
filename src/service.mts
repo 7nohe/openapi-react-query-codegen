@@ -24,7 +24,7 @@ export async function getServices(project: Project): Promise<Service> {
   } satisfies Service;
 }
 
-function getMethodsFromService(node: SourceFile): FunctionDescription[] {
+export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
   const variableStatements = node.getVariableStatements();
 
   // The first variable statement is `const client = createClient(createConfig())`, so we skip it
