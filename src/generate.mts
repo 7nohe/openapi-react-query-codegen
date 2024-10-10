@@ -14,7 +14,6 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const formattedOptions = formatOptions(options);
 
   const config: UserConfig = {
-    base: formattedOptions.base,
     client: formattedOptions.client,
     debug: formattedOptions.debug,
     dryRun: false,
@@ -25,7 +24,6 @@ export async function generate(options: LimitedUserConfig, version: string) {
       path: openApiOutputPath,
     },
     input: formattedOptions.input,
-    request: formattedOptions.request,
     schemas: {
       export: !formattedOptions.noSchemas,
       type: formattedOptions.schemaType,
@@ -34,6 +32,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
       export: true,
       response: formattedOptions.serviceResponse,
       asClass: false,
+      operationId: formattedOptions.operationId,
     },
     types: {
       dates: formattedOptions.useDateType,
