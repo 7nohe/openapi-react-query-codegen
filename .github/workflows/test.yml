@@ -42,8 +42,14 @@ jobs:
           name: generated-query-file-${{ matrix.os }}
           path: examples/react-app/openapi/queries/index.ts
 
-      - name: Run tsc
+      - name: Run tsc in react-app
         run: pnpm --filter @7nohe/react-app test:generated
+
+      - name: Run tsc in nextjs-app
+        run: pnpm --filter nextjs-app test:generated
+
+      - name: Run tsc in tanstack-router-app
+        run: pnpm --filter tanstack-router-app test:generated
 
       - name: Run biome
         run: pnpm biome check .
