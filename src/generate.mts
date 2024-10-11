@@ -47,6 +47,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
   await createClient(config);
   const source = await createSource({
     outputPath: openApiOutputPath,
+    client: formattedOptions.client,
     version,
     pageParam: formattedOptions.pageParam,
     nextPageParam: formattedOptions.nextPageParam,

@@ -29,7 +29,10 @@ function App() {
   const { data: notDefined } = useGetNotDefined<undefined>();
   const { mutate: mutateNotDefined } = usePostNotDefined<undefined>();
 
-  const { mutate: addPet } = useAddPet();
+  const { mutate: addPet, isError } = useAddPet();
+
+  const [text, setText] = useState<string>("");
+  const [errorText, setErrorText] = useState<string>();
 
   if (error)
     return (
@@ -44,18 +47,18 @@ function App() {
   return (
     <div className="App">
       <h1>Pet List</h1>
-      <ul>
-        {Array.isArray(data) &&
-          data?.map((pet, index) => (
-            <li key={`${pet.id}-${index}`}>{pet.name}</li>
-          ))}
-      </ul>
+      <input
+        type="text"
+        value={text}
+        placeholder="Type pet name"
+        onChange={(e) => setText(e.target.value)}
+      />
       <button
         type="button"
         onClick={() => {
           addPet(
             {
-              body: { name: "Duggy" },
+              body: { name: text },
             },
             {
               onSuccess: () => {
@@ -64,13 +67,31 @@ function App() {
                 });
                 console.log("success");
               },
-              onError: (error) => console.error(error.message),
+              onError: (error) => {
+                console.log(error.response);
+                setErrorText(`Error: ${error.response?.data.message}`);
+              },
             },
           );
         }}
       >
         Create a pet
       </button>
+      {isError && (
+        <p
+          style={{
+            color: "red",
+          }}
+        >
+          {errorText}
+        </p>
+      )}
+      <ul>
+        {Array.isArray(data) &&
+          data?.map((pet, index) => (
+            <li key={`${pet.id}-${index}`}>{pet.name}</li>
+          ))}
+      </ul>
       <div>
         <h1>Suspense Components</h1>
         <SuspenseParent />

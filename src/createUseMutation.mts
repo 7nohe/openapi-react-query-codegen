@@ -1,3 +1,4 @@
+import type { UserConfig } from "@hey-api/openapi-ts";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
@@ -37,7 +38,11 @@ export const createUseMutation = ({
   method,
   jsDoc,
   modelNames,
-}: FunctionDescription & { modelNames: string[] }) => {
+  client,
+}: FunctionDescription & {
+  modelNames: string[];
+  client: UserConfig["client"];
+}) => {
   const methodName = getNameFromVariable(method);
   const awaitedResponseDataType = generateAwaitedReturnType({
     methodName,
@@ -94,9 +99,20 @@ export const createUseMutation = ({
                 undefined,
                 TError,
                 undefined,
-                ts.factory.createTypeReferenceNode(
-                  `${capitalizeFirstLetter(methodName)}Error`,
-                ),
+                client === "@hey-api/client-axios"
+                  ? ts.factory.createTypeReferenceNode(
+                      ts.factory.createIdentifier("AxiosError"),
+                      [
+                        ts.factory.createTypeReferenceNode(
+                          ts.factory.createIdentifier(
+                            `${capitalizeFirstLetter(methodName)}Error`,
+                          ),
+                        ),
+                      ],
+                    )
+                  : ts.factory.createTypeReferenceNode(
+                      `${capitalizeFirstLetter(methodName)}Error`,
+                    ),
               ),
               ts.factory.createTypeParameterDeclaration(
                 undefined,

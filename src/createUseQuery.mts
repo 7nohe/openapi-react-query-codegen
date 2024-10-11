@@ -1,3 +1,4 @@
+import type { UserConfig } from "@hey-api/openapi-ts";
 import type { VariableDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
@@ -19,8 +20,10 @@ import { addJSDocToNode } from "./util.mjs";
 
 export const createApiResponseType = ({
   methodName,
+  client,
 }: {
   methodName: string;
+  client: UserConfig["client"];
 }) => {
   /** Awaited<ReturnType<typeof myClass.myMethod>> */
   const awaitedResponseDataType = ts.factory.createIndexedAccessTypeNode(
@@ -60,9 +63,20 @@ export const createApiResponseType = ({
     undefined,
     TError.text,
     undefined,
-    ts.factory.createTypeReferenceNode(
-      `${capitalizeFirstLetter(methodName)}Error`,
-    ),
+    client === "@hey-api/client-axios"
+      ? ts.factory.createTypeReferenceNode(
+          ts.factory.createIdentifier("AxiosError"),
+          [
+            ts.factory.createTypeReferenceNode(
+              ts.factory.createIdentifier(
+                `${capitalizeFirstLetter(methodName)}Error`,
+              ),
+            ),
+          ],
+        )
+      : ts.factory.createTypeReferenceNode(
+          `${capitalizeFirstLetter(methodName)}Error`,
+        ),
   );
 
   return {
@@ -507,14 +521,23 @@ export function createQueryHook({
   return hookExport;
 }
 
-export const createUseQuery = (
-  { method, jsDoc }: FunctionDescription,
-  pageParam: string,
-  nextPageParam: string,
-  initialPageParam: string,
-  paginatableMethods: string[],
-  modelNames: string[],
-) => {
+export const createUseQuery = ({
+  functionDescription: { method, jsDoc },
+  client,
+  pageParam,
+  nextPageParam,
+  initialPageParam,
+  paginatableMethods,
+  modelNames,
+}: {
+  functionDescription: FunctionDescription;
+  client: UserConfig["client"];
+  pageParam: string;
+  nextPageParam: string;
+  initialPageParam: string;
+  paginatableMethods: string[];
+  modelNames: string[];
+}) => {
   const methodName = getNameFromVariable(method);
   const queryKey = createQueryKeyFromMethod({ method });
   const {
@@ -523,6 +546,7 @@ export const createUseQuery = (
     responseErrorType,
   } = createApiResponseType({
     methodName,
+    client,
   });
 
   const requestParam = getRequestParamFromMethod(method, undefined, modelNames);
