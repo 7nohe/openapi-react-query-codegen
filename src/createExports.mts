@@ -99,16 +99,16 @@ export const createExports = ({
   );
 
   const allPostMutations = allPost.map((m) =>
-    createUseMutation({ ...m, modelNames, client }),
+    createUseMutation({ functionDescription: m, modelNames, client }),
   );
   const allPutMutations = allPut.map((m) =>
-    createUseMutation({ ...m, modelNames, client }),
+    createUseMutation({ functionDescription: m, modelNames, client }),
   );
   const allPatchMutations = allPatch.map((m) =>
-    createUseMutation({ ...m, modelNames, client }),
+    createUseMutation({ functionDescription: m, modelNames, client }),
   );
   const allDeleteMutations = allDelete.map((m) =>
-    createUseMutation({ ...m, modelNames, client }),
+    createUseMutation({ functionDescription: m, modelNames, client }),
   );
 
   const allQueries = [...allGetQueries];
@@ -127,9 +127,13 @@ export const createExports = ({
       queryKeyFn,
     ],
   );
-  const commonInMutations = allMutations.flatMap(({ mutationResult }) => [
-    mutationResult,
-  ]);
+  const commonInMutations = allMutations.flatMap(
+    ({ mutationResult, key, mutationKeyFn }) => [
+      mutationResult,
+      key,
+      mutationKeyFn,
+    ],
+  );
 
   const allCommon = [...commonInQueries, ...commonInMutations];
 

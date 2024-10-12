@@ -57,6 +57,12 @@ describe(fileName, () => {
       "UseFindPetByIdKeyFn",
       "useFindPaginatedPetsKey",
       "UseFindPaginatedPetsKeyFn",
+      "useAddPetKey",
+      "UseAddPetKeyFn",
+      "usePostNotDefinedKey",
+      "UsePostNotDefinedKeyFn",
+      "useDeletePetKey",
+      "UseDeletePetKeyFn",
     ]);
 
     const mainExports = exports.mainExports.map(
