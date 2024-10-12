@@ -1,3 +1,4 @@
+import type { UserConfig } from "@hey-api/openapi-ts";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { capitalizeFirstLetter } from "./common.mjs";
@@ -7,13 +8,21 @@ import { createUseMutation } from "./createUseMutation.mjs";
 import { createUseQuery } from "./createUseQuery.mjs";
 import type { Service } from "./service.mjs";
 
-export const createExports = (
-  service: Service,
-  project: Project,
-  pageParam: string,
-  nextPageParam: string,
-  initialPageParam: string,
-) => {
+export const createExports = ({
+  service,
+  client,
+  project,
+  pageParam,
+  nextPageParam,
+  initialPageParam,
+}: {
+  service: Service;
+  client: UserConfig["client"];
+  project: Project;
+  pageParam: string;
+  nextPageParam: string;
+  initialPageParam: string;
+}) => {
   const { methods } = service;
   const methodDataNames = methods.reduce(
     (acc, data) => {
@@ -72,14 +81,15 @@ export const createExports = (
   );
 
   const allGetQueries = allGet.map((m) =>
-    createUseQuery(
-      m,
+    createUseQuery({
+      functionDescription: m,
+      client,
       pageParam,
       nextPageParam,
       initialPageParam,
       paginatableMethods,
       modelNames,
-    ),
+    }),
   );
   const allPrefetchQueries = allGet.map((m) =>
     createPrefetchOrEnsure({ ...m, functionType: "prefetch", modelNames }),
@@ -89,16 +99,16 @@ export const createExports = (
   );
 
   const allPostMutations = allPost.map((m) =>
-    createUseMutation({ ...m, modelNames }),
+    createUseMutation({ ...m, modelNames, client }),
   );
   const allPutMutations = allPut.map((m) =>
-    createUseMutation({ ...m, modelNames }),
+    createUseMutation({ ...m, modelNames, client }),
   );
   const allPatchMutations = allPatch.map((m) =>
-    createUseMutation({ ...m, modelNames }),
+    createUseMutation({ ...m, modelNames, client }),
   );
   const allDeleteMutations = allDelete.map((m) =>
-    createUseMutation({ ...m, modelNames }),
+    createUseMutation({ ...m, modelNames, client }),
   );
 
   const allQueries = [...allGetQueries];

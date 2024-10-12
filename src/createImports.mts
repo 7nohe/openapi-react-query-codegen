@@ -1,4 +1,5 @@
 import { posix } from "node:path";
+import type { UserConfig } from "@hey-api/openapi-ts";
 import type { Project } from "ts-morph";
 import ts from "typescript";
 import { modelsFileName, serviceFileName } from "./constants.mjs";
@@ -7,8 +8,10 @@ const { join } = posix;
 
 export const createImports = ({
   project,
+  client,
 }: {
   project: Project;
+  client: UserConfig["client"];
 }) => {
   const modelsFile = project
     .getSourceFiles()
@@ -124,6 +127,26 @@ export const createImports = ({
         ),
         ts.factory.createStringLiteral(join("../requests/", modelsFileName)),
         undefined,
+      ),
+    );
+  }
+
+  if (client === "@hey-api/client-axios") {
+    imports.push(
+      ts.factory.createImportDeclaration(
+        undefined,
+        ts.factory.createImportClause(
+          false,
+          undefined,
+          ts.factory.createNamedImports([
+            ts.factory.createImportSpecifier(
+              false,
+              undefined,
+              ts.factory.createIdentifier("AxiosError"),
+            ),
+          ]),
+        ),
+        ts.factory.createStringLiteral("axios"),
       ),
     );
   }

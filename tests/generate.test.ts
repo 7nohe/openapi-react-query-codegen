@@ -18,10 +18,12 @@ describe("generate", () => {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
       client: "@hey-api/client-fetch",
-      lint: "eslint",
+      lint: "biome",
+      format: "biome",
       pageParam: "page",
       nextPageParam: "meta.next",
       initialPageParam: "initial",
+      operationId: true,
     };
     await generate(options, "1.0.0");
   });

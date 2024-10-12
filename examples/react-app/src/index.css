@@ -68,3 +68,20 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+input {
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  padding: 0.5em;
+  font-size: 1em;
+  font-family: inherit;
+  background-color: #fff;
+  color: #000;
+  transition: border-color 0.25s;
+  margin: 1em;
+}
+
+input:focus {
+  border-color: #646cff;
+  outline: none;
+}

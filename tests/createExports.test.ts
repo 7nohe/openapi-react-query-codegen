@@ -17,7 +17,14 @@ describe(fileName, () => {
     });
     project.addSourceFilesAtPaths(path.join(outputPath(fileName), "**", "*"));
     const service = await getServices(project);
-    const exports = createExports(service, "page", "nextPage", "initial");
+    const exports = createExports({
+      service,
+      project,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "initial",
+      client: "@hey-api/client-fetch",
+    });
 
     const commonTypes = exports.allCommon
       .filter((c) => c.kind === SyntaxKind.TypeAliasDeclaration)

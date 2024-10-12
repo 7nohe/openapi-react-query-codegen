@@ -1,3 +1,4 @@
+import type { UserConfig } from "@hey-api/openapi-ts";
 import type { VariableDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
@@ -19,8 +20,10 @@ import { addJSDocToNode } from "./util.mjs";
 
 export const createApiResponseType = ({
   methodName,
+  client,
 }: {
   methodName: string;
+  client: UserConfig["client"];
 }) => {
   /** Awaited<ReturnType<typeof myClass.myMethod>> */
   const awaitedResponseDataType = ts.factory.createIndexedAccessTypeNode(
@@ -56,6 +59,26 @@ export const createApiResponseType = ({
     ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name)),
   );
 
+  const responseErrorType = ts.factory.createTypeParameterDeclaration(
+    undefined,
+    TError.text,
+    undefined,
+    client === "@hey-api/client-axios"
+      ? ts.factory.createTypeReferenceNode(
+          ts.factory.createIdentifier("AxiosError"),
+          [
+            ts.factory.createTypeReferenceNode(
+              ts.factory.createIdentifier(
+                `${capitalizeFirstLetter(methodName)}Error`,
+              ),
+            ),
+          ],
+        )
+      : ts.factory.createTypeReferenceNode(
+          `${capitalizeFirstLetter(methodName)}Error`,
+        ),
+  );
+
   return {
     /**
      * DefaultResponseDataType
@@ -69,6 +92,12 @@ export const createApiResponseType = ({
      * MyClassMethodDefaultResponse
      */
     responseDataType,
+    /**
+     * ErrorDataType
+     *
+     * MyClassMethodError
+     */
+    responseErrorType,
   };
 };
 
@@ -216,6 +245,7 @@ export function createQueryHook({
   queryString,
   suffix,
   responseDataType,
+  responseErrorType,
   requestParams,
   method,
   pageParam,
@@ -225,6 +255,7 @@ export function createQueryHook({
   queryString: "useSuspenseQuery" | "useQuery" | "useInfiniteQuery";
   suffix: string;
   responseDataType: ts.TypeParameterDeclaration;
+  responseErrorType: ts.TypeParameterDeclaration;
   requestParams: ts.ParameterDeclaration[];
   method: VariableDeclaration;
   pageParam?: string;
@@ -276,12 +307,7 @@ export function createQueryHook({
                     ),
                   )
                 : responseDataType,
-              ts.factory.createTypeParameterDeclaration(
-                undefined,
-                TError,
-                undefined,
-                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
-              ),
+              responseErrorType,
               ts.factory.createTypeParameterDeclaration(
                 undefined,
                 "TQueryKey",
@@ -495,20 +521,33 @@ export function createQueryHook({
   return hookExport;
 }
 
-export const createUseQuery = (
-  { method, jsDoc }: FunctionDescription,
-  pageParam: string,
-  nextPageParam: string,
-  initialPageParam: string,
-  paginatableMethods: string[],
-  modelNames: string[],
-) => {
+export const createUseQuery = ({
+  functionDescription: { method, jsDoc },
+  client,
+  pageParam,
+  nextPageParam,
+  initialPageParam,
+  paginatableMethods,
+  modelNames,
+}: {
+  functionDescription: FunctionDescription;
+  client: UserConfig["client"];
+  pageParam: string;
+  nextPageParam: string;
+  initialPageParam: string;
+  paginatableMethods: string[];
+  modelNames: string[];
+}) => {
   const methodName = getNameFromVariable(method);
   const queryKey = createQueryKeyFromMethod({ method });
-  const { apiResponse: defaultApiResponse, responseDataType } =
-    createApiResponseType({
-      methodName,
-    });
+  const {
+    apiResponse: defaultApiResponse,
+    responseDataType,
+    responseErrorType,
+  } = createApiResponseType({
+    methodName,
+    client,
+  });
 
   const requestParam = getRequestParamFromMethod(method, undefined, modelNames);
   const infiniteRequestParam = getRequestParamFromMethod(
@@ -523,6 +562,7 @@ export const createUseQuery = (
     queryString: "useQuery",
     suffix: "",
     responseDataType,
+    responseErrorType,
     requestParams,
     method,
   });
@@ -531,6 +571,7 @@ export const createUseQuery = (
     queryString: "useSuspenseQuery",
     suffix: "Suspense",
     responseDataType,
+    responseErrorType,
     requestParams,
     method,
   });
@@ -541,6 +582,7 @@ export const createUseQuery = (
         queryString: "useInfiniteQuery",
         suffix: "Infinite",
         responseDataType,
+        responseErrorType,
         requestParams: infiniteRequestParam ? [infiniteRequestParam] : [],
         method,
         pageParam,
