@@ -8,9 +8,15 @@ import {
   TData,
   TError,
   capitalizeFirstLetter,
+  createQueryKeyExport,
+  createQueryKeyFnExport,
   getNameFromVariable,
+  getQueryKeyFnName,
   getVariableArrowFunctionParameters,
+  queryKeyConstraint,
+  queryKeyGenericType,
 } from "./common.mjs";
+import { createQueryKeyFromMethod } from "./createUseQuery.mjs";
 import { addJSDocToNode } from "./util.mjs";
 
 /**
@@ -35,15 +41,16 @@ function generateAwaitedReturnType({ methodName }: { methodName: string }) {
 }
 
 export const createUseMutation = ({
-  method,
-  jsDoc,
+  functionDescription: { method, jsDoc },
   modelNames,
   client,
-}: FunctionDescription & {
+}: {
+  functionDescription: FunctionDescription;
   modelNames: string[];
   client: UserConfig["client"];
 }) => {
   const methodName = getNameFromVariable(method);
+  const mutationKey = createQueryKeyFromMethod({ method });
   const awaitedResponseDataType = generateAwaitedReturnType({
     methodName,
   });
@@ -57,6 +64,7 @@ export const createUseMutation = ({
     awaitedResponseDataType,
   );
 
+  // `TData = Common.AddPetMutationResult`
   const responseDataType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TData,
@@ -64,6 +72,28 @@ export const createUseMutation = ({
     ts.factory.createTypeReferenceNode(
       BuildCommonTypeName(mutationResult.name),
     ),
+  );
+
+  // @hey-api/client-axios -> `TError = AxiosError<AddPetError>`
+  // @hey-api/client-fetch -> `TError = AddPetError`
+  const responseErrorType = ts.factory.createTypeParameterDeclaration(
+    undefined,
+    TError,
+    undefined,
+    client === "@hey-api/client-axios"
+      ? ts.factory.createTypeReferenceNode(
+          ts.factory.createIdentifier("AxiosError"),
+          [
+            ts.factory.createTypeReferenceNode(
+              ts.factory.createIdentifier(
+                `${capitalizeFirstLetter(methodName)}Error`,
+              ),
+            ),
+          ],
+        )
+      : ts.factory.createTypeReferenceNode(
+          `${capitalizeFirstLetter(methodName)}Error`,
+        ),
   );
 
   const methodParameters =
@@ -95,24 +125,16 @@ export const createUseMutation = ({
             undefined,
             ts.factory.createNodeArray([
               responseDataType,
+              responseErrorType,
               ts.factory.createTypeParameterDeclaration(
                 undefined,
-                TError,
-                undefined,
-                client === "@hey-api/client-axios"
-                  ? ts.factory.createTypeReferenceNode(
-                      ts.factory.createIdentifier("AxiosError"),
-                      [
-                        ts.factory.createTypeReferenceNode(
-                          ts.factory.createIdentifier(
-                            `${capitalizeFirstLetter(methodName)}Error`,
-                          ),
-                        ),
-                      ],
-                    )
-                  : ts.factory.createTypeReferenceNode(
-                      `${capitalizeFirstLetter(methodName)}Error`,
-                    ),
+                "TQueryKey",
+                queryKeyConstraint,
+                ts.factory.createArrayTypeNode(
+                  ts.factory.createKeywordTypeNode(
+                    ts.SyntaxKind.UnknownKeyword,
+                  ),
+                ),
               ),
               ts.factory.createTypeParameterDeclaration(
                 undefined,
@@ -122,6 +144,13 @@ export const createUseMutation = ({
               ),
             ]),
             [
+              ts.factory.createParameterDeclaration(
+                undefined,
+                undefined,
+                ts.factory.createIdentifier("mutationKey"),
+                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                queryKeyGenericType,
+              ),
               ts.factory.createParameterDeclaration(
                 undefined,
                 undefined,
@@ -139,9 +168,14 @@ export const createUseMutation = ({
                         ts.factory.createTypeReferenceNode(TContext),
                       ],
                     ),
-                    ts.factory.createLiteralTypeNode(
-                      ts.factory.createStringLiteral("mutationFn"),
-                    ),
+                    ts.factory.createUnionTypeNode([
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("mutationKey"),
+                      ),
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("mutationFn"),
+                      ),
+                    ]),
                   ],
                 ),
                 undefined,
@@ -159,6 +193,14 @@ export const createUseMutation = ({
               ],
               [
                 ts.factory.createObjectLiteralExpression([
+                  ts.factory.createPropertyAssignment(
+                    ts.factory.createIdentifier("mutationKey"),
+                    ts.factory.createCallExpression(
+                      BuildCommonTypeName(getQueryKeyFnName(mutationKey)),
+                      undefined,
+                      [ts.factory.createIdentifier("mutationKey")],
+                    ),
+                  ),
                   ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("mutationFn"),
                     // (clientOptions) => addPet(clientOptions).then(response => response.data as TData) as unknown as Promise<TData>
@@ -214,8 +256,17 @@ export const createUseMutation = ({
 
   const hookWithJsDoc = addJSDocToNode(exportHook, jsDoc);
 
+  const mutationKeyExport = createQueryKeyExport({
+    methodName,
+    queryKey: mutationKey,
+  });
+
+  const mutationKeyFn = createQueryKeyFnExport(mutationKey, method, "mutation");
+
   return {
     mutationResult,
+    key: mutationKeyExport,
     mutationHook: hookWithJsDoc,
+    mutationKeyFn,
   };
 };

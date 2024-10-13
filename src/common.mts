@@ -200,3 +200,168 @@ export function buildRequestsOutputPath(outputPath: string) {
 export function buildQueriesOutputPath(outputPath: string) {
   return path.join(outputPath, queriesOutputPath);
 }
+
+export function getQueryKeyFnName(queryKey: string) {
+  return `${capitalizeFirstLetter(queryKey)}Fn`;
+}
+
+/**
+ * Create QueryKey/MutationKey exports
+ */
+export function createQueryKeyExport({
+  methodName,
+  queryKey,
+}: {
+  methodName: string;
+  queryKey: string;
+}) {
+  return ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(queryKey),
+          undefined,
+          undefined,
+          ts.factory.createStringLiteral(
+            `${capitalizeFirstLetter(methodName)}`,
+          ),
+        ),
+      ],
+      ts.NodeFlags.Const,
+    ),
+  );
+}
+
+export function createQueryKeyFnExport(
+  queryKey: string,
+  method: VariableDeclaration,
+  type: "query" | "mutation" = "query",
+) {
+  // Mutation keys don't require clientOptions
+  const params = type === "query" ? getRequestParamFromMethod(method) : null;
+
+  // override key is used to allow the user to override the the queryKey values
+  const overrideKey = ts.factory.createParameterDeclaration(
+    undefined,
+    undefined,
+    ts.factory.createIdentifier(type === "query" ? "queryKey" : "mutationKey"),
+    QuestionToken,
+    ts.factory.createTypeReferenceNode("Array<unknown>", []),
+  );
+
+  return ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(getQueryKeyFnName(queryKey)),
+          undefined,
+          undefined,
+          ts.factory.createArrowFunction(
+            undefined,
+            undefined,
+            params ? [params, overrideKey] : [overrideKey],
+            undefined,
+            EqualsOrGreaterThanToken,
+            type === "query"
+              ? queryKeyFn(queryKey, method)
+              : mutationKeyFn(queryKey),
+          ),
+        ),
+      ],
+      ts.NodeFlags.Const,
+    ),
+  );
+}
+
+function queryKeyFn(
+  queryKey: string,
+  method: VariableDeclaration,
+): ts.Expression {
+  return ts.factory.createArrayLiteralExpression(
+    [
+      ts.factory.createIdentifier(queryKey),
+      ts.factory.createSpreadElement(
+        ts.factory.createParenthesizedExpression(
+          ts.factory.createBinaryExpression(
+            ts.factory.createIdentifier("queryKey"),
+            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+            getVariableArrowFunctionParameters(method)
+              ? // [...clientOptions]
+                ts.factory.createArrayLiteralExpression([
+                  ts.factory.createIdentifier("clientOptions"),
+                ])
+              : // []
+                ts.factory.createArrayLiteralExpression(),
+          ),
+        ),
+      ),
+    ],
+    false,
+  );
+}
+
+function mutationKeyFn(mutationKey: string): ts.Expression {
+  return ts.factory.createArrayLiteralExpression(
+    [
+      ts.factory.createIdentifier(mutationKey),
+      ts.factory.createSpreadElement(
+        ts.factory.createParenthesizedExpression(
+          ts.factory.createBinaryExpression(
+            ts.factory.createIdentifier("mutationKey"),
+            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+            ts.factory.createArrayLiteralExpression(),
+          ),
+        ),
+      ),
+    ],
+    false,
+  );
+}
+
+export function getRequestParamFromMethod(
+  method: VariableDeclaration,
+  pageParam?: string,
+  modelNames: string[] = [],
+) {
+  if (!getVariableArrowFunctionParameters(method).length) {
+    return null;
+  }
+  const methodName = getNameFromVariable(method);
+
+  const params = getVariableArrowFunctionParameters(method).flatMap((param) => {
+    const paramNodes = extractPropertiesFromObjectParam(param);
+
+    return paramNodes
+      .filter((p) => p.name !== pageParam)
+      .map((refParam) => ({
+        name: refParam.name,
+        // TODO: Client<Request, Response, unknown, RequestOptions> -> Client<Request, Response, unknown>
+        typeName: getShortType(refParam.type?.getText() ?? ""),
+        optional: refParam.optional,
+      }));
+  });
+
+  const areAllPropertiesOptional = params.every((param) => param.optional);
+
+  return ts.factory.createParameterDeclaration(
+    undefined,
+    undefined,
+    ts.factory.createIdentifier("clientOptions"),
+    undefined,
+    ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("Options"), [
+      ts.factory.createTypeReferenceNode(
+        modelNames.includes(`${capitalizeFirstLetter(methodName)}Data`)
+          ? `${capitalizeFirstLetter(methodName)}Data`
+          : "unknown",
+      ),
+      ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("true")),
+    ]),
+    // if all params are optional, we create an empty object literal
+    // so the hook can be called without any parameters
+    areAllPropertiesOptional
+      ? ts.factory.createObjectLiteralExpression()
+      : undefined,
+  );
+}

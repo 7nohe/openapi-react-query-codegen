@@ -4,13 +4,13 @@ import {
   BuildCommonTypeName,
   EqualsOrGreaterThanToken,
   getNameFromVariable,
+  getQueryKeyFnName,
+  getRequestParamFromMethod,
   getVariableArrowFunctionParameters,
 } from "./common.mjs";
 import type { FunctionDescription } from "./common.mjs";
 import {
   createQueryKeyFromMethod,
-  getQueryKeyFnName,
-  getRequestParamFromMethod,
   hookNameFromMethod,
 } from "./createUseQuery.mjs";
 import { addJSDocToNode } from "./util.mjs";

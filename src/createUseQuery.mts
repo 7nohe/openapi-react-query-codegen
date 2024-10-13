@@ -4,13 +4,14 @@ import ts from "typescript";
 import {
   BuildCommonTypeName,
   EqualsOrGreaterThanToken,
-  QuestionToken,
   TData,
   TError,
   capitalizeFirstLetter,
-  extractPropertiesFromObjectParam,
+  createQueryKeyExport,
+  createQueryKeyFnExport,
   getNameFromVariable,
-  getShortType,
+  getQueryKeyFnName,
+  getRequestParamFromMethod,
   getVariableArrowFunctionParameters,
   queryKeyConstraint,
   queryKeyGenericType,
@@ -18,7 +19,7 @@ import {
 import type { FunctionDescription } from "./common.mjs";
 import { addJSDocToNode } from "./util.mjs";
 
-export const createApiResponseType = ({
+const createApiResponseType = ({
   methodName,
   client,
 }: {
@@ -101,59 +102,12 @@ export const createApiResponseType = ({
   };
 };
 
-export function getRequestParamFromMethod(
-  method: VariableDeclaration,
-  pageParam?: string,
-  modelNames: string[] = [],
-) {
-  if (!getVariableArrowFunctionParameters(method).length) {
-    return null;
-  }
-  const methodName = getNameFromVariable(method);
-
-  const params = getVariableArrowFunctionParameters(method).flatMap((param) => {
-    const paramNodes = extractPropertiesFromObjectParam(param);
-
-    return paramNodes
-      .filter((p) => p.name !== pageParam)
-      .map((refParam) => ({
-        name: refParam.name,
-        // TODO: Client<Request, Response, unknown, RequestOptions> -> Client<Request, Response, unknown>
-        typeName: getShortType(refParam.type?.getText() ?? ""),
-        optional: refParam.optional,
-      }));
-  });
-
-  const areAllPropertiesOptional = params.every((param) => param.optional);
-
-  return ts.factory.createParameterDeclaration(
-    undefined,
-    undefined,
-    // options
-    ts.factory.createIdentifier("clientOptions"),
-    undefined,
-    ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("Options"), [
-      ts.factory.createTypeReferenceNode(
-        modelNames.includes(`${capitalizeFirstLetter(methodName)}Data`)
-          ? `${capitalizeFirstLetter(methodName)}Data`
-          : "unknown",
-      ),
-      ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("true")),
-    ]),
-    // if all params are optional, we create an empty object literal
-    // so the hook can be called without any parameters
-    areAllPropertiesOptional
-      ? ts.factory.createObjectLiteralExpression()
-      : undefined,
-  );
-}
-
 /**
  * Return Type
  *
  * export const classNameMethodNameQueryResult<TData = MyClassMethodDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
  */
-export function createReturnTypeExport({
+function createReturnTypeExport({
   methodName,
   defaultApiResponse,
 }: {
@@ -189,34 +143,6 @@ export function createReturnTypeExport({
   );
 }
 
-/**
- * QueryKey
- */
-export function createQueryKeyExport({
-  methodName,
-  queryKey,
-}: {
-  methodName: string;
-  queryKey: string;
-}) {
-  return ts.factory.createVariableStatement(
-    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createVariableDeclarationList(
-      [
-        ts.factory.createVariableDeclaration(
-          ts.factory.createIdentifier(queryKey),
-          undefined,
-          undefined,
-          ts.factory.createStringLiteral(
-            `${capitalizeFirstLetter(methodName)}`,
-          ),
-        ),
-      ],
-      ts.NodeFlags.Const,
-    ),
-  );
-}
-
 export function hookNameFromMethod({
   method,
 }: {
@@ -241,7 +167,7 @@ export function createQueryKeyFromMethod({
  * @param queryString The type of query to use from react-query
  * @param suffix The suffix to append to the hook name
  */
-export function createQueryHook({
+function createQueryHook({
   queryString,
   suffix,
   responseDataType,
@@ -619,72 +545,6 @@ export const createUseQuery = ({
     queryKeyFn,
   };
 };
-
-export function getQueryKeyFnName(queryKey: string) {
-  return `${capitalizeFirstLetter(queryKey)}Fn`;
-}
-
-function createQueryKeyFnExport(queryKey: string, method: VariableDeclaration) {
-  const params = getRequestParamFromMethod(method);
-
-  // override key is used to allow the user to override the the queryKey values
-  const overrideKey = ts.factory.createParameterDeclaration(
-    undefined,
-    undefined,
-    ts.factory.createIdentifier("queryKey"),
-    QuestionToken,
-    ts.factory.createTypeReferenceNode("Array<unknown>", []),
-  );
-
-  return ts.factory.createVariableStatement(
-    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createVariableDeclarationList(
-      [
-        ts.factory.createVariableDeclaration(
-          ts.factory.createIdentifier(getQueryKeyFnName(queryKey)),
-          undefined,
-          undefined,
-          ts.factory.createArrowFunction(
-            undefined,
-            undefined,
-            params ? [params, overrideKey] : [overrideKey],
-            undefined,
-            EqualsOrGreaterThanToken,
-            queryKeyFn(queryKey, method),
-          ),
-        ),
-      ],
-      ts.NodeFlags.Const,
-    ),
-  );
-}
-
-function queryKeyFn(
-  queryKey: string,
-  method: VariableDeclaration,
-): ts.Expression {
-  return ts.factory.createArrayLiteralExpression(
-    [
-      ts.factory.createIdentifier(queryKey),
-      ts.factory.createSpreadElement(
-        ts.factory.createParenthesizedExpression(
-          ts.factory.createBinaryExpression(
-            ts.factory.createIdentifier("queryKey"),
-            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
-            getVariableArrowFunctionParameters(method)
-              ? // [...clientOptions]
-                ts.factory.createArrayLiteralExpression([
-                  ts.factory.createIdentifier("clientOptions"),
-                ])
-              : // []
-                ts.factory.createArrayLiteralExpression(),
-          ),
-        ),
-      ),
-    ],
-    false,
-  );
-}
 
 function createInfiniteQueryParams(
   pageParam?: string,
