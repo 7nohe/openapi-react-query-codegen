@@ -14,7 +14,7 @@ export type LimitedUserConfig = {
   client?: "@hey-api/client-fetch" | "@hey-api/client-axios";
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
-  operationId?: boolean;
+  noOperationId?: boolean;
   enums?: "javascript" | "typescript" | false;
   useDateType?: boolean;
   debug?: boolean;
@@ -58,7 +58,10 @@ async function setupProgram() {
         "Process output folder with linter?",
       ).choices(["biome", "eslint"]),
     )
-    .option("--operationId", "Use operation ID to generate operation names?")
+    .option(
+      "--noOperationId",
+      "Do not use operationId to generate operation names",
+    )
     .addOption(
       new Option(
         "--enums <value>",

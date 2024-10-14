@@ -1,0 +1,148 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "api",
+    "description": "",
+    "license": {
+      "name": ""
+    },
+    "version": "0.0.0"
+  },
+  "paths": {
+    "/api/v1/boards/export": {
+      "get": {
+        "tags": ["boards"],
+        "summary": "Returns an export of a collection of boards.",
+        "operationId": "export",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name of the resultant file (including extension).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "boards[]",
+            "in": "query",
+            "description": "The boards to be included in this export.",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BoardId"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{file}/export": {
+      "get": {
+        "tags": ["documents"],
+        "summary": "Exports the document as a PDF with annotations included.",
+        "operationId": "export",
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FileId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tags/export": {
+      "get": {
+        "tags": ["tags"],
+        "summary": "Returns an export of a collection of tags.",
+        "operationId": "export",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name of the resultant file (including extension).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags[]",
+            "in": "query",
+            "description": "The tags to be included in this export.",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/TagId"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BoardId": {
+        "type": "string",
+        "format": "base58 encoded UUID",
+        "example": "CBD7wDFfZFjQfkvZ5BfC9"
+      },
+      "FileId": {
+        "type": "string",
+        "format": "base58 encoded UUID",
+        "example": "CBD7wDFfZFjQfkvZ5BfC9"
+      },
+      "TagId": {
+        "type": "string",
+        "format": "base58 encoded UUID",
+        "example": "CBD7wDFfZFjQfkvZ5BfC9"
+      }
+    }
+  }
+}
