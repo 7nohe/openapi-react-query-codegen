@@ -34,6 +34,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
       export: true,
       response: formattedOptions.serviceResponse,
       asClass: true,
+      operationId: formattedOptions.operationId ?? false,
     },
     types: {
       dates: formattedOptions.useDateType,
