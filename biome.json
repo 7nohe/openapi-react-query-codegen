@@ -12,7 +12,8 @@
       "examples/nextjs-app/openapi",
       "examples/nextjs-app/.next",
       "examples/tanstack-router-app/openapi",
-      "examples/tanstack-router-app/src/routeTree.gen.ts"
+      "examples/tanstack-router-app/src/routeTree.gen.ts",
+      "docs/.astro"
     ]
   },
   "linter": {
