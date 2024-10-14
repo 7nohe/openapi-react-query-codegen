@@ -38,54 +38,54 @@ async function setupProgram() {
     .description("Generate React Query code based on OpenAPI")
     .requiredOption(
       "-i, --input <value>",
-      "OpenAPI specification, can be a path, url or string content (required)",
+      "OpenAPI specification, can be a path, url or string content (required)"
     )
     .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
         .choices(["@hey-api/client-fetch", "@hey-api/client-axios"])
-        .default("@hey-api/client-fetch"),
+        .default("@hey-api/client-fetch")
     )
     .addOption(
       new Option(
         "--format <value>",
-        "Process output folder with formatter?",
-      ).choices(["biome", "prettier"]),
+        "Process output folder with formatter?"
+      ).choices(["biome", "prettier"])
     )
     .addOption(
       new Option(
         "--lint <value>",
-        "Process output folder with linter?",
-      ).choices(["biome", "eslint"]),
+        "Process output folder with linter?"
+      ).choices(["biome", "eslint"])
     )
     .option("--operationId", "Use operation ID to generate operation names?")
     .addOption(
       new Option(
         "--enums <value>",
-        "Generate JavaScript objects from enum definitions?",
-      ).choices(["javascript", "typescript"]),
+        "Generate JavaScript objects from enum definitions?"
+      ).choices(["javascript", "typescript"])
     )
     .option(
       "--useDateType",
-      "Use Date type instead of string for date types for models, this will not convert the data to a Date object",
+      "Use Date type instead of string for date types for models, this will not convert the data to a Date object"
     )
     .option("--debug", "Run in debug mode?")
     .option("--noSchemas", "Disable generating JSON schemas")
     .addOption(
       new Option(
         "--schemaType <value>",
-        "Type of JSON schema [Default: 'json']",
-      ).choices(["form", "json"]),
+        "Type of JSON schema [Default: 'json']"
+      ).choices(["form", "json"])
     )
     .option(
       "--pageParam <value>",
       "Name of the query parameter used for pagination",
-      "page",
+      "page"
     )
     .option(
       "--nextPageParam <value>",
       "Name of the response parameter used for next page",
-      "nextPage",
+      "nextPage"
     )
     .option("--initialPageParam <value>", "Initial page value to query", "1")
     .parse();
