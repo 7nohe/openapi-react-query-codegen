@@ -30,7 +30,6 @@ export async function generate(options: LimitedUserConfig, version: string) {
     },
     services: {
       export: true,
-      response: formattedOptions.serviceResponse,
       asClass: false,
       operationId:
         formattedOptions.operationId !== undefined

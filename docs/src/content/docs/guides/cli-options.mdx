@@ -1,0 +1,91 @@
+---
+title: CLI Options
+description: CLI options for OpenAPI React Query Codegen.
+---
+
+## Options
+
+### -i, --input
+
+The input file path of the OpenAPI schema file. This is a required option.
+
+### -o, --output \<value\>
+
+The output directory path for the generated files. The default value is `openapi`.
+
+### --pageParam \<value\>
+
+Name of the query parameter used for pagination (infinite query). The default value is `page`.
+
+### --nextPageParam \<value\>
+
+Name of the response parameter used for next page. The default value is `nextPage`.
+
+## --initialPageParam \<value\>
+
+Initial page value to infinite query. The default value is `1`.
+
+## Client Options
+
+Due to the generated clients (Under the `openapi/requests` directory) being based on Hey API, you can pass some options to the Hey API client generator.
+
+You can find what options are passed to the Hey API client generator in the [generate](https://github.com/7nohe/openapi-react-query-codegen/blob/main/src/generate.mts) function.
+
+### -c, --client \<value\>
+
+The HTTP client to use for the generated hooks. The default value is `@hey-api/client-fetch`.
+The available options are:
+
+- `@hey-api/client-fetch`
+- `@hey-api/client-axios`
+
+More details about the clients can be found in [Hey API Documentation](https://heyapi.vercel.app/openapi-ts/clients.html)
+
+### --format \<value\>
+
+Process output folder with formatter? The default value is `false`.
+The available options are:
+
+- `biome`
+- `prettier`
+
+### --lint \<value\>
+
+Process output folder with linter? The default value is `false`.
+The available options are:
+
+- `biome`
+- `eslint`
+
+### --operationId
+
+Use operation ID to generate operation names? The default value is `true`.
+
+### --enums \<value\>
+
+Generate enum definitions? The default value is `false`.
+The available options are:
+
+- `javascript`
+- `typescript`
+
+### --useDateType
+
+Use Date type instead of string for date. The default value is `false`.
+
+### --debug
+
+Run in debug mode? The default value is `false`.
+
+### --noSchemas
+
+Disable generating JSON schemas. The default value is `false`.
+
+### --schemaTypes \<value\>
+
+Type of JSON schema. The default value is `json`.
+The available options are:
+
+- `json`
+- `form`
+
