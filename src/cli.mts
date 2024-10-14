@@ -11,14 +11,12 @@ const program = new Command();
 export type LimitedUserConfig = {
   input: string;
   output: string;
-  client?: "angular" | "axios" | "fetch" | "node" | "xhr";
-  request?: string;
+  client?: "@hey-api/client-fetch" | "@hey-api/client-axios";
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
   operationId?: boolean;
   serviceResponse?: "body" | "response";
-  base?: string;
-  enums?: "javascript" | "typescript" | "typescript+namespace";
+  enums?: "javascript" | "typescript" | false;
   useDateType?: boolean;
   debug?: boolean;
   noSchemas?: boolean;
@@ -46,10 +44,9 @@ async function setupProgram() {
     .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
-        .choices(["angular", "axios", "fetch", "node", "xhr"])
-        .default("fetch"),
+        .choices(["@hey-api/client-fetch", "@hey-api/client-axios"])
+        .default("@hey-api/client-fetch"),
     )
-    .option("--request <value>", "Path to custom request file")
     .addOption(
       new Option(
         "--format <value>",
@@ -71,15 +68,11 @@ async function setupProgram() {
         .choices(["body", "response"])
         .default("body"),
     )
-    .option(
-      "--base <value>",
-      "Manually set base in OpenAPI config instead of inferring from server value",
-    )
     .addOption(
       new Option(
         "--enums <value>",
         "Generate JavaScript objects from enum definitions?",
-      ).choices(["javascript", "typescript", "typescript+namespace"]),
+      ).choices(["javascript", "typescript"]),
     )
     .option(
       "--useDateType",
@@ -103,11 +96,7 @@ async function setupProgram() {
       "Name of the response parameter used for next page",
       "nextPage",
     )
-    .option(
-      "--initialPageParam <value>",
-      "Initial page value to query",
-      "initialPageParam",
-    )
+    .option("--initialPageParam <value>", "Initial page value to query", "1")
     .parse();
 
   const options = program.opts<LimitedUserConfig>();

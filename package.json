@@ -1,7 +1,39 @@
 {
   "name": "@7nohe/openapi-react-query-codegen",
-  "version": "1.6.1",
+  "version": "2.0.0",
   "description": "OpenAPI React Query Codegen",
+  "bin": {
+    "openapi-rq": "dist/cli.mjs"
+  },
+  "private": false,
+  "type": "module",
+  "workspaces": ["examples/*"],
+  "scripts": {
+    "build": "rimraf dist && tsc -p tsconfig.json",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "preview:react": "npm run build && npm -C examples/react-app run generate:api",
+    "preview:nextjs": "npm run build && npm -C examples/nextjs-app run generate:api",
+    "preview:tanstack-router": "npm run build && npm -C examples/tanstack-router-app run generate:api",
+    "prepublishOnly": "npm run build",
+    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
+    "test": "vitest --coverage.enabled true",
+    "snapshot": "vitest --update"
+  },
+  "exports": [
+    {
+      "import": "./dist/generate.mjs",
+      "require": "./dist/generate.mjs",
+      "types": "./dist/generate.d.mts"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git"
+  },
+  "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
+  "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
+  "files": ["dist"],
   "keywords": [
     "codegen",
     "react-query",
@@ -12,50 +44,28 @@
     "openapi-typescript-codegen",
     "@hey-api/openapi-ts"
   ],
-  "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
-  "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git"
-  },
   "license": "MIT",
   "author": "Daiki Urata (@7nohe)",
-  "type": "module",
-  "bin": {
-    "openapi-rq": "dist/cli.mjs"
-  },
-  "files": ["dist"],
-  "workspaces": ["examples/*"],
-  "scripts": {
-    "build": "rimraf dist && tsc -p tsconfig.json",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "prepublishOnly": "npm run build",
-    "preview": "npm run build && npm -C examples/react-app run generate:api",
-    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
-    "snapshot": "vitest --update",
-    "test": "vitest --coverage.enabled true"
-  },
   "dependencies": {
-    "@hey-api/openapi-ts": "0.52.0"
+    "@hey-api/client-fetch": "0.4.0",
+    "@hey-api/openapi-ts": "0.53.8",
+    "cross-spawn": "^7.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.7.2",
-    "@types/node": "^20.10.6",
+    "@types/cross-spawn": "^6.0.6",
+    "@types/node": "^22.7.4",
     "@vitest/coverage-v8": "^1.5.0",
     "commander": "^12.0.0",
-    "glob": "^10.3.10",
     "lefthook": "^1.6.10",
     "rimraf": "^5.0.5",
     "ts-morph": "^23.0.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "vitest": "^1.5.0"
   },
   "peerDependencies": {
     "commander": "12.x",
-    "glob": "10.x",
-    "ts-morph": "22.x",
+    "ts-morph": "23.x",
     "typescript": "5.x"
   },
   "packageManager": "pnpm@9.6.0",

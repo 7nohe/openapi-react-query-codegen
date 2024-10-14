@@ -3,11 +3,12 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import type {
   ClassDeclaration,
-  MethodDeclaration,
   ParameterDeclaration,
   SourceFile,
   Type,
+  VariableDeclaration,
 } from "ts-morph";
+import { ArrowFunction } from "ts-morph";
 import ts from "typescript";
 import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
@@ -38,18 +39,30 @@ export const lowercaseFirstLetter = (str: string) => {
   return str.charAt(0).toLowerCase() + str.slice(1);
 };
 
-export const getNameFromMethod = (method: MethodDeclaration) => {
-  const methodName = method.getName();
-  if (!methodName) {
-    throw new Error("Method name not found");
+export const getVariableArrowFunctionParameters = (
+  variable: VariableDeclaration,
+) => {
+  const initializer = variable.getInitializer();
+  if (!initializer) {
+    throw new Error("Initializer not found");
   }
-  return methodName;
+  if (!ArrowFunction.isArrowFunction(initializer)) {
+    throw new Error("Initializer is not an arrow function");
+  }
+  return initializer.getParameters();
 };
 
-export type MethodDescription = {
-  className: string;
+export const getNameFromVariable = (variable: VariableDeclaration) => {
+  const variableName = variable.getName();
+  if (!variableName) {
+    throw new Error("Variable name not found");
+  }
+  return variableName;
+};
+
+export type FunctionDescription = {
   node: SourceFile;
-  method: MethodDeclaration;
+  method: VariableDeclaration;
   methodBlock: ts.Block;
   httpMethodName: string;
   jsDoc: string;
@@ -98,11 +111,14 @@ export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
     .getNode()
     .getType()
     .getProperties()
-    .map((prop) => ({
-      name: prop.getName(),
-      optional: prop.isOptional(),
-      type: prop.getValueDeclaration()?.getType(),
-    }));
+    .filter((prop) => prop.getValueDeclaration()?.getType())
+    .map((prop) => {
+      return {
+        name: prop.getName(),
+        optional: prop.isOptional(),
+        type: prop.getValueDeclaration()?.getType(),
+      };
+    });
   return paramNodes;
 }
 
@@ -183,4 +199,169 @@ export function buildRequestsOutputPath(outputPath: string) {
 
 export function buildQueriesOutputPath(outputPath: string) {
   return path.join(outputPath, queriesOutputPath);
+}
+
+export function getQueryKeyFnName(queryKey: string) {
+  return `${capitalizeFirstLetter(queryKey)}Fn`;
+}
+
+/**
+ * Create QueryKey/MutationKey exports
+ */
+export function createQueryKeyExport({
+  methodName,
+  queryKey,
+}: {
+  methodName: string;
+  queryKey: string;
+}) {
+  return ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(queryKey),
+          undefined,
+          undefined,
+          ts.factory.createStringLiteral(
+            `${capitalizeFirstLetter(methodName)}`,
+          ),
+        ),
+      ],
+      ts.NodeFlags.Const,
+    ),
+  );
+}
+
+export function createQueryKeyFnExport(
+  queryKey: string,
+  method: VariableDeclaration,
+  type: "query" | "mutation" = "query",
+) {
+  // Mutation keys don't require clientOptions
+  const params = type === "query" ? getRequestParamFromMethod(method) : null;
+
+  // override key is used to allow the user to override the the queryKey values
+  const overrideKey = ts.factory.createParameterDeclaration(
+    undefined,
+    undefined,
+    ts.factory.createIdentifier(type === "query" ? "queryKey" : "mutationKey"),
+    QuestionToken,
+    ts.factory.createTypeReferenceNode("Array<unknown>", []),
+  );
+
+  return ts.factory.createVariableStatement(
+    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+    ts.factory.createVariableDeclarationList(
+      [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createIdentifier(getQueryKeyFnName(queryKey)),
+          undefined,
+          undefined,
+          ts.factory.createArrowFunction(
+            undefined,
+            undefined,
+            params ? [params, overrideKey] : [overrideKey],
+            undefined,
+            EqualsOrGreaterThanToken,
+            type === "query"
+              ? queryKeyFn(queryKey, method)
+              : mutationKeyFn(queryKey),
+          ),
+        ),
+      ],
+      ts.NodeFlags.Const,
+    ),
+  );
+}
+
+function queryKeyFn(
+  queryKey: string,
+  method: VariableDeclaration,
+): ts.Expression {
+  return ts.factory.createArrayLiteralExpression(
+    [
+      ts.factory.createIdentifier(queryKey),
+      ts.factory.createSpreadElement(
+        ts.factory.createParenthesizedExpression(
+          ts.factory.createBinaryExpression(
+            ts.factory.createIdentifier("queryKey"),
+            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+            getVariableArrowFunctionParameters(method)
+              ? // [...clientOptions]
+                ts.factory.createArrayLiteralExpression([
+                  ts.factory.createIdentifier("clientOptions"),
+                ])
+              : // []
+                ts.factory.createArrayLiteralExpression(),
+          ),
+        ),
+      ),
+    ],
+    false,
+  );
+}
+
+function mutationKeyFn(mutationKey: string): ts.Expression {
+  return ts.factory.createArrayLiteralExpression(
+    [
+      ts.factory.createIdentifier(mutationKey),
+      ts.factory.createSpreadElement(
+        ts.factory.createParenthesizedExpression(
+          ts.factory.createBinaryExpression(
+            ts.factory.createIdentifier("mutationKey"),
+            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+            ts.factory.createArrayLiteralExpression(),
+          ),
+        ),
+      ),
+    ],
+    false,
+  );
+}
+
+export function getRequestParamFromMethod(
+  method: VariableDeclaration,
+  pageParam?: string,
+  modelNames: string[] = [],
+) {
+  if (!getVariableArrowFunctionParameters(method).length) {
+    return null;
+  }
+  const methodName = getNameFromVariable(method);
+
+  const params = getVariableArrowFunctionParameters(method).flatMap((param) => {
+    const paramNodes = extractPropertiesFromObjectParam(param);
+
+    return paramNodes
+      .filter((p) => p.name !== pageParam)
+      .map((refParam) => ({
+        name: refParam.name,
+        // TODO: Client<Request, Response, unknown, RequestOptions> -> Client<Request, Response, unknown>
+        typeName: getShortType(refParam.type?.getText() ?? ""),
+        optional: refParam.optional,
+      }));
+  });
+
+  const areAllPropertiesOptional = params.every((param) => param.optional);
+
+  return ts.factory.createParameterDeclaration(
+    undefined,
+    undefined,
+    ts.factory.createIdentifier("clientOptions"),
+    undefined,
+    ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("Options"), [
+      ts.factory.createTypeReferenceNode(
+        modelNames.includes(`${capitalizeFirstLetter(methodName)}Data`)
+          ? `${capitalizeFirstLetter(methodName)}Data`
+          : "unknown",
+      ),
+      ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("true")),
+    ]),
+    // if all params are optional, we create an empty object literal
+    // so the hook can be called without any parameters
+    areAllPropertiesOptional
+      ? ts.factory.createObjectLiteralExpression()
+      : undefined,
+  );
 }

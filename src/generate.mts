@@ -6,7 +6,7 @@ import {
   formatOptions,
 } from "./common.mjs";
 import { createSource } from "./createSource.mjs";
-import { formatOutput } from "./format.mjs";
+import { formatOutput, processOutput } from "./format.mjs";
 import { print } from "./print.mjs";
 
 export async function generate(options: LimitedUserConfig, version: string) {
@@ -14,7 +14,6 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const formattedOptions = formatOptions(options);
 
   const config: UserConfig = {
-    base: formattedOptions.base,
     client: formattedOptions.client,
     debug: formattedOptions.debug,
     dryRun: false,
@@ -25,7 +24,6 @@ export async function generate(options: LimitedUserConfig, version: string) {
       path: openApiOutputPath,
     },
     input: formattedOptions.input,
-    request: formattedOptions.request,
     schemas: {
       export: !formattedOptions.noSchemas,
       type: formattedOptions.schemaType,
@@ -33,7 +31,11 @@ export async function generate(options: LimitedUserConfig, version: string) {
     services: {
       export: true,
       response: formattedOptions.serviceResponse,
-      asClass: true,
+      asClass: false,
+      operationId:
+        formattedOptions.operationId !== undefined
+          ? formattedOptions.operationId
+          : true,
     },
     types: {
       dates: formattedOptions.useDateType,
@@ -45,8 +47,8 @@ export async function generate(options: LimitedUserConfig, version: string) {
   await createClient(config);
   const source = await createSource({
     outputPath: openApiOutputPath,
+    client: formattedOptions.client,
     version,
-    serviceEndName: "Service", // we are hard coding this because changing the service end name was depreciated in @hey-api/openapi-ts
     pageParam: formattedOptions.pageParam,
     nextPageParam: formattedOptions.nextPageParam,
     initialPageParam: formattedOptions.initialPageParam.toString(),
@@ -54,4 +56,9 @@ export async function generate(options: LimitedUserConfig, version: string) {
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);
   await formatOutput(queriesOutputPath);
+  await processOutput({
+    output: queriesOutputPath,
+    format: formattedOptions.format,
+    lint: formattedOptions.lint,
+  });
 }

@@ -1,17 +1,68 @@
-import type ts from "typescript";
+import type { UserConfig } from "@hey-api/openapi-ts";
+import type { Project } from "ts-morph";
+import ts from "typescript";
+import { capitalizeFirstLetter } from "./common.mjs";
+import { modelsFileName } from "./constants.mjs";
 import { createPrefetchOrEnsure } from "./createPrefetchOrEnsure.mjs";
 import { createUseMutation } from "./createUseMutation.mjs";
 import { createUseQuery } from "./createUseQuery.mjs";
 import type { Service } from "./service.mjs";
 
-export const createExports = (
-  service: Service,
-  pageParam: string,
-  nextPageParam: string,
-  initialPageParam: string,
-) => {
-  const { klasses } = service;
-  const methods = klasses.flatMap((k) => k.methods);
+export const createExports = ({
+  service,
+  client,
+  project,
+  pageParam,
+  nextPageParam,
+  initialPageParam,
+}: {
+  service: Service;
+  client: UserConfig["client"];
+  project: Project;
+  pageParam: string;
+  nextPageParam: string;
+  initialPageParam: string;
+}) => {
+  const { methods } = service;
+  const methodDataNames = methods.reduce(
+    (acc, data) => {
+      const methodName = data.method.getName();
+      acc[`${capitalizeFirstLetter(methodName)}Data`] = methodName;
+      return acc;
+    },
+    {} as { [key: string]: string },
+  );
+  const modelsFile = project
+    .getSourceFiles?.()
+    .find((sourceFile) => sourceFile.getFilePath().includes(modelsFileName));
+
+  const modelDeclarations = modelsFile?.getExportedDeclarations();
+  const entries = modelDeclarations?.entries();
+  const modelNames: string[] = [];
+  const paginatableMethods: string[] = [];
+  for (const [key, value] of entries ?? []) {
+    modelNames.push(key);
+    const node = value[0].compilerNode;
+    if (ts.isTypeAliasDeclaration(node) && methodDataNames[key] !== undefined) {
+      // get the type alias declaration
+      const typeAliasDeclaration = node.type;
+      if (typeAliasDeclaration.kind === ts.SyntaxKind.TypeLiteral) {
+        const query = (typeAliasDeclaration as ts.TypeLiteralNode).members.find(
+          (m) =>
+            m.kind === ts.SyntaxKind.PropertySignature &&
+            m.name?.getText() === "query",
+        );
+        if (
+          query &&
+          ((query as ts.PropertySignature).type as ts.TypeLiteralNode).members
+            .map((m) => m.name?.getText())
+            .includes(pageParam)
+        ) {
+          paginatableMethods.push(methodDataNames[key]);
+        }
+      }
+    }
+  }
 
   const allGet = methods.filter((m) =>
     m.httpMethodName.toUpperCase().includes("GET"),
@@ -30,19 +81,35 @@ export const createExports = (
   );
 
   const allGetQueries = allGet.map((m) =>
-    createUseQuery(m, pageParam, nextPageParam, initialPageParam),
+    createUseQuery({
+      functionDescription: m,
+      client,
+      pageParam,
+      nextPageParam,
+      initialPageParam,
+      paginatableMethods,
+      modelNames,
+    }),
   );
   const allPrefetchQueries = allGet.map((m) =>
-    createPrefetchOrEnsure({ ...m, functionType: "prefetch" }),
+    createPrefetchOrEnsure({ ...m, functionType: "prefetch", modelNames }),
   );
   const allEnsureQueries = allGet.map((m) =>
-    createPrefetchOrEnsure({ ...m, functionType: "ensure" }),
+    createPrefetchOrEnsure({ ...m, functionType: "ensure", modelNames }),
   );
 
-  const allPostMutations = allPost.map((m) => createUseMutation(m));
-  const allPutMutations = allPut.map((m) => createUseMutation(m));
-  const allPatchMutations = allPatch.map((m) => createUseMutation(m));
-  const allDeleteMutations = allDelete.map((m) => createUseMutation(m));
+  const allPostMutations = allPost.map((m) =>
+    createUseMutation({ functionDescription: m, modelNames, client }),
+  );
+  const allPutMutations = allPut.map((m) =>
+    createUseMutation({ functionDescription: m, modelNames, client }),
+  );
+  const allPatchMutations = allPatch.map((m) =>
+    createUseMutation({ functionDescription: m, modelNames, client }),
+  );
+  const allDeleteMutations = allDelete.map((m) =>
+    createUseMutation({ functionDescription: m, modelNames, client }),
+  );
 
   const allQueries = [...allGetQueries];
   const allMutations = [
@@ -60,9 +127,13 @@ export const createExports = (
       queryKeyFn,
     ],
   );
-  const commonInMutations = allMutations.flatMap(({ mutationResult }) => [
-    mutationResult,
-  ]);
+  const commonInMutations = allMutations.flatMap(
+    ({ mutationResult, key, mutationKeyFn }) => [
+      mutationResult,
+      key,
+      mutationKeyFn,
+    ],
+  );
 
   const allCommon = [...commonInQueries, ...commonInMutations];
 

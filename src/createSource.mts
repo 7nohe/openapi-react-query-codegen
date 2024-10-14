@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import type { UserConfig } from "@hey-api/openapi-ts";
 import { Project } from "ts-morph";
 import ts from "typescript";
 import { OpenApiRqFiles } from "./constants.mjs";
@@ -6,13 +7,19 @@ import { createExports } from "./createExports.mjs";
 import { createImports } from "./createImports.mjs";
 import { getServices } from "./service.mjs";
 
-const createSourceFile = async (
-  outputPath: string,
-  serviceEndName: string,
-  pageParam: string,
-  nextPageParam: string,
-  initialPageParam: string,
-) => {
+const createSourceFile = async ({
+  outputPath,
+  client,
+  pageParam,
+  nextPageParam,
+  initialPageParam,
+}: {
+  outputPath: string;
+  client: UserConfig["client"];
+  pageParam: string;
+  nextPageParam: string;
+  initialPageParam: string;
+}) => {
   const project = new Project({
     // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
     // If you initialize with a tsconfig.json, then it will automatically populate the project
@@ -27,16 +34,18 @@ const createSourceFile = async (
   const service = await getServices(project);
 
   const imports = createImports({
-    serviceEndName,
     project,
+    client,
   });
 
-  const exports = createExports(
+  const exports = createExports({
     service,
+    client,
+    project,
     pageParam,
     nextPageParam,
     initialPageParam,
-  );
+  });
 
   const commonSource = ts.factory.createSourceFile(
     [...imports, ...exports.allCommon],
@@ -120,15 +129,15 @@ const createSourceFile = async (
 
 export const createSource = async ({
   outputPath,
+  client,
   version,
-  serviceEndName,
   pageParam,
   nextPageParam,
   initialPageParam,
 }: {
   outputPath: string;
+  client: UserConfig["client"];
   version: string;
-  serviceEndName: string;
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;
@@ -199,13 +208,13 @@ export const createSource = async ({
     indexSource,
     prefetchSource,
     ensureSource,
-  } = await createSourceFile(
+  } = await createSourceFile({
     outputPath,
-    serviceEndName,
+    client,
     pageParam,
     nextPageParam,
     initialPageParam,
-  );
+  });
 
   const comment = `// generated with @7nohe/openapi-react-query-codegen@${version} \n\n`;
 

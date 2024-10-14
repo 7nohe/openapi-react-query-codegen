@@ -1,20 +1,21 @@
 import { posix } from "node:path";
+import type { UserConfig } from "@hey-api/openapi-ts";
 import type { Project } from "ts-morph";
 import ts from "typescript";
-import { modalsFileName, serviceFileName } from "./constants.mjs";
+import { modelsFileName, serviceFileName } from "./constants.mjs";
 
 const { join } = posix;
 
 export const createImports = ({
-  serviceEndName,
   project,
+  client,
 }: {
-  serviceEndName: string;
   project: Project;
+  client: UserConfig["client"];
 }) => {
   const modelsFile = project
     .getSourceFiles()
-    .find((sourceFile) => sourceFile.getFilePath().includes(modalsFileName));
+    .find((sourceFile) => sourceFile.getFilePath().includes(modelsFileName));
 
   const serviceFile = project.getSourceFileOrThrow(`${serviceFileName}.ts`);
 
@@ -32,9 +33,7 @@ export const createImports = ({
     serviceFile.getExportedDeclarations().keys(),
   );
 
-  const serviceNames = serviceExports.filter((name) =>
-    name.endsWith(serviceEndName),
-  );
+  const serviceNames = serviceExports;
 
   const imports = [
     ts.factory.createImportDeclaration(
@@ -126,8 +125,28 @@ export const createImports = ({
             ),
           ]),
         ),
-        ts.factory.createStringLiteral(join("../requests/", modalsFileName)),
+        ts.factory.createStringLiteral(join("../requests/", modelsFileName)),
         undefined,
+      ),
+    );
+  }
+
+  if (client === "@hey-api/client-axios") {
+    imports.push(
+      ts.factory.createImportDeclaration(
+        undefined,
+        ts.factory.createImportClause(
+          false,
+          undefined,
+          ts.factory.createNamedImports([
+            ts.factory.createImportSpecifier(
+              false,
+              undefined,
+              ts.factory.createIdentifier("AxiosError"),
+            ),
+          ]),
+        ),
+        ts.factory.createStringLiteral("axios"),
       ),
     );
   }

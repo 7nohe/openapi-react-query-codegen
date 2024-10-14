@@ -1,9 +1,10 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "../fetchClient";
+
 // We can not useState or useRef in a server component, which is why we are
-// extracting this part out into it's own file with 'use client' on top
-import { useState } from "react";
+// extracting this part out into
 
 function makeQueryClient() {
   return new QueryClient({

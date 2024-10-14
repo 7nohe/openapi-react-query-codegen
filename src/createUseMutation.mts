@@ -1,27 +1,28 @@
+import type { UserConfig } from "@hey-api/openapi-ts";
 import ts from "typescript";
 import {
   BuildCommonTypeName,
-  type MethodDescription,
+  EqualsOrGreaterThanToken,
+  type FunctionDescription,
   TContext,
   TData,
   TError,
   capitalizeFirstLetter,
-  extractPropertiesFromObjectParam,
-  getNameFromMethod,
-  getShortType,
+  createQueryKeyExport,
+  createQueryKeyFnExport,
+  getNameFromVariable,
+  getQueryKeyFnName,
+  getVariableArrowFunctionParameters,
+  queryKeyConstraint,
+  queryKeyGenericType,
 } from "./common.mjs";
+import { createQueryKeyFromMethod } from "./createUseQuery.mjs";
 import { addJSDocToNode } from "./util.mjs";
 
 /**
  *  Awaited<ReturnType<typeof myClass.myMethod>>
  */
-function generateAwaitedReturnType({
-  className,
-  methodName,
-}: {
-  className: string;
-  methodName: string;
-}) {
+function generateAwaitedReturnType({ methodName }: { methodName: string }) {
   return ts.factory.createTypeReferenceNode(
     ts.factory.createIdentifier("Awaited"),
     [
@@ -29,10 +30,8 @@ function generateAwaitedReturnType({
         ts.factory.createIdentifier("ReturnType"),
         [
           ts.factory.createTypeQueryNode(
-            ts.factory.createQualifiedName(
-              ts.factory.createIdentifier(className),
-              ts.factory.createIdentifier(methodName),
-            ),
+            ts.factory.createIdentifier(methodName),
+
             undefined,
           ),
         ],
@@ -42,25 +41,30 @@ function generateAwaitedReturnType({
 }
 
 export const createUseMutation = ({
-  className,
-  method,
-  jsDoc,
-}: MethodDescription) => {
-  const methodName = getNameFromMethod(method);
+  functionDescription: { method, jsDoc },
+  modelNames,
+  client,
+}: {
+  functionDescription: FunctionDescription;
+  modelNames: string[];
+  client: UserConfig["client"];
+}) => {
+  const methodName = getNameFromVariable(method);
+  const mutationKey = createQueryKeyFromMethod({ method });
   const awaitedResponseDataType = generateAwaitedReturnType({
-    className,
     methodName,
   });
 
   const mutationResult = ts.factory.createTypeAliasDeclaration(
     [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
     ts.factory.createIdentifier(
-      `${className}${capitalizeFirstLetter(methodName)}MutationResult`,
+      `${capitalizeFirstLetter(methodName)}MutationResult`,
     ),
     undefined,
     awaitedResponseDataType,
   );
 
+  // `TData = Common.AddPetMutationResult`
   const responseDataType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TData,
@@ -70,24 +74,40 @@ export const createUseMutation = ({
     ),
   );
 
-  const methodParameters =
-    method.getParameters().length !== 0
-      ? ts.factory.createTypeLiteralNode(
-          method.getParameters().flatMap((param) => {
-            const paramNodes = extractPropertiesFromObjectParam(param);
-            return paramNodes.map((refParam) =>
-              ts.factory.createPropertySignature(
-                undefined,
-                ts.factory.createIdentifier(refParam.name),
-                refParam.optional
-                  ? ts.factory.createToken(ts.SyntaxKind.QuestionToken)
-                  : undefined,
-                ts.factory.createTypeReferenceNode(
-                  getShortType(refParam.type?.getText(param) ?? ""),
-                ),
+  // @hey-api/client-axios -> `TError = AxiosError<AddPetError>`
+  // @hey-api/client-fetch -> `TError = AddPetError`
+  const responseErrorType = ts.factory.createTypeParameterDeclaration(
+    undefined,
+    TError,
+    undefined,
+    client === "@hey-api/client-axios"
+      ? ts.factory.createTypeReferenceNode(
+          ts.factory.createIdentifier("AxiosError"),
+          [
+            ts.factory.createTypeReferenceNode(
+              ts.factory.createIdentifier(
+                `${capitalizeFirstLetter(methodName)}Error`,
               ),
-            );
-          }),
+            ),
+          ],
+        )
+      : ts.factory.createTypeReferenceNode(
+          `${capitalizeFirstLetter(methodName)}Error`,
+        ),
+  );
+
+  const methodParameters =
+    getVariableArrowFunctionParameters(method).length !== 0
+      ? ts.factory.createTypeReferenceNode(
+          ts.factory.createIdentifier("Options"),
+          [
+            ts.factory.createTypeReferenceNode(
+              modelNames.includes(`${capitalizeFirstLetter(methodName)}Data`)
+                ? `${capitalizeFirstLetter(methodName)}Data`
+                : "unknown",
+            ),
+            ts.factory.createLiteralTypeNode(ts.factory.createTrue()),
+          ],
         )
       : ts.factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword);
 
@@ -97,7 +117,7 @@ export const createUseMutation = ({
       [
         ts.factory.createVariableDeclaration(
           ts.factory.createIdentifier(
-            `use${className}${capitalizeFirstLetter(methodName)}`,
+            `use${capitalizeFirstLetter(methodName)}`,
           ),
           undefined,
           undefined,
@@ -105,11 +125,16 @@ export const createUseMutation = ({
             undefined,
             ts.factory.createNodeArray([
               responseDataType,
+              responseErrorType,
               ts.factory.createTypeParameterDeclaration(
                 undefined,
-                TError,
-                undefined,
-                ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
+                "TQueryKey",
+                queryKeyConstraint,
+                ts.factory.createArrayTypeNode(
+                  ts.factory.createKeywordTypeNode(
+                    ts.SyntaxKind.UnknownKeyword,
+                  ),
+                ),
               ),
               ts.factory.createTypeParameterDeclaration(
                 undefined,
@@ -119,6 +144,13 @@ export const createUseMutation = ({
               ),
             ]),
             [
+              ts.factory.createParameterDeclaration(
+                undefined,
+                undefined,
+                ts.factory.createIdentifier("mutationKey"),
+                ts.factory.createToken(ts.SyntaxKind.QuestionToken),
+                queryKeyGenericType,
+              ),
               ts.factory.createParameterDeclaration(
                 undefined,
                 undefined,
@@ -136,9 +168,14 @@ export const createUseMutation = ({
                         ts.factory.createTypeReferenceNode(TContext),
                       ],
                     ),
-                    ts.factory.createLiteralTypeNode(
-                      ts.factory.createStringLiteral("mutationFn"),
-                    ),
+                    ts.factory.createUnionTypeNode([
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("mutationKey"),
+                      ),
+                      ts.factory.createLiteralTypeNode(
+                        ts.factory.createStringLiteral("mutationFn"),
+                      ),
+                    ]),
                   ],
                 ),
                 undefined,
@@ -157,66 +194,40 @@ export const createUseMutation = ({
               [
                 ts.factory.createObjectLiteralExpression([
                   ts.factory.createPropertyAssignment(
+                    ts.factory.createIdentifier("mutationKey"),
+                    ts.factory.createCallExpression(
+                      BuildCommonTypeName(getQueryKeyFnName(mutationKey)),
+                      undefined,
+                      [ts.factory.createIdentifier("mutationKey")],
+                    ),
+                  ),
+                  ts.factory.createPropertyAssignment(
                     ts.factory.createIdentifier("mutationFn"),
+                    // (clientOptions) => addPet(clientOptions).then(response => response.data as TData) as unknown as Promise<TData>
                     ts.factory.createArrowFunction(
                       undefined,
                       undefined,
-                      method.getParameters().length !== 0
-                        ? [
-                            ts.factory.createParameterDeclaration(
-                              undefined,
-                              undefined,
-                              ts.factory.createObjectBindingPattern(
-                                method.getParameters().flatMap((param) => {
-                                  const paramNodes =
-                                    extractPropertiesFromObjectParam(param);
-                                  return paramNodes.map((refParam) =>
-                                    ts.factory.createBindingElement(
-                                      undefined,
-                                      undefined,
-                                      ts.factory.createIdentifier(
-                                        refParam.name,
-                                      ),
-                                      undefined,
-                                    ),
-                                  );
-                                }),
-                              ),
-                              undefined,
-                              undefined,
-                              undefined,
-                            ),
-                          ]
-                        : [],
+                      [
+                        ts.factory.createParameterDeclaration(
+                          undefined,
+                          undefined,
+                          ts.factory.createIdentifier("clientOptions"),
+                          undefined,
+                          undefined,
+                          undefined,
+                        ),
+                      ],
                       undefined,
-                      ts.factory.createToken(
-                        ts.SyntaxKind.EqualsGreaterThanToken,
-                      ),
+                      EqualsOrGreaterThanToken,
                       ts.factory.createAsExpression(
                         ts.factory.createAsExpression(
                           ts.factory.createCallExpression(
-                            ts.factory.createPropertyAccessExpression(
-                              ts.factory.createIdentifier(className),
-                              ts.factory.createIdentifier(methodName),
-                            ),
+                            ts.factory.createIdentifier(methodName),
                             undefined,
-                            method.getParameters().length !== 0
-                              ? [
-                                  ts.factory.createObjectLiteralExpression(
-                                    method.getParameters().flatMap((params) => {
-                                      const paramNodes =
-                                        extractPropertiesFromObjectParam(
-                                          params,
-                                        );
-                                      return paramNodes.map((refParam) =>
-                                        ts.factory.createShorthandPropertyAssignment(
-                                          refParam.name,
-                                        ),
-                                      );
-                                    }),
-                                  ),
-                                ]
-                              : [],
+                            getVariableArrowFunctionParameters(method).length >
+                              0
+                              ? [ts.factory.createIdentifier("clientOptions")]
+                              : undefined,
                           ),
                           ts.factory.createKeywordTypeNode(
                             ts.SyntaxKind.UnknownKeyword,
@@ -245,8 +256,17 @@ export const createUseMutation = ({
 
   const hookWithJsDoc = addJSDocToNode(exportHook, jsDoc);
 
+  const mutationKeyExport = createQueryKeyExport({
+    methodName,
+    queryKey: mutationKey,
+  });
+
+  const mutationKeyFn = createQueryKeyFnExport(mutationKey, method, "mutation");
+
   return {
     mutationResult,
+    key: mutationKeyExport,
     mutationHook: hookWithJsDoc,
+    mutationKeyFn,
   };
 };
