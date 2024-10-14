@@ -15,7 +15,6 @@ export type LimitedUserConfig = {
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
   operationId?: boolean;
-  serviceResponse?: "body" | "response";
   enums?: "javascript" | "typescript" | false;
   useDateType?: boolean;
   debug?: boolean;
@@ -60,14 +59,6 @@ async function setupProgram() {
       ).choices(["biome", "eslint"]),
     )
     .option("--operationId", "Use operation ID to generate operation names?")
-    .addOption(
-      new Option(
-        "--serviceResponse <value>",
-        "Define shape of returned value from service calls",
-      )
-        .choices(["body", "response"])
-        .default("body"),
-    )
     .addOption(
       new Option(
         "--enums <value>",
