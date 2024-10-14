@@ -176,10 +176,62 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Pet'
-                  nextPage: 
-                    type: integer
-                    format: int32
-                    minimum: 1
+                  meta: 
+                    type: object
+                    properties:
+                      next: 
+                        type: integer
+                        format: int32
+                        minimum: 1
+                      total: 
+                        type: string
+  /cursor-based-pets:
+    get:
+      description: |
+        Returns cursor-based pets from the system that the user has access to
+      operationId: findCursorBasedPets
+      parameters:
+        - name: page
+          in: query
+          description: string to start from
+          required: false
+          schema:
+            type: string
+        - name: tags
+          in: query
+          description: tags to filter by
+          required: false
+          style: form
+          schema:
+            type: array
+            items:
+              type: string
+        - name: limit
+          in: query
+          description: maximum number of results to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: pet response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pet'
+                  meta: 
+                    type: object
+                    properties:
+                      next: 
+                        type: string
+                      total: 
+                        type: integer
 components:
   schemas:
     Pet:
