@@ -1,33 +1,29 @@
 import "./App.css";
 import { useState } from "react";
 
-import {
-  UseFindPetsKeyFn,
-  useAddPet,
-} from "../openapi/queries";
-import { ensureUseFindPetsData } from "../openapi/queries/ensureQueryData";
-import { queryClient } from "./queryClient";
+import type { Options } from "@hey-api/client-axios";
 import type { QueryClient } from "@tanstack/react-query";
 import { type LoaderFunctionArgs, useLoaderData } from "react-router-dom";
-import type { FindPetsData } from "../openapi/requests/types.gen";
-import type { Options } from "@hey-api/client-axios";
+import { UseFindPetsKeyFn, useAddPet } from "../openapi/queries";
+import { ensureUseFindPetsData } from "../openapi/queries/ensureQueryData";
 import { useFindPetsSuspense } from "../openapi/queries/suspense";
+import type { FindPetsData } from "../openapi/requests/types.gen";
+import { queryClient } from "./queryClient";
 
 export const loader =
-  (queryClient: QueryClient) =>
-    async (_: LoaderFunctionArgs) => {
-      const queryParameters: Options<FindPetsData, true> = {
-        query: { tags: [], limit: 10 },
-      };
-
-      await ensureUseFindPetsData(queryClient, queryParameters);
-      return queryParameters;
+  (queryClient: QueryClient) => async (_: LoaderFunctionArgs) => {
+    const queryParameters: Options<FindPetsData, true> = {
+      query: { tags: [], limit: 10 },
     };
+
+    await ensureUseFindPetsData(queryClient, queryParameters);
+    return queryParameters;
+  };
 
 export function Compoment() {
   const queryParameters = useLoaderData() as Awaited<
-  ReturnType<ReturnType<typeof loader>>
->;
+    ReturnType<ReturnType<typeof loader>>
+  >;
 
   const { data, error, refetch } = useFindPetsSuspense(queryParameters);
 
@@ -97,4 +93,3 @@ export function Compoment() {
     </div>
   );
 }
-

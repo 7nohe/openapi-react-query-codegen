@@ -6,7 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./queryClient";
 import "./axios";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import { ClientFetchWrapper } from "./ClientFetchWrapper";
 
 const router = createBrowserRouter([
@@ -25,5 +25,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
       </ClientFetchWrapper>
       <ReactQueryDevtools buttonPosition="bottom-left" />
     </QueryClientProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
