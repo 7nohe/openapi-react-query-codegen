@@ -101,7 +101,6 @@ function Pets() {
 
 export function Component({ loaderData }) {
   const { dehydratedState } = loaderData;
-  console.log(dehydratedState);
   return (
     <HydrationBoundary state={dehydratedState}>
       <Pets />
