@@ -1,22 +1,21 @@
 import "./App.css";
-import { useState } from "react";
-
-import type { Options } from "@hey-api/client-axios";
 import type { QueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { type LoaderFunctionArgs, useLoaderData } from "react-router-dom";
 import { UseFindPetsKeyFn, useAddPet } from "../openapi/queries";
 import { ensureUseFindPetsData } from "../openapi/queries/ensureQueryData";
 import { useFindPetsSuspense } from "../openapi/queries/suspense";
-import type { FindPetsData } from "../openapi/requests/types.gen";
 import { queryClient } from "./queryClient";
 
 export const loader =
   (queryClient: QueryClient) => async (_: LoaderFunctionArgs) => {
-    const queryParameters: Options<FindPetsData, true> = {
+    const queryParameters = {
       query: { tags: [], limit: 10 },
     };
 
-    await ensureUseFindPetsData(queryClient, queryParameters);
+    await ensureUseFindPetsData(queryClient, {
+      query: { tags: [], limit: 10 },
+    });
     return queryParameters;
   };
 
@@ -66,8 +65,8 @@ export function Compoment() {
                 console.log("success");
               },
               onError: (error) => {
-                console.log(error.response);
-                setErrorText(`Error: ${error.response?.data.message}`);
+                console.log(error.message);
+                setErrorText(`Error: ${error.message}`);
               },
             },
           );

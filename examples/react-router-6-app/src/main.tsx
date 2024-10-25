@@ -7,7 +7,6 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./queryClient";
 import "./axios";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import { ClientFetchWrapper } from "./ClientFetchWrapper";
 
 const router = createBrowserRouter([
   {
@@ -20,9 +19,7 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ClientFetchWrapper>
-        <RouterProvider router={router} />
-      </ClientFetchWrapper>
+      <RouterProvider router={router} />
       <ReactQueryDevtools buttonPosition="bottom-left" />
     </QueryClientProvider>
   </React.StrictMode>,
