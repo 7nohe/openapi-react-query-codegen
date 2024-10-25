@@ -1,4 +1,4 @@
-import "../index.css";
+import "./index.css";
 import { Outlet, Scripts, ScrollRestoration } from "react-router";
 import Providers from "../providers";
 
