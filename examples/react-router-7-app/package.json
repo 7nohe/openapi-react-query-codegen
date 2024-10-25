@@ -10,7 +10,8 @@
     "build": "tsc && react-router build",
     "preview": "react-router-serve ./build/server/index.js",
     "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
-    "test:generated": "tsc -p ./tsconfig.json --noEmit"
+    "test:generated": "tsc -p ./tsconfig.json --noEmit",
+    "typegen": "react-router typegen"
   },
   "dependencies": {
     "@react-router/fs-routes": "^7.0.0-pre.2",

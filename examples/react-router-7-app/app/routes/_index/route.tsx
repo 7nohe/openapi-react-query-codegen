@@ -11,10 +11,10 @@ import {
   useFindPets,
 } from "../../../openapi/queries";
 import { prefetchUseFindPets } from "../../../openapi/queries/prefetch";
-import { queryClient } from "../../../queryClient";
 import "./App.css";
+import type * as Route from "./+types.route"
 
-export async function loader() {
+export async function loader({ params }: Route.LoaderArgs) {
   const queryClient = new QueryClient();
 
   await prefetchUseFindPets(queryClient, {
@@ -25,9 +25,12 @@ export async function loader() {
 }
 
 function Pets() {
+  const queryClient = new QueryClient();
   const { data, error, refetch } = useFindPets({
     query: { tags: [], limit: 10 },
   });
+
+  console.log(data);
 
   const { mutate: addPet, isError } = useAddPet();
 
@@ -98,7 +101,7 @@ function Pets() {
   );
 }
 
-export default function Index({ loaderData }) {
+export default function Index({ loaderData }: Route.ComponentProps) {
   const { dehydratedState } = loaderData;
   return (
     <HydrationBoundary state={dehydratedState}>
