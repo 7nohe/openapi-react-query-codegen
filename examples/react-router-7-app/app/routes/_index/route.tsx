@@ -5,7 +5,6 @@ import {
   QueryClient,
   dehydrate,
 } from "@tanstack/react-query";
-import React from "react";
 import {
   UseFindPetsKeyFn,
   useAddPet,
