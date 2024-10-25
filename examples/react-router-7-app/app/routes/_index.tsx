@@ -1,4 +1,4 @@
-import "./App.css";
+import "../../App.css";
 import { useState } from "react";
 
 import {
@@ -11,11 +11,11 @@ import {
   UseFindPetsKeyFn,
   useAddPet,
   useFindPets,
-} from "../../../openapi/queries";
-import { prefetchUseFindPets } from "../../../openapi/queries/prefetch";
-import { queryClient } from "../../../queryClient";
+} from "../../openapi/queries";
+import { prefetchUseFindPets } from "../../openapi/queries/prefetch";
+import { queryClient } from "../../queryClient";
 
-export const loader = async () => {
+export async function loader() {
   const queryClient = new QueryClient();
 
   await prefetchUseFindPets(queryClient, {
@@ -23,7 +23,7 @@ export const loader = async () => {
   });
 
   return { dehydratedState: dehydrate(queryClient) };
-};
+}
 
 function Pets() {
   const { data, error, refetch } = useFindPets({
@@ -101,6 +101,7 @@ function Pets() {
 
 export function Component({ loaderData }) {
   const { dehydratedState } = loaderData;
+  console.log(dehydratedState);
   return (
     <HydrationBoundary state={dehydratedState}>
       <Pets />
