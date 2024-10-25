@@ -7,11 +7,12 @@
     "dev": "run-p dev:mock dev:client",
     "dev:client": "react-router dev",
     "dev:mock": "prism mock ../petstore.yaml --dynamic",
-    "build": "tsc && react-router build",
+    "build": "pnpm typecheck && react-router build",
     "preview": "react-router-serve ./build/server/index.js",
+    "typegen": "react-router typegen",
+    "typecheck": "pnpm typegen && tsc",
     "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
-    "test:generated": "tsc -p ./tsconfig.json --noEmit",
-    "typegen": "react-router typegen"
+    "test:generated": "tsc -p ./tsconfig.json --noEmit"
   },
   "dependencies": {
     "@react-router/fs-routes": "^7.0.0-pre.2",
