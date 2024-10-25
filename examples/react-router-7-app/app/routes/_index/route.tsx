@@ -4,6 +4,7 @@ import {
   HydrationBoundary,
   QueryClient,
   dehydrate,
+  useQueryClient,
 } from "@tanstack/react-query";
 import {
   UseFindPetsKeyFn,
@@ -25,12 +26,10 @@ export async function loader({ params }: Route.LoaderArgs) {
 }
 
 function Pets() {
-  const queryClient = new QueryClient();
+  const queryClient = useQueryClient();
   const { data, error, refetch } = useFindPets({
     query: { tags: [], limit: 10 },
   });
-
-  console.log(data);
 
   const { mutate: addPet, isError } = useAddPet();
 
@@ -70,7 +69,6 @@ function Pets() {
                     query: { tags: [], limit: 10 },
                   }),
                 });
-                console.log("success");
               },
               onError: (error) => {
                 console.log(error.message);
