@@ -13,6 +13,8 @@
       "examples/nextjs-app/.next",
       "examples/tanstack-router-app/openapi",
       "examples/tanstack-router-app/src/routeTree.gen.ts",
+      "examples/react-router-6-app/openapi",
+      "examples/react-router-7-app/openapi",
       "docs/.astro"
     ]
   },
