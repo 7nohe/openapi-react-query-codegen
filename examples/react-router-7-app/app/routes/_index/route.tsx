@@ -13,7 +13,7 @@ import {
 } from "../../../openapi/queries";
 import { prefetchUseFindPets } from "../../../openapi/queries/prefetch";
 import "./App.css";
-import type * as Route from "./+types.route"
+import type * as Route from "./+types.route";
 
 export async function loader({ params }: Route.LoaderArgs) {
   const queryClient = new QueryClient();
