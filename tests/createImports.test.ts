@@ -20,6 +20,7 @@ describe(fileName, () => {
     // @ts-ignore
     const moduleNames = imports.map((i) => i.moduleSpecifier.text);
     expect(moduleNames).toStrictEqual([
+      "@hey-api/client-fetch",
       "@tanstack/react-query",
       "../requests/services.gen",
       "../requests/types.gen",
@@ -41,6 +42,7 @@ describe(fileName, () => {
     // @ts-ignore
     const moduleNames = imports.map((i) => i.moduleSpecifier.text);
     expect(moduleNames).toStrictEqual([
+      "@hey-api/client-fetch",
       "@tanstack/react-query",
       "../requests/services.gen",
       "../requests/types.gen",
