@@ -45,12 +45,16 @@ export const createImports = ({
           ts.factory.createImportSpecifier(
             true,
             undefined,
-            ts.factory.createIdentifier("Options")
+            ts.factory.createIdentifier("Options"),
           ),
-        ])
+        ]),
       ),
-      ts.factory.createStringLiteral("@hey-api/client-fetch"),
-      undefined
+      ts.factory.createStringLiteral(
+        client === "@hey-api/client-axios"
+          ? "@hey-api/client-axios"
+          : "@hey-api/client-fetch",
+      ),
+      undefined,
     ),
     ts.factory.createImportDeclaration(
       undefined,
@@ -61,7 +65,7 @@ export const createImports = ({
           ts.factory.createImportSpecifier(
             true,
             undefined,
-            ts.factory.createIdentifier("QueryClient")
+            ts.factory.createIdentifier("QueryClient"),
           ),
           ts.factory.createImportSpecifier(
             false,
