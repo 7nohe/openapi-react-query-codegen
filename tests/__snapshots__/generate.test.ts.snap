@@ -14,6 +14,11 @@ import type {
   getNotDefined,
   postNotDefined,
 } from "../requests/services.gen";
+import type {
+  FindPaginatedPetsData,
+  FindPetByIdData,
+  FindPetsData,
+} from "../requests/types.gen";
 export type FindPetsDefaultResponse = Awaited<
   ReturnType<typeof findPets>
 >["data"];
@@ -23,7 +28,7 @@ export type FindPetsQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useFindPetsKey = "FindPets";
 export const UseFindPetsKeyFn = (
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<FindPetsData, true> = {},
   queryKey?: Array<unknown>,
 ) => [useFindPetsKey, ...(queryKey ?? [clientOptions])];
 export type GetNotDefinedDefaultResponse = Awaited<
@@ -47,7 +52,7 @@ export type FindPetByIdQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useFindPetByIdKey = "FindPetById";
 export const UseFindPetByIdKeyFn = (
-  clientOptions: Options<unknown, true>,
+  clientOptions: Options<FindPetByIdData, true>,
   queryKey?: Array<unknown>,
 ) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
 export type FindPaginatedPetsDefaultResponse = Awaited<
@@ -59,7 +64,7 @@ export type FindPaginatedPetsQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useFindPaginatedPetsKey = "FindPaginatedPets";
 export const UseFindPaginatedPetsKeyFn = (
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<FindPaginatedPetsData, true> = {},
   queryKey?: Array<unknown>,
 ) => [useFindPaginatedPetsKey, ...(queryKey ?? [clientOptions])];
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
