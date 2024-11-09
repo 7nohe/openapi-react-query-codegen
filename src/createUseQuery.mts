@@ -533,7 +533,7 @@ export const createUseQuery = ({
     queryKey,
   });
 
-  const queryKeyFn = createQueryKeyFnExport(queryKey, method);
+  const queryKeyFn = createQueryKeyFnExport(queryKey, method, "query", modelNames);
 
   return {
     apiResponse: defaultApiResponse,
