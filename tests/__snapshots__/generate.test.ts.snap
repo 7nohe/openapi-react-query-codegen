@@ -98,6 +98,21 @@ export const ensureUseDefaultServiceFindPaginatedPetsData = (queryClient: QueryC
   page?: number;
   tags?: string[];
 } = {}) => queryClient.ensureQueryData({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) });
+/**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const ensureUseDefaultServiceFindCursorBasedPetsData = (queryClient: QueryClient, { limit, page, tags }: {
+  limit?: number;
+  page?: string;
+  tags?: string[];
+} = {}) => queryClient.ensureQueryData({ queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, page, tags }), queryFn: () => DefaultService.findCursorBasedPets({ limit, page, tags }) });
 "
 `;
 
