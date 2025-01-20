@@ -101,6 +101,12 @@ const createSourceFile = async (
     ts.NodeFlags.None,
   );
 
+  const ensureSource = ts.factory.createSourceFile(
+    [commonImport, ...imports, ...exports.allEnsures],
+    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+    ts.NodeFlags.None,
+  );
+
   return {
     commonSource,
     infiniteQueriesSource,
@@ -108,6 +114,7 @@ const createSourceFile = async (
     suspenseSource,
     indexSource,
     prefetchSource,
+    ensureSource,
   };
 };
 
@@ -171,6 +178,14 @@ export const createSource = async ({
     ts.ScriptKind.TS,
   );
 
+  const ensureQueryDataFile = ts.createSourceFile(
+    `${OpenApiRqFiles.ensureQueryData}.ts`,
+    "",
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.TS,
+  );
+
   const printer = ts.createPrinter({
     newLine: ts.NewLineKind.LineFeed,
     removeComments: false,
@@ -183,6 +198,7 @@ export const createSource = async ({
     suspenseSource,
     indexSource,
     prefetchSource,
+    ensureSource,
   } = await createSourceFile(
     outputPath,
     serviceEndName,
@@ -221,6 +237,14 @@ export const createSource = async ({
     comment +
     printer.printNode(ts.EmitHint.Unspecified, prefetchSource, prefetchFile);
 
+  const enqureResult =
+    comment +
+    printer.printNode(
+      ts.EmitHint.Unspecified,
+      ensureSource,
+      ensureQueryDataFile,
+    );
+
   return [
     {
       name: `${OpenApiRqFiles.index}.ts`,
@@ -245,6 +269,10 @@ export const createSource = async ({
     {
       name: `${OpenApiRqFiles.prefetch}.ts`,
       content: prefetchResult,
+    },
+    {
+      name: `${OpenApiRqFiles.ensureQueryData}.ts`,
+      content: enqureResult,
     },
   ];
 };

@@ -58,4 +58,8 @@ describe("generate", () => {
   test("prefetch.ts", () => {
     expect(readOutput("prefetch.ts")).toMatchSnapshot();
   });
+
+  test("ensureQueryData.ts", () => {
+    expect(readOutput("ensureQueryData.ts")).toMatchSnapshot();
+  });
 });
