@@ -30,6 +30,14 @@ export const UseDefaultServiceFindPaginatedPetsKeyFn = ({ limit, page, tags }: {
   page?: number;
   tags?: string[];
 } = {}, queryKey?: Array<unknown>) => [useDefaultServiceFindPaginatedPetsKey, ...(queryKey ?? [{ limit, page, tags }])];
+export type DefaultServiceFindCursorBasedPetsDefaultResponse = Awaited<ReturnType<typeof DefaultService.findCursorBasedPets>>;
+export type DefaultServiceFindCursorBasedPetsQueryResult<TData = DefaultServiceFindCursorBasedPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
+export const useDefaultServiceFindCursorBasedPetsKey = "DefaultServiceFindCursorBasedPets";
+export const UseDefaultServiceFindCursorBasedPetsKeyFn = ({ limit, page, tags }: {
+  limit?: number;
+  page?: string;
+  tags?: string[];
+} = {}, queryKey?: Array<unknown>) => [useDefaultServiceFindCursorBasedPetsKey, ...(queryKey ?? [{ limit, page, tags }])];
 export type DefaultServiceAddPetMutationResult = Awaited<ReturnType<typeof DefaultService.addPet>>;
 export type DefaultServicePostNotDefinedMutationResult = Awaited<ReturnType<typeof DefaultService.postNotDefined>>;
 export type DefaultServiceDeletePetMutationResult = Awaited<ReturnType<typeof DefaultService.deletePet>>;
@@ -126,6 +134,26 @@ export const useDefaultServiceFindPaginatedPetsInfinite = <TData = InfiniteData<
     };
   }).meta.next, ...options
 });
+/**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindCursorBasedPetsInfinite = <TData = InfiniteData<Common.DefaultServiceFindCursorBasedPetsDefaultResponse>, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, tags }: {
+  limit?: number;
+  tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useInfiniteQuery({
+  queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, tags }, queryKey), queryFn: ({ pageParam }) => DefaultService.findCursorBasedPets({ limit, page: pageParam as string, tags }) as TData, initialPageParam: "initial", getNextPageParam: response => (response as {
+    meta: {
+      next: string;
+    };
+  }).meta.next, ...options
+});
 "
 `;
 
@@ -183,6 +211,21 @@ export const prefetchUseDefaultServiceFindPaginatedPets = (queryClient: QueryCli
   page?: number;
   tags?: string[];
 } = {}) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) });
+/**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const prefetchUseDefaultServiceFindCursorBasedPets = (queryClient: QueryClient, { limit, page, tags }: {
+  limit?: number;
+  page?: string;
+  tags?: string[];
+} = {}) => queryClient.prefetchQuery({ queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, page, tags }), queryFn: () => DefaultService.findCursorBasedPets({ limit, page, tags }) });
 "
 `;
 
@@ -241,6 +284,21 @@ export const useDefaultServiceFindPaginatedPets = <TData = Common.DefaultService
   page?: number;
   tags?: string[];
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) as TData, ...options });
+/**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindCursorBasedPets = <TData = Common.DefaultServiceFindCursorBasedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, page, tags }: {
+  limit?: number;
+  page?: string;
+  tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findCursorBasedPets({ limit, page, tags }) as TData, ...options });
 /**
 * Creates a new pet in the store. Duplicates are allowed
 * @param data The data for the request.
@@ -329,5 +387,20 @@ export const useDefaultServiceFindPaginatedPetsSuspense = <TData = Common.Defaul
   page?: number;
   tags?: string[];
 } = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindPaginatedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findPaginatedPets({ limit, page, tags }) as TData, ...options });
+/**
+* Returns cursor-based pets from the system that the user has access to
+*
+* @param data The data for the request.
+* @param data.page string to start from
+* @param data.tags tags to filter by
+* @param data.limit maximum number of results to return
+* @returns unknown pet response
+* @throws ApiError
+*/
+export const useDefaultServiceFindCursorBasedPetsSuspense = <TData = Common.DefaultServiceFindCursorBasedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>({ limit, page, tags }: {
+  limit?: number;
+  page?: string;
+  tags?: string[];
+} = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseDefaultServiceFindCursorBasedPetsKeyFn({ limit, page, tags }, queryKey), queryFn: () => DefaultService.findCursorBasedPets({ limit, page, tags }) as TData, ...options });
 "
 `;
