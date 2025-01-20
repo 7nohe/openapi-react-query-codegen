@@ -240,7 +240,10 @@ export function createQueryKeyFnExport(
   modelNames: string[] = [],
 ) {
   // Mutation keys don't require clientOptions
-  const params = type === "query" ? getRequestParamFromMethod(method, undefined, modelNames) : null;
+  const params =
+    type === "query"
+      ? getRequestParamFromMethod(method, undefined, modelNames)
+      : null;
 
   // override key is used to allow the user to override the the queryKey values
   const overrideKey = ts.factory.createParameterDeclaration(
