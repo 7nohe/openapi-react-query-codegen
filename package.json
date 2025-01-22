@@ -32,7 +32,7 @@
     "lint:fix": "biome check --write .",
     "prepublishOnly": "npm run build",
     "preview": "npm run build && npm -C examples/react-app run generate:api",
-    "release": "npx git-ensure -a && npx bumpp --commit --tag --push",
+    "release": "npx git-ensure -a -b v1 && npx bumpp --commit --tag --push",
     "snapshot": "vitest --update",
     "test": "vitest --coverage.enabled true"
   },
