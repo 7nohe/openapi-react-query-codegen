@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { Project, SyntaxKind } from "ts-morph";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createSource } from "../src/createSource.mjs";
 import { cleanOutputs, generateTSClients, outputPath } from "./utils";
 
@@ -131,10 +131,7 @@ describe("Issue #181: useSuspenseQuery data type should not include undefined", 
 
     console.log("\n=== Issue #181 Options Type Check ===");
     console.log("Has UseQueryOptions:", !!hasUseQueryOptions);
-    console.log(
-      "Has UseSuspenseQueryOptions:",
-      !!hasUseSuspenseQueryOptions,
-    );
+    console.log("Has UseSuspenseQueryOptions:", !!hasUseSuspenseQueryOptions);
     console.log("=====================================\n");
 
     // BEFORE FIX: This assertion SHOULD FAIL

@@ -266,7 +266,9 @@ function createQueryHook({
                       ts.factory.createIdentifier(
                         isInfiniteQuery
                           ? "UseInfiniteQueryOptions"
-                          : "UseQueryOptions",
+                          : queryString === "useSuspenseQuery"
+                            ? "UseSuspenseQueryOptions"
+                            : "UseQueryOptions",
                       ),
                       [
                         ts.factory.createTypeReferenceNode(TData),
