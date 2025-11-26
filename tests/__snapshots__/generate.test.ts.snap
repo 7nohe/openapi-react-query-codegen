@@ -416,7 +416,10 @@ exports[`generate > suspense.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
 import type { Options } from "@hey-api/client-fetch";
-import { type UseQueryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useSuspenseQuery,
+  type UseSuspenseQueryOptions,
+} from "@tanstack/react-query";
 import {
   findPaginatedPets,
   findPetById,
@@ -440,7 +443,10 @@ export const useFindPetsSuspense = <
 >(
   clientOptions: Options<FindPetsData, true> = {},
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey),
@@ -457,7 +463,10 @@ export const useGetNotDefinedSuspense = <
 >(
   clientOptions: Options<unknown, true> = {},
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey),
@@ -474,7 +483,10 @@ export const useFindPetByIdSuspense = <
 >(
   clientOptions: Options<FindPetByIdData, true>,
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey),
@@ -491,7 +503,10 @@ export const useFindPaginatedPetsSuspense = <
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey),
