@@ -429,19 +429,15 @@ import {
 import type {
   FindPaginatedPetsData,
   FindPaginatedPetsError,
-  FindPaginatedPetsResponse,
   FindPetByIdData,
   FindPetByIdError,
-  FindPetByIdResponse,
   FindPetsData,
   FindPetsError,
-  FindPetsResponse,
   GetNotDefinedError,
-  GetNotDefinedResponse,
 } from "../requests/types.gen";
 import * as Common from "./common";
 export const useFindPetsSuspense = <
-  TData = FindPetsResponse,
+  TData = NonNullable<Common.FindPetsDefaultResponse>,
   TError = FindPetsError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -461,7 +457,7 @@ export const useFindPetsSuspense = <
     ...options,
   });
 export const useGetNotDefinedSuspense = <
-  TData = GetNotDefinedResponse,
+  TData = NonNullable<Common.GetNotDefinedDefaultResponse>,
   TError = GetNotDefinedError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -481,7 +477,7 @@ export const useGetNotDefinedSuspense = <
     ...options,
   });
 export const useFindPetByIdSuspense = <
-  TData = FindPetByIdResponse,
+  TData = NonNullable<Common.FindPetByIdDefaultResponse>,
   TError = FindPetByIdError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
@@ -501,7 +497,7 @@ export const useFindPetByIdSuspense = <
     ...options,
   });
 export const useFindPaginatedPetsSuspense = <
-  TData = FindPaginatedPetsResponse,
+  TData = NonNullable<Common.FindPaginatedPetsDefaultResponse>,
   TError = FindPaginatedPetsError,
   TQueryKey extends Array<unknown> = unknown[],
 >(

@@ -60,15 +60,14 @@ const createApiResponseType = ({
     ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name)),
   );
 
-  // Response data type for suspense - use Response type directly to exclude undefined
+  // Response data type for suspense - wrap with NonNullable to exclude undefined
   const suspenseResponseDataType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TData.text,
     undefined,
     ts.factory.createTypeReferenceNode(
-      ts.factory.createIdentifier(
-        `${capitalizeFirstLetter(methodName)}Response`,
-      ),
+      ts.factory.createIdentifier("NonNullable"),
+      [ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name))],
     ),
   );
 
@@ -106,9 +105,9 @@ const createApiResponseType = ({
      */
     responseDataType,
     /**
-     * ResponseDataType for suspense - use Response type directly to exclude undefined
+     * ResponseDataType for suspense - wrap with NonNullable to exclude undefined
      *
-     * MyClassMethodResponse
+     * NonNullable<MyClassMethodDefaultResponse>
      */
     suspenseResponseDataType,
     /**
