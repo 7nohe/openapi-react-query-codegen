@@ -12,7 +12,7 @@ exports[`createSource > createSource - @hey-api/client-axios 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import { type Options } from "@hey-api/client-axios";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 import { AxiosError } from "axios";
@@ -49,7 +49,7 @@ exports[`createSource > createSource - @hey-api/client-axios 3`] = `
 
 import * as Common from "./common";
 import { type Options } from "@hey-api/client-axios";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 import { AxiosError } from "axios";
@@ -68,14 +68,14 @@ exports[`createSource > createSource - @hey-api/client-axios 4`] = `
 
 import * as Common from "./common";
 import { type Options } from "@hey-api/client-axios";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 import { AxiosError } from "axios";
-export const useFindPetsSuspense = <TData = Common.FindPetsDefaultResponse, TError = AxiosError<FindPetsError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey), queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
-export const useGetNotDefinedSuspense = <TData = Common.GetNotDefinedDefaultResponse, TError = AxiosError<GetNotDefinedError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<unknown, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
-export const useFindPetByIdSuspense = <TData = Common.FindPetByIdDefaultResponse, TError = AxiosError<FindPetByIdError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
-export const useFindPaginatedPetsSuspense = <TData = Common.FindPaginatedPetsDefaultResponse, TError = AxiosError<FindPaginatedPetsError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetsSuspense = <TData = FindPetsResponse, TError = AxiosError<FindPetsError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey), queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useGetNotDefinedSuspense = <TData = GetNotDefinedResponse, TError = AxiosError<GetNotDefinedError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<unknown, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetByIdSuspense = <TData = FindPetByIdResponse, TError = AxiosError<FindPetByIdError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPetsSuspense = <TData = FindPaginatedPetsResponse, TError = AxiosError<FindPaginatedPetsError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 "
 `;
 
@@ -84,7 +84,7 @@ exports[`createSource > createSource - @hey-api/client-axios 5`] = `
 
 import * as Common from "./common";
 import { type Options } from "@hey-api/client-axios";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 import { AxiosError } from "axios";
@@ -107,7 +107,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import { type Options } from "@hey-api/client-fetch";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 export type FindPetsDefaultResponse = Awaited<ReturnType<typeof findPets>>["data"];
@@ -143,7 +143,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 3`] = `
 
 import * as Common from "./common";
 import { type Options } from "@hey-api/client-fetch";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 export const useFindPets = <TData = Common.FindPetsDefaultResponse, TError = FindPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey), queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
@@ -161,13 +161,13 @@ exports[`createSource > createSource - @hey-api/client-fetch 4`] = `
 
 import * as Common from "./common";
 import { type Options } from "@hey-api/client-fetch";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
-export const useFindPetsSuspense = <TData = Common.FindPetsDefaultResponse, TError = FindPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey), queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
-export const useGetNotDefinedSuspense = <TData = Common.GetNotDefinedDefaultResponse, TError = GetNotDefinedError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<unknown, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
-export const useFindPetByIdSuspense = <TData = Common.FindPetByIdDefaultResponse, TError = FindPetByIdError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
-export const useFindPaginatedPetsSuspense = <TData = Common.FindPaginatedPetsDefaultResponse, TError = FindPaginatedPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetsSuspense = <TData = FindPetsResponse, TError = FindPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey), queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useGetNotDefinedSuspense = <TData = GetNotDefinedResponse, TError = GetNotDefinedError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<unknown, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetByIdSuspense = <TData = FindPetByIdResponse, TError = FindPetByIdError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPetsSuspense = <TData = FindPaginatedPetsResponse, TError = FindPaginatedPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 "
 `;
 
@@ -176,7 +176,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 5`] = `
 
 import * as Common from "./common";
 import { type Options } from "@hey-api/client-fetch";
-import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { client, findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/services.gen";
 import { Pet, NewPet, Error, FindPetsData, FindPetsResponse, FindPetsError, AddPetData, AddPetResponse, AddPetError, GetNotDefinedResponse, GetNotDefinedError, PostNotDefinedResponse, PostNotDefinedError, FindPetByIdData, FindPetByIdResponse, FindPetByIdError, DeletePetData, DeletePetResponse, DeletePetError, FindPaginatedPetsData, FindPaginatedPetsResponse, FindPaginatedPetsError } from "../requests/types.gen";
 export const prefetchUseFindPets = (queryClient: QueryClient, clientOptions: Options<FindPetsData, true> = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetsKeyFn(clientOptions), queryFn: () => findPets({ ...clientOptions }).then(response => response.data) });

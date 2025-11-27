@@ -416,7 +416,10 @@ exports[`generate > suspense.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
 import type { Options } from "@hey-api/client-fetch";
-import { type UseQueryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import {
+  useSuspenseQuery,
+  type UseSuspenseQueryOptions,
+} from "@tanstack/react-query";
 import {
   findPaginatedPets,
   findPetById,
@@ -426,21 +429,28 @@ import {
 import type {
   FindPaginatedPetsData,
   FindPaginatedPetsError,
+  FindPaginatedPetsResponse,
   FindPetByIdData,
   FindPetByIdError,
+  FindPetByIdResponse,
   FindPetsData,
   FindPetsError,
+  FindPetsResponse,
   GetNotDefinedError,
+  GetNotDefinedResponse,
 } from "../requests/types.gen";
 import * as Common from "./common";
 export const useFindPetsSuspense = <
-  TData = Common.FindPetsDefaultResponse,
+  TData = FindPetsResponse,
   TError = FindPetsError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPetsData, true> = {},
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey),
@@ -451,13 +461,16 @@ export const useFindPetsSuspense = <
     ...options,
   });
 export const useGetNotDefinedSuspense = <
-  TData = Common.GetNotDefinedDefaultResponse,
+  TData = GetNotDefinedResponse,
   TError = GetNotDefinedError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<unknown, true> = {},
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey),
@@ -468,13 +481,16 @@ export const useGetNotDefinedSuspense = <
     ...options,
   });
 export const useFindPetByIdSuspense = <
-  TData = Common.FindPetByIdDefaultResponse,
+  TData = FindPetByIdResponse,
   TError = FindPetByIdError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPetByIdData, true>,
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey),
@@ -485,13 +501,16 @@ export const useFindPetByIdSuspense = <
     ...options,
   });
 export const useFindPaginatedPetsSuspense = <
-  TData = Common.FindPaginatedPetsDefaultResponse,
+  TData = FindPaginatedPetsResponse,
   TError = FindPaginatedPetsError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},
   queryKey?: TQueryKey,
-  options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
+  options?: Omit<
+    UseSuspenseQueryOptions<TData, TError>,
+    "queryKey" | "queryFn"
+  >,
 ) =>
   useSuspenseQuery<TData, TError>({
     queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey),

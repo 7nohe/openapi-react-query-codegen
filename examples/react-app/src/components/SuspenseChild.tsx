@@ -1,17 +1,14 @@
 import { useFindPetsSuspense } from "../../openapi/queries/suspense";
 
 export const SuspenseChild = () => {
-  const { data, error } = useFindPetsSuspense({
+  // useSuspenseQuery enforces throwOnError: true, so errors are thrown and caught by ErrorBoundary
+  const { data } = useFindPetsSuspense({
     query: { tags: [], limit: 10 },
   });
-  console.log({ error });
-  if (!Array.isArray(data)) {
-    return <div>Error!</div>;
-  }
 
   return (
     <ul>
-      {data?.map((pet) => (
+      {data.map((pet) => (
         <li key={pet.id}>{pet.name}</li>
       ))}
     </ul>

@@ -102,6 +102,11 @@ export const createImports = ({
             undefined,
             ts.factory.createIdentifier("UseMutationResult"),
           ),
+          ts.factory.createImportSpecifier(
+            false,
+            undefined,
+            ts.factory.createIdentifier("UseSuspenseQueryOptions"),
+          ),
         ]),
       ),
       ts.factory.createStringLiteral("@tanstack/react-query"),
