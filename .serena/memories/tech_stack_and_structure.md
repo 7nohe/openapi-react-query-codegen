@@ -1,0 +1,5 @@
+# Tech stack and structure
+- Runtime/tooling: Node (>=14), pnpm (>=9), TypeScript (strict, NodeNext). Uses ts-morph and TypeScript factory APIs for codegen. Tests: Vitest. Lint/format: Biome. Bundling/CLI output in `dist/` via `tsc`.
+- Source layout: `src/` contains CLI/generator pieces (generate.mts, createSource.mts, createImports.mts, createExports.mts, format.mts, service.mts, etc.). `tests/` holds Vitest suites. `examples/` has sample apps per framework; `docs/` uses Astro for docs site. Built artifacts land in `dist/`.
+- Config: `tsconfig.json` sets strict + ESNext + DOM libs, NodeNext module resolution. `biome.json` enables formatter/linter with 2-space indent and import organization; ignores dist/examples build outputs.
+- Scripts of interest (package.json): build via `pnpm build` (rimraf dist && tsc), lint via `pnpm lint` (biome check), tests via `pnpm test` (vitest --coverage.enabled true), preview generators under examples (preview:*), release uses bumpp/git-ensure.
