@@ -67,7 +67,11 @@ const createApiResponseType = ({
     undefined,
     ts.factory.createTypeReferenceNode(
       ts.factory.createIdentifier("NonNullable"),
-      [ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name))],
+      [
+        ts.factory.createTypeReferenceNode(
+          BuildCommonTypeName(apiResponse.name),
+        ),
+      ],
     ),
   );
 
