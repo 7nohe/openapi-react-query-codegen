@@ -60,6 +60,21 @@ const createApiResponseType = ({
     ts.factory.createTypeReferenceNode(BuildCommonTypeName(apiResponse.name)),
   );
 
+  // Response data type for suspense - wrap with NonNullable to exclude undefined
+  const suspenseResponseDataType = ts.factory.createTypeParameterDeclaration(
+    undefined,
+    TData.text,
+    undefined,
+    ts.factory.createTypeReferenceNode(
+      ts.factory.createIdentifier("NonNullable"),
+      [
+        ts.factory.createTypeReferenceNode(
+          BuildCommonTypeName(apiResponse.name),
+        ),
+      ],
+    ),
+  );
+
   const responseErrorType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TError.text,
@@ -93,6 +108,12 @@ const createApiResponseType = ({
      * MyClassMethodDefaultResponse
      */
     responseDataType,
+    /**
+     * ResponseDataType for suspense - wrap with NonNullable to exclude undefined
+     *
+     * NonNullable<MyClassMethodDefaultResponse>
+     */
+    suspenseResponseDataType,
     /**
      * ErrorDataType
      *
@@ -202,6 +223,7 @@ function createQueryHook({
   }
 
   const isInfiniteQuery = queryString === "useInfiniteQuery";
+  const isSuspenseQuery = queryString === "useSuspenseQuery";
 
   const responseDataTypeRef = responseDataType.default as ts.TypeReferenceNode;
   const responseDataTypeIdentifier =
@@ -266,7 +288,9 @@ function createQueryHook({
                       ts.factory.createIdentifier(
                         isInfiniteQuery
                           ? "UseInfiniteQueryOptions"
-                          : "UseQueryOptions",
+                          : isSuspenseQuery
+                            ? "UseSuspenseQueryOptions"
+                            : "UseQueryOptions",
                       ),
                       [
                         ts.factory.createTypeReferenceNode(TData),
@@ -469,6 +493,7 @@ export const createUseQuery = ({
   const {
     apiResponse: defaultApiResponse,
     responseDataType,
+    suspenseResponseDataType,
     responseErrorType,
   } = createApiResponseType({
     methodName,
@@ -496,7 +521,7 @@ export const createUseQuery = ({
   const suspenseQueryHook = createQueryHook({
     queryString: "useSuspenseQuery",
     suffix: "Suspense",
-    responseDataType,
+    responseDataType: suspenseResponseDataType,
     responseErrorType,
     requestParams,
     method,
