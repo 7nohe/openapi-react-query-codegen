@@ -26,7 +26,7 @@ describe("generate", () => {
       operationId: true,
     };
     await generate(options, "1.0.0");
-  });
+  }, 60000);
 
   afterAll(async () => {
     if (existsSync(path.join(__dirname, "outputs"))) {

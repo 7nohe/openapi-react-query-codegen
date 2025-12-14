@@ -19,6 +19,7 @@ import type {
   FindPetByIdData,
   FindPetsData,
 } from "../requests/types.gen";
+
 export type FindPetsDefaultResponse = Awaited<
   ReturnType<typeof findPets>
 >["data"];
@@ -26,11 +27,13 @@ export type FindPetsQueryResult<
   TData = FindPetsDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
+
 export const useFindPetsKey = "FindPets";
 export const UseFindPetsKeyFn = (
   clientOptions: Options<FindPetsData, true> = {},
   queryKey?: Array<unknown>,
 ) => [useFindPetsKey, ...(queryKey ?? [clientOptions])];
+
 export type GetNotDefinedDefaultResponse = Awaited<
   ReturnType<typeof getNotDefined>
 >["data"];
@@ -38,11 +41,13 @@ export type GetNotDefinedQueryResult<
   TData = GetNotDefinedDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
+
 export const useGetNotDefinedKey = "GetNotDefined";
 export const UseGetNotDefinedKeyFn = (
   clientOptions: Options<unknown, true> = {},
   queryKey?: Array<unknown>,
 ) => [useGetNotDefinedKey, ...(queryKey ?? [clientOptions])];
+
 export type FindPetByIdDefaultResponse = Awaited<
   ReturnType<typeof findPetById>
 >["data"];
@@ -50,11 +55,13 @@ export type FindPetByIdQueryResult<
   TData = FindPetByIdDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
+
 export const useFindPetByIdKey = "FindPetById";
 export const UseFindPetByIdKeyFn = (
   clientOptions: Options<FindPetByIdData, true>,
   queryKey?: Array<unknown>,
 ) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
+
 export type FindPaginatedPetsDefaultResponse = Awaited<
   ReturnType<typeof findPaginatedPets>
 >["data"];
@@ -62,26 +69,33 @@ export type FindPaginatedPetsQueryResult<
   TData = FindPaginatedPetsDefaultResponse,
   TError = unknown,
 > = UseQueryResult<TData, TError>;
+
 export const useFindPaginatedPetsKey = "FindPaginatedPets";
 export const UseFindPaginatedPetsKeyFn = (
   clientOptions: Options<FindPaginatedPetsData, true> = {},
   queryKey?: Array<unknown>,
 ) => [useFindPaginatedPetsKey, ...(queryKey ?? [clientOptions])];
+
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
+
 export const useAddPetKey = "AddPet";
 export const UseAddPetKeyFn = (mutationKey?: Array<unknown>) => [
   useAddPetKey,
   ...(mutationKey ?? []),
 ];
+
 export type PostNotDefinedMutationResult = Awaited<
   ReturnType<typeof postNotDefined>
 >;
+
 export const usePostNotDefinedKey = "PostNotDefined";
 export const UsePostNotDefinedKeyFn = (mutationKey?: Array<unknown>) => [
   usePostNotDefinedKey,
   ...(mutationKey ?? []),
 ];
+
 export type DeletePetMutationResult = Awaited<ReturnType<typeof deletePet>>;
+
 export const useDeletePetKey = "DeletePet";
 export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [
   useDeletePetKey,
@@ -107,6 +121,7 @@ import type {
   FindPetsData,
 } from "../requests/types.gen";
 import * as Common from "./common";
+
 export const ensureUseFindPetsData = (
   queryClient: QueryClient,
   clientOptions: Options<FindPetsData, true> = {},
@@ -158,12 +173,18 @@ exports[`generate > infiniteQueries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
 import type { Options } from "@hey-api/client-fetch";
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  type UseInfiniteQueryOptions,
+} from "@tanstack/react-query";
 import { findPaginatedPets } from "../requests/services.gen";
 import type {
   FindPaginatedPetsData,
   FindPaginatedPetsError,
 } from "../requests/types.gen";
 import * as Common from "./common";
+
 export const useFindPaginatedPetsInfinite = <
   TData = InfiniteData<Common.FindPaginatedPetsDefaultResponse>,
   TError = FindPaginatedPetsError,
@@ -185,13 +206,7 @@ export const useFindPaginatedPetsInfinite = <
       }).then((response) => response.data as TData) as TData,
     initialPageParam: "initial",
     getNextPageParam: (response) =>
-      (
-        response as {
-          meta: {
-            next: number;
-          };
-        }
-      ).meta.next,
+      (response as { meta: { next: number } }).meta.next,
     ...options,
   });
 "
@@ -214,6 +229,7 @@ import type {
   FindPetsData,
 } from "../requests/types.gen";
 import * as Common from "./common";
+
 export const prefetchUseFindPets = (
   queryClient: QueryClient,
   clientOptions: Options<FindPetsData, true> = {},
@@ -287,6 +303,7 @@ import type {
   PostNotDefinedError,
 } from "../requests/types.gen";
 import * as Common from "./common";
+
 export const useFindPets = <
   TData = Common.FindPetsDefaultResponse,
   TError = FindPetsError,
@@ -436,6 +453,7 @@ import type {
   GetNotDefinedError,
 } from "../requests/types.gen";
 import * as Common from "./common";
+
 export const useFindPetsSuspense = <
   TData = NonNullable<Common.FindPetsDefaultResponse>,
   TError = FindPetsError,

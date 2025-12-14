@@ -1,132 +1,13 @@
 import { join } from "node:path";
 import type { UserConfig } from "@hey-api/openapi-ts";
 import { Project } from "ts-morph";
-import ts from "typescript";
-import { OpenApiRqFiles } from "./constants.mjs";
-import { createExports } from "./createExports.mjs";
-import { createImports } from "./createImports.mjs";
-import { getServices } from "./service.mjs";
+import { buildGenerationContext, parseOperations } from "./parseOperations.mjs";
+import { generateAllFiles } from "./tsmorph/index.mjs";
+import type { GeneratedFile } from "./types.mjs";
 
-const createSourceFile = async ({
-  outputPath,
-  client,
-  pageParam,
-  nextPageParam,
-  initialPageParam,
-}: {
-  outputPath: string;
-  client: UserConfig["client"];
-  pageParam: string;
-  nextPageParam: string;
-  initialPageParam: string;
-}) => {
-  const project = new Project({
-    // Optionally specify compiler options, tsconfig.json, in-memory file system, and more here.
-    // If you initialize with a tsconfig.json, then it will automatically populate the project
-    // with the associated source files.
-    // Read more: https://ts-morph.com/setup/
-    skipAddingFilesFromTsConfig: true,
-  });
-
-  const sourceFiles = join(process.cwd(), outputPath);
-  project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
-
-  const service = await getServices(project);
-
-  const imports = createImports({
-    project,
-    client,
-  });
-
-  const exports = createExports({
-    service,
-    client,
-    project,
-    pageParam,
-    nextPageParam,
-    initialPageParam,
-  });
-
-  const commonSource = ts.factory.createSourceFile(
-    [...imports, ...exports.allCommon],
-    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None,
-  );
-
-  const commonImport = ts.factory.createImportDeclaration(
-    undefined,
-    ts.factory.createImportClause(
-      false,
-      ts.factory.createIdentifier("* as Common"),
-      undefined,
-    ),
-    ts.factory.createStringLiteral(`./${OpenApiRqFiles.common}`),
-    undefined,
-  );
-
-  const commonExport = ts.factory.createExportDeclaration(
-    undefined,
-    false,
-    undefined,
-    ts.factory.createStringLiteral(`./${OpenApiRqFiles.common}`),
-    undefined,
-  );
-
-  const queriesExport = ts.factory.createExportDeclaration(
-    undefined,
-    false,
-    undefined,
-    ts.factory.createStringLiteral(`./${OpenApiRqFiles.queries}`),
-    undefined,
-  );
-
-  const mainSource = ts.factory.createSourceFile(
-    [commonImport, ...imports, ...exports.mainExports],
-    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None,
-  );
-
-  const infiniteQueriesSource = ts.factory.createSourceFile(
-    [commonImport, ...imports, ...exports.infiniteQueriesExports],
-    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None,
-  );
-
-  const suspenseSource = ts.factory.createSourceFile(
-    [commonImport, ...imports, ...exports.suspenseExports],
-    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None,
-  );
-
-  const indexSource = ts.factory.createSourceFile(
-    [commonExport, queriesExport],
-    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None,
-  );
-
-  const prefetchSource = ts.factory.createSourceFile(
-    [commonImport, ...imports, ...exports.allPrefetchExports],
-    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None,
-  );
-
-  const ensureSource = ts.factory.createSourceFile(
-    [commonImport, ...imports, ...exports.allEnsures],
-    ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-    ts.NodeFlags.None,
-  );
-
-  return {
-    commonSource,
-    infiniteQueriesSource,
-    mainSource,
-    suspenseSource,
-    indexSource,
-    prefetchSource,
-    ensureSource,
-  };
-};
-
+/**
+ * Create source files using ts-morph based generation.
+ */
 export const createSource = async ({
   outputPath,
   client,
@@ -141,147 +22,28 @@ export const createSource = async ({
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;
-}) => {
-  const queriesFile = ts.createSourceFile(
-    `${OpenApiRqFiles.queries}.ts`,
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-  const infiniteQueriesFile = ts.createSourceFile(
-    `${OpenApiRqFiles.infiniteQueries}.ts`,
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-  const commonFile = ts.createSourceFile(
-    `${OpenApiRqFiles.common}.ts`,
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-  const suspenseFile = ts.createSourceFile(
-    `${OpenApiRqFiles.suspense}.ts`,
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-
-  const indexFile = ts.createSourceFile(
-    `${OpenApiRqFiles.index}.ts`,
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-
-  const prefetchFile = ts.createSourceFile(
-    `${OpenApiRqFiles.prefetch}.ts`,
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-
-  const ensureQueryDataFile = ts.createSourceFile(
-    `${OpenApiRqFiles.ensureQueryData}.ts`,
-    "",
-    ts.ScriptTarget.Latest,
-    false,
-    ts.ScriptKind.TS,
-  );
-
-  const printer = ts.createPrinter({
-    newLine: ts.NewLineKind.LineFeed,
-    removeComments: false,
+}): Promise<GeneratedFile[]> => {
+  // Initialize ts-morph project to read the generated OpenAPI client
+  const project = new Project({
+    skipAddingFilesFromTsConfig: true,
   });
 
-  const {
-    commonSource,
-    mainSource,
-    infiniteQueriesSource,
-    suspenseSource,
-    indexSource,
-    prefetchSource,
-    ensureSource,
-  } = await createSourceFile({
-    outputPath,
-    client,
+  const sourceFiles = join(process.cwd(), outputPath);
+  project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+
+  // Parse operations from the service file
+  const operations = await parseOperations(project, pageParam);
+
+  // Build generation context
+  const ctx = buildGenerationContext(
+    project,
+    client as "@hey-api/client-fetch" | "@hey-api/client-axios",
     pageParam,
     nextPageParam,
     initialPageParam,
-  });
+    version,
+  );
 
-  const comment = `// generated with @7nohe/openapi-react-query-codegen@${version} \n\n`;
-
-  const commonResult =
-    comment +
-    printer.printNode(ts.EmitHint.Unspecified, commonSource, commonFile);
-
-  const mainResult =
-    comment +
-    printer.printNode(ts.EmitHint.Unspecified, mainSource, queriesFile);
-
-  const infiniteQueriesResult =
-    comment +
-    printer.printNode(
-      ts.EmitHint.Unspecified,
-      infiniteQueriesSource,
-      infiniteQueriesFile,
-    );
-
-  const suspenseResult =
-    comment +
-    printer.printNode(ts.EmitHint.Unspecified, suspenseSource, suspenseFile);
-
-  const indexResult =
-    comment +
-    printer.printNode(ts.EmitHint.Unspecified, indexSource, indexFile);
-
-  const prefetchResult =
-    comment +
-    printer.printNode(ts.EmitHint.Unspecified, prefetchSource, prefetchFile);
-
-  const enqureResult =
-    comment +
-    printer.printNode(
-      ts.EmitHint.Unspecified,
-      ensureSource,
-      ensureQueryDataFile,
-    );
-
-  return [
-    {
-      name: `${OpenApiRqFiles.index}.ts`,
-      content: indexResult,
-    },
-    {
-      name: `${OpenApiRqFiles.common}.ts`,
-      content: commonResult,
-    },
-    {
-      name: `${OpenApiRqFiles.infiniteQueries}.ts`,
-      content: infiniteQueriesResult,
-    },
-    {
-      name: `${OpenApiRqFiles.queries}.ts`,
-      content: mainResult,
-    },
-    {
-      name: `${OpenApiRqFiles.suspense}.ts`,
-      content: suspenseResult,
-    },
-    {
-      name: `${OpenApiRqFiles.prefetch}.ts`,
-      content: prefetchResult,
-    },
-    {
-      name: `${OpenApiRqFiles.ensureQueryData}.ts`,
-      content: enqureResult,
-    },
-  ];
+  // Generate all files using ts-morph
+  return generateAllFiles(operations, ctx);
 };

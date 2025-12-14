@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createSource } from "../src/createSource.mjs";
 import { cleanOutputs, generateTSClients, outputPath } from "./utils";
+
 const fileName = "createSource";
+
 describe(fileName, () => {
   beforeAll(async () => await generateTSClients(fileName));
   afterAll(async () => await cleanOutputs(fileName));
@@ -15,6 +17,17 @@ describe(fileName, () => {
       initialPageParam: "1",
       client: "@hey-api/client-fetch",
     });
+
+    expect(source).toHaveLength(7);
+    expect(source.map((s) => s.name)).toEqual([
+      "index.ts",
+      "common.ts",
+      "queries.ts",
+      "suspense.ts",
+      "infiniteQueries.ts",
+      "prefetch.ts",
+      "ensureQueryData.ts",
+    ]);
 
     const indexTs = source.find((s) => s.name === "index.ts");
     expect(indexTs?.content).toMatchSnapshot();

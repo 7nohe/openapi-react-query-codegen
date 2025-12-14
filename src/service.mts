@@ -90,7 +90,6 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
       const methodDescription: FunctionDescription = {
         node,
         method: declaration,
-        methodBlock: methodBlockNode,
         httpMethodName,
         jsDoc,
         isDeprecated,
