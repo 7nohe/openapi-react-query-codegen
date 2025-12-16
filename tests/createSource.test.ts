@@ -18,7 +18,7 @@ describe(fileName, () => {
       client: "@hey-api/client-fetch",
     });
 
-    expect(source).toHaveLength(7);
+    expect(source).toHaveLength(8);
     expect(source.map((s) => s.name)).toEqual([
       "index.ts",
       "common.ts",
@@ -27,6 +27,7 @@ describe(fileName, () => {
       "infiniteQueries.ts",
       "prefetch.ts",
       "ensureQueryData.ts",
+      "router.ts",
     ]);
 
     const indexTs = source.find((s) => s.name === "index.ts");
@@ -43,6 +44,9 @@ describe(fileName, () => {
 
     const prefetchTs = source.find((s) => s.name === "prefetch.ts");
     expect(prefetchTs?.content).toMatchSnapshot();
+
+    const routerTs = source.find((s) => s.name === "router.ts");
+    expect(routerTs?.content).toMatchSnapshot();
   });
 
   test("createSource - @hey-api/client-axios", async () => {
@@ -69,5 +73,8 @@ describe(fileName, () => {
 
     const prefetchTs = source.find((s) => s.name === "prefetch.ts");
     expect(prefetchTs?.content).toMatchSnapshot();
+
+    const routerTs = source.find((s) => s.name === "router.ts");
+    expect(routerTs?.content).toMatchSnapshot();
   });
 });

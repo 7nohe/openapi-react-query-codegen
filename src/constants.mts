@@ -13,4 +13,5 @@ export const OpenApiRqFiles = {
   index: "index",
   prefetch: "prefetch",
   ensureQueryData: "ensureQueryData",
+  router: "router",
 } as const;

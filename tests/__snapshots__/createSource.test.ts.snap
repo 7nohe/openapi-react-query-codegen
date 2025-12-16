@@ -112,6 +112,38 @@ export const prefetchUseFindPaginatedPets = (queryClient: QueryClient, clientOpt
 "
 `;
 
+exports[`createSource > createSource - @hey-api/client-axios 6`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
+import { type Options } from "@hey-api/client-axios";
+import { type QueryClient } from "@tanstack/react-query";
+import { FindPetsData, FindPetByIdData, FindPaginatedPetsData } from "../requests/types.gen";
+import { ensureUseFindPetsData, ensureUseGetNotDefinedData, ensureUseFindPetByIdData, ensureUseFindPaginatedPetsData } from "./ensureQueryData";
+
+export const withQueryPrefetch = (prefetch: () => Promise<unknown>) => ({
+    onMouseEnter: () => void prefetch(),
+    onTouchStart: () => void prefetch(),
+  });
+export const loaderUseFindPets = (deps: { queryClient: QueryClient; clientOptions?: Options<FindPetsData, true> }) => async () => {
+    await ensureUseFindPetsData(deps.queryClient, deps.clientOptions);
+    return null;
+  };
+export const loaderUseGetNotDefined = (deps: { queryClient: QueryClient; clientOptions?: Options<unknown, true> }) => async () => {
+    await ensureUseGetNotDefinedData(deps.queryClient, deps.clientOptions);
+    return null;
+  };
+export const loaderUseFindPetById = (deps: { queryClient: QueryClient; clientOptions?: Omit<Options<FindPetByIdData, true>, "path"> }) => async ({ params }: { params: FindPetByIdData["path"] }) => {
+    const options: Options<FindPetByIdData, true> = { ...(deps.clientOptions ?? {}), path: params };
+    await ensureUseFindPetByIdData(deps.queryClient, options);
+    return null;
+  };
+export const loaderUseFindPaginatedPets = (deps: { queryClient: QueryClient; clientOptions?: Options<FindPaginatedPetsData, true> }) => async () => {
+    await ensureUseFindPaginatedPetsData(deps.queryClient, deps.clientOptions);
+    return null;
+  };
+"
+`;
+
 exports[`createSource > createSource - @hey-api/client-fetch 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
@@ -217,5 +249,37 @@ export const prefetchUseFindPets = (queryClient: QueryClient, clientOptions: Opt
 export const prefetchUseGetNotDefined = (queryClient: QueryClient, clientOptions: Options<unknown, true> = {}) => queryClient.prefetchQuery({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data) });
 export const prefetchUseFindPetById = (queryClient: QueryClient, clientOptions: Options<FindPetByIdData, true>) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data) });
 export const prefetchUseFindPaginatedPets = (queryClient: QueryClient, clientOptions: Options<FindPaginatedPetsData, true> = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data) });
+"
+`;
+
+exports[`createSource > createSource - @hey-api/client-fetch 6`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
+import { type Options } from "@hey-api/client-fetch";
+import { type QueryClient } from "@tanstack/react-query";
+import { FindPetsData, FindPetByIdData, FindPaginatedPetsData } from "../requests/types.gen";
+import { ensureUseFindPetsData, ensureUseGetNotDefinedData, ensureUseFindPetByIdData, ensureUseFindPaginatedPetsData } from "./ensureQueryData";
+
+export const withQueryPrefetch = (prefetch: () => Promise<unknown>) => ({
+    onMouseEnter: () => void prefetch(),
+    onTouchStart: () => void prefetch(),
+  });
+export const loaderUseFindPets = (deps: { queryClient: QueryClient; clientOptions?: Options<FindPetsData, true> }) => async () => {
+    await ensureUseFindPetsData(deps.queryClient, deps.clientOptions);
+    return null;
+  };
+export const loaderUseGetNotDefined = (deps: { queryClient: QueryClient; clientOptions?: Options<unknown, true> }) => async () => {
+    await ensureUseGetNotDefinedData(deps.queryClient, deps.clientOptions);
+    return null;
+  };
+export const loaderUseFindPetById = (deps: { queryClient: QueryClient; clientOptions?: Omit<Options<FindPetByIdData, true>, "path"> }) => async ({ params }: { params: FindPetByIdData["path"] }) => {
+    const options: Options<FindPetByIdData, true> = { ...(deps.clientOptions ?? {}), path: params };
+    await ensureUseFindPetByIdData(deps.queryClient, options);
+    return null;
+  };
+export const loaderUseFindPaginatedPets = (deps: { queryClient: QueryClient; clientOptions?: Options<FindPaginatedPetsData, true> }) => async () => {
+    await ensureUseFindPaginatedPetsData(deps.queryClient, deps.clientOptions);
+    return null;
+  };
 "
 `;
