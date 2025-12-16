@@ -29,7 +29,6 @@ import {
   buildUseQueryHook,
   buildUseSuspenseQueryHook,
 } from "./buildQueryHooks.mjs";
-import { buildLoaderFactory, buildWithQueryPrefetch } from "./buildRouter.mjs";
 import {
   buildAxiosErrorImport,
   buildClientImport,
@@ -295,88 +294,6 @@ function generateEnsureQueryDataFile(
 }
 
 /**
- * Build imports for router.ts file.
- */
-function buildRouterFileImports(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): ImportDeclarationStructure[] {
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-
-  // Get Data type names needed for GET operations
-  const dataTypeNames = getOperations
-    .map((op) => `${op.capitalizedMethodName}Data`)
-    .filter((name) => ctx.modelNames.includes(name));
-
-  // Get ensure function names
-  const ensureFnNames = getOperations.map(
-    (op) => `ensureUse${op.capitalizedMethodName}Data`,
-  );
-
-  const imports: ImportDeclarationStructure[] = [
-    // Options import from client
-    buildClientImport(ctx),
-    // QueryClient import
-    {
-      kind: StructureKind.ImportDeclaration,
-      moduleSpecifier: "@tanstack/react-query",
-      namedImports: [{ name: "QueryClient", isTypeOnly: true }],
-    },
-  ];
-
-  // Add Data types import if needed
-  if (dataTypeNames.length > 0) {
-    imports.push({
-      kind: StructureKind.ImportDeclaration,
-      moduleSpecifier: "../requests/types.gen",
-      namedImports: dataTypeNames.map((name) => ({ name })),
-    });
-  }
-
-  // Add ensureQueryData imports
-  if (ensureFnNames.length > 0) {
-    imports.push({
-      kind: StructureKind.ImportDeclaration,
-      moduleSpecifier: "./ensureQueryData",
-      namedImports: ensureFnNames.map((name) => ({ name })),
-    });
-  }
-
-  return imports;
-}
-
-/**
- * Generate the router.ts file content.
- */
-function generateRouterFile(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.router}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildRouterFileImports(operations, ctx));
-
-  // Add withQueryPrefetch helper
-  sourceFile.addVariableStatement(buildWithQueryPrefetch());
-
-  // Only GET operations for loader factories
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-
-  // Add loader factories
-  for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildLoaderFactory(op, ctx));
-  }
-
-  return sourceFile.getFullText();
-}
-
-/**
  * Add the generated header comment to file content.
  */
 function addHeaderComment(content: string, version: string): string {
@@ -435,13 +352,6 @@ export function generateAllFiles(
       name: `${OpenApiRqFiles.ensureQueryData}.ts`,
       content: addHeaderComment(
         generateEnsureQueryDataFile(operations, ctx),
-        ctx.version,
-      ),
-    },
-    {
-      name: `${OpenApiRqFiles.router}.ts`,
-      content: addHeaderComment(
-        generateRouterFile(operations, ctx),
         ctx.version,
       ),
     },
