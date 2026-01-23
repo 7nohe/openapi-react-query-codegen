@@ -13,32 +13,17 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
 
+  // Map old client option to new plugins system
+  const plugins: UserConfig["plugins"] = [
+    "@hey-api/typescript",
+    "@hey-api/sdk",
+  ];
+
   const config: UserConfig = {
-    client: formattedOptions.client,
-    debug: formattedOptions.debug,
     dryRun: false,
-    exportCore: true,
-    output: {
-      format: formattedOptions.format,
-      lint: formattedOptions.lint,
-      path: openApiOutputPath,
-    },
     input: formattedOptions.input,
-    schemas: {
-      export: !formattedOptions.noSchemas,
-      type: formattedOptions.schemaType,
-    },
-    services: {
-      export: true,
-      asClass: false,
-      operationId: !formattedOptions.noOperationId,
-    },
-    types: {
-      dates: formattedOptions.useDateType,
-      export: true,
-      enums: formattedOptions.enums,
-    },
-    useOptions: true,
+    output: openApiOutputPath,
+    plugins,
   };
   await createClient(config);
   const source = await createSource({

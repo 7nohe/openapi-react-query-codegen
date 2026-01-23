@@ -1,6 +1,6 @@
-import type { UserConfig } from "@hey-api/openapi-ts";
 import type { VariableDeclaration } from "ts-morph";
 import ts from "typescript";
+import type { LimitedUserConfig } from "./cli.mjs";
 import {
   BuildCommonTypeName,
   EqualsOrGreaterThanToken,
@@ -24,7 +24,7 @@ const createApiResponseType = ({
   client,
 }: {
   methodName: string;
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
 }) => {
   /** Awaited<ReturnType<typeof myClass.myMethod>> */
   const awaitedResponseDataType = ts.factory.createIndexedAccessTypeNode(
@@ -481,7 +481,7 @@ export const createUseQuery = ({
   modelNames,
 }: {
   functionDescription: FunctionDescription;
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;

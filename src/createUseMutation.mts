@@ -1,5 +1,5 @@
-import type { UserConfig } from "@hey-api/openapi-ts";
 import ts from "typescript";
+import type { LimitedUserConfig } from "./cli.mjs";
 import {
   BuildCommonTypeName,
   EqualsOrGreaterThanToken,
@@ -47,7 +47,7 @@ export const createUseMutation = ({
 }: {
   functionDescription: FunctionDescription;
   modelNames: string[];
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
 }) => {
   const methodName = getNameFromVariable(method);
   const mutationKey = createQueryKeyFromMethod({ method });

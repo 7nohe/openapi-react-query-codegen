@@ -1,6 +1,6 @@
-import type { UserConfig } from "@hey-api/openapi-ts";
 import type { Project } from "ts-morph";
 import ts from "typescript";
+import type { LimitedUserConfig } from "./cli.mjs";
 import { capitalizeFirstLetter } from "./common.mjs";
 import { modelsFileName } from "./constants.mjs";
 import { createPrefetchOrEnsure } from "./createPrefetchOrEnsure.mjs";
@@ -17,7 +17,7 @@ export const createExports = ({
   initialPageParam,
 }: {
   service: Service;
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
   project: Project;
   pageParam: string;
   nextPageParam: string;
@@ -52,13 +52,15 @@ export const createExports = ({
             m.kind === ts.SyntaxKind.PropertySignature &&
             m.name?.getText() === "query",
         );
-        if (
-          query &&
-          ((query as ts.PropertySignature).type as ts.TypeLiteralNode).members
-            .map((m) => m.name?.getText())
-            .includes(pageParam)
-        ) {
-          paginatableMethods.push(methodDataNames[key]);
+        if (query) {
+          const queryType = (query as ts.PropertySignature).type;
+          const members =
+            queryType && ts.isTypeLiteralNode(queryType)
+              ? queryType.members
+              : undefined;
+          if (members?.map((m) => m.name?.getText()).includes(pageParam)) {
+            paginatableMethods.push(methodDataNames[key]);
+          }
         }
       }
     }

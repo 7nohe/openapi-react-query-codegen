@@ -3,8 +3,8 @@
 exports[`generate > common.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import type { UseQueryResult } from "@tanstack/react-query";
+import type { Options } from "../requests/client";
 import type {
   addPet,
   deletePet,
@@ -13,11 +13,12 @@ import type {
   findPets,
   getNotDefined,
   postNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 export type FindPetsDefaultResponse = Awaited<
   ReturnType<typeof findPets>
@@ -40,7 +41,7 @@ export type GetNotDefinedQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useGetNotDefinedKey = "GetNotDefined";
 export const UseGetNotDefinedKeyFn = (
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
   queryKey?: Array<unknown>,
 ) => [useGetNotDefinedKey, ...(queryKey ?? [clientOptions])];
 export type FindPetByIdDefaultResponse = Awaited<
@@ -52,7 +53,7 @@ export type FindPetByIdQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useFindPetByIdKey = "FindPetById";
 export const UseFindPetByIdKeyFn = (
-  clientOptions: Options<FindPetByIdData, true>,
+  clientOptions: Options<FindPetByIdData, true> = {},
   queryKey?: Array<unknown>,
 ) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
 export type FindPaginatedPetsDefaultResponse = Awaited<
@@ -93,18 +94,19 @@ export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [
 exports[`generate > ensureQueryData.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import type { QueryClient } from "@tanstack/react-query";
+import type { Options } from "../requests/client";
 import {
   findPaginatedPets,
   findPetById,
   findPets,
   getNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
 export const ensureUseFindPetsData = (
@@ -118,7 +120,7 @@ export const ensureUseFindPetsData = (
   });
 export const ensureUseGetNotDefinedData = (
   queryClient: QueryClient,
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
 ) =>
   queryClient.ensureQueryData({
     queryKey: Common.UseGetNotDefinedKeyFn(clientOptions),
@@ -127,7 +129,7 @@ export const ensureUseGetNotDefinedData = (
   });
 export const ensureUseFindPetByIdData = (
   queryClient: QueryClient,
-  clientOptions: Options<FindPetByIdData, true>,
+  clientOptions: Options<FindPetByIdData, true> = {},
 ) =>
   queryClient.ensureQueryData({
     queryKey: Common.UseFindPetByIdKeyFn(clientOptions),
@@ -157,12 +159,9 @@ export * from "./queries";
 exports[`generate > infiniteQueries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
-import { findPaginatedPets } from "../requests/services.gen";
-import type {
-  FindPaginatedPetsData,
-  FindPaginatedPetsError,
-} from "../requests/types.gen";
+import type { Options } from "../requests/client";
+import { findPaginatedPets } from "../requests/sdk.gen";
+import type { FindPaginatedPetsData } from "../requests/types.gen";
 import * as Common from "./common";
 export const useFindPaginatedPetsInfinite = <
   TData = InfiniteData<Common.FindPaginatedPetsDefaultResponse>,
@@ -200,18 +199,19 @@ export const useFindPaginatedPetsInfinite = <
 exports[`generate > prefetch.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import type { QueryClient } from "@tanstack/react-query";
+import type { Options } from "../requests/client";
 import {
   findPaginatedPets,
   findPetById,
   findPets,
   getNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
 export const prefetchUseFindPets = (
@@ -225,7 +225,7 @@ export const prefetchUseFindPets = (
   });
 export const prefetchUseGetNotDefined = (
   queryClient: QueryClient,
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseGetNotDefinedKeyFn(clientOptions),
@@ -234,7 +234,7 @@ export const prefetchUseGetNotDefined = (
   });
 export const prefetchUseFindPetById = (
   queryClient: QueryClient,
-  clientOptions: Options<FindPetByIdData, true>,
+  clientOptions: Options<FindPetByIdData, true> = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseFindPetByIdKeyFn(clientOptions),
@@ -256,13 +256,13 @@ export const prefetchUseFindPaginatedPets = (
 exports[`generate > queries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import {
   useMutation,
   type UseMutationOptions,
   useQuery,
   type UseQueryOptions,
 } from "@tanstack/react-query";
+import type { Options } from "../requests/client";
 import {
   addPet,
   deletePet,
@@ -271,20 +271,19 @@ import {
   findPets,
   getNotDefined,
   postNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   AddPetData,
   AddPetError,
   DeletePetData,
   DeletePetError,
   FindPaginatedPetsData,
-  FindPaginatedPetsError,
   FindPetByIdData,
   FindPetByIdError,
   FindPetsData,
   FindPetsError,
-  GetNotDefinedError,
-  PostNotDefinedError,
+  GetNotDefinedData,
+  PostNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
 export const useFindPets = <
@@ -309,7 +308,7 @@ export const useGetNotDefined = <
   TError = GetNotDefinedError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
@@ -326,7 +325,7 @@ export const useFindPetById = <
   TError = FindPetByIdError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<FindPetByIdData, true>,
+  clientOptions: Options<FindPetByIdData, true> = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
@@ -381,11 +380,16 @@ export const usePostNotDefined = <
 >(
   mutationKey?: TQueryKey,
   options?: Omit<
-    UseMutationOptions<TData, TError, Options<unknown, true>, TContext>,
+    UseMutationOptions<
+      TData,
+      TError,
+      Options<PostNotDefinedData, true>,
+      TContext
+    >,
     "mutationKey" | "mutationFn"
   >,
 ) =>
-  useMutation<TData, TError, Options<unknown, true>, TContext>({
+  useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({
     mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey),
     mutationFn: (clientOptions) =>
       postNotDefined(clientOptions) as unknown as Promise<TData>,
@@ -415,25 +419,24 @@ export const useDeletePet = <
 exports[`generate > suspense.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import {
   useSuspenseQuery,
   type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
+import type { Options } from "../requests/client";
 import {
   findPaginatedPets,
   findPetById,
   findPets,
   getNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
-  FindPaginatedPetsError,
   FindPetByIdData,
   FindPetByIdError,
   FindPetsData,
   FindPetsError,
-  GetNotDefinedError,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
 export const useFindPetsSuspense = <
@@ -461,7 +464,7 @@ export const useGetNotDefinedSuspense = <
   TError = GetNotDefinedError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
   queryKey?: TQueryKey,
   options?: Omit<
     UseSuspenseQueryOptions<TData, TError>,
@@ -481,7 +484,7 @@ export const useFindPetByIdSuspense = <
   TError = FindPetByIdError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<FindPetByIdData, true>,
+  clientOptions: Options<FindPetByIdData, true> = {},
   queryKey?: TQueryKey,
   options?: Omit<
     UseSuspenseQueryOptions<TData, TError>,
