@@ -14,7 +14,12 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const formattedOptions = formatOptions(options);
 
   // Map old client option to new plugins system
+  const clientPlugin =
+    formattedOptions.client === "@hey-api/client-axios"
+      ? "@hey-api/client-axios"
+      : "@hey-api/client-fetch";
   const plugins: UserConfig["plugins"] = [
+    clientPlugin,
     "@hey-api/typescript",
     "@hey-api/sdk",
   ];
