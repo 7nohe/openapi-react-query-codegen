@@ -80,7 +80,7 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
       if (ts.isCallExpression(callExpression)) {
         const expr = callExpression.expression;
         if (ts.isPropertyAccessExpression(expr)) {
-          httpMethodName = expr.name.getText();
+          httpMethodName = (expr.name as ts.Identifier).text;
         }
       }
 
@@ -97,7 +97,7 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
         return [tsNode];
       };
 
-      const children = getAllChildren(arrowFunction);
+      const children = getAllChildren(variableStatement.compilerNode);
       // get all JSDoc comments
       // this should be an array of 1 or 0
       const jsDocs = children
