@@ -47,13 +47,14 @@
   "license": "MIT",
   "author": "Daiki Urata (@7nohe)",
   "dependencies": {
-    "@hey-api/openapi-ts": "0.90.1",
+    "@hey-api/openapi-ts": "0.92.3",
     "cross-spawn": "^7.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
     "@types/cross-spawn": "^6.0.6",
     "@types/node": "^22.7.4",
+    "@types/semver": "^7.7.1",
     "@vitest/coverage-v8": "^1.5.0",
     "commander": "^12.0.0",
     "lefthook": "^1.6.10",
@@ -71,5 +72,10 @@
   "engines": {
     "node": ">=14",
     "pnpm": ">=9"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@hey-api/openapi-ts@0.92.3": "patches/@hey-api__openapi-ts@0.92.3.patch"
+    }
   }
 }
