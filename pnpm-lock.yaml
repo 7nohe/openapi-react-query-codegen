@@ -74,6 +74,9 @@ importers:
 
   examples/nextjs-app:
     dependencies:
+      '@hey-api/client-fetch':
+        specifier: ^0.6.0
+        version: 0.6.0
       '@tanstack/react-query':
         specifier: ^5.59.13
         version: 5.59.13(react@18.3.1)
@@ -282,6 +285,9 @@ importers:
 
   examples/tanstack-router-app:
     dependencies:
+      '@hey-api/client-fetch':
+        specifier: ^0.6.0
+        version: 0.6.0
       '@tanstack/react-query':
         specifier: ^5.59.13
         version: 5.59.13(react@18.3.1)
@@ -1301,6 +1307,10 @@ packages:
     deprecated: Starting with v0.73.0, this package is bundled directly inside @hey-api/openapi-ts.
     peerDependencies:
       axios: '>= 1.0.0 < 2'
+
+  '@hey-api/client-fetch@0.6.0':
+    resolution: {integrity: sha512-FlhFsVeH8RxJe/nq8xUzxNbiOpe+GadxlD2pfvDyOyLdCTU4o/LRv46ZVWstaW7DgF4nxhI328chy3+AulwVXw==}
+    deprecated: Starting with v0.73.0, this package is bundled directly inside @hey-api/openapi-ts.
 
   '@hey-api/codegen-core@0.7.0':
     resolution: {integrity: sha512-HglL4B4QwpzocE+c8qDU6XK8zMf8W8Pcv0RpFDYxHuYALWLTnpDUuEsglC7NQ4vC1maoXsBpMbmwpco0N4QviA==}
@@ -6806,6 +6816,8 @@ snapshots:
   '@hey-api/client-axios@0.2.7(axios@1.7.7)':
     dependencies:
       axios: 1.7.7
+
+  '@hey-api/client-fetch@0.6.0': {}
 
   '@hey-api/codegen-core@0.7.0(magicast@0.3.5)(typescript@5.9.3)':
     dependencies:

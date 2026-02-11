@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import { type UserConfig, createClient } from "@hey-api/openapi-ts";
 import type { LimitedUserConfig } from "./cli.mjs";
 import {
@@ -31,6 +33,12 @@ export async function generate(options: LimitedUserConfig, version: string) {
     plugins,
   };
   await createClient(config);
+
+  // Generate backward-compatible services.gen.ts shim
+  // client.gen.ts has the `client` instance; sdk.gen.ts has SDK functions
+  const shimContent = `// This file is auto-generated for backward compatibility\nexport * from './client.gen';\nexport * from './sdk.gen';\n`;
+  await writeFile(path.join(openApiOutputPath, "services.gen.ts"), shimContent);
+
   const source = await createSource({
     outputPath: openApiOutputPath,
     client: formattedOptions.client,

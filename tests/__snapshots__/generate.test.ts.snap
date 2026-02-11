@@ -53,7 +53,7 @@ export type FindPetByIdQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useFindPetByIdKey = "FindPetById";
 export const UseFindPetByIdKeyFn = (
-  clientOptions: Options<FindPetByIdData, true> = {},
+  clientOptions: Options<FindPetByIdData, true>,
   queryKey?: Array<unknown>,
 ) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
 export type FindPaginatedPetsDefaultResponse = Awaited<
@@ -144,7 +144,7 @@ export const ensureUseGetNotDefinedData = (
  */
 export const ensureUseFindPetByIdData = (
   queryClient: QueryClient,
-  clientOptions: Options<FindPetByIdData, true> = {},
+  clientOptions: Options<FindPetByIdData, true>,
 ) =>
   queryClient.ensureQueryData({
     queryKey: Common.UseFindPetByIdKeyFn(clientOptions),
@@ -188,7 +188,7 @@ import * as Common from "./common";
  */
 export const useFindPaginatedPetsInfinite = <
   TData = InfiniteData<Common.FindPaginatedPetsDefaultResponse>,
-  TError = FindPaginatedPetsError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},
@@ -272,7 +272,7 @@ export const prefetchUseGetNotDefined = (
  */
 export const prefetchUseFindPetById = (
   queryClient: QueryClient,
-  clientOptions: Options<FindPetByIdData, true> = {},
+  clientOptions: Options<FindPetByIdData, true>,
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseFindPetByIdKeyFn(clientOptions),
@@ -359,7 +359,7 @@ export const useFindPets = <
  */
 export const useGetNotDefined = <
   TData = Common.GetNotDefinedDefaultResponse,
-  TError = GetNotDefinedError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<GetNotDefinedData, true> = {},
@@ -382,7 +382,7 @@ export const useFindPetById = <
   TError = FindPetByIdError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<FindPetByIdData, true> = {},
+  clientOptions: Options<FindPetByIdData, true>,
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
@@ -400,7 +400,7 @@ export const useFindPetById = <
  */
 export const useFindPaginatedPets = <
   TData = Common.FindPaginatedPetsDefaultResponse,
-  TError = FindPaginatedPetsError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},
@@ -443,7 +443,7 @@ export const useAddPet = <
  */
 export const usePostNotDefined = <
   TData = Common.PostNotDefinedMutationResult,
-  TError = PostNotDefinedError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
   TContext = unknown,
 >(
@@ -545,7 +545,7 @@ export const useFindPetsSuspense = <
  */
 export const useGetNotDefinedSuspense = <
   TData = NonNullable<Common.GetNotDefinedDefaultResponse>,
-  TError = GetNotDefinedError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<GetNotDefinedData, true> = {},
@@ -571,7 +571,7 @@ export const useFindPetByIdSuspense = <
   TError = FindPetByIdError,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<FindPetByIdData, true> = {},
+  clientOptions: Options<FindPetByIdData, true>,
   queryKey?: TQueryKey,
   options?: Omit<
     UseSuspenseQueryOptions<TData, TError>,
@@ -592,7 +592,7 @@ export const useFindPetByIdSuspense = <
  */
 export const useFindPaginatedPetsSuspense = <
   TData = NonNullable<Common.FindPaginatedPetsDefaultResponse>,
-  TError = FindPaginatedPetsError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},

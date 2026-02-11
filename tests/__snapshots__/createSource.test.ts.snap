@@ -27,7 +27,7 @@ export const UseGetNotDefinedKeyFn = (clientOptions: Options<GetNotDefinedData, 
 export type FindPetByIdDefaultResponse = Awaited<ReturnType<typeof findPetById>>["data"];
 export type FindPetByIdQueryResult<TData = FindPetByIdDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useFindPetByIdKey = "FindPetById";
-export const UseFindPetByIdKeyFn = (clientOptions: Options<FindPetByIdData, true> = {}, queryKey?: Array<unknown>) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
+export const UseFindPetByIdKeyFn = (clientOptions: Options<FindPetByIdData, true>, queryKey?: Array<unknown>) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
 export type FindPaginatedPetsDefaultResponse = Awaited<ReturnType<typeof findPaginatedPets>>["data"];
 export type FindPaginatedPetsQueryResult<TData = FindPaginatedPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useFindPaginatedPetsKey = "FindPaginatedPets";
@@ -66,16 +66,16 @@ export const useFindPets = <TData = Common.FindPetsDefaultResponse, TError = Axi
 *
 * @deprecated
 */
-export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = AxiosError<GetNotDefinedError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 */
-export const useFindPetById = <TData = Common.FindPetByIdDefaultResponse, TError = AxiosError<FindPetByIdError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetById = <TData = Common.FindPetByIdDefaultResponse, TError = AxiosError<FindPetByIdError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns paginated pets from the system that the user has access to
 *
 */
-export const useFindPaginatedPets = <TData = Common.FindPaginatedPetsDefaultResponse, TError = AxiosError<FindPaginatedPetsError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPets = <TData = Common.FindPaginatedPetsDefaultResponse, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Creates a new pet in the store. Duplicates are allowed
 */
@@ -85,7 +85,7 @@ export const useAddPet = <TData = Common.AddPetMutationResult, TError = AxiosErr
 *
 * @deprecated
 */
-export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = AxiosError<PostNotDefinedError>, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<PostNotDefinedData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({ mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey), mutationFn: clientOptions => postNotDefined(clientOptions) as unknown as Promise<TData>, ...options });
+export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<PostNotDefinedData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({ mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey), mutationFn: clientOptions => postNotDefined(clientOptions) as unknown as Promise<TData>, ...options });
 /**
 * deletes a single pet based on the ID supplied
 */
@@ -115,16 +115,16 @@ export const useFindPetsSuspense = <TData = NonNullable<Common.FindPetsDefaultRe
 *
 * @deprecated
 */
-export const useGetNotDefinedSuspense = <TData = NonNullable<Common.GetNotDefinedDefaultResponse>, TError = AxiosError<GetNotDefinedError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useGetNotDefinedSuspense = <TData = NonNullable<Common.GetNotDefinedDefaultResponse>, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 */
-export const useFindPetByIdSuspense = <TData = NonNullable<Common.FindPetByIdDefaultResponse>, TError = AxiosError<FindPetByIdError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetByIdSuspense = <TData = NonNullable<Common.FindPetByIdDefaultResponse>, TError = AxiosError<FindPetByIdError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns paginated pets from the system that the user has access to
 *
 */
-export const useFindPaginatedPetsSuspense = <TData = NonNullable<Common.FindPaginatedPetsDefaultResponse>, TError = AxiosError<FindPaginatedPetsError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPetsSuspense = <TData = NonNullable<Common.FindPaginatedPetsDefaultResponse>, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 "
 `;
 
@@ -154,7 +154,7 @@ export const prefetchUseGetNotDefined = (queryClient: QueryClient, clientOptions
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 */
-export const prefetchUseFindPetById = (queryClient: QueryClient, clientOptions: Options<FindPetByIdData, true> = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data) });
+export const prefetchUseFindPetById = (queryClient: QueryClient, clientOptions: Options<FindPetByIdData, true>) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data) });
 /**
 * Returns paginated pets from the system that the user has access to
 *
@@ -189,7 +189,7 @@ export const UseGetNotDefinedKeyFn = (clientOptions: Options<GetNotDefinedData, 
 export type FindPetByIdDefaultResponse = Awaited<ReturnType<typeof findPetById>>["data"];
 export type FindPetByIdQueryResult<TData = FindPetByIdDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useFindPetByIdKey = "FindPetById";
-export const UseFindPetByIdKeyFn = (clientOptions: Options<FindPetByIdData, true> = {}, queryKey?: Array<unknown>) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
+export const UseFindPetByIdKeyFn = (clientOptions: Options<FindPetByIdData, true>, queryKey?: Array<unknown>) => [useFindPetByIdKey, ...(queryKey ?? [clientOptions])];
 export type FindPaginatedPetsDefaultResponse = Awaited<ReturnType<typeof findPaginatedPets>>["data"];
 export type FindPaginatedPetsQueryResult<TData = FindPaginatedPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
 export const useFindPaginatedPetsKey = "FindPaginatedPets";
@@ -227,16 +227,16 @@ export const useFindPets = <TData = Common.FindPetsDefaultResponse, TError = Fin
 *
 * @deprecated
 */
-export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = GetNotDefinedError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 */
-export const useFindPetById = <TData = Common.FindPetByIdDefaultResponse, TError = FindPetByIdError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetById = <TData = Common.FindPetByIdDefaultResponse, TError = FindPetByIdError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns paginated pets from the system that the user has access to
 *
 */
-export const useFindPaginatedPets = <TData = Common.FindPaginatedPetsDefaultResponse, TError = FindPaginatedPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPets = <TData = Common.FindPaginatedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Creates a new pet in the store. Duplicates are allowed
 */
@@ -246,7 +246,7 @@ export const useAddPet = <TData = Common.AddPetMutationResult, TError = AddPetEr
 *
 * @deprecated
 */
-export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = PostNotDefinedError, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<PostNotDefinedData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({ mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey), mutationFn: clientOptions => postNotDefined(clientOptions) as unknown as Promise<TData>, ...options });
+export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = unknown, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<PostNotDefinedData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({ mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey), mutationFn: clientOptions => postNotDefined(clientOptions) as unknown as Promise<TData>, ...options });
 /**
 * deletes a single pet based on the ID supplied
 */
@@ -275,16 +275,16 @@ export const useFindPetsSuspense = <TData = NonNullable<Common.FindPetsDefaultRe
 *
 * @deprecated
 */
-export const useGetNotDefinedSuspense = <TData = NonNullable<Common.GetNotDefinedDefaultResponse>, TError = GetNotDefinedError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useGetNotDefinedSuspense = <TData = NonNullable<Common.GetNotDefinedDefaultResponse>, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 */
-export const useFindPetByIdSuspense = <TData = NonNullable<Common.FindPetByIdDefaultResponse>, TError = FindPetByIdError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPetByIdSuspense = <TData = NonNullable<Common.FindPetByIdDefaultResponse>, TError = FindPetByIdError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 /**
 * Returns paginated pets from the system that the user has access to
 *
 */
-export const useFindPaginatedPetsSuspense = <TData = NonNullable<Common.FindPaginatedPetsDefaultResponse>, TError = FindPaginatedPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+export const useFindPaginatedPetsSuspense = <TData = NonNullable<Common.FindPaginatedPetsDefaultResponse>, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useSuspenseQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
 "
 `;
 
@@ -313,7 +313,7 @@ export const prefetchUseGetNotDefined = (queryClient: QueryClient, clientOptions
 /**
 * Returns a user based on a single ID, if the user does not have access to the pet
 */
-export const prefetchUseFindPetById = (queryClient: QueryClient, clientOptions: Options<FindPetByIdData, true> = {}) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data) });
+export const prefetchUseFindPetById = (queryClient: QueryClient, clientOptions: Options<FindPetByIdData, true>) => queryClient.prefetchQuery({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data) });
 /**
 * Returns paginated pets from the system that the user has access to
 *

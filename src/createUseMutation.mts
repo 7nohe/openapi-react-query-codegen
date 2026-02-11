@@ -76,24 +76,30 @@ export const createUseMutation = ({
 
   // @hey-api/client-axios -> `TError = AxiosError<AddPetError>`
   // @hey-api/client-fetch -> `TError = AddPetError`
+  const errorTypeName = `${capitalizeFirstLetter(methodName)}Error`;
+  const hasErrorType = modelNames.includes(errorTypeName);
+
   const responseErrorType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TError,
     undefined,
-    client === "@hey-api/client-axios"
-      ? ts.factory.createTypeReferenceNode(
-          ts.factory.createIdentifier("AxiosError"),
-          [
-            ts.factory.createTypeReferenceNode(
-              ts.factory.createIdentifier(
-                `${capitalizeFirstLetter(methodName)}Error`,
+    hasErrorType
+      ? client === "@hey-api/client-axios"
+        ? ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier("AxiosError"),
+            [
+              ts.factory.createTypeReferenceNode(
+                ts.factory.createIdentifier(errorTypeName),
               ),
-            ),
-          ],
-        )
-      : ts.factory.createTypeReferenceNode(
-          `${capitalizeFirstLetter(methodName)}Error`,
-        ),
+            ],
+          )
+        : ts.factory.createTypeReferenceNode(errorTypeName)
+      : client === "@hey-api/client-axios"
+        ? ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier("AxiosError"),
+            [ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)],
+          )
+        : ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
   );
 
   const methodParameters =

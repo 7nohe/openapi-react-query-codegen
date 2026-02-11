@@ -22,9 +22,11 @@ import { addJSDocToNode } from "./util.mjs";
 const createApiResponseType = ({
   methodName,
   client,
+  modelNames,
 }: {
   methodName: string;
   client: LimitedUserConfig["client"];
+  modelNames: string[];
 }) => {
   /** Awaited<ReturnType<typeof myClass.myMethod>> */
   const awaitedResponseDataType = ts.factory.createIndexedAccessTypeNode(
@@ -75,24 +77,30 @@ const createApiResponseType = ({
     ),
   );
 
+  const errorTypeName = `${capitalizeFirstLetter(methodName)}Error`;
+  const hasErrorType = modelNames.includes(errorTypeName);
+
   const responseErrorType = ts.factory.createTypeParameterDeclaration(
     undefined,
     TError.text,
     undefined,
-    client === "@hey-api/client-axios"
-      ? ts.factory.createTypeReferenceNode(
-          ts.factory.createIdentifier("AxiosError"),
-          [
-            ts.factory.createTypeReferenceNode(
-              ts.factory.createIdentifier(
-                `${capitalizeFirstLetter(methodName)}Error`,
+    hasErrorType
+      ? client === "@hey-api/client-axios"
+        ? ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier("AxiosError"),
+            [
+              ts.factory.createTypeReferenceNode(
+                ts.factory.createIdentifier(errorTypeName),
               ),
-            ),
-          ],
-        )
-      : ts.factory.createTypeReferenceNode(
-          `${capitalizeFirstLetter(methodName)}Error`,
-        ),
+            ],
+          )
+        : ts.factory.createTypeReferenceNode(errorTypeName)
+      : client === "@hey-api/client-axios"
+        ? ts.factory.createTypeReferenceNode(
+            ts.factory.createIdentifier("AxiosError"),
+            [ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword)],
+          )
+        : ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
   );
 
   return {
@@ -501,6 +509,7 @@ export const createUseQuery = ({
   } = createApiResponseType({
     methodName,
     client,
+    modelNames,
   });
 
   const requestParam = getRequestParamFromMethod(method, undefined, modelNames);
