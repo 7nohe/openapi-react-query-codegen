@@ -15,16 +15,45 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
 
-  // Map old client option to new plugins system
+  // Map CLI options to new plugins system
   const clientPlugin =
     formattedOptions.client === "@hey-api/client-axios"
       ? "@hey-api/client-axios"
       : "@hey-api/client-fetch";
-  const plugins: UserConfig["plugins"] = [
+
+  const typescriptPlugin: NonNullable<UserConfig["plugins"]>[number] =
+    formattedOptions.enums
+      ? {
+          name: "@hey-api/typescript" as const,
+          enums: formattedOptions.enums,
+        }
+      : "@hey-api/typescript";
+
+  const sdkPlugin: NonNullable<UserConfig["plugins"]>[number] =
+    formattedOptions.noOperationId
+      ? {
+          name: "@hey-api/sdk" as const,
+          operationId: false,
+        }
+      : "@hey-api/sdk";
+
+  const plugins: NonNullable<UserConfig["plugins"]>[number][] = [
     clientPlugin,
-    "@hey-api/typescript",
-    "@hey-api/sdk",
+    typescriptPlugin,
+    sdkPlugin,
   ];
+
+  // Conditionally add schemas plugin
+  if (!formattedOptions.noSchemas) {
+    plugins.push(
+      formattedOptions.schemaType
+        ? {
+            name: "@hey-api/schemas" as const,
+            type: formattedOptions.schemaType,
+          }
+        : "@hey-api/schemas",
+    );
+  }
 
   const config: UserConfig = {
     dryRun: false,

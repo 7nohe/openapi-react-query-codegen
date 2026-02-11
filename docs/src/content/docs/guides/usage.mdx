@@ -23,7 +23,7 @@ function App() {
 export default App;
 ```
 
-Optionally, you can also use the pure ts client in `openapi/requests/services.gen.ts` to customize your query.
+Optionally, you can also use the pure TypeScript client to customize your query. The SDK functions are defined in `openapi/requests/sdk.gen.ts` and are also available via the backward-compatible `openapi/requests/services.gen.ts` shim.
 
 ```tsx
 import { useQuery } from "@tanstack/react-query";
