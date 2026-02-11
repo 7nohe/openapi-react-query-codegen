@@ -32,9 +32,7 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
     const declarations = statement.getDeclarations();
     return declarations.some((decl) => {
       const initializer = decl.getInitializer();
-      return (
-        initializer && ts.isArrowFunction(initializer.compilerNode as ts.Node)
-      );
+      return initializer && ts.isArrowFunction(initializer.compilerNode);
     });
   });
 
@@ -45,34 +43,31 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
       if (!initializer) {
         throw new Error("Initializer not found");
       }
-      const arrowFunction = initializer.compilerNode as ts.ArrowFunction;
-      if (!ts.isArrowFunction(arrowFunction)) {
+      const compilerNode = initializer.compilerNode;
+      if (!ts.isArrowFunction(compilerNode)) {
         throw new Error("Arrow function not found");
       }
-      const arrowBody = arrowFunction.body;
+      const arrowBody = compilerNode.body;
 
       // Find the call expression - either from block's return statement or direct expression
-      let callExpression: ts.CallExpression;
+      let callExpression: ts.Expression;
       let methodBlockNode: ts.Block | undefined;
 
       if (ts.isBlock(arrowBody)) {
         // Old style: arrow function with block body
         methodBlockNode = arrowBody;
-        const foundReturnStatement = arrowBody.statements.find(
-          (s) => s.kind === ts.SyntaxKind.ReturnStatement,
-        );
-        if (!foundReturnStatement) {
+        const returnStatement = arrowBody.statements.find(ts.isReturnStatement);
+        if (!returnStatement) {
           throw new Error("Return statement not found");
         }
-        const returnStatement = foundReturnStatement as ts.ReturnStatement;
         if (!returnStatement.expression) {
           throw new Error("Call expression not found");
         }
-        callExpression = returnStatement.expression as ts.CallExpression;
+        callExpression = returnStatement.expression;
       } else {
         // New style: arrow function with expression body (no block)
         // The body is a call expression like: (options?.client ?? client).post<...>({...})
-        callExpression = arrowBody as ts.CallExpression;
+        callExpression = arrowBody;
       }
 
       // Navigate to find the HTTP method name (get, post, put, delete, etc.)
@@ -80,7 +75,7 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
       if (ts.isCallExpression(callExpression)) {
         const expr = callExpression.expression;
         if (ts.isPropertyAccessExpression(expr)) {
-          httpMethodName = (expr.name as ts.Identifier).text;
+          httpMethodName = expr.name.text;
         }
       }
 

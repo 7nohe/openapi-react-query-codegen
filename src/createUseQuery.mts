@@ -225,6 +225,9 @@ function createQueryHook({
   const isInfiniteQuery = queryString === "useInfiniteQuery";
   const isSuspenseQuery = queryString === "useSuspenseQuery";
 
+  // ts.TypeParameterDeclaration.default is ts.TypeNode | undefined.
+  // We know it's a TypeReferenceNode with an Identifier typeName because we created it
+  // via ts.factory in createApiResponseType, but TypeScript cannot infer the specific subtype.
   const responseDataTypeRef = responseDataType.default as ts.TypeReferenceNode;
   const responseDataTypeIdentifier =
     responseDataTypeRef.typeName as ts.Identifier;

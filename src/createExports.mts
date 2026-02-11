@@ -24,13 +24,13 @@ export const createExports = ({
   initialPageParam: string;
 }) => {
   const { methods } = service;
-  const methodDataNames = methods.reduce(
+  const methodDataNames = methods.reduce<Record<string, string>>(
     (acc, data) => {
       const methodName = data.method.getName();
       acc[`${capitalizeFirstLetter(methodName)}Data`] = methodName;
       return acc;
     },
-    {} as { [key: string]: string },
+    {},
   );
   const modelsFile = project
     .getSourceFiles?.()
@@ -46,14 +46,13 @@ export const createExports = ({
     if (ts.isTypeAliasDeclaration(node) && methodDataNames[key] !== undefined) {
       // get the type alias declaration
       const typeAliasDeclaration = node.type;
-      if (typeAliasDeclaration.kind === ts.SyntaxKind.TypeLiteral) {
-        const query = (typeAliasDeclaration as ts.TypeLiteralNode).members.find(
-          (m) =>
-            m.kind === ts.SyntaxKind.PropertySignature &&
-            m.name?.getText() === "query",
+      if (ts.isTypeLiteralNode(typeAliasDeclaration)) {
+        const query = typeAliasDeclaration.members.find(
+          (m): m is ts.PropertySignature =>
+            ts.isPropertySignature(m) && m.name?.getText() === "query",
         );
         if (query) {
-          const queryType = (query as ts.PropertySignature).type;
+          const queryType = query.type;
           const members =
             queryType && ts.isTypeLiteralNode(queryType)
               ? queryType.members
@@ -148,7 +147,7 @@ export const createExports = ({
 
   const infiniteQueriesExports = allQueries
     .flatMap(({ infiniteQueryHook }) => [infiniteQueryHook])
-    .filter(Boolean) as ts.VariableStatement[];
+    .filter((x): x is ts.VariableStatement => x != null);
 
   const suspenseQueries = allQueries.flatMap(({ suspenseQueryHook }) => [
     suspenseQueryHook,
