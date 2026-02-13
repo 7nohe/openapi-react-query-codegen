@@ -64,3 +64,71 @@ describe("generate", () => {
     expect(readOutput("ensureQueryData.ts")).toMatchSnapshot();
   });
 });
+
+describe("generate - axios client with enums, noOperationId, schemaType", () => {
+  const outputDir = "outputs-generate-axios";
+  const readAxiosOutput = (fileName: string) => {
+    return readFileSync(
+      path.join(__dirname, outputDir, "queries", fileName),
+      "utf-8",
+    );
+  };
+
+  beforeAll(async () => {
+    const options: LimitedUserConfig = {
+      input: path.join(__dirname, "inputs", "petstore.yaml"),
+      output: path.join("tests", outputDir),
+      client: "@hey-api/client-axios",
+      enums: "javascript",
+      noOperationId: true,
+      schemaType: "json",
+      pageParam: "page",
+      nextPageParam: "meta.next",
+      initialPageParam: "initial",
+    };
+    await generate(options, "1.0.0");
+  });
+
+  afterAll(async () => {
+    if (existsSync(path.join(__dirname, outputDir))) {
+      await rm(path.join(__dirname, outputDir), { recursive: true });
+    }
+  });
+
+  test("queries.ts", () => {
+    expect(readAxiosOutput("queries.ts")).toMatchSnapshot();
+  });
+});
+
+describe("generate - noSchemas option", () => {
+  const outputDir = "outputs-generate-noschemas";
+  const readNoSchemasOutput = (fileName: string) => {
+    return readFileSync(
+      path.join(__dirname, outputDir, "queries", fileName),
+      "utf-8",
+    );
+  };
+
+  beforeAll(async () => {
+    const options: LimitedUserConfig = {
+      input: path.join(__dirname, "inputs", "petstore.yaml"),
+      output: path.join("tests", outputDir),
+      client: "@hey-api/client-fetch",
+      noSchemas: true,
+      pageParam: "page",
+      nextPageParam: "meta.next",
+      initialPageParam: "initial",
+    };
+    await generate(options, "1.0.0");
+  });
+
+  afterAll(async () => {
+    if (existsSync(path.join(__dirname, outputDir))) {
+      await rm(path.join(__dirname, outputDir), { recursive: true });
+    }
+  });
+
+  test("queries.ts", () => {
+    expect(readNoSchemasOutput("queries.ts")).toMatchSnapshot();
+  });
+});
