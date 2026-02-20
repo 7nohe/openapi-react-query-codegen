@@ -33,7 +33,9 @@ export const createImports = ({
     serviceFile.getExportedDeclarations().keys(),
   );
 
-  const serviceNames = serviceExports;
+  // Filter out type-only exports (e.g. Options) to avoid duplicate imports,
+  // since Options is already imported separately from the client module.
+  const serviceNames = serviceExports.filter((name) => name !== "Options");
 
   const imports = [
     ts.factory.createImportDeclaration(

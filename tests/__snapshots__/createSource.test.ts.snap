@@ -13,7 +13,7 @@ exports[`createSource > createSource - @hey-api/client-axios 2`] = `
 
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 import { AxiosError } from "axios";
 export type FindPetsDefaultResponse = Awaited<ReturnType<typeof findPets>>["data"];
@@ -50,7 +50,7 @@ exports[`createSource > createSource - @hey-api/client-axios 3`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 import { AxiosError } from "axios";
 /**
@@ -99,7 +99,7 @@ exports[`createSource > createSource - @hey-api/client-axios 4`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 import { AxiosError } from "axios";
 /**
@@ -134,7 +134,7 @@ exports[`createSource > createSource - @hey-api/client-axios 5`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 import { AxiosError } from "axios";
 /**
@@ -176,7 +176,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 2`] = `
 
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 export type FindPetsDefaultResponse = Awaited<ReturnType<typeof findPets>>["data"];
 export type FindPetsQueryResult<TData = FindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
@@ -212,7 +212,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 3`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
@@ -260,7 +260,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 4`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to
@@ -294,7 +294,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 5`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/client";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
-import { Options, findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
 /**
 * Returns all pets from the system that the user has access to

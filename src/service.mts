@@ -38,15 +38,14 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
 
   return exportedStatements.flatMap((variableStatement) => {
     const declarations = variableStatement.getDeclarations();
-    return declarations.map((declaration) => {
+    // Filter to only arrow function declarations within the statement
+    const arrowDeclarations = declarations.filter((declaration) => {
       const initializer = declaration.getInitializer();
-      if (!initializer) {
-        throw new Error("Initializer not found");
-      }
-      const compilerNode = initializer.compilerNode;
-      if (!ts.isArrowFunction(compilerNode)) {
-        throw new Error("Arrow function not found");
-      }
+      return initializer && ts.isArrowFunction(initializer.compilerNode);
+    });
+    return arrowDeclarations.map((declaration) => {
+      const initializer = declaration.getInitializerOrThrow();
+      const compilerNode = initializer.compilerNode as ts.ArrowFunction;
       const arrowBody = compilerNode.body;
 
       // Find the call expression - either from block's return statement or direct expression
