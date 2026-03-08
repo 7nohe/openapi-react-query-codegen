@@ -39,6 +39,26 @@ const mockRequiredParamsOperation: OperationInfo = {
   isPaginatable: false,
 };
 
+const mockNoParamsOperation: OperationInfo = {
+  methodName: "getStatus",
+  capitalizedMethodName: "GetStatus",
+  httpMethod: "GET",
+  isDeprecated: false,
+  parameters: [],
+  allParamsOptional: true,
+  isPaginatable: false,
+};
+
+const mockPaginatableNoDataOperation: OperationInfo = {
+  methodName: "listThings",
+  capitalizedMethodName: "ListThings",
+  httpMethod: "GET",
+  isDeprecated: false,
+  parameters: [],
+  allParamsOptional: true,
+  isPaginatable: true,
+};
+
 const mockFetchContext: GenerationContext = {
   client: "@hey-api/client-fetch",
   modelNames: [
@@ -57,6 +77,11 @@ const mockFetchContext: GenerationContext = {
 const mockAxiosContext: GenerationContext = {
   ...mockFetchContext,
   client: "@hey-api/client-axios",
+};
+
+const mockUnknownDataContext: GenerationContext = {
+  ...mockFetchContext,
+  modelNames: [],
 };
 
 describe("buildQueryHooks", () => {
@@ -108,6 +133,19 @@ describe("buildQueryHooks", () => {
       );
       expect(initializer).not.toContain("= {}");
     });
+
+    it("should handle operations without params and unknown data type", () => {
+      const result = buildUseQueryHook(
+        mockNoParamsOperation,
+        mockUnknownDataContext,
+      );
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        "clientOptions: Options<unknown, true> = {}",
+      );
+      expect(initializer).toContain("getStatus({ ...clientOptions })");
+    });
   });
 
   describe("buildUseSuspenseQueryHook", () => {
@@ -131,6 +169,19 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "NonNullable<Common.FindPetsDefaultResponse>",
       );
+    });
+
+    it("should handle operations without params and unknown data type", () => {
+      const result = buildUseSuspenseQueryHook(
+        mockNoParamsOperation,
+        mockUnknownDataContext,
+      );
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        "clientOptions: Options<unknown, true> = {}",
+      );
+      expect(initializer).toContain("getStatus({ ...clientOptions })");
     });
   });
 
@@ -168,6 +219,18 @@ describe("buildQueryHooks", () => {
       const initializer = result?.declarations[0].initializer as string;
 
       expect(initializer).toContain("page: pageParam as number");
+    });
+
+    it("should use unknown data type when not present in modelNames", () => {
+      const result = buildUseInfiniteQueryHook(
+        mockPaginatableNoDataOperation,
+        mockUnknownDataContext,
+      );
+      const initializer = result?.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        "clientOptions: Options<unknown, true> = {}",
+      );
     });
   });
 
@@ -208,6 +271,19 @@ describe("buildQueryHooks", () => {
       // The line should not have " = {}" after the type
       expect(initializer).toMatch(/Options<FindPetByIdData, true>\)/);
     });
+
+    it("should handle operations without params and unknown data type", () => {
+      const result = buildPrefetchFn(
+        mockNoParamsOperation,
+        mockUnknownDataContext,
+      );
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        "clientOptions: Options<unknown, true> = {}",
+      );
+      expect(initializer).toContain("getStatus({ ...clientOptions })");
+    });
   });
 
   describe("buildEnsureQueryDataFn", () => {
@@ -235,6 +311,19 @@ describe("buildQueryHooks", () => {
       expect(prefetchInit).toContain("prefetchQuery");
       expect(ensureInit).toContain("ensureQueryData");
       expect(ensureInit).not.toContain("prefetchQuery");
+    });
+
+    it("should handle operations without params and unknown data type", () => {
+      const result = buildEnsureQueryDataFn(
+        mockNoParamsOperation,
+        mockUnknownDataContext,
+      );
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        "clientOptions: Options<unknown, true> = {}",
+      );
+      expect(initializer).toContain("getStatus({ ...clientOptions })");
     });
   });
 });

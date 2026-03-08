@@ -1,7 +1,6 @@
 import "./App.css";
 import { useState } from "react";
 
-import { createClient } from "@hey-api/client-fetch";
 import {
   UseFindPetsKeyFn,
   useAddPet,
@@ -9,11 +8,12 @@ import {
   useGetNotDefined,
   usePostNotDefined,
 } from "../openapi/queries";
+import { client } from "../openapi/requests/client.gen";
 import { SuspenseParent } from "./components/SuspenseParent";
 import { queryClient } from "./queryClient";
 
 function App() {
-  createClient({ baseUrl: "http://localhost:4010" });
+  client.setConfig({ baseUrl: "http://localhost:4010" });
 
   const [tags, _setTags] = useState<string[]>([]);
   const [limit, _setLimit] = useState<number>(10);

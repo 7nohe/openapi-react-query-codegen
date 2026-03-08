@@ -141,7 +141,13 @@ export function buildGenerationContext(
     .getSourceFiles()
     .find((sf) => sf.getFilePath().includes(modelsFileName));
 
-  const serviceFile = project.getSourceFileOrThrow(`${serviceFileName}.ts`);
+  const serviceFile = project
+    .getSourceFiles()
+    .find((sf) => sf.getFilePath().includes(serviceFileName));
+
+  if (!serviceFile) {
+    throw new Error("No service node found");
+  }
 
   const modelNames = modelsFile
     ? Array.from(modelsFile.getExportedDeclarations().keys())

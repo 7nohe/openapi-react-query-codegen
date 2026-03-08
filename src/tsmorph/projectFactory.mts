@@ -29,18 +29,14 @@ export function createGenerationProject(): Project {
 
 /**
  * Build import structure for client library.
+ * In v0.73+, Options type is exported from the generated client file.
  */
 export function buildClientImport(
-  ctx: GenerationContext,
+  _ctx: GenerationContext,
 ): ImportDeclarationStructure {
-  const moduleSpecifier =
-    ctx.client === "@hey-api/client-axios"
-      ? "@hey-api/client-axios"
-      : "@hey-api/client-fetch";
-
   return {
     kind: StructureKind.ImportDeclaration,
-    moduleSpecifier,
+    moduleSpecifier: "../requests/client",
     namedImports: [{ name: "Options", isTypeOnly: true }],
   };
 }
@@ -77,7 +73,7 @@ export function buildServiceImport(
 ): ImportDeclarationStructure {
   return {
     kind: StructureKind.ImportDeclaration,
-    moduleSpecifier: "../requests/services.gen",
+    moduleSpecifier: "../requests/sdk.gen",
     namedImports: ctx.serviceNames.map((name) => ({ name })),
   };
 }

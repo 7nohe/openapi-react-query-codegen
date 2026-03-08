@@ -13,37 +13,40 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
 
+  const clientPlugin = formattedOptions.client ?? "@hey-api/client-fetch";
+
   const config: UserConfig = {
-    client: formattedOptions.client,
-    debug: formattedOptions.debug,
-    dryRun: false,
-    exportCore: true,
+    input: formattedOptions.input,
     output: {
       format: formattedOptions.format,
       lint: formattedOptions.lint,
       path: openApiOutputPath,
     },
-    input: formattedOptions.input,
-    schemas: {
-      export: !formattedOptions.noSchemas,
-      type: formattedOptions.schemaType,
-    },
-    services: {
-      export: true,
-      asClass: false,
-      operationId: !formattedOptions.noOperationId,
-    },
-    types: {
-      dates: formattedOptions.useDateType,
-      export: true,
-      enums: formattedOptions.enums,
-    },
-    useOptions: true,
+    plugins: [
+      clientPlugin,
+      {
+        name: "@hey-api/typescript",
+        enums: formattedOptions.enums,
+      },
+      {
+        name: "@hey-api/sdk",
+        asClass: false,
+        operationId: !formattedOptions.noOperationId,
+      },
+      ...(formattedOptions.noSchemas
+        ? []
+        : [
+            {
+              name: "@hey-api/schemas" as const,
+              type: formattedOptions.schemaType,
+            },
+          ]),
+    ],
   };
   await createClient(config);
   const source = await createSource({
     outputPath: openApiOutputPath,
-    client: formattedOptions.client,
+    client: clientPlugin as "@hey-api/client-fetch" | "@hey-api/client-axios",
     version,
     pageParam: formattedOptions.pageParam,
     nextPageParam: formattedOptions.nextPageParam,

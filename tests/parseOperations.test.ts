@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import { Project } from "ts-morph";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
@@ -16,8 +15,7 @@ describe("parseOperations", () => {
   describe("parseOperations", () => {
     it("should parse GET operations", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const operations = await parseOperations(project, "page");
 
@@ -32,8 +30,7 @@ describe("parseOperations", () => {
 
     it("should parse POST operations", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const operations = await parseOperations(project, "page");
 
@@ -47,8 +44,7 @@ describe("parseOperations", () => {
 
     it("should parse DELETE operations", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const operations = await parseOperations(project, "page");
 
@@ -59,8 +55,7 @@ describe("parseOperations", () => {
 
     it("should parse all GET operations as potentially paginatable", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const operations = await parseOperations(project, "page");
 
@@ -76,8 +71,7 @@ describe("parseOperations", () => {
 
     it("should extract parameters correctly", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const operations = await parseOperations(project, "page");
 
@@ -86,14 +80,14 @@ describe("parseOperations", () => {
       );
       expect(findPetById).toBeDefined();
       expect(findPetById?.parameters.length).toBeGreaterThan(0);
-      // findPetById requires an id parameter, so not all params are optional
-      expect(findPetById?.allParamsOptional).toBe(false);
+      // In v0.73+, the options parameter is always optional
+      // The required path parameters are nested within the options
+      expect(findPetById?.allParamsOptional).toBe(true);
     });
 
     it("should detect operations with all optional parameters", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const operations = await parseOperations(project, "page");
 
@@ -107,8 +101,7 @@ describe("parseOperations", () => {
   describe("buildGenerationContext", () => {
     it("should build context with fetch client", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const ctx = buildGenerationContext(
         project,
@@ -130,8 +123,7 @@ describe("parseOperations", () => {
 
     it("should build context with axios client", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const ctx = buildGenerationContext(
         project,
@@ -149,8 +141,7 @@ describe("parseOperations", () => {
 
     it("should include model names", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const ctx = buildGenerationContext(
         project,
@@ -163,13 +154,13 @@ describe("parseOperations", () => {
 
       expect(ctx.modelNames).toContain("Pet");
       expect(ctx.modelNames).toContain("NewPet");
-      expect(ctx.modelNames).toContain("Error");
+      // In v0.73+, Error is renamed to _Error to avoid conflict with built-in Error
+      expect(ctx.modelNames).toContain("_Error");
     });
 
     it("should include service names", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
-      const sourceFiles = join(process.cwd(), outputPath(fileName));
-      project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
 
       const ctx = buildGenerationContext(
         project,

@@ -1,9 +1,10 @@
 import { join } from "node:path";
-import type { UserConfig } from "@hey-api/openapi-ts";
 import { Project } from "ts-morph";
 import { buildGenerationContext, parseOperations } from "./parseOperations.mjs";
 import { generateAllFiles } from "./tsmorph/index.mjs";
 import type { GeneratedFile } from "./types.mjs";
+
+type ClientType = "@hey-api/client-fetch" | "@hey-api/client-axios";
 
 /**
  * Create source files using ts-morph based generation.
@@ -17,7 +18,7 @@ export const createSource = async ({
   initialPageParam,
 }: {
   outputPath: string;
-  client: UserConfig["client"];
+  client: ClientType;
   version: string;
   pageParam: string;
   nextPageParam: string;
