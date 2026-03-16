@@ -1,7 +1,7 @@
 import { posix } from "node:path";
-import type { UserConfig } from "@hey-api/openapi-ts";
 import type { Project } from "ts-morph";
 import ts from "typescript";
+import type { LimitedUserConfig } from "./cli.mjs";
 import { modelsFileName, serviceFileName } from "./constants.mjs";
 
 const { join } = posix;
@@ -11,7 +11,7 @@ export const createImports = ({
   client,
 }: {
   project: Project;
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
 }) => {
   const modelsFile = project
     .getSourceFiles()
@@ -33,27 +33,25 @@ export const createImports = ({
     serviceFile.getExportedDeclarations().keys(),
   );
 
-  const serviceNames = serviceExports;
+  // Filter out type-only exports (e.g. Options) to avoid duplicate imports,
+  // since Options is already imported separately from the client module.
+  const serviceNames = serviceExports.filter((name) => name !== "Options");
 
   const imports = [
     ts.factory.createImportDeclaration(
       undefined,
       ts.factory.createImportClause(
-        false,
+        true,
         undefined,
         ts.factory.createNamedImports([
           ts.factory.createImportSpecifier(
-            true,
+            false,
             undefined,
             ts.factory.createIdentifier("Options"),
           ),
         ]),
       ),
-      ts.factory.createStringLiteral(
-        client === "@hey-api/client-axios"
-          ? "@hey-api/client-axios"
-          : "@hey-api/client-fetch",
-      ),
+      ts.factory.createStringLiteral(join("../requests", serviceFileName)),
       undefined,
     ),
     ts.factory.createImportDeclaration(

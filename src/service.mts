@@ -26,41 +26,57 @@ export async function getServices(project: Project): Promise<Service> {
 
 export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
   const variableStatements = node.getVariableStatements();
+  // Filter to only exported variable statements that contain arrow functions
+  const exportedStatements = variableStatements.filter((statement) => {
+    if (!statement.isExported()) return false;
+    const declarations = statement.getDeclarations();
+    return declarations.some((decl) => {
+      const initializer = decl.getInitializer();
+      return initializer && ts.isArrowFunction(initializer.compilerNode);
+    });
+  });
 
-  // The first variable statement is `const client = createClient(createConfig())`, so we skip it
-  return variableStatements.splice(1).flatMap((variableStatement) => {
+  return exportedStatements.flatMap((variableStatement) => {
     const declarations = variableStatement.getDeclarations();
-    return declarations.map((declaration) => {
-      if (!ts.isVariableDeclaration(declaration.compilerNode)) {
-        throw new Error("Variable declaration not found");
-      }
+    // Filter to only arrow function declarations within the statement
+    const arrowDeclarations = declarations.filter((declaration) => {
       const initializer = declaration.getInitializer();
-      if (!initializer) {
-        throw new Error("Initializer not found");
-      }
-      if (!ts.isArrowFunction(initializer.compilerNode)) {
-        throw new Error("Arrow function not found");
-      }
-      const methodBlockNode = initializer.compilerNode.body;
-      if (!methodBlockNode || !ts.isBlock(methodBlockNode)) {
-        throw new Error("Method block not found");
-      }
-      const foundReturnStatement = methodBlockNode.statements.find(
-        (s) => s.kind === ts.SyntaxKind.ReturnStatement,
-      );
-      if (!foundReturnStatement) {
-        throw new Error("Return statement not found");
-      }
-      const returnStatement = foundReturnStatement as ts.ReturnStatement;
-      const foundCallExpression = returnStatement.expression;
-      if (!foundCallExpression) {
-        throw new Error("Call expression not found");
-      }
-      const callExpression = foundCallExpression as ts.CallExpression;
+      return initializer && ts.isArrowFunction(initializer.compilerNode);
+    });
+    return arrowDeclarations.map((declaration) => {
+      const initializer = declaration.getInitializerOrThrow();
+      const compilerNode = initializer.compilerNode as ts.ArrowFunction;
+      const arrowBody = compilerNode.body;
 
-      const propertyAccessExpression =
-        callExpression.expression as ts.PropertyAccessExpression;
-      const httpMethodName = propertyAccessExpression.name.getText();
+      // Find the call expression - either from block's return statement or direct expression
+      let callExpression: ts.Expression;
+      let methodBlockNode: ts.Block | undefined;
+
+      if (ts.isBlock(arrowBody)) {
+        // Old style: arrow function with block body
+        methodBlockNode = arrowBody;
+        const returnStatement = arrowBody.statements.find(ts.isReturnStatement);
+        if (!returnStatement) {
+          throw new Error("Return statement not found");
+        }
+        if (!returnStatement.expression) {
+          throw new Error("Call expression not found");
+        }
+        callExpression = returnStatement.expression;
+      } else {
+        // New style: arrow function with expression body (no block)
+        // The body is a call expression like: (options?.client ?? client).post<...>({...})
+        callExpression = arrowBody;
+      }
+
+      // Navigate to find the HTTP method name (get, post, put, delete, etc.)
+      let httpMethodName: string | undefined;
+      if (ts.isCallExpression(callExpression)) {
+        const expr = callExpression.expression;
+        if (ts.isPropertyAccessExpression(expr)) {
+          httpMethodName = expr.name.text;
+        }
+      }
 
       if (!httpMethodName) {
         throw new Error("httpMethodName not found");
@@ -75,7 +91,7 @@ export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
         return [tsNode];
       };
 
-      const children = getAllChildren(initializer.compilerNode);
+      const children = getAllChildren(variableStatement.compilerNode);
       // get all JSDoc comments
       // this should be an array of 1 or 0
       const jsDocs = children

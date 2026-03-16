@@ -3,8 +3,8 @@
 exports[`generate > common.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import type { UseQueryResult } from "@tanstack/react-query";
+import type { Options } from "../requests/sdk.gen";
 import type {
   addPet,
   deletePet,
@@ -13,11 +13,12 @@ import type {
   findPets,
   getNotDefined,
   postNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 export type FindPetsDefaultResponse = Awaited<
   ReturnType<typeof findPets>
@@ -40,7 +41,7 @@ export type GetNotDefinedQueryResult<
 > = UseQueryResult<TData, TError>;
 export const useGetNotDefinedKey = "GetNotDefined";
 export const UseGetNotDefinedKeyFn = (
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
   queryKey?: Array<unknown>,
 ) => [useGetNotDefinedKey, ...(queryKey ?? [clientOptions])];
 export type FindPetByIdDefaultResponse = Awaited<
@@ -93,20 +94,28 @@ export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [
 exports[`generate > ensureQueryData.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import type { QueryClient } from "@tanstack/react-query";
+import type { Options } from "../requests/sdk.gen";
 import {
   findPaginatedPets,
   findPetById,
   findPets,
   getNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
+/**
+ * Returns all pets from the system that the user has access to
+ * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
+ *
+ * Sed tempus felis lobortis leo pulvinar rutrum. Nam mattis velit nisl, eu condimentum ligula luctus nec. Phasellus semper velit eget aliquet faucibus. In a mattis elit. Phasellus vel urna viverra, condimentum lorem id, rhoncus nibh. Ut pellentesque posuere elementum. Sed a varius odio. Morbi rhoncus ligula libero, vel eleifend nunc tristique vitae. Fusce et sem dui. Aenean nec scelerisque tortor. Fusce malesuada accumsan magna vel tempus. Quisque mollis felis eu dolor tristique, sit amet auctor felis gravida. Sed libero lorem, molestie sed nisl in, accumsan tempor nisi. Fusce sollicitudin massa ut lacinia mattis. Sed vel eleifend lorem. Pellentesque vitae felis pretium, pulvinar elit eu, euismod sapien.
+ *
+ */
 export const ensureUseFindPetsData = (
   queryClient: QueryClient,
   clientOptions: Options<FindPetsData, true> = {},
@@ -116,15 +125,23 @@ export const ensureUseFindPetsData = (
     queryFn: () =>
       findPets({ ...clientOptions }).then((response) => response.data),
   });
+/**
+ * This path is not fully defined.
+ *
+ * @deprecated
+ */
 export const ensureUseGetNotDefinedData = (
   queryClient: QueryClient,
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
 ) =>
   queryClient.ensureQueryData({
     queryKey: Common.UseGetNotDefinedKeyFn(clientOptions),
     queryFn: () =>
       getNotDefined({ ...clientOptions }).then((response) => response.data),
   });
+/**
+ * Returns a user based on a single ID, if the user does not have access to the pet
+ */
 export const ensureUseFindPetByIdData = (
   queryClient: QueryClient,
   clientOptions: Options<FindPetByIdData, true>,
@@ -134,6 +151,10 @@ export const ensureUseFindPetByIdData = (
     queryFn: () =>
       findPetById({ ...clientOptions }).then((response) => response.data),
   });
+/**
+ * Returns paginated pets from the system that the user has access to
+ *
+ */
 export const ensureUseFindPaginatedPetsData = (
   queryClient: QueryClient,
   clientOptions: Options<FindPaginatedPetsData, true> = {},
@@ -157,16 +178,17 @@ export * from "./queries";
 exports[`generate > infiniteQueries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
-import { findPaginatedPets } from "../requests/services.gen";
-import type {
-  FindPaginatedPetsData,
-  FindPaginatedPetsError,
-} from "../requests/types.gen";
+import type { Options } from "../requests/sdk.gen";
+import { findPaginatedPets } from "../requests/sdk.gen";
+import type { FindPaginatedPetsData } from "../requests/types.gen";
 import * as Common from "./common";
+/**
+ * Returns paginated pets from the system that the user has access to
+ *
+ */
 export const useFindPaginatedPetsInfinite = <
   TData = InfiniteData<Common.FindPaginatedPetsDefaultResponse>,
-  TError = FindPaginatedPetsError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},
@@ -200,20 +222,28 @@ export const useFindPaginatedPetsInfinite = <
 exports[`generate > prefetch.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import type { QueryClient } from "@tanstack/react-query";
+import type { Options } from "../requests/sdk.gen";
 import {
   findPaginatedPets,
   findPetById,
   findPets,
   getNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
+/**
+ * Returns all pets from the system that the user has access to
+ * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
+ *
+ * Sed tempus felis lobortis leo pulvinar rutrum. Nam mattis velit nisl, eu condimentum ligula luctus nec. Phasellus semper velit eget aliquet faucibus. In a mattis elit. Phasellus vel urna viverra, condimentum lorem id, rhoncus nibh. Ut pellentesque posuere elementum. Sed a varius odio. Morbi rhoncus ligula libero, vel eleifend nunc tristique vitae. Fusce et sem dui. Aenean nec scelerisque tortor. Fusce malesuada accumsan magna vel tempus. Quisque mollis felis eu dolor tristique, sit amet auctor felis gravida. Sed libero lorem, molestie sed nisl in, accumsan tempor nisi. Fusce sollicitudin massa ut lacinia mattis. Sed vel eleifend lorem. Pellentesque vitae felis pretium, pulvinar elit eu, euismod sapien.
+ *
+ */
 export const prefetchUseFindPets = (
   queryClient: QueryClient,
   clientOptions: Options<FindPetsData, true> = {},
@@ -223,15 +253,23 @@ export const prefetchUseFindPets = (
     queryFn: () =>
       findPets({ ...clientOptions }).then((response) => response.data),
   });
+/**
+ * This path is not fully defined.
+ *
+ * @deprecated
+ */
 export const prefetchUseGetNotDefined = (
   queryClient: QueryClient,
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
 ) =>
   queryClient.prefetchQuery({
     queryKey: Common.UseGetNotDefinedKeyFn(clientOptions),
     queryFn: () =>
       getNotDefined({ ...clientOptions }).then((response) => response.data),
   });
+/**
+ * Returns a user based on a single ID, if the user does not have access to the pet
+ */
 export const prefetchUseFindPetById = (
   queryClient: QueryClient,
   clientOptions: Options<FindPetByIdData, true>,
@@ -241,6 +279,10 @@ export const prefetchUseFindPetById = (
     queryFn: () =>
       findPetById({ ...clientOptions }).then((response) => response.data),
   });
+/**
+ * Returns paginated pets from the system that the user has access to
+ *
+ */
 export const prefetchUseFindPaginatedPets = (
   queryClient: QueryClient,
   clientOptions: Options<FindPaginatedPetsData, true> = {},
@@ -256,13 +298,13 @@ export const prefetchUseFindPaginatedPets = (
 exports[`generate > queries.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import {
   useMutation,
   type UseMutationOptions,
   useQuery,
   type UseQueryOptions,
 } from "@tanstack/react-query";
+import type { Options } from "../requests/sdk.gen";
 import {
   addPet,
   deletePet,
@@ -271,22 +313,28 @@ import {
   findPets,
   getNotDefined,
   postNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   AddPetData,
   AddPetError,
   DeletePetData,
   DeletePetError,
   FindPaginatedPetsData,
-  FindPaginatedPetsError,
   FindPetByIdData,
   FindPetByIdError,
   FindPetsData,
   FindPetsError,
-  GetNotDefinedError,
-  PostNotDefinedError,
+  GetNotDefinedData,
+  PostNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
+/**
+ * Returns all pets from the system that the user has access to
+ * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
+ *
+ * Sed tempus felis lobortis leo pulvinar rutrum. Nam mattis velit nisl, eu condimentum ligula luctus nec. Phasellus semper velit eget aliquet faucibus. In a mattis elit. Phasellus vel urna viverra, condimentum lorem id, rhoncus nibh. Ut pellentesque posuere elementum. Sed a varius odio. Morbi rhoncus ligula libero, vel eleifend nunc tristique vitae. Fusce et sem dui. Aenean nec scelerisque tortor. Fusce malesuada accumsan magna vel tempus. Quisque mollis felis eu dolor tristique, sit amet auctor felis gravida. Sed libero lorem, molestie sed nisl in, accumsan tempor nisi. Fusce sollicitudin massa ut lacinia mattis. Sed vel eleifend lorem. Pellentesque vitae felis pretium, pulvinar elit eu, euismod sapien.
+ *
+ */
 export const useFindPets = <
   TData = Common.FindPetsDefaultResponse,
   TError = FindPetsError,
@@ -304,12 +352,17 @@ export const useFindPets = <
       ) as TData,
     ...options,
   });
+/**
+ * This path is not fully defined.
+ *
+ * @deprecated
+ */
 export const useGetNotDefined = <
   TData = Common.GetNotDefinedDefaultResponse,
-  TError = GetNotDefinedError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
   queryKey?: TQueryKey,
   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">,
 ) =>
@@ -321,6 +374,9 @@ export const useGetNotDefined = <
       ) as TData,
     ...options,
   });
+/**
+ * Returns a user based on a single ID, if the user does not have access to the pet
+ */
 export const useFindPetById = <
   TData = Common.FindPetByIdDefaultResponse,
   TError = FindPetByIdError,
@@ -338,9 +394,13 @@ export const useFindPetById = <
       ) as TData,
     ...options,
   });
+/**
+ * Returns paginated pets from the system that the user has access to
+ *
+ */
 export const useFindPaginatedPets = <
   TData = Common.FindPaginatedPetsDefaultResponse,
-  TError = FindPaginatedPetsError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},
@@ -355,6 +415,9 @@ export const useFindPaginatedPets = <
       ) as TData,
     ...options,
   });
+/**
+ * Creates a new pet in the store. Duplicates are allowed
+ */
 export const useAddPet = <
   TData = Common.AddPetMutationResult,
   TError = AddPetError,
@@ -373,24 +436,37 @@ export const useAddPet = <
       addPet(clientOptions) as unknown as Promise<TData>,
     ...options,
   });
+/**
+ * This path is not defined at all.
+ *
+ * @deprecated
+ */
 export const usePostNotDefined = <
   TData = Common.PostNotDefinedMutationResult,
-  TError = PostNotDefinedError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
   TContext = unknown,
 >(
   mutationKey?: TQueryKey,
   options?: Omit<
-    UseMutationOptions<TData, TError, Options<unknown, true>, TContext>,
+    UseMutationOptions<
+      TData,
+      TError,
+      Options<PostNotDefinedData, true>,
+      TContext
+    >,
     "mutationKey" | "mutationFn"
   >,
 ) =>
-  useMutation<TData, TError, Options<unknown, true>, TContext>({
+  useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({
     mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey),
     mutationFn: (clientOptions) =>
       postNotDefined(clientOptions) as unknown as Promise<TData>,
     ...options,
   });
+/**
+ * deletes a single pet based on the ID supplied
+ */
 export const useDeletePet = <
   TData = Common.DeletePetMutationResult,
   TError = DeletePetError,
@@ -415,27 +491,33 @@ export const useDeletePet = <
 exports[`generate > suspense.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-import type { Options } from "@hey-api/client-fetch";
 import {
   useSuspenseQuery,
   type UseSuspenseQueryOptions,
 } from "@tanstack/react-query";
+import type { Options } from "../requests/sdk.gen";
 import {
   findPaginatedPets,
   findPetById,
   findPets,
   getNotDefined,
-} from "../requests/services.gen";
+} from "../requests/sdk.gen";
 import type {
   FindPaginatedPetsData,
-  FindPaginatedPetsError,
   FindPetByIdData,
   FindPetByIdError,
   FindPetsData,
   FindPetsError,
-  GetNotDefinedError,
+  GetNotDefinedData,
 } from "../requests/types.gen";
 import * as Common from "./common";
+/**
+ * Returns all pets from the system that the user has access to
+ * Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
+ *
+ * Sed tempus felis lobortis leo pulvinar rutrum. Nam mattis velit nisl, eu condimentum ligula luctus nec. Phasellus semper velit eget aliquet faucibus. In a mattis elit. Phasellus vel urna viverra, condimentum lorem id, rhoncus nibh. Ut pellentesque posuere elementum. Sed a varius odio. Morbi rhoncus ligula libero, vel eleifend nunc tristique vitae. Fusce et sem dui. Aenean nec scelerisque tortor. Fusce malesuada accumsan magna vel tempus. Quisque mollis felis eu dolor tristique, sit amet auctor felis gravida. Sed libero lorem, molestie sed nisl in, accumsan tempor nisi. Fusce sollicitudin massa ut lacinia mattis. Sed vel eleifend lorem. Pellentesque vitae felis pretium, pulvinar elit eu, euismod sapien.
+ *
+ */
 export const useFindPetsSuspense = <
   TData = NonNullable<Common.FindPetsDefaultResponse>,
   TError = FindPetsError,
@@ -456,12 +538,17 @@ export const useFindPetsSuspense = <
       ) as TData,
     ...options,
   });
+/**
+ * This path is not fully defined.
+ *
+ * @deprecated
+ */
 export const useGetNotDefinedSuspense = <
   TData = NonNullable<Common.GetNotDefinedDefaultResponse>,
-  TError = GetNotDefinedError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<unknown, true> = {},
+  clientOptions: Options<GetNotDefinedData, true> = {},
   queryKey?: TQueryKey,
   options?: Omit<
     UseSuspenseQueryOptions<TData, TError>,
@@ -476,6 +563,9 @@ export const useGetNotDefinedSuspense = <
       ) as TData,
     ...options,
   });
+/**
+ * Returns a user based on a single ID, if the user does not have access to the pet
+ */
 export const useFindPetByIdSuspense = <
   TData = NonNullable<Common.FindPetByIdDefaultResponse>,
   TError = FindPetByIdError,
@@ -496,9 +586,13 @@ export const useFindPetByIdSuspense = <
       ) as TData,
     ...options,
   });
+/**
+ * Returns paginated pets from the system that the user has access to
+ *
+ */
 export const useFindPaginatedPetsSuspense = <
   TData = NonNullable<Common.FindPaginatedPetsDefaultResponse>,
-  TError = FindPaginatedPetsError,
+  TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
   clientOptions: Options<FindPaginatedPetsData, true> = {},
@@ -516,5 +610,102 @@ export const useFindPaginatedPetsSuspense = <
       ) as TData,
     ...options,
   });
+"
+`;
+
+exports[`generate - axios client with enums, noOperationId, schemaType > queries.ts 1`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
+import { useMutation, UseMutationOptions, useQuery, UseQueryOptions } from "@tanstack/react-query";
+import { AxiosError } from "axios";
+import type { Options } from "../requests/sdk.gen";
+import { deletePetsById, getNotDefined, getPaginatedPets, getPets, getPetsById, postNotDefined, postPets } from "../requests/sdk.gen";
+import { DeletePetsByIdData, DeletePetsByIdError, GetNotDefinedData, GetPaginatedPetsData, GetPetsByIdData, GetPetsByIdError, GetPetsData, GetPetsError, PostNotDefinedData, PostPetsData, PostPetsError } from "../requests/types.gen";
+import * as Common from "./common";
+/**
+* Returns all pets from the system that the user has access to
+* Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
+*
+* Sed tempus felis lobortis leo pulvinar rutrum. Nam mattis velit nisl, eu condimentum ligula luctus nec. Phasellus semper velit eget aliquet faucibus. In a mattis elit. Phasellus vel urna viverra, condimentum lorem id, rhoncus nibh. Ut pellentesque posuere elementum. Sed a varius odio. Morbi rhoncus ligula libero, vel eleifend nunc tristique vitae. Fusce et sem dui. Aenean nec scelerisque tortor. Fusce malesuada accumsan magna vel tempus. Quisque mollis felis eu dolor tristique, sit amet auctor felis gravida. Sed libero lorem, molestie sed nisl in, accumsan tempor nisi. Fusce sollicitudin massa ut lacinia mattis. Sed vel eleifend lorem. Pellentesque vitae felis pretium, pulvinar elit eu, euismod sapien.
+*
+*/
+export const useGetPets = <TData = Common.GetPetsDefaultResponse, TError = AxiosError<GetPetsError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetPetsKeyFn(clientOptions, queryKey), queryFn: () => getPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* This path is not fully defined.
+*
+* @deprecated
+*/
+export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* Returns a user based on a single ID, if the user does not have access to the pet
+*/
+export const useGetPetsById = <TData = Common.GetPetsByIdDefaultResponse, TError = AxiosError<GetPetsByIdError>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetPetsByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetPetsByIdKeyFn(clientOptions, queryKey), queryFn: () => getPetsById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* Returns paginated pets from the system that the user has access to
+*
+*/
+export const useGetPaginatedPets = <TData = Common.GetPaginatedPetsDefaultResponse, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => getPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* Creates a new pet in the store. Duplicates are allowed
+*/
+export const usePostPets = <TData = Common.PostPetsMutationResult, TError = AxiosError<PostPetsError>, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<PostPetsData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<PostPetsData, true>, TContext>({ mutationKey: Common.UsePostPetsKeyFn(mutationKey), mutationFn: clientOptions => postPets(clientOptions) as unknown as Promise<TData>, ...options });
+/**
+* This path is not defined at all.
+*
+* @deprecated
+*/
+export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = AxiosError<unknown>, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<PostNotDefinedData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({ mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey), mutationFn: clientOptions => postNotDefined(clientOptions) as unknown as Promise<TData>, ...options });
+/**
+* deletes a single pet based on the ID supplied
+*/
+export const useDeletePetsById = <TData = Common.DeletePetsByIdMutationResult, TError = AxiosError<DeletePetsByIdError>, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<DeletePetsByIdData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<DeletePetsByIdData, true>, TContext>({ mutationKey: Common.UseDeletePetsByIdKeyFn(mutationKey), mutationFn: clientOptions => deletePetsById(clientOptions) as unknown as Promise<TData>, ...options });
+"
+`;
+
+exports[`generate - noSchemas option > queries.ts 1`] = `
+"// generated with @7nohe/openapi-react-query-codegen@1.0.0 
+
+import { useMutation, UseMutationOptions, useQuery, UseQueryOptions } from "@tanstack/react-query";
+import type { Options } from "../requests/sdk.gen";
+import { addPet, deletePet, findPaginatedPets, findPetById, findPets, getNotDefined, postNotDefined } from "../requests/sdk.gen";
+import { AddPetData, AddPetError, DeletePetData, DeletePetError, FindPaginatedPetsData, FindPetByIdData, FindPetByIdError, FindPetsData, FindPetsError, GetNotDefinedData, PostNotDefinedData } from "../requests/types.gen";
+import * as Common from "./common";
+/**
+* Returns all pets from the system that the user has access to
+* Nam sed condimentum est. Maecenas tempor sagittis sapien, nec rhoncus sem sagittis sit amet. Aenean at gravida augue, ac iaculis sem. Curabitur odio lorem, ornare eget elementum nec, cursus id lectus. Duis mi turpis, pulvinar ac eros ac, tincidunt varius justo. In hac habitasse platea dictumst. Integer at adipiscing ante, a sagittis ligula. Aenean pharetra tempor ante molestie imperdiet. Vivamus id aliquam diam. Cras quis velit non tortor eleifend sagittis. Praesent at enim pharetra urna volutpat venenatis eget eget mauris. In eleifend fermentum facilisis. Praesent enim enim, gravida ac sodales sed, placerat id erat. Suspendisse lacus dolor, consectetur non augue vel, vehicula interdum libero. Morbi euismod sagittis libero sed lacinia.
+*
+* Sed tempus felis lobortis leo pulvinar rutrum. Nam mattis velit nisl, eu condimentum ligula luctus nec. Phasellus semper velit eget aliquet faucibus. In a mattis elit. Phasellus vel urna viverra, condimentum lorem id, rhoncus nibh. Ut pellentesque posuere elementum. Sed a varius odio. Morbi rhoncus ligula libero, vel eleifend nunc tristique vitae. Fusce et sem dui. Aenean nec scelerisque tortor. Fusce malesuada accumsan magna vel tempus. Quisque mollis felis eu dolor tristique, sit amet auctor felis gravida. Sed libero lorem, molestie sed nisl in, accumsan tempor nisi. Fusce sollicitudin massa ut lacinia mattis. Sed vel eleifend lorem. Pellentesque vitae felis pretium, pulvinar elit eu, euismod sapien.
+*
+*/
+export const useFindPets = <TData = Common.FindPetsDefaultResponse, TError = FindPetsError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey), queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* This path is not fully defined.
+*
+* @deprecated
+*/
+export const useGetNotDefined = <TData = Common.GetNotDefinedDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<GetNotDefinedData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseGetNotDefinedKeyFn(clientOptions, queryKey), queryFn: () => getNotDefined({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* Returns a user based on a single ID, if the user does not have access to the pet
+*/
+export const useFindPetById = <TData = Common.FindPetByIdDefaultResponse, TError = FindPetByIdError, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPetByIdData, true>, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPetByIdKeyFn(clientOptions, queryKey), queryFn: () => findPetById({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* Returns paginated pets from the system that the user has access to
+*
+*/
+export const useFindPaginatedPets = <TData = Common.FindPaginatedPetsDefaultResponse, TError = unknown, TQueryKey extends Array<unknown> = unknown[]>(clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => useQuery<TData, TError>({ queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey), queryFn: () => findPaginatedPets({ ...clientOptions }).then(response => response.data as TData) as TData, ...options });
+/**
+* Creates a new pet in the store. Duplicates are allowed
+*/
+export const useAddPet = <TData = Common.AddPetMutationResult, TError = AddPetError, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<AddPetData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<AddPetData, true>, TContext>({ mutationKey: Common.UseAddPetKeyFn(mutationKey), mutationFn: clientOptions => addPet(clientOptions) as unknown as Promise<TData>, ...options });
+/**
+* This path is not defined at all.
+*
+* @deprecated
+*/
+export const usePostNotDefined = <TData = Common.PostNotDefinedMutationResult, TError = unknown, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<PostNotDefinedData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<PostNotDefinedData, true>, TContext>({ mutationKey: Common.UsePostNotDefinedKeyFn(mutationKey), mutationFn: clientOptions => postNotDefined(clientOptions) as unknown as Promise<TData>, ...options });
+/**
+* deletes a single pet based on the ID supplied
+*/
+export const useDeletePet = <TData = Common.DeletePetMutationResult, TError = DeletePetError, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, Options<DeletePetData, true>, TContext>, "mutationKey" | "mutationFn">) => useMutation<TData, TError, Options<DeletePetData, true>, TContext>({ mutationKey: Common.UseDeletePetKeyFn(mutationKey), mutationFn: clientOptions => deletePet(clientOptions) as unknown as Promise<TData>, ...options });
 "
 `;

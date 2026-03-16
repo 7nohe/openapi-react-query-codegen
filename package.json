@@ -47,30 +47,35 @@
   "license": "MIT",
   "author": "Daiki Urata (@7nohe)",
   "dependencies": {
-    "@hey-api/client-fetch": "0.4.0",
-    "@hey-api/openapi-ts": "0.53.8",
+    "@hey-api/openapi-ts": "0.92.3",
     "cross-spawn": "^7.0.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
     "@types/cross-spawn": "^6.0.6",
     "@types/node": "^22.7.4",
+    "@types/semver": "^7.7.1",
     "@vitest/coverage-v8": "^1.5.0",
     "commander": "^12.0.0",
     "lefthook": "^1.6.10",
     "rimraf": "^5.0.5",
-    "ts-morph": "^23.0.0",
-    "typescript": "^5.5.4",
+    "ts-morph": "^27.0.2",
+    "typescript": "^5.9.3",
     "vitest": "^1.5.0"
   },
   "peerDependencies": {
     "commander": "12.x",
-    "ts-morph": "23.x",
+    "ts-morph": "27.x",
     "typescript": "5.x"
   },
   "packageManager": "pnpm@9.6.0",
   "engines": {
-    "node": ">=14",
+    "node": ">=20.19.0",
     "pnpm": ">=9"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@hey-api/openapi-ts@0.92.3": "patches/@hey-api__openapi-ts@0.92.3.patch"
+    }
   }
 }

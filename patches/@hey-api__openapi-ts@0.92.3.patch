@@ -1,0 +1,12 @@
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index fd805770f0aff4a9f6c57560554908764ed5bdce..af40ec3b83741774a9e0ad82caf0acd3c97a3b55 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -1354,6 +1354,7 @@ declare class ImplFuncTsDsl<M extends FuncMode = 'arrow'> extends Mixed$27 {
+   decl(): FuncTsDsl<'decl'>;
+   /** Switches the function to a function expression form. */
+   expr(): FuncTsDsl<'expr'>;
++  // @ts-ignore TS2416 - bundled declaration has incorrect base type TsDsl<ArrowFunction>; conditional return is valid at source level
+   toAst(): M extends 'decl' ? ts.FunctionDeclaration : M extends 'expr' ? ts.FunctionExpression : ts.ArrowFunction;
+   $validate(): asserts this;
+   private missingRequiredCalls;

@@ -1,6 +1,6 @@
-import type { UserConfig } from "@hey-api/openapi-ts";
 import type { Project } from "ts-morph";
 import ts from "typescript";
+import type { LimitedUserConfig } from "./cli.mjs";
 import { capitalizeFirstLetter } from "./common.mjs";
 import { modelsFileName } from "./constants.mjs";
 import { createPrefetchOrEnsure } from "./createPrefetchOrEnsure.mjs";
@@ -17,20 +17,20 @@ export const createExports = ({
   initialPageParam,
 }: {
   service: Service;
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
   project: Project;
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;
 }) => {
   const { methods } = service;
-  const methodDataNames = methods.reduce(
+  const methodDataNames = methods.reduce<Record<string, string>>(
     (acc, data) => {
       const methodName = data.method.getName();
       acc[`${capitalizeFirstLetter(methodName)}Data`] = methodName;
       return acc;
     },
-    {} as { [key: string]: string },
+    {},
   );
   const modelsFile = project
     .getSourceFiles?.()
@@ -46,19 +46,20 @@ export const createExports = ({
     if (ts.isTypeAliasDeclaration(node) && methodDataNames[key] !== undefined) {
       // get the type alias declaration
       const typeAliasDeclaration = node.type;
-      if (typeAliasDeclaration.kind === ts.SyntaxKind.TypeLiteral) {
-        const query = (typeAliasDeclaration as ts.TypeLiteralNode).members.find(
-          (m) =>
-            m.kind === ts.SyntaxKind.PropertySignature &&
-            m.name?.getText() === "query",
+      if (ts.isTypeLiteralNode(typeAliasDeclaration)) {
+        const query = typeAliasDeclaration.members.find(
+          (m): m is ts.PropertySignature =>
+            ts.isPropertySignature(m) && m.name?.getText() === "query",
         );
-        if (
-          query &&
-          ((query as ts.PropertySignature).type as ts.TypeLiteralNode).members
-            .map((m) => m.name?.getText())
-            .includes(pageParam)
-        ) {
-          paginatableMethods.push(methodDataNames[key]);
+        if (query) {
+          const queryType = query.type;
+          const members =
+            queryType && ts.isTypeLiteralNode(queryType)
+              ? queryType.members
+              : undefined;
+          if (members?.map((m) => m.name?.getText()).includes(pageParam)) {
+            paginatableMethods.push(methodDataNames[key]);
+          }
         }
       }
     }
@@ -146,7 +147,7 @@ export const createExports = ({
 
   const infiniteQueriesExports = allQueries
     .flatMap(({ infiniteQueryHook }) => [infiniteQueryHook])
-    .filter(Boolean) as ts.VariableStatement[];
+    .filter((x): x is ts.VariableStatement => x != null);
 
   const suspenseQueries = allQueries.flatMap(({ suspenseQueryHook }) => [
     suspenseQueryHook,

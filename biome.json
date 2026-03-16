@@ -24,6 +24,18 @@
       "recommended": true
     }
   },
+  "overrides": [
+    {
+      "include": ["src/vendor-typestubs.d.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

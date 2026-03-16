@@ -63,7 +63,7 @@ export const getNameFromVariable = (variable: VariableDeclaration) => {
 export type FunctionDescription = {
   node: SourceFile;
   method: VariableDeclaration;
-  methodBlock: ts.Block;
+  methodBlock?: ts.Block;
   httpMethodName: string;
   jsDoc: string;
   isDeprecated: boolean;
@@ -329,25 +329,16 @@ export function getRequestParamFromMethod(
   pageParam?: string,
   modelNames: string[] = [],
 ) {
-  if (!getVariableArrowFunctionParameters(method).length) {
+  const sdkParams = getVariableArrowFunctionParameters(method);
+  if (!sdkParams.length) {
     return null;
   }
   const methodName = getNameFromVariable(method);
 
-  const params = getVariableArrowFunctionParameters(method).flatMap((param) => {
-    const paramNodes = extractPropertiesFromObjectParam(param);
-
-    return paramNodes
-      .filter((p) => p.name !== pageParam)
-      .map((refParam) => ({
-        name: refParam.name,
-        // TODO: Client<Request, Response, unknown, RequestOptions> -> Client<Request, Response, unknown>
-        typeName: getShortType(refParam.type?.getText() ?? ""),
-        optional: refParam.optional,
-      }));
-  });
-
-  const areAllPropertiesOptional = params.every((param) => param.optional);
+  // Use the SDK function's parameter optionality as the authoritative check.
+  // Generic types like Options<XData, ThrowOnError> may not resolve correctly
+  // via extractPropertiesFromObjectParam for type alias properties (path, url).
+  const areAllPropertiesOptional = sdkParams[0].isOptional();
 
   return ts.factory.createParameterDeclaration(
     undefined,

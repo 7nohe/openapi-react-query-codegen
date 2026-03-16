@@ -1,7 +1,7 @@
 import { join } from "node:path";
-import type { UserConfig } from "@hey-api/openapi-ts";
 import { Project } from "ts-morph";
 import ts from "typescript";
+import type { LimitedUserConfig } from "./cli.mjs";
 import { OpenApiRqFiles } from "./constants.mjs";
 import { createExports } from "./createExports.mjs";
 import { createImports } from "./createImports.mjs";
@@ -15,7 +15,7 @@ const createSourceFile = async ({
   initialPageParam,
 }: {
   outputPath: string;
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;
@@ -136,7 +136,7 @@ export const createSource = async ({
   initialPageParam,
 }: {
   outputPath: string;
-  client: UserConfig["client"];
+  client: LimitedUserConfig["client"];
   version: string;
   pageParam: string;
   nextPageParam: string;

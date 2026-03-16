@@ -23,8 +23,8 @@ describe(fileName, () => {
       "addPet",
       "getNotDefined",
       "postNotDefined",
-      "findPetById",
       "deletePet",
+      "findPetById",
       "findPaginatedPets",
     ]);
   });
@@ -39,36 +39,9 @@ describe(fileName, () => {
     );
   });
 
-  test('getMethodsFromService - throw error "Arrow function not found"', async () => {
-    const source = `
-    const client = createClient(createConfig())
-    const foo = "bar"
-    `;
-    const project = new Project();
-    const sourceFile = project.createSourceFile("test.ts", source);
-
-    await expect(() => getMethodsFromService(sourceFile)).toThrowError(
-      "Arrow function not found",
-    );
-  });
-
-  test('getMethodsFromService - throw error "Initializer not found"', async () => {
-    const source = `
-    const client = createClient(createConfig())
-    const foo
-    `;
-    const project = new Project();
-    const sourceFile = project.createSourceFile("test.ts", source);
-
-    await expect(() => getMethodsFromService(sourceFile)).toThrowError(
-      "Initializer not found",
-    );
-  });
-
   test('getMethodsFromService - throw error "Return statement not found"', async () => {
     const source = `
-    const client = createClient(createConfig())
-    const foo = () => {}
+    export const foo = () => {}
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
@@ -80,8 +53,7 @@ describe(fileName, () => {
 
   test('getMethodsFromService - throw error "Call expression not found"', async () => {
     const source = `
-    const client = createClient(createConfig())
-    const foo = () => { return }
+    export const foo = () => { return }
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
@@ -91,16 +63,72 @@ describe(fileName, () => {
     );
   });
 
-  test('getMethodsFromService - throw error "Method block not found"', async () => {
+  test('getMethodsFromService - throw error "httpMethodName not found"', async () => {
     const source = `
-    const client = createClient(createConfig())
-    const foo = () => 
+    export const foo = () => someFunction()
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
 
     await expect(() => getMethodsFromService(sourceFile)).toThrowError(
-      "Method block not found",
+      "httpMethodName not found",
     );
+  });
+
+  test("getMethodsFromService - filters non-exported variables", () => {
+    const source = `
+    const internal = () => client.get({ url: '/internal' });
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods).toHaveLength(1);
+    expect(methods[0].method.getName()).toBe("foo");
+  });
+
+  test("getMethodsFromService - filters non-arrow function exports", () => {
+    const source = `
+    export const config = { baseUrl: '/api' };
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods).toHaveLength(1);
+    expect(methods[0].method.getName()).toBe("foo");
+  });
+
+  test("getMethodsFromService - extracts JSDoc comment", () => {
+    const source = `
+    /** This is a description */
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods[0].jsDoc).toContain("This is a description");
+  });
+
+  test("getMethodsFromService - detects deprecated tag", () => {
+    const source = `
+    /** @deprecated Use newFoo instead */
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods[0].isDeprecated).toBe(true);
+  });
+
+  test("getMethodsFromService - not deprecated without tag", () => {
+    const source = `
+    /** Normal method */
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods[0].isDeprecated).toBe(false);
   });
 });
