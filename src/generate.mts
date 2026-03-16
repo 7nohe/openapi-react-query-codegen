@@ -65,7 +65,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
 
   // Generate backward-compatible services.gen.ts shim
   // client.gen.ts has the `client` instance; sdk.gen.ts has SDK functions
-  const shimContent = `// This file is auto-generated for backward compatibility\nexport * from './client.gen';\nexport * from './sdk.gen';\n`;
+  const shimContent = `// This file is auto-generated for backward compatibility\nexport * from './client.gen.js';\nexport * from './sdk.gen.js';\n`;
   await writeFile(path.join(openApiOutputPath, "services.gen.ts"), shimContent);
 
   const source = await createSource({

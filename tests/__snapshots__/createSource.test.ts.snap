@@ -11,7 +11,7 @@ export * from "./queries";
 exports[`createSource > createSource - @hey-api/client-axios 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
@@ -48,7 +48,7 @@ exports[`createSource > createSource - @hey-api/client-axios 3`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
@@ -97,7 +97,7 @@ exports[`createSource > createSource - @hey-api/client-axios 4`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
@@ -132,7 +132,7 @@ exports[`createSource > createSource - @hey-api/client-axios 5`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
@@ -174,7 +174,7 @@ export * from "./queries";
 exports[`createSource > createSource - @hey-api/client-fetch 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
@@ -210,7 +210,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 3`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
@@ -258,7 +258,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 4`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
@@ -292,7 +292,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 5`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
-import { type Options } from "../requests/client";
+import type { Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useMutation, UseQueryResult, UseQueryOptions, UseMutationOptions, UseMutationResult, UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, deletePet, findPetById, findPaginatedPets } from "../requests/sdk.gen";
 import { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";

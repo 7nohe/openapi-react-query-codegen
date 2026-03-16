@@ -41,17 +41,17 @@ export const createImports = ({
     ts.factory.createImportDeclaration(
       undefined,
       ts.factory.createImportClause(
-        false,
+        true,
         undefined,
         ts.factory.createNamedImports([
           ts.factory.createImportSpecifier(
-            true,
+            false,
             undefined,
             ts.factory.createIdentifier("Options"),
           ),
         ]),
       ),
-      ts.factory.createStringLiteral(join("../requests", "client")),
+      ts.factory.createStringLiteral(join("../requests", serviceFileName)),
       undefined,
     ),
     ts.factory.createImportDeclaration(

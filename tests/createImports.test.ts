@@ -24,7 +24,7 @@ describe(fileName, () => {
       (i) => (i.moduleSpecifier as ts.StringLiteral).text,
     );
     expect(moduleNames).toStrictEqual([
-      "../requests/client",
+      "../requests/sdk.gen",
       "@tanstack/react-query",
       "../requests/sdk.gen",
       "../requests/types.gen",
@@ -63,7 +63,7 @@ describe(fileName, () => {
       (i) => (i.moduleSpecifier as ts.StringLiteral).text,
     );
     expect(moduleNames).toStrictEqual([
-      "../requests/client",
+      "../requests/sdk.gen",
       "@tanstack/react-query",
       "../requests/sdk.gen",
       "../requests/types.gen",
