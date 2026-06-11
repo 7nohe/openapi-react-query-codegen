@@ -12,7 +12,8 @@
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
     "baseUrl": ".",
-    "rootDir": "src"
+    "rootDir": "src",
+    "declaration": true
   },
   "include": ["src"]
 }
