@@ -5,7 +5,7 @@ description: Contributing to OpenAPI React Query Codegen.
 
 ## Prerequisites
 
-- Node.js v20.16.0 or later
+- Node.js v22.18.0 or later
 - pnpm v9
 
 ## Install dependencies
