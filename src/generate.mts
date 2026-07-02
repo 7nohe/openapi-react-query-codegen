@@ -33,7 +33,10 @@ export async function generate(options: LimitedUserConfig, version: string) {
     formattedOptions.noOperationId
       ? {
           name: "@hey-api/sdk" as const,
-          operationId: false,
+          // `operationId: false` was deprecated in favor of `operations.nesting`
+          operations: {
+            nesting: "id" as const,
+          },
         }
       : "@hey-api/sdk";
 
