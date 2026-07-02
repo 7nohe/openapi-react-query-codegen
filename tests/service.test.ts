@@ -99,6 +99,23 @@ describe(fileName, () => {
     expect(methods[0].method.getName()).toBe("foo");
   });
 
+  test("getMethodsFromService - extracts Xquik search endpoint", () => {
+    const source = `
+    export const searchTweets = (options?: Options) =>
+      (options?.client ?? client).get({
+        url: '/api/v1/x/tweets/search',
+        query: { q: 'openapi', queryType: 'Latest', limit: 20 },
+        headers: { 'x-api-key': 'test-key' },
+      });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods).toHaveLength(1);
+    expect(methods[0].method.getName()).toBe("searchTweets");
+    expect(methods[0].httpMethodName).toBe("get");
+  });
+
   test("getMethodsFromService - extracts JSDoc comment", () => {
     const source = `
     /** This is a description */
