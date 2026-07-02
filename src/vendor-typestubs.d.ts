@@ -48,6 +48,15 @@ declare module "vue" {
   export type Ref<T = any> = any;
 }
 
+declare module "ky" {
+  export interface Options {
+    [key: string]: any;
+  }
+  export type KyInstance = any;
+  const ky: any;
+  export default ky;
+}
+
 declare module "ofetch" {
   export interface FetchOptions<T = any> {
     [key: string]: any;
