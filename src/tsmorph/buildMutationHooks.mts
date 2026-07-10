@@ -54,6 +54,8 @@ export function buildUseMutationHook(
 
   return {
     kind: StructureKind.VariableStatement,
+    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
+    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
     isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [

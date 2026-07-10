@@ -67,8 +67,8 @@ describe("projectFactory", () => {
       const result = buildClientImport(mockFetchContext);
 
       expect(result.kind).toBe(StructureKind.ImportDeclaration);
-      // In v0.73+, Options is imported from the generated client file
-      expect(result.moduleSpecifier).toBe("../requests/client");
+      // Options comes from sdk.gen (extended with client/meta properties)
+      expect(result.moduleSpecifier).toBe("../requests/sdk.gen");
       expect(result.namedImports).toEqual([
         { name: "Options", isTypeOnly: true },
       ]);
@@ -78,7 +78,7 @@ describe("projectFactory", () => {
       const result = buildClientImport(mockAxiosContext);
 
       // In v0.73+, client type doesn't affect the import path
-      expect(result.moduleSpecifier).toBe("../requests/client");
+      expect(result.moduleSpecifier).toBe("../requests/sdk.gen");
     });
   });
 
@@ -164,9 +164,9 @@ describe("projectFactory", () => {
       const result = buildCommonFileImports(mockFetchContext);
 
       expect(result.length).toBeGreaterThanOrEqual(3);
-      // In v0.73+, Options is imported from ../requests/client
+      // Options is imported from ../requests/sdk.gen
       expect(
-        result.some((i) => i.moduleSpecifier === "../requests/client"),
+        result.some((i) => i.moduleSpecifier === "../requests/sdk.gen"),
       ).toBe(true);
       expect(
         result.some((i) => i.moduleSpecifier === "@tanstack/react-query"),
@@ -184,9 +184,9 @@ describe("projectFactory", () => {
     it("should build imports for common file with axios client", () => {
       const result = buildCommonFileImports(mockAxiosContext);
 
-      // In v0.73+, Options is imported from ../requests/client regardless of axios
+      // Options is imported from ../requests/sdk.gen regardless of axios
       expect(
-        result.some((i) => i.moduleSpecifier === "../requests/client"),
+        result.some((i) => i.moduleSpecifier === "../requests/sdk.gen"),
       ).toBe(true);
       expect(result.some((i) => i.moduleSpecifier === "axios")).toBe(true);
     });
@@ -207,9 +207,9 @@ describe("projectFactory", () => {
       expect(result.length).toBeGreaterThanOrEqual(4);
       expect(result[0].moduleSpecifier).toBe("./common");
       expect(result[0].namespaceImport).toBe("Common");
-      // In v0.73+, Options is imported from ../requests/client
+      // Options is imported from ../requests/sdk.gen
       expect(
-        result.some((i) => i.moduleSpecifier === "../requests/client"),
+        result.some((i) => i.moduleSpecifier === "../requests/sdk.gen"),
       ).toBe(true);
       expect(
         result.some((i) => i.moduleSpecifier === "@tanstack/react-query"),

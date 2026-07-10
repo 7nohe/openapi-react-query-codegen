@@ -106,6 +106,8 @@ export function buildUseQueryHook(
 
   return {
     kind: StructureKind.VariableStatement,
+    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
+    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
     isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [
@@ -137,6 +139,8 @@ export function buildUseSuspenseQueryHook(
 
   return {
     kind: StructureKind.VariableStatement,
+    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
+    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
     isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [
@@ -196,6 +200,8 @@ export function buildUseInfiniteQueryHook(
 
   return {
     kind: StructureKind.VariableStatement,
+    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
+    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
     isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [
@@ -240,6 +246,8 @@ export function buildPrefetchFn(
 
   return {
     kind: StructureKind.VariableStatement,
+    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
+    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
     isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [
@@ -284,6 +292,8 @@ export function buildEnsureQueryDataFn(
 
   return {
     kind: StructureKind.VariableStatement,
+    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
+    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
     isExported: true,
     declarationKind: VariableDeclarationKind.Const,
     declarations: [

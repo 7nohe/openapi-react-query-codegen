@@ -28,15 +28,16 @@ export function createGenerationProject(): Project {
 }
 
 /**
- * Build import structure for client library.
- * In v0.73+, Options type is exported from the generated client file.
+ * Build import structure for the Options type.
+ * sdk.gen re-exports Options extended with `client` and `meta`, which the
+ * base client Options lacks; hooks must accept those properties.
  */
 export function buildClientImport(
   _ctx: GenerationContext,
 ): ImportDeclarationStructure {
   return {
     kind: StructureKind.ImportDeclaration,
-    moduleSpecifier: "../requests/client",
+    moduleSpecifier: "../requests/sdk.gen",
     namedImports: [{ name: "Options", isTypeOnly: true }],
   };
 }
