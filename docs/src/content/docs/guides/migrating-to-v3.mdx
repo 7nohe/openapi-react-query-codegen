@@ -1,0 +1,70 @@
+---
+title: Migrating to v3
+description: Migration guide from v2 to v3 of OpenAPI React Query Codegen.
+---
+
+v3 is a full rewrite of the code generator on top of a ts-morph pipeline, but the generated output is intentionally kept compatible with v2. For most projects, migrating means updating the package and regenerating — no code changes.
+
+## TL;DR
+
+1. Update the package and regenerate your client:
+
+   ```bash
+   npm install -D @7nohe/openapi-react-query-codegen@beta
+   npx openapi-rq -i ./petstore.yaml
+   ```
+
+2. If you don't use infinite queries, you are done.
+3. If you use infinite queries (`useXxxInfinite`), fix the type errors the compiler reports — see below. They are mechanical.
+
+## What stays the same
+
+- All generated hooks (`useQuery`, `useSuspenseQuery`, `useMutation`), prefetch and `ensureQueryData` functions, key constants, and key functions keep their v2 names and signatures.
+- JSDoc comments (including `@deprecated`) are still emitted on every hook.
+- Environment requirements are unchanged from v2.2.0: Node.js 22.18+, `typescript` 5.x or 6.x, `ts-morph` 28.x.
+
+## What's new
+
+Every GET operation now also gets a [queryOptions factory](/guides/usage/#using-the-generated-queryoptions-factories) in `queryOptions.ts`, and paginatable operations get an `infiniteQueryOptions` factory. These are additive — existing code is unaffected.
+
+```tsx
+import { useQuery } from "@tanstack/react-query";
+import { findPetsOptions } from "../openapi/queries";
+
+const { data } = useQuery(findPetsOptions({ query: { limit: 10 } }));
+```
+
+## Breaking changes: infinite queries
+
+In v2, an infinite query shared its cache key with the plain query for the same operation, which corrupted the cache when both were used ([#140](https://github.com/7nohe/openapi-react-query-codegen/issues/140)). v3 gives infinite queries their own keys and types.
+
+### 1. Cache keys have an `Infinite` suffix
+
+The cache key changed from `["FindPaginatedPets"]` to `["FindPaginatedPetsInfinite"]`. If you interact with the infinite query cache manually, switch to the new key exports:
+
+```diff
+- queryClient.invalidateQueries({ queryKey: [useFindPaginatedPetsKey] });
++ queryClient.invalidateQueries({ queryKey: [useFindPaginatedPetsInfiniteKey] });
+
+- queryClient.setQueryData(UseFindPaginatedPetsKeyFn(options), updater);
++ queryClient.setQueryData(UseFindPaginatedPetsInfiniteKeyFn(options), updater);
+```
+
+If you persist the query cache (e.g. `persistQueryClient`), previously cached infinite data will not match the new key and will be refetched once after the upgrade.
+
+### 2. The page parameter is no longer accepted in `clientOptions`
+
+Infinite hooks now take a dedicated options type that excludes the page parameter — TanStack Query supplies it through the `pageParam` mechanism. In v2 a page value passed here was silently overwritten, so removing it does not change behavior:
+
+```diff
+  const { data, fetchNextPage } = useFindPaginatedPetsInfinite({
+-   query: { page: 1, tags: [], limit: 10 },
++   query: { tags: [], limit: 10 },
+  });
+```
+
+This also fixes compilation for OpenAPI specs where the page parameter is required.
+
+### 3. Specs with a required page parameter now compile
+
+No action needed — this was previously a compile error in the generated code. The generated `XxxInfiniteClientOptions` type makes the page parameter unnecessary while keeping all other parameters typed as before.
