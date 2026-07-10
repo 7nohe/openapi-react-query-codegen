@@ -2,6 +2,9 @@ import { StructureKind, VariableDeclarationKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
   buildDefaultResponseType,
+  buildInfiniteClientOptionsType,
+  buildInfiniteQueryKeyConst,
+  buildInfiniteQueryKeyFn,
   buildMutationKeyConst,
   buildMutationKeyFn,
   buildMutationResultType,
@@ -29,6 +32,16 @@ const mockMutationOperation: OperationInfo = {
   parameters: [{ name: "body", typeName: "NewPet", optional: false }],
   allParamsOptional: false,
   isPaginatable: false,
+};
+
+const mockPaginatableOperation: OperationInfo = {
+  methodName: "findPaginatedPets",
+  capitalizedMethodName: "FindPaginatedPets",
+  httpMethod: "GET",
+  isDeprecated: false,
+  parameters: [{ name: "page", typeName: "number", optional: true }],
+  allParamsOptional: true,
+  isPaginatable: true,
 };
 
 const mockContext: GenerationContext = {
@@ -187,6 +200,59 @@ describe("buildCommon", () => {
       expect(initializer).toContain("mutationKey?: Array<unknown>");
       expect(initializer).toContain("[useAddPetKey,");
       expect(initializer).toContain("mutationKey ?? []");
+    });
+  });
+  describe("buildInfiniteClientOptionsType", () => {
+    it("should exclude the page param from the query type", () => {
+      const ctx: GenerationContext = {
+        ...mockContext,
+        modelNames: [...mockContext.modelNames, "FindPaginatedPetsData"],
+      };
+      const result = buildInfiniteClientOptionsType(
+        mockPaginatableOperation,
+        ctx,
+      );
+
+      expect(result.isExported).toBe(true);
+      expect(result.name).toBe("FindPaginatedPetsInfiniteClientOptions");
+      expect(result.type).toBe(
+        'Omit<Options<FindPaginatedPetsData, true>, "query"> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> }',
+      );
+    });
+
+    it("should fall back to Options<unknown, true> without a Data type", () => {
+      const result = buildInfiniteClientOptionsType(
+        mockPaginatableOperation,
+        mockContext,
+      );
+
+      expect(result.type).toBe("Options<unknown, true>");
+    });
+  });
+
+  describe("buildInfiniteQueryKeyConst", () => {
+    it("should build a distinct key for infinite queries", () => {
+      const result = buildInfiniteQueryKeyConst(mockPaginatableOperation);
+
+      expect(result.declarations[0].name).toBe(
+        "useFindPaginatedPetsInfiniteKey",
+      );
+      expect(result.declarations[0].initializer).toBe(
+        '"FindPaginatedPetsInfinite"',
+      );
+    });
+  });
+
+  describe("buildInfiniteQueryKeyFn", () => {
+    it("should build a key fn typed with the infinite client options", () => {
+      const result = buildInfiniteQueryKeyFn(mockPaginatableOperation);
+
+      expect(result.declarations[0].name).toBe(
+        "UseFindPaginatedPetsInfiniteKeyFn",
+      );
+      expect(result.declarations[0].initializer).toBe(
+        "(clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])]",
+      );
     });
   });
 });

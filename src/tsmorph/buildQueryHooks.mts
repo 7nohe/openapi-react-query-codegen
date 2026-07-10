@@ -54,9 +54,22 @@ function getOptionsTypeName(hookType: QueryHookType): string {
 }
 
 /**
+ * Resolve the generated Data type name for an operation, falling back to
+ * unknown when the operation has no generated Data type.
+ */
+export function getDataTypeName(
+  op: OperationInfo,
+  ctx: GenerationContext,
+): string {
+  return ctx.modelNames.includes(`${op.capitalizedMethodName}Data`)
+    ? `${op.capitalizedMethodName}Data`
+    : "unknown";
+}
+
+/**
  * Build the client options parameter string.
  */
-function buildClientOptionsParam(
+export function buildClientOptionsParam(
   op: OperationInfo,
   ctx: GenerationContext,
 ): string {
@@ -156,7 +169,7 @@ export function buildUseSuspenseQueryHook(
  * Build the nested type for getNextPageParam.
  * E.g., "meta.next" becomes "{ meta: { next: number } }"
  */
-function buildNestedNextPageType(nextPageParam: string): string {
+export function buildNestedNextPageType(nextPageParam: string): string {
   const segments = nextPageParam.split(".");
   return segments.reduceRight((acc, segment) => {
     return `{ ${segment}: ${acc} }`;
@@ -177,17 +190,15 @@ export function buildUseInfiniteQueryHook(
   const hookName = `use${op.capitalizedMethodName}Infinite`;
   const errorType = getErrorType(op, ctx);
   const baseDataType = `Common.${op.capitalizedMethodName}DefaultResponse`;
-  const dataTypeName = ctx.modelNames.includes(
-    `${op.capitalizedMethodName}Data`,
-  )
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
+  const dataTypeName = getDataTypeName(op, ctx);
 
+  // Infinite queries take a dedicated options type that excludes the page
+  // parameter — it is supplied by TanStack Query's pageParam mechanism
   const defaultValue = op.allParamsOptional ? " = {}" : "";
-  const clientOptionsParam = `clientOptions: Options<${dataTypeName}, true>${defaultValue}`;
+  const clientOptionsParam = `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
 
   // Build the queryFn with pageParam handling
-  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam as number } }).then(response => response.data as TData) as TData`;
+  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam as number } } as Options<${dataTypeName}, true>).then(response => response.data as TData) as TData`;
 
   // Build getNextPageParam with nested type
   const nestedType = buildNestedNextPageType(ctx.nextPageParam);
@@ -196,7 +207,7 @@ export function buildUseInfiniteQueryHook(
   // initialPageParam is a string literal
   const infiniteOptions = `initialPageParam: "${ctx.initialPageParam}", ${getNextPageParam}`;
 
-  const body = `useInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
+  const body = `useInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return {
     kind: StructureKind.VariableStatement,

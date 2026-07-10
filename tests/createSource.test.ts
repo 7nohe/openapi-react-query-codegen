@@ -18,11 +18,12 @@ describe(fileName, () => {
       client: "@hey-api/client-fetch",
     });
 
-    expect(source).toHaveLength(7);
+    expect(source).toHaveLength(8);
     expect(source.map((s) => s.name)).toEqual([
       "index.ts",
       "common.ts",
       "queries.ts",
+      "queryOptions.ts",
       "suspense.ts",
       "infiniteQueries.ts",
       "prefetch.ts",

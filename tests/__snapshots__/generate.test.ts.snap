@@ -77,6 +77,17 @@ export const UseFindPaginatedPetsKeyFn = (
   queryKey?: Array<unknown>,
 ) => [useFindPaginatedPetsKey, ...(queryKey ?? [clientOptions])];
 
+export type FindPaginatedPetsInfiniteClientOptions = Omit<
+  Options<FindPaginatedPetsData, true>,
+  "query"
+> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
+
+export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
+export const UseFindPaginatedPetsInfiniteKeyFn = (
+  clientOptions: FindPaginatedPetsInfiniteClientOptions = {},
+  queryKey?: Array<unknown>,
+) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
+
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
 
 export const useAddPetKey = "AddPet";
@@ -187,6 +198,7 @@ exports[`generate > index.ts 1`] = `
 
 export * from "./common";
 export * from "./queries";
+export * from "./queryOptions";
 "
 `;
 
@@ -211,7 +223,7 @@ export const useFindPaginatedPetsInfinite = <
   TError = unknown,
   TQueryKey extends Array<unknown> = unknown[],
 >(
-  clientOptions: Options<FindPaginatedPetsData, true> = {},
+  clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {},
   queryKey?: TQueryKey,
   options?: Omit<
     UseInfiniteQueryOptions<TData, TError>,
@@ -219,12 +231,14 @@ export const useFindPaginatedPetsInfinite = <
   >,
 ) =>
   useInfiniteQuery({
-    queryKey: Common.UseFindPaginatedPetsKeyFn(clientOptions, queryKey),
+    queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey),
     queryFn: ({ pageParam }) =>
       findPaginatedPets({
         ...clientOptions,
         query: { ...clientOptions.query, page: pageParam as number },
-      }).then((response) => response.data as TData) as TData,
+      } as Options<FindPaginatedPetsData, true>).then(
+        (response) => response.data as TData,
+      ) as TData,
     initialPageParam: "initial",
     getNextPageParam: (response) =>
       (response as { meta: { next: number } }).meta.next,

@@ -217,3 +217,39 @@ const { data, fetchNextPage } = useFindPaginatedPetsInfinite({
   query: { tags: [], limit: 10 }
 });
 ```
+
+## Using the generated `queryOptions` factories
+
+Every GET operation also gets a [queryOptions](https://tanstack.com/query/latest/docs/framework/react/guides/query-options) factory in `queryOptions.ts`. The factory bundles the query key and query function into one type-safe object, so you can reuse it with any TanStack Query utility — `useQuery`, `useSuspenseQuery`, `useQueries`, `queryClient.prefetchQuery`, `queryClient.ensureQueryData`, `queryClient.setQueryData`, and more.
+
+```tsx
+import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
+import { findPetsOptions, findPetByIdOptions } from "../openapi/queries";
+
+// Equivalent to the generated useFindPets hook, but composable
+const { data } = useQuery(findPetsOptions({ query: { tags: [], limit: 10 } }));
+
+// Fetch multiple queries in parallel
+const results = useQueries({
+  queries: [1, 2, 3].map((id) => findPetByIdOptions({ path: { id } })),
+});
+
+// Type-safe cache interaction
+const queryClient = useQueryClient();
+const pets = queryClient.getQueryData(findPetsOptions().queryKey);
+```
+
+Paginatable operations additionally get an `infiniteQueryOptions` factory. It uses a dedicated query key (suffixed with `Infinite`) so cached infinite data never collides with the plain query cache for the same operation.
+
+```tsx
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { findPaginatedPetsInfiniteOptions } from "../openapi/queries";
+
+const { data, fetchNextPage } = useInfiniteQuery(
+  findPaginatedPetsInfiniteOptions({ query: { tags: [], limit: 10 } }),
+);
+
+// Prefetch an infinite query on the server or in a router loader
+const queryClient = useQueryClient();
+await queryClient.prefetchInfiniteQuery(findPaginatedPetsInfiniteOptions());
+```

@@ -232,7 +232,7 @@ describe("buildQueryHooks", () => {
       const initializer = result?.declarations[0].initializer as string;
 
       expect(initializer).toContain(
-        "clientOptions: Options<unknown, true> = {}",
+        "clientOptions: Common.ListThingsInfiniteClientOptions = {}",
       );
     });
   });

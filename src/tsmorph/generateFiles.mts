@@ -14,6 +14,9 @@ import type {
 } from "../types.mjs";
 import {
   buildDefaultResponseType,
+  buildInfiniteClientOptionsType,
+  buildInfiniteQueryKeyConst,
+  buildInfiniteQueryKeyFn,
   buildMutationKeyConst,
   buildMutationKeyFn,
   buildMutationResultType,
@@ -30,11 +33,16 @@ import {
   buildUseSuspenseQueryHook,
 } from "./buildQueryHooks.mjs";
 import {
+  buildInfiniteQueryOptionsFn,
+  buildQueryOptionsFn,
+} from "./buildQueryOptions.mjs";
+import {
   buildAxiosErrorImport,
   buildClientImport,
   buildCommonImport,
   buildModelImport,
   buildQueryImport,
+  buildQueryOptionsImport,
   buildServiceImport,
   createGenerationProject,
 } from "./projectFactory.mjs";
@@ -92,6 +100,10 @@ function generateIndexFile(ctx: GenerationContext): string {
       kind: StructureKind.ExportDeclaration,
       moduleSpecifier: "./queries",
     },
+    {
+      kind: StructureKind.ExportDeclaration,
+      moduleSpecifier: "./queryOptions",
+    },
   ];
 
   sourceFile.addExportDeclarations(exports);
@@ -128,6 +140,13 @@ function generateCommonFile(
     sourceFile.addTypeAlias(buildQueryResultType(op));
     sourceFile.addVariableStatement(buildQueryKeyConst(op));
     sourceFile.addVariableStatement(buildQueryKeyFn(op, ctx));
+  }
+
+  // Add dedicated infinite query types and keys for paginatable operations
+  for (const op of getOperations.filter((o) => o.isPaginatable)) {
+    sourceFile.addTypeAlias(buildInfiniteClientOptionsType(op, ctx));
+    sourceFile.addVariableStatement(buildInfiniteQueryKeyConst(op));
+    sourceFile.addVariableStatement(buildInfiniteQueryKeyFn(op));
   }
 
   // Add mutation types and keys
@@ -171,6 +190,50 @@ function generateQueriesFile(
   // Add useMutation hooks
   for (const op of mutationOperations) {
     sourceFile.addVariableStatement(buildUseMutationHook(op, ctx));
+  }
+
+  return sourceFile.getFullText();
+}
+
+/**
+ * Generate the queryOptions.ts file content.
+ */
+function generateQueryOptionsFile(
+  operations: OperationInfo[],
+  ctx: GenerationContext,
+): string {
+  const project = createGenerationProject();
+  const sourceFile = project.createSourceFile(
+    `${OpenApiRqFiles.queryOptions}.ts`,
+    undefined,
+    { overwrite: true },
+  );
+
+  // Add imports
+  const imports: ImportDeclarationStructure[] = [
+    buildCommonImport(),
+    buildQueryOptionsImport(),
+    buildClientImport(ctx),
+    buildServiceImport(ctx),
+  ];
+  const modelImport = buildModelImport(ctx);
+  if (modelImport) {
+    imports.push(modelImport);
+  }
+  sourceFile.addImportDeclarations(imports);
+
+  // Only GET operations have query options
+  const getOperations = operations.filter((op) => op.httpMethod === "GET");
+
+  for (const op of getOperations) {
+    sourceFile.addVariableStatement(buildQueryOptionsFn(op, ctx));
+  }
+
+  for (const op of getOperations) {
+    const infiniteOptions = buildInfiniteQueryOptionsFn(op, ctx);
+    if (infiniteOptions) {
+      sourceFile.addVariableStatement(infiniteOptions);
+    }
   }
 
   return sourceFile.getFullText();
@@ -324,6 +387,13 @@ export function generateAllFiles(
       name: `${OpenApiRqFiles.queries}.ts`,
       content: addHeaderComment(
         generateQueriesFile(operations, ctx),
+        ctx.version,
+      ),
+    },
+    {
+      name: `${OpenApiRqFiles.queryOptions}.ts`,
+      content: addHeaderComment(
+        generateQueryOptionsFile(operations, ctx),
         ctx.version,
       ),
     },

@@ -5,6 +5,7 @@ exports[`createSource > createSource - @hey-api/client-axios 1`] = `
 
 export * from "./common";
 export * from "./queries";
+export * from "./queryOptions";
 "
 `;
 
@@ -40,6 +41,11 @@ export type FindPaginatedPetsQueryResult<TData = FindPaginatedPetsDefaultRespons
 
 export const useFindPaginatedPetsKey = "FindPaginatedPets";
 export const UseFindPaginatedPetsKeyFn = (clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsKey, ...(queryKey ?? [clientOptions])];
+
+export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
+
+export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
+export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
 
@@ -185,6 +191,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 1`] = `
 
 export * from "./common";
 export * from "./queries";
+export * from "./queryOptions";
 "
 `;
 
@@ -219,6 +226,11 @@ export type FindPaginatedPetsQueryResult<TData = FindPaginatedPetsDefaultRespons
 
 export const useFindPaginatedPetsKey = "FindPaginatedPets";
 export const UseFindPaginatedPetsKeyFn = (clientOptions: Options<FindPaginatedPetsData, true> = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsKey, ...(queryKey ?? [clientOptions])];
+
+export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
+
+export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
+export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
 

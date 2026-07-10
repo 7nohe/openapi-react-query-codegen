@@ -7,6 +7,7 @@ export const modelsFileName = "types.gen";
 
 export const OpenApiRqFiles = {
   queries: "queries",
+  queryOptions: "queryOptions",
   infiniteQueries: "infiniteQueries",
   common: "common",
   suspense: "suspense",

@@ -67,6 +67,17 @@ export function buildQueryImport(): ImportDeclarationStructure {
 }
 
 /**
+ * Build import structure for the queryOptions/infiniteQueryOptions helpers.
+ */
+export function buildQueryOptionsImport(): ImportDeclarationStructure {
+  return {
+    kind: StructureKind.ImportDeclaration,
+    moduleSpecifier: "@tanstack/react-query",
+    namedImports: [{ name: "queryOptions" }, { name: "infiniteQueryOptions" }],
+  };
+}
+
+/**
  * Build import structure for services.
  */
 export function buildServiceImport(

@@ -150,3 +150,83 @@ export function buildMutationKeyFn(
     ],
   };
 }
+
+/**
+ * Build the client options type for infinite queries.
+ * The page parameter is excluded because TanStack Query supplies it via the
+ * pageParam mechanism (#140).
+ * Example:
+ * export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> &
+ *   { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
+ */
+export function buildInfiniteClientOptionsType(
+  op: OperationInfo,
+  ctx: GenerationContext,
+): TypeAliasDeclarationStructure {
+  const dataTypeName = ctx.modelNames.includes(
+    `${op.capitalizedMethodName}Data`,
+  )
+    ? `${op.capitalizedMethodName}Data`
+    : "unknown";
+
+  const type =
+    dataTypeName === "unknown"
+      ? "Options<unknown, true>"
+      : `Omit<Options<${dataTypeName}, true>, "query"> & { query?: Omit<NonNullable<${dataTypeName}["query"]>, "${ctx.pageParam}"> }`;
+
+  return {
+    kind: StructureKind.TypeAlias,
+    isExported: true,
+    name: `${op.capitalizedMethodName}InfiniteClientOptions`,
+    type,
+  };
+}
+
+/**
+ * Build the infinite query key constant.
+ * Kept distinct from the plain query key so cached InfiniteData never
+ * collides with plain query data for the same operation (#140).
+ * Example: export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
+ */
+export function buildInfiniteQueryKeyConst(
+  op: OperationInfo,
+): VariableStatementStructure {
+  return {
+    kind: StructureKind.VariableStatement,
+    isExported: true,
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [
+      {
+        name: `use${op.capitalizedMethodName}InfiniteKey`,
+        initializer: `"${op.capitalizedMethodName}Infinite"`,
+      },
+    ],
+  };
+}
+
+/**
+ * Build the infinite query key function.
+ * Example: export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) =>
+ *   [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
+ */
+export function buildInfiniteQueryKeyFn(
+  op: OperationInfo,
+): VariableStatementStructure {
+  const defaultValue = op.allParamsOptional ? " = {}" : "";
+  const params = [
+    `clientOptions: ${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`,
+    "queryKey?: Array<unknown>",
+  ];
+
+  return {
+    kind: StructureKind.VariableStatement,
+    isExported: true,
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [
+      {
+        name: `Use${op.capitalizedMethodName}InfiniteKeyFn`,
+        initializer: `(${params.join(", ")}) => [use${op.capitalizedMethodName}InfiniteKey, ...(queryKey ?? [clientOptions])]`,
+      },
+    ],
+  };
+}
