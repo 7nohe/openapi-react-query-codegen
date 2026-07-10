@@ -8,13 +8,10 @@ import {
   useGetNotDefined,
   usePostNotDefined,
 } from "../openapi/queries";
-import { client } from "../openapi/requests/client.gen";
 import { SuspenseParent } from "./components/SuspenseParent";
 import { queryClient } from "./queryClient";
 
 function App() {
-  client.setConfig({ baseUrl: "http://localhost:4010" });
-
   const [tags, _setTags] = useState<string[]>([]);
   const [limit, _setLimit] = useState<number>(10);
 

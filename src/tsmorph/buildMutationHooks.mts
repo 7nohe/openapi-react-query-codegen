@@ -10,10 +10,14 @@ import type { GenerationContext, OperationInfo } from "../types.mjs";
  */
 function getErrorType(op: OperationInfo, ctx: GenerationContext): string {
   const errorTypeName = `${op.capitalizedMethodName}Error`;
+  // Operations without error responses have no generated Error type
+  const errorType = ctx.modelNames.includes(errorTypeName)
+    ? errorTypeName
+    : "unknown";
   if (ctx.client === "@hey-api/client-axios") {
-    return `AxiosError<${errorTypeName}>`;
+    return `AxiosError<${errorType}>`;
   }
-  return errorTypeName;
+  return errorType;
 }
 
 /**

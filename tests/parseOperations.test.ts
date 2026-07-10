@@ -80,9 +80,9 @@ describe("parseOperations", () => {
       );
       expect(findPetById).toBeDefined();
       expect(findPetById?.parameters.length).toBeGreaterThan(0);
-      // In v0.73+, the options parameter is always optional
-      // The required path parameters are nested within the options
-      expect(findPetById?.allParamsOptional).toBe(true);
+      // In 0.92+, the SDK options parameter is required when the operation
+      // has required parameters (e.g. path params)
+      expect(findPetById?.allParamsOptional).toBe(false);
     });
 
     it("should detect operations with all optional parameters", async () => {

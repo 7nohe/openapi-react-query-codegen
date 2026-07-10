@@ -64,8 +64,11 @@ const mockFetchContext: GenerationContext = {
   modelNames: [
     "Pet",
     "FindPetsData",
+    "FindPetsError",
     "FindPaginatedPetsData",
+    "FindPaginatedPetsError",
     "FindPetByIdData",
+    "FindPetByIdError",
   ],
   serviceNames: ["findPets", "findPaginatedPets", "findPetById"],
   pageParam: "page",

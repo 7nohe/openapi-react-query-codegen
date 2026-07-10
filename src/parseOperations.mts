@@ -109,7 +109,12 @@ export async function parseOperations(
     const methodName = getNameFromVariable(desc.method);
     const httpMethod = desc.httpMethodName.toUpperCase();
     const parameters = extractParameters(desc.method);
-    const allParamsOptional = parameters.every((p) => p.optional);
+    // Use the SDK function's parameter optionality as the authoritative check.
+    // Generic types like Options<XData, ThrowOnError> may not resolve correctly
+    // via extractPropertiesFromObjectParam for type alias properties (path, url).
+    const sdkParams = getVariableArrowFunctionParameters(desc.method);
+    const allParamsOptional =
+      sdkParams.length === 0 || sdkParams[0].isOptional();
     const isPaginatable =
       httpMethod === "GET" && paginatableMethods.includes(methodName);
 
