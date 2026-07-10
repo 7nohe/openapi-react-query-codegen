@@ -44,6 +44,7 @@ export const getNameFromVariable = (variable: VariableDeclaration) => {
 export type FunctionDescription = {
   node: SourceFile;
   method: VariableDeclaration;
+  methodBlock?: ts.Block;
   httpMethodName: string;
   jsDoc: string;
   isDeprecated: boolean;

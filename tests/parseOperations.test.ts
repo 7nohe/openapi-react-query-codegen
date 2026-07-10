@@ -154,8 +154,8 @@ describe("parseOperations", () => {
 
       expect(ctx.modelNames).toContain("Pet");
       expect(ctx.modelNames).toContain("NewPet");
-      // In v0.73+, Error is renamed to _Error to avoid conflict with built-in Error
-      expect(ctx.modelNames).toContain("_Error");
+      // hey-api 0.92+ exports the Error schema under its original name
+      expect(ctx.modelNames).toContain("Error");
     });
 
     it("should include service names", async () => {

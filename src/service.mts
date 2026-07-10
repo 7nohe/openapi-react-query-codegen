@@ -24,101 +24,95 @@ export async function getServices(project: Project): Promise<Service> {
   } satisfies Service;
 }
 
-/**
- * Extract the call expression from an arrow function body.
- * Handles both block body (with return statement) and expression body.
- */
-function extractCallExpression(
-  body: ts.ConciseBody,
-): ts.CallExpression | undefined {
-  // Block body: { return client.get(...); }
-  if (ts.isBlock(body)) {
-    const returnStatement = body.statements.find(
-      (s) => s.kind === ts.SyntaxKind.ReturnStatement,
-    ) as ts.ReturnStatement | undefined;
-    if (
-      returnStatement?.expression &&
-      ts.isCallExpression(returnStatement.expression)
-    ) {
-      return returnStatement.expression;
-    }
-    return undefined;
-  }
-
-  // Expression body: client.get(...) or (options?.client ?? _heyApiClient).get(...)
-  if (ts.isCallExpression(body)) {
-    return body;
-  }
-
-  return undefined;
-}
-
 export function getMethodsFromService(node: SourceFile): FunctionDescription[] {
   const variableStatements = node.getVariableStatements();
+  // Filter to only exported variable statements that contain arrow functions
+  const exportedStatements = variableStatements.filter((statement) => {
+    if (!statement.isExported()) return false;
+    const declarations = statement.getDeclarations();
+    return declarations.some((decl) => {
+      const initializer = decl.getInitializer();
+      return initializer && ts.isArrowFunction(initializer.compilerNode);
+    });
+  });
 
-  // In v0.73+, sdk.gen.ts exports functions directly (no client initialization)
-  return variableStatements.flatMap((variableStatement) => {
+  return exportedStatements.flatMap((variableStatement) => {
     const declarations = variableStatement.getDeclarations();
-    return declarations
-      .map((declaration) => {
-        if (!ts.isVariableDeclaration(declaration.compilerNode)) {
-          return null;
+    // Filter to only arrow function declarations within the statement
+    const arrowDeclarations = declarations.filter((declaration) => {
+      const initializer = declaration.getInitializer();
+      return initializer && ts.isArrowFunction(initializer.compilerNode);
+    });
+    return arrowDeclarations.map((declaration) => {
+      const initializer = declaration.getInitializerOrThrow();
+      const compilerNode = initializer.compilerNode as ts.ArrowFunction;
+      const arrowBody = compilerNode.body;
+
+      // Find the call expression - either from block's return statement or direct expression
+      let callExpression: ts.Expression;
+      let methodBlockNode: ts.Block | undefined;
+
+      if (ts.isBlock(arrowBody)) {
+        // Old style: arrow function with block body
+        methodBlockNode = arrowBody;
+        const returnStatement = arrowBody.statements.find(ts.isReturnStatement);
+        if (!returnStatement) {
+          throw new Error("Return statement not found");
         }
-        const initializer = declaration.getInitializer();
-        if (!initializer) {
-          return null;
+        if (!returnStatement.expression) {
+          throw new Error("Call expression not found");
         }
-        if (!ts.isArrowFunction(initializer.compilerNode)) {
-          return null;
+        callExpression = returnStatement.expression;
+      } else {
+        // New style: arrow function with expression body (no block)
+        // The body is a call expression like: (options?.client ?? client).post<...>({...})
+        callExpression = arrowBody;
+      }
+
+      // Navigate to find the HTTP method name (get, post, put, delete, etc.)
+      let httpMethodName: string | undefined;
+      if (ts.isCallExpression(callExpression)) {
+        const expr = callExpression.expression;
+        if (ts.isPropertyAccessExpression(expr)) {
+          httpMethodName = expr.name.text;
         }
+      }
 
-        const callExpression = extractCallExpression(
-          initializer.compilerNode.body,
-        );
-        if (!callExpression) {
-          return null;
+      if (!httpMethodName) {
+        throw new Error("httpMethodName not found");
+      }
+
+      const getAllChildren = (tsNode: ts.Node): Array<ts.Node> => {
+        const childItems = tsNode.getChildren(node.compilerNode);
+        if (childItems.length) {
+          const allChildren = childItems.map(getAllChildren);
+          return [tsNode].concat(allChildren.flat());
         }
+        return [tsNode];
+      };
 
-        // Get the HTTP method name from the call expression (e.g., .get, .post, .delete)
-        const expression = callExpression.expression;
-        if (!ts.isPropertyAccessExpression(expression)) {
-          return null;
-        }
-        const httpMethodName = expression.name.getText();
+      const children = getAllChildren(variableStatement.compilerNode);
+      // get all JSDoc comments
+      // this should be an array of 1 or 0
+      const jsDocs = children
+        .filter((c) => c.kind === ts.SyntaxKind.JSDoc)
+        .map((c) => c.getText(node.compilerNode));
+      // get the first JSDoc comment
+      const jsDoc = jsDocs?.[0];
+      const isDeprecated = children.some(
+        (c) => c.kind === ts.SyntaxKind.JSDocDeprecatedTag,
+      );
 
-        if (!httpMethodName) {
-          return null;
-        }
+      const methodDescription: FunctionDescription = {
+        node,
+        method: declaration,
+        methodBlock: methodBlockNode,
+        httpMethodName,
+        jsDoc,
+        isDeprecated,
+      } satisfies FunctionDescription;
 
-        const getAllChildren = (tsNode: ts.Node): Array<ts.Node> => {
-          const childItems = tsNode.getChildren(node.compilerNode);
-          if (childItems.length) {
-            const allChildren = childItems.map(getAllChildren);
-            return [tsNode].concat(allChildren.flat());
-          }
-          return [tsNode];
-        };
-
-        const children = getAllChildren(initializer.compilerNode);
-        // get all JSDoc comments
-        const jsDocs = children
-          .filter((c) => c.kind === ts.SyntaxKind.JSDoc)
-          .map((c) => c.getText(node.compilerNode));
-        const jsDoc = jsDocs?.[0];
-        const isDeprecated = children.some(
-          (c) => c.kind === ts.SyntaxKind.JSDocDeprecatedTag,
-        );
-
-        const methodDescription: FunctionDescription = {
-          node,
-          method: declaration,
-          httpMethodName,
-          jsDoc,
-          isDeprecated,
-        } satisfies FunctionDescription;
-
-        return methodDescription;
-      })
-      .filter((desc): desc is FunctionDescription => desc !== null);
+      return methodDescription;
+    });
   });
 }

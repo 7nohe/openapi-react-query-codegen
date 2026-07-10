@@ -18,15 +18,15 @@ describe(fileName, () => {
     const service = await getServices(project);
 
     const methodNames = service.methods.map((m) => m.method.getName());
-    // In v0.73+, the order may differ slightly but should contain all methods
-    expect(methodNames).toContain("findPets");
-    expect(methodNames).toContain("addPet");
-    expect(methodNames).toContain("getNotDefined");
-    expect(methodNames).toContain("postNotDefined");
-    expect(methodNames).toContain("findPetById");
-    expect(methodNames).toContain("deletePet");
-    expect(methodNames).toContain("findPaginatedPets");
-    expect(methodNames).toHaveLength(7);
+    expect(methodNames).toEqual([
+      "findPets",
+      "addPet",
+      "getNotDefined",
+      "postNotDefined",
+      "deletePet",
+      "findPetById",
+      "findPaginatedPets",
+    ]);
   });
 
   test("getServices (No service node found)", async () => {
@@ -39,60 +39,96 @@ describe(fileName, () => {
     );
   });
 
-  // In v0.73+, getMethodsFromService skips invalid entries instead of throwing
-  test("getMethodsFromService - skips non-arrow functions", () => {
+  test('getMethodsFromService - throw error "Return statement not found"', async () => {
     const source = `
-    const foo = "bar"
+    export const foo = () => {}
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
 
-    const result = getMethodsFromService(sourceFile);
-    expect(result).toEqual([]);
+    await expect(() => getMethodsFromService(sourceFile)).toThrowError(
+      "Return statement not found",
+    );
   });
 
-  test("getMethodsFromService - skips variables without initializer", () => {
+  test('getMethodsFromService - throw error "Call expression not found"', async () => {
     const source = `
-    declare const foo: string
+    export const foo = () => { return }
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
 
-    const result = getMethodsFromService(sourceFile);
-    expect(result).toEqual([]);
+    await expect(() => getMethodsFromService(sourceFile)).toThrowError(
+      "Call expression not found",
+    );
   });
 
-  test("getMethodsFromService - skips arrow functions without HTTP method call", () => {
+  test('getMethodsFromService - throw error "httpMethodName not found"', async () => {
     const source = `
-    const foo = () => {}
+    export const foo = () => someFunction()
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
 
-    const result = getMethodsFromService(sourceFile);
-    expect(result).toEqual([]);
+    await expect(() => getMethodsFromService(sourceFile)).toThrowError(
+      "httpMethodName not found",
+    );
   });
 
-  test("getMethodsFromService - skips expression body without call expression", () => {
+  test("getMethodsFromService - filters non-exported variables", () => {
     const source = `
-    const foo = () => "bar"
+    const internal = () => client.get({ url: '/internal' });
+    export const foo = () => client.get({ url: '/api' });
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
-
-    const result = getMethodsFromService(sourceFile);
-    expect(result).toEqual([]);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods).toHaveLength(1);
+    expect(methods[0].method.getName()).toBe("foo");
   });
 
-  test("getMethodsFromService - parses valid SDK function with expression body", () => {
+  test("getMethodsFromService - filters non-arrow function exports", () => {
     const source = `
-    const findPets = (options) => client.get({ url: '/pets', ...options })
+    export const config = { baseUrl: '/api' };
+    export const foo = () => client.get({ url: '/api' });
     `;
     const project = new Project();
     const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods).toHaveLength(1);
+    expect(methods[0].method.getName()).toBe("foo");
+  });
 
-    const result = getMethodsFromService(sourceFile);
-    expect(result).toHaveLength(1);
-    expect(result[0].httpMethodName).toBe("get");
+  test("getMethodsFromService - extracts JSDoc comment", () => {
+    const source = `
+    /** This is a description */
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods[0].jsDoc).toContain("This is a description");
+  });
+
+  test("getMethodsFromService - detects deprecated tag", () => {
+    const source = `
+    /** @deprecated Use newFoo instead */
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods[0].isDeprecated).toBe(true);
+  });
+
+  test("getMethodsFromService - not deprecated without tag", () => {
+    const source = `
+    /** Normal method */
+    export const foo = () => client.get({ url: '/api' });
+    `;
+    const project = new Project();
+    const sourceFile = project.createSourceFile("test.ts", source);
+    const methods = getMethodsFromService(sourceFile);
+    expect(methods[0].isDeprecated).toBe(false);
   });
 });
