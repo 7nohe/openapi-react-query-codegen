@@ -37,6 +37,9 @@ describe("common", () => {
 
     const falseVal = safeParseNumber(false);
     expect(falseVal).toBe(0);
+
+    const emptyString = safeParseNumber("");
+    expect(emptyString).toBeNaN();
   });
 
   test("capitalizeFirstLetter", () => {
@@ -180,6 +183,19 @@ describe("common", () => {
     const formatted = formatOptions(options);
 
     expect(formatted.lint).toStrictEqual("eslint");
+  });
+
+  test("formatOptions - preserves an empty initial page parameter", () => {
+    const options: LimitedUserConfig = {
+      input: "input",
+      output: "output",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "",
+    };
+    const formatted = formatOptions(options);
+
+    expect(formatted.initialPageParam).toBe("");
   });
 
   test("formatOptions - converts string number to number", () => {
