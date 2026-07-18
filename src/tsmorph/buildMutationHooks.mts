@@ -48,7 +48,9 @@ export function buildUseMutationHook(
 
   const optionsType = `Options<${dataTypeName}, true>`;
 
-  const mutationFn = `clientOptions => ${op.methodName}(clientOptions) as unknown as Promise<TData>`;
+  // throwOnError: true forces the SDK call to reject on error responses so
+  // the mutation error state fires; the hey-api runtime default is false (#172)
+  const mutationFn = `clientOptions => ${op.methodName}({ ...clientOptions, throwOnError: true }) as unknown as Promise<TData>`;
 
   const body = `useMutation<TData, TError, ${optionsType}, TContext>({ mutationKey: Common.Use${op.capitalizedMethodName}KeyFn(mutationKey), mutationFn: ${mutationFn}, ...options })`;
 

@@ -25,8 +25,10 @@ import { buildUseMutationHook } from "./buildMutationHooks.mjs";
 import {
   buildEnsureQueryDataFn,
   buildPrefetchFn,
+  buildPrefetchInfiniteQueryFn,
   buildUseInfiniteQueryHook,
   buildUseQueryHook,
+  buildUseSuspenseInfiniteQueryHook,
   buildUseSuspenseQueryHook,
 } from "./buildQueryHooks.mjs";
 import {
@@ -261,6 +263,14 @@ function generateSuspenseFile(
     sourceFile.addVariableStatement(buildUseSuspenseQueryHook(op, ctx));
   }
 
+  // Add useSuspenseInfiniteQuery hooks for paginatable operations
+  for (const op of getOperations) {
+    const hook = buildUseSuspenseInfiniteQueryHook(op, ctx);
+    if (hook) {
+      sourceFile.addVariableStatement(hook);
+    }
+  }
+
   return sourceFile.getFullText();
 }
 
@@ -320,6 +330,14 @@ function generatePrefetchFile(
   // Add prefetch functions
   for (const op of getOperations) {
     sourceFile.addVariableStatement(buildPrefetchFn(op, ctx));
+  }
+
+  // Add prefetchInfiniteQuery functions for paginatable operations
+  for (const op of getOperations) {
+    const fn = buildPrefetchInfiniteQueryFn(op, ctx);
+    if (fn) {
+      sourceFile.addVariableStatement(fn);
+    }
   }
 
   return sourceFile.getFullText();

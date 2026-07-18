@@ -91,7 +91,7 @@ describe("buildMutationHooks", () => {
       );
       expect(initializer).toContain("Common.UseAddPetKeyFn(mutationKey)");
       expect(initializer).toContain(
-        "addPet(clientOptions) as unknown as Promise<TData>",
+        "addPet({ ...clientOptions, throwOnError: true }) as unknown as Promise<TData>",
       );
     });
 
@@ -105,7 +105,9 @@ describe("buildMutationHooks", () => {
 
       const initializer = result.declarations[0].initializer as string;
       expect(initializer).toContain("Common.DeletePetMutationResult");
-      expect(initializer).toContain("deletePet(clientOptions)");
+      expect(initializer).toContain(
+        "deletePet({ ...clientOptions, throwOnError: true })",
+      );
     });
 
     it("should build useMutation hook for PUT operation", () => {
@@ -115,7 +117,9 @@ describe("buildMutationHooks", () => {
 
       const initializer = result.declarations[0].initializer as string;
       expect(initializer).toContain("Common.UpdatePetMutationResult");
-      expect(initializer).toContain("updatePet(clientOptions)");
+      expect(initializer).toContain(
+        "updatePet({ ...clientOptions, throwOnError: true })",
+      );
     });
 
     it("should build useMutation hook for PATCH operation", () => {
@@ -125,7 +129,9 @@ describe("buildMutationHooks", () => {
 
       const initializer = result.declarations[0].initializer as string;
       expect(initializer).toContain("Common.PatchPetMutationResult");
-      expect(initializer).toContain("patchPet(clientOptions)");
+      expect(initializer).toContain(
+        "patchPet({ ...clientOptions, throwOnError: true })",
+      );
     });
 
     it("should use AxiosError for axios client", () => {

@@ -29,7 +29,9 @@ export function buildQueryOptionsFn(
   const fnName = `${op.methodName}Options`;
   const clientOptionsParam = buildClientOptionsParam(op, ctx);
 
-  const queryFn = `() => ${op.methodName}({ ...clientOptions }).then(response => response.data)`;
+  // throwOnError: true forces the SDK call to reject on error responses; the
+  // hey-api runtime default is false, which would resolve undefined data (#172)
+  const queryFn = `() => ${op.methodName}({ ...clientOptions, throwOnError: true }).then(response => response.data)`;
   const body = `queryOptions({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn} })`;
 
   return {
@@ -73,7 +75,7 @@ export function buildInfiniteQueryOptionsFn(
   const defaultValue = op.allParamsOptional ? " = {}" : "";
   const clientOptionsParam = `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
 
-  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam } } as Options<${dataTypeName}, true>).then(response => response.data)`;
+  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam }, throwOnError: true } as Options<${dataTypeName}, true>).then(response => response.data)`;
 
   // Emit a numeric literal when possible so the inferred pageParam type
   // matches what getNextPageParam returns

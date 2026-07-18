@@ -69,7 +69,7 @@ describe("buildQueryOptions", () => {
         "queryOptions({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey)",
       );
       expect(initializer).toContain(
-        "queryFn: () => findPets({ ...clientOptions }).then(response => response.data)",
+        "queryFn: () => findPets({ ...clientOptions, throwOnError: true }).then(response => response.data)",
       );
     });
 
@@ -124,7 +124,7 @@ describe("buildQueryOptions", () => {
         "infiniteQueryOptions({ queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey)",
       );
       expect(initializer).toContain(
-        "query: { ...clientOptions.query, page: pageParam } } as Options<FindPaginatedPetsData, true>",
+        "query: { ...clientOptions.query, page: pageParam }, throwOnError: true } as Options<FindPaginatedPetsData, true>",
       );
       expect(initializer).toContain(
         "getNextPageParam: (response) => (response as { nextPage: number }).nextPage",

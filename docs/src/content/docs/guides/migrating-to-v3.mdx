@@ -44,6 +44,28 @@ const { data } = useFindPaginatedPetsInfinite({ query: { limit: 10 } }, undefine
 });
 ```
 
+The infinite query family is now complete ([#155](https://github.com/7nohe/openapi-react-query-codegen/issues/155)):
+
+- `prefetchUseXxxInfinite(queryClient, clientOptions)` — prefetch the first page on the server for SSR/Next.js hydration
+- `useXxxSuspenseInfinite(clientOptions, queryKey?, options?)` — Suspense variant sharing the same cache key as `useXxxInfinite`
+
+Prefetch and ensure functions also take TanStack Query options now ([#157](https://github.com/7nohe/openapi-react-query-codegen/issues/157)):
+
+```tsx
+await prefetchUseFindPets(queryClient, {}, { staleTime: 5_000 });
+const pets = await ensureUseFindPetsData(queryClient, {}, { revalidateIfStale: true });
+```
+
+## Behavior change: error responses now reject
+
+Generated query/mutation functions now call the SDK with `throwOnError: true` ([#172](https://github.com/7nohe/openapi-react-query-codegen/issues/172)). In v2, an error response silently resolved with `undefined` data (the hey-api runtime default is `throwOnError: false`), which broke `ensureQueryData` at runtime and never surfaced errors to TanStack Query. In v3, error responses reject, so:
+
+- `isError` / `error` on hooks now actually fire on HTTP error responses
+- `ensureUseXxxData` rejects instead of caching `undefined`
+- mutation `onError` callbacks fire as the types always claimed
+
+If you relied on errors being swallowed, handle them via TanStack Query's error state or `try/catch` around `ensure*` calls.
+
 ## Breaking changes: infinite queries
 
 In v2, an infinite query shared its cache key with the plain query for the same operation, which corrupted the cache when both were used ([#140](https://github.com/7nohe/openapi-react-query-codegen/issues/140)). v3 gives infinite queries their own keys and types.

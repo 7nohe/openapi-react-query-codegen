@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildEnsureQueryDataFn,
   buildPrefetchFn,
+  buildPrefetchInfiniteQueryFn,
   buildUseInfiniteQueryHook,
   buildUseQueryHook,
+  buildUseSuspenseInfiniteQueryHook,
   buildUseSuspenseQueryHook,
 } from "../../src/tsmorph/buildQueryHooks.mjs";
 import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
@@ -104,7 +106,9 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "Common.UseFindPetsKeyFn(clientOptions, queryKey)",
       );
-      expect(initializer).toContain("findPets({ ...clientOptions })");
+      expect(initializer).toContain(
+        "findPets({ ...clientOptions, throwOnError: true })",
+      );
       expect(initializer).toContain("response.data as TData");
     });
 
@@ -147,7 +151,9 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
       );
-      expect(initializer).toContain("getStatus({ ...clientOptions })");
+      expect(initializer).toContain(
+        "getStatus({ ...clientOptions, throwOnError: true })",
+      );
     });
   });
 
@@ -184,7 +190,9 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
       );
-      expect(initializer).toContain("getStatus({ ...clientOptions })");
+      expect(initializer).toContain(
+        "getStatus({ ...clientOptions, throwOnError: true })",
+      );
     });
   });
 
@@ -269,7 +277,9 @@ describe("buildQueryHooks", () => {
       );
       expect(initializer).toContain("queryClient.prefetchQuery");
       expect(initializer).toContain("Common.UseFindPetsKeyFn(clientOptions)");
-      expect(initializer).toContain("findPets({ ...clientOptions })");
+      expect(initializer).toContain(
+        "findPets({ ...clientOptions, throwOnError: true })",
+      );
       expect(initializer).toContain("response.data");
     });
 
@@ -291,7 +301,18 @@ describe("buildQueryHooks", () => {
         "clientOptions: Options<FindPetByIdData, true>",
       );
       // The line should not have " = {}" after the type
-      expect(initializer).toMatch(/Options<FindPetByIdData, true>\)/);
+      expect(initializer).toMatch(/Options<FindPetByIdData, true>,/);
+      expect(initializer).not.toContain("Options<FindPetByIdData, true> = {}");
+    });
+
+    it("should accept fetch query options (#157)", () => {
+      const result = buildPrefetchFn(mockOperation, mockFetchContext);
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        'options?: Omit<FetchQueryOptions<Common.FindPetsDefaultResponse>, "queryKey" | "queryFn">',
+      );
+      expect(initializer).toMatch(/\.\.\.options\s*\}\)/);
     });
 
     it("should handle operations without params and unknown data type", () => {
@@ -304,7 +325,9 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
       );
-      expect(initializer).toContain("getStatus({ ...clientOptions })");
+      expect(initializer).toContain(
+        "getStatus({ ...clientOptions, throwOnError: true })",
+      );
     });
   });
 
@@ -345,7 +368,91 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
       );
-      expect(initializer).toContain("getStatus({ ...clientOptions })");
+      expect(initializer).toContain(
+        "getStatus({ ...clientOptions, throwOnError: true })",
+      );
+    });
+
+    it("should accept ensure query data options (#157)", () => {
+      const result = buildEnsureQueryDataFn(mockOperation, mockFetchContext);
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        'options?: Omit<EnsureQueryDataOptions<Common.FindPetsDefaultResponse>, "queryKey" | "queryFn">',
+      );
+      expect(initializer).toMatch(/\.\.\.options\s*\}\)/);
+    });
+  });
+
+  describe("buildPrefetchInfiniteQueryFn", () => {
+    it("should return null for non-paginatable operation", () => {
+      const result = buildPrefetchInfiniteQueryFn(
+        mockOperation,
+        mockFetchContext,
+      );
+
+      expect(result).toBeNull();
+    });
+
+    it("should build prefetchInfiniteQuery function (#155)", () => {
+      const result = buildPrefetchInfiniteQueryFn(
+        mockPaginatableOperation,
+        mockFetchContext,
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.declarations[0].name).toBe(
+        "prefetchUseFindPaginatedPetsInfinite",
+      );
+
+      const initializer = result?.declarations[0].initializer as string;
+      expect(initializer).toContain("queryClient.prefetchInfiniteQuery");
+      expect(initializer).toContain(
+        "Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions)",
+      );
+      expect(initializer).toContain(
+        "clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}",
+      );
+      expect(initializer).toContain("initialPageParam: 1");
+      expect(initializer).toContain("getNextPageParam");
+      expect(initializer).toContain("throwOnError: true");
+    });
+  });
+
+  describe("buildUseSuspenseInfiniteQueryHook", () => {
+    it("should return null for non-paginatable operation", () => {
+      const result = buildUseSuspenseInfiniteQueryHook(
+        mockOperation,
+        mockFetchContext,
+      );
+
+      expect(result).toBeNull();
+    });
+
+    it("should build useSuspenseInfiniteQuery hook", () => {
+      const result = buildUseSuspenseInfiniteQueryHook(
+        mockPaginatableOperation,
+        mockFetchContext,
+      );
+
+      expect(result).not.toBeNull();
+      expect(result?.declarations[0].name).toBe(
+        "useFindPaginatedPetsSuspenseInfinite",
+      );
+
+      const initializer = result?.declarations[0].initializer as string;
+      expect(initializer).toContain("useSuspenseInfiniteQuery");
+      expect(initializer).toContain(
+        "InfiniteData<NonNullable<Common.FindPaginatedPetsDefaultResponse>>",
+      );
+      // Shares the infinite key (and cache) with the non-suspense hook
+      expect(initializer).toContain(
+        "Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey)",
+      );
+      // Pagination options are optional overrides, same as useInfiniteQuery
+      expect(initializer).toContain(
+        'Partial<Pick<UseSuspenseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>',
+      );
     });
   });
 });
