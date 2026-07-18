@@ -204,7 +204,7 @@ export function buildUseInfiniteQueryHook(
     declarations: [
       {
         name: hookName,
-        initializer: `<TData = InfiniteData<${baseDataType}>, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn">) => ${body}`,
+        initializer: `<TData = InfiniteData<${baseDataType}>, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & Partial<Pick<UseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>) => ${body}`,
       },
     ],
   };

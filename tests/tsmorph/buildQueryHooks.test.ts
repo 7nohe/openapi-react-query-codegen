@@ -214,6 +214,25 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain('initialPageParam: "1"');
     });
 
+    it("should make initialPageParam and getNextPageParam optional overrides", () => {
+      const result = buildUseInfiniteQueryHook(
+        mockPaginatableOperation,
+        mockFetchContext,
+      );
+      const initializer = result?.declarations[0].initializer as string;
+
+      // The options type must not require initialPageParam/getNextPageParam
+      // (#156) while still allowing callers to override them (#146)
+      expect(initializer).toContain(
+        '"queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"',
+      );
+      expect(initializer).toContain(
+        'Partial<Pick<UseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>',
+      );
+      // options spread last so caller overrides win at runtime
+      expect(initializer).toMatch(/\.\.\.options\s*\}\)/);
+    });
+
     it("should include pageParam in queryFn", () => {
       const result = buildUseInfiniteQueryHook(
         mockPaginatableOperation,

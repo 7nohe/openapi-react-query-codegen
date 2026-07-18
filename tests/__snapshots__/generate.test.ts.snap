@@ -227,8 +227,14 @@ export const useFindPaginatedPetsInfinite = <
   queryKey?: TQueryKey,
   options?: Omit<
     UseInfiniteQueryOptions<TData, TError>,
-    "queryKey" | "queryFn"
-  >,
+    "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"
+  > &
+    Partial<
+      Pick<
+        UseInfiniteQueryOptions<TData, TError>,
+        "initialPageParam" | "getNextPageParam"
+      >
+    >,
 ) =>
   useInfiniteQuery({
     queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey),
