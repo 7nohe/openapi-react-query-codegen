@@ -44,8 +44,8 @@ export const UseFindPaginatedPetsKeyFn = (clientOptions: Options<FindPaginatedPe
 
 export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
 
-export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
-export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
+export const useFindPaginatedPetsInfiniteKey = [useFindPaginatedPetsKey, "infinite"] as const;
+export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
 
@@ -229,8 +229,8 @@ export const UseFindPaginatedPetsKeyFn = (clientOptions: Options<FindPaginatedPe
 
 export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
 
-export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
-export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
+export const useFindPaginatedPetsInfiniteKey = [useFindPaginatedPetsKey, "infinite"] as const;
+export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
 

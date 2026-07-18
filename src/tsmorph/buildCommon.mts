@@ -184,9 +184,11 @@ export function buildInfiniteClientOptionsType(
 
 /**
  * Build the infinite query key constant.
- * Kept distinct from the plain query key so cached InfiniteData never
- * collides with plain query data for the same operation (#140).
- * Example: export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
+ * Shares the plain query key as its first segment so a single
+ * `invalidateQueries({ queryKey: [useXKey] })` matches both the plain and the
+ * infinite cache entries of an operation (#174), while the extra "infinite"
+ * segment keeps cached InfiniteData from colliding with plain query data (#140).
+ * Example: export const useFindPaginatedPetsInfiniteKey = [useFindPaginatedPetsKey, "infinite"] as const;
  */
 export function buildInfiniteQueryKeyConst(
   op: OperationInfo,
@@ -198,7 +200,7 @@ export function buildInfiniteQueryKeyConst(
     declarations: [
       {
         name: `use${op.capitalizedMethodName}InfiniteKey`,
-        initializer: `"${op.capitalizedMethodName}Infinite"`,
+        initializer: `[use${op.capitalizedMethodName}Key, "infinite"] as const`,
       },
     ],
   };
@@ -206,8 +208,11 @@ export function buildInfiniteQueryKeyConst(
 
 /**
  * Build the infinite query key function.
+ * The custom queryKey argument only replaces the params segment — the
+ * hierarchical [opKey, "infinite"] prefix is always preserved so
+ * prefix-based invalidation keeps working.
  * Example: export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) =>
- *   [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
+ *   [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
  */
 export function buildInfiniteQueryKeyFn(
   op: OperationInfo,
@@ -225,7 +230,7 @@ export function buildInfiniteQueryKeyFn(
     declarations: [
       {
         name: `Use${op.capitalizedMethodName}InfiniteKeyFn`,
-        initializer: `(${params.join(", ")}) => [use${op.capitalizedMethodName}InfiniteKey, ...(queryKey ?? [clientOptions])]`,
+        initializer: `(${params.join(", ")}) => [...use${op.capitalizedMethodName}InfiniteKey, ...(queryKey ?? [clientOptions])]`,
       },
     ],
   };

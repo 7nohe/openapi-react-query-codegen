@@ -82,11 +82,14 @@ export type FindPaginatedPetsInfiniteClientOptions = Omit<
   "query"
 > & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
 
-export const useFindPaginatedPetsInfiniteKey = "FindPaginatedPetsInfinite";
+export const useFindPaginatedPetsInfiniteKey = [
+  useFindPaginatedPetsKey,
+  "infinite",
+] as const;
 export const UseFindPaginatedPetsInfiniteKeyFn = (
   clientOptions: FindPaginatedPetsInfiniteClientOptions = {},
   queryKey?: Array<unknown>,
-) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
+) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
 export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
 

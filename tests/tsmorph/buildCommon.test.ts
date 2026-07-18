@@ -231,14 +231,14 @@ describe("buildCommon", () => {
   });
 
   describe("buildInfiniteQueryKeyConst", () => {
-    it("should build a distinct key for infinite queries", () => {
+    it("should build a hierarchical key sharing the plain key prefix", () => {
       const result = buildInfiniteQueryKeyConst(mockPaginatableOperation);
 
       expect(result.declarations[0].name).toBe(
         "useFindPaginatedPetsInfiniteKey",
       );
       expect(result.declarations[0].initializer).toBe(
-        '"FindPaginatedPetsInfinite"',
+        '[useFindPaginatedPetsKey, "infinite"] as const',
       );
     });
   });
@@ -251,7 +251,7 @@ describe("buildCommon", () => {
         "UseFindPaginatedPetsInfiniteKeyFn",
       );
       expect(result.declarations[0].initializer).toBe(
-        "(clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])]",
+        "(clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])]",
       );
     });
   });

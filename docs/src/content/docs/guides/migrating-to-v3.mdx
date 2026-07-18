@@ -21,7 +21,8 @@ v3 is a full rewrite of the code generator on top of a ts-morph pipeline, but th
 
 - All generated hooks (`useQuery`, `useSuspenseQuery`, `useMutation`), prefetch and `ensureQueryData` functions, key constants, and key functions keep their v2 names and signatures.
 - JSDoc comments (including `@deprecated`) are still emitted on every hook.
-- Environment requirements are unchanged from v2.2.0: Node.js 22.18+, `typescript` 5.x or 6.x, `ts-morph` 28.x.
+- Environment requirements are mostly unchanged from v2.2.0: Node.js 22.18+, `typescript` 5.x or 6.x, `ts-morph` 28.x. `commander` 12.x through 15.x are now all accepted.
+- `@tanstack/react-query` 5.x is now declared as a peer dependency ([#134](https://github.com/7nohe/openapi-react-query-codegen/issues/134)). It was always required at runtime by the generated code; the declaration just makes your package manager enforce it.
 
 ## What's new
 
@@ -34,21 +35,36 @@ import { findPetsOptions } from "../openapi/queries";
 const { data } = useQuery(findPetsOptions({ query: { limit: 10 } }));
 ```
 
+Infinite query hooks also accept `initialPageParam` and `getNextPageParam` overrides now ([#156](https://github.com/7nohe/openapi-react-query-codegen/issues/156), [#146](https://github.com/7nohe/openapi-react-query-codegen/issues/146)), so custom pagination schemes no longer require editing the generated code:
+
+```tsx
+const { data } = useFindPaginatedPetsInfinite({ query: { limit: 10 } }, undefined, {
+  initialPageParam: "",
+  getNextPageParam: (lastPage) => lastPage.meta?.cursor,
+});
+```
+
 ## Breaking changes: infinite queries
 
 In v2, an infinite query shared its cache key with the plain query for the same operation, which corrupted the cache when both were used ([#140](https://github.com/7nohe/openapi-react-query-codegen/issues/140)). v3 gives infinite queries their own keys and types.
 
-### 1. Cache keys have an `Infinite` suffix
+### 1. Cache keys are hierarchical
 
-The cache key changed from `["FindPaginatedPets"]` to `["FindPaginatedPetsInfinite"]`. If you interact with the infinite query cache manually, switch to the new key exports:
+The cache key changed from `["FindPaginatedPets"]` (shared with the plain query) to `["FindPaginatedPets", "infinite"]`. Because the plain key stays the first segment, prefix matching now gives you granular invalidation ([#174](https://github.com/7nohe/openapi-react-query-codegen/issues/174)):
 
-```diff
-- queryClient.invalidateQueries({ queryKey: [useFindPaginatedPetsKey] });
-+ queryClient.invalidateQueries({ queryKey: [useFindPaginatedPetsInfiniteKey] });
+```tsx
+// Invalidate both the plain AND the infinite cache entries of the operation
+queryClient.invalidateQueries({ queryKey: [useFindPaginatedPetsKey] });
 
-- queryClient.setQueryData(UseFindPaginatedPetsKeyFn(options), updater);
-+ queryClient.setQueryData(UseFindPaginatedPetsInfiniteKeyFn(options), updater);
+// Invalidate only the infinite entries
+// (useFindPaginatedPetsInfiniteKey is already an array — don't wrap it)
+queryClient.invalidateQueries({ queryKey: useFindPaginatedPetsInfiniteKey });
+
+// Target one exact query, params included
+queryClient.setQueryData(UseFindPaginatedPetsInfiniteKeyFn(options), updater);
 ```
+
+Note that `useFindPaginatedPetsInfiniteKey` is now a `readonly ["FindPaginatedPets", "infinite"]` tuple instead of a string. If you built keys manually from the string constant, use the exported key functions instead.
 
 If you persist the query cache (e.g. `persistQueryClient`), previously cached infinite data will not match the new key and will be refetched once after the upgrade.
 
