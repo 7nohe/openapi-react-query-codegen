@@ -16,7 +16,7 @@ export default function PaginatedPets() {
     <>
       <h1>Pet List with Pagination</h1>
       <ul>
-        {data?.pages.map((group, i) => (
+        {data?.pages.map((group) => (
           <React.Fragment key={group?.pets?.at(0)?.id}>
             {group?.pets?.map((pet) => (
               <li key={pet.id}>{pet.name}</li>
