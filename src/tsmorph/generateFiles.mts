@@ -1,10 +1,7 @@
 import {
   type ExportDeclarationStructure,
   type ImportDeclarationStructure,
-  Project,
   StructureKind,
-  type TypeAliasDeclarationStructure,
-  type VariableStatementStructure,
 } from "ts-morph";
 import { OpenApiRqFiles } from "../constants.mjs";
 import type {
@@ -83,7 +80,7 @@ function buildHookFileImports(
 /**
  * Generate the index.ts file content.
  */
-function generateIndexFile(ctx: GenerationContext): string {
+function generateIndexFile(): string {
   const project = createGenerationProject();
   const sourceFile = project.createSourceFile(
     `${OpenApiRqFiles.index}.ts`,
@@ -374,7 +371,7 @@ export function generateAllFiles(
   return [
     {
       name: `${OpenApiRqFiles.index}.ts`,
-      content: addHeaderComment(generateIndexFile(ctx), ctx.version),
+      content: addHeaderComment(generateIndexFile(), ctx.version),
     },
     {
       name: `${OpenApiRqFiles.common}.ts`,

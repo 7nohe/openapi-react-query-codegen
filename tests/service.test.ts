@@ -3,6 +3,7 @@ import { Project } from "ts-morph";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { getMethodsFromService, getServices } from "../src/service.mjs";
 import { cleanOutputs, generateTSClients } from "./utils";
+
 const fileName = "service";
 describe(fileName, () => {
   beforeAll(async () => await generateTSClients(fileName));

@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { type UserConfig, createClient } from "@hey-api/openapi-ts";
+import { createClient, type UserConfig } from "@hey-api/openapi-ts";
 import type { LimitedUserConfig } from "./cli.mjs";
 import {
   buildQueriesOutputPath,

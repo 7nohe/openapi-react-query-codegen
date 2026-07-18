@@ -52,8 +52,6 @@ describe("utils", () => {
  * This is a test 2
  */`;
 
-    const deprecated = true;
-
     // find class node
     const foundNode = sourceFile.getClasses()[0];
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useFindPaginatedPetsInfinite } from "@/openapi/queries/infiniteQueries";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import React from "react";
+import { useFindPaginatedPetsInfinite } from "@/openapi/queries/infiniteQueries";
 
 export default function PaginatedPets() {
   const { data, fetchNextPage } = useFindPaginatedPetsInfinite({

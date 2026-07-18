@@ -40,20 +40,6 @@ function getDataTypeDefault(
 }
 
 /**
- * Get the options type name.
- */
-function getOptionsTypeName(hookType: QueryHookType): string {
-  switch (hookType) {
-    case "useSuspenseQuery":
-      return "UseSuspenseQueryOptions";
-    case "useInfiniteQuery":
-      return "UseInfiniteQueryOptions";
-    default:
-      return "UseQueryOptions";
-  }
-}
-
-/**
  * Resolve the generated Data type name for an operation, falling back to
  * unknown when the operation has no generated Data type.
  */

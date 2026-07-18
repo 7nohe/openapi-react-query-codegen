@@ -1,37 +1,57 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.3/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
-    "ignore": [
-      ".vscode",
-      "dist",
-      "examples/react-app/openapi",
-      "coverage",
-      "examples/nextjs-app/openapi",
-      "examples/nextjs-app/.next",
-      "examples/tanstack-router-app/openapi",
-      "examples/tanstack-router-app/src/routeTree.gen.ts",
-      "examples/react-router-6-app/openapi",
-      "examples/react-router-7-app/openapi",
-      "examples/react-router-7-app/.react-router",
-      "docs/.astro"
+    "includes": [
+      "**",
+      "!**/.vscode",
+      "!**/dist",
+      "!**/examples/react-app/openapi",
+      "!**/coverage",
+      "!**/examples/nextjs-app/openapi",
+      "!**/examples/nextjs-app/.next",
+      "!**/examples/tanstack-router-app/openapi",
+      "!**/examples/tanstack-router-app/src/routeTree.gen.ts",
+      "!**/examples/react-router-6-app/openapi",
+      "!**/examples/react-router-7-app/openapi",
+      "!**/examples/react-router-7-app/.react-router",
+      "!**/docs/.astro",
+      "!**/*.svg"
     ]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "overrides": [
     {
-      "include": ["src/vendor-typestubs.d.ts"],
+      "includes": ["**/src/vendor-typestubs.d.ts"],
       "linter": {
         "rules": {
           "suspicious": {
             "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["examples/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedFunctionParameters": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off",
+            "noUnknownAtRules": "off"
           }
         }
       }
