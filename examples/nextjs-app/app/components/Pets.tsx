@@ -13,9 +13,7 @@ export default function Pets() {
       <h1>Pet List</h1>
       <ul>
         {Array.isArray(data) &&
-          data?.map((pet, index) => (
-            <li key={`${pet.id}-${index}`}>{pet.name}</li>
-          ))}
+          data?.map((pet) => <li key={pet.id}>{pet.name}</li>)}
       </ul>
       <ReactQueryDevtools initialIsOpen={false} />
     </>

@@ -5,8 +5,6 @@ import {
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
 
-type QueryHookType = "useQuery" | "useSuspenseQuery" | "useInfiniteQuery";
-
 /**
  * Get the error type string based on client type.
  */
@@ -23,23 +21,6 @@ function getErrorType(op: OperationInfo, ctx: GenerationContext): string {
 }
 
 /**
- * Get the data type based on hook type.
- */
-function getDataTypeDefault(
-  op: OperationInfo,
-  hookType: QueryHookType,
-): string {
-  const baseType = `Common.${op.capitalizedMethodName}DefaultResponse`;
-  if (hookType === "useSuspenseQuery") {
-    return `NonNullable<${baseType}>`;
-  }
-  if (hookType === "useInfiniteQuery") {
-    return `InfiniteData<${baseType}>`;
-  }
-  return baseType;
-}
-
-/**
  * Resolve the generated Data type name for an operation, falling back to
  * unknown when the operation has no generated Data type.
  */
@@ -53,17 +34,21 @@ export function getDataTypeName(
 }
 
 /**
+ * SDK call arguments shared by every generated queryFn/mutationFn.
+ * throwOnError: true forces the SDK call to reject on error responses; the
+ * hey-api runtime default is false, which would resolve undefined data and
+ * swallow the error instead of surfacing it to TanStack Query (#172).
+ */
+export const SDK_CALL_ARGS = "{ ...clientOptions, throwOnError: true }";
+
+/**
  * Build the client options parameter string.
  */
 export function buildClientOptionsParam(
   op: OperationInfo,
   ctx: GenerationContext,
 ): string {
-  const dataTypeName = ctx.modelNames.includes(
-    `${op.capitalizedMethodName}Data`,
-  )
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
+  const dataTypeName = getDataTypeName(op, ctx);
 
   const hasParams = op.parameters.length > 0;
   if (!hasParams) {
@@ -75,6 +60,74 @@ export function buildClientOptionsParam(
 }
 
 /**
+ * Build the clientOptions parameter typed with the page-less infinite
+ * options type — the page parameter is supplied by TanStack Query's
+ * pageParam mechanism.
+ */
+export function buildInfiniteClientOptionsParam(op: OperationInfo): string {
+  const defaultValue = op.allParamsOptional ? " = {}" : "";
+  return `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
+}
+
+/**
+ * Build the paginated SDK call shared by every infinite query builder.
+ */
+export function buildPagedQueryFn(
+  op: OperationInfo,
+  ctx: GenerationContext,
+  castTData: boolean,
+): string {
+  const dataTypeName = getDataTypeName(op, ctx);
+  const thenClause = castTData
+    ? ".then(response => response.data as TData) as TData"
+    : ".then(response => response.data)";
+  return `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam as number }, throwOnError: true } as Options<${dataTypeName}, true>)${thenClause}`;
+}
+
+/**
+ * Format the initialPageParam literal. Emits a numeric literal when possible
+ * so the inferred pageParam type matches what getNextPageParam returns.
+ */
+export function formatInitialPageParam(ctx: GenerationContext): string {
+  return /^-?\d+$/.test(ctx.initialPageParam)
+    ? ctx.initialPageParam
+    : JSON.stringify(ctx.initialPageParam);
+}
+
+/**
+ * Build the nested type for getNextPageParam.
+ * E.g., "meta.next" becomes "{ meta: { next: number } }"
+ */
+export function buildNestedNextPageType(nextPageParam: string): string {
+  const segments = nextPageParam.split(".");
+  return segments.reduceRight((acc, segment) => {
+    return `{ ${segment}: ${acc} }`;
+  }, "number");
+}
+
+/**
+ * Build the getNextPageParam expression. The parameter is annotated because
+ * not every TanStack entry point contextually types it (prefetchInfiniteQuery
+ * does not, which would fail noImplicitAny).
+ */
+export function buildGetNextPageParamExpr(ctx: GenerationContext): string {
+  const nestedType = buildNestedNextPageType(ctx.nextPageParam);
+  return `(response: unknown) => (response as ${nestedType}).${ctx.nextPageParam}`;
+}
+
+/**
+ * Build an options type where the pagination fields TanStack Query marks as
+ * required become optional overrides: the generator supplies them, and
+ * callers may replace them for custom pagination schemes (#156, #146).
+ */
+export function buildOverridableInfiniteOptionsType(
+  optionsTypeName: string,
+): string {
+  const instantiated = `${optionsTypeName}<TData, TError>`;
+  return `Omit<${instantiated}, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & Partial<Pick<${instantiated}, "initialPageParam" | "getNextPageParam">>`;
+}
+
+/**
  * Build useQuery hook.
  * Example:
  * export const useFindPets = <TData = Common.FindPetsDefaultResponse, TError = FindPetsError, TQueryKey extends Array<unknown> = unknown[]>(
@@ -83,7 +136,7 @@ export function buildClientOptionsParam(
  *   options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">
  * ) => useQuery<TData, TError>({
  *   queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey),
- *   queryFn: () => findPets({ ...clientOptions }).then(response => response.data as TData) as TData,
+ *   queryFn: () => findPets({ ...clientOptions, throwOnError: true }).then(response => response.data as TData) as TData,
  *   ...options
  * });
  */
@@ -93,13 +146,10 @@ export function buildUseQueryHook(
 ): VariableStatementStructure {
   const hookName = `use${op.capitalizedMethodName}`;
   const errorType = getErrorType(op, ctx);
-  const dataTypeDefault = getDataTypeDefault(op, "useQuery");
+  const dataTypeDefault = `Common.${op.capitalizedMethodName}DefaultResponse`;
   const clientOptionsParam = buildClientOptionsParam(op, ctx);
 
-  // throwOnError: true forces the SDK call to reject on error responses; the
-  // hey-api runtime default is false, which would resolve undefined data and
-  // swallow the error instead of surfacing it to TanStack Query (#172)
-  const queryFn = `() => ${op.methodName}({ ...clientOptions, throwOnError: true }).then(response => response.data as TData) as TData`;
+  const queryFn = `() => ${op.methodName}(${SDK_CALL_ARGS}).then(response => response.data as TData) as TData`;
 
   const body = `useQuery<TData, TError>({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
 
@@ -127,10 +177,10 @@ export function buildUseSuspenseQueryHook(
 ): VariableStatementStructure {
   const hookName = `use${op.capitalizedMethodName}Suspense`;
   const errorType = getErrorType(op, ctx);
-  const dataTypeDefault = getDataTypeDefault(op, "useSuspenseQuery");
+  const dataTypeDefault = `NonNullable<Common.${op.capitalizedMethodName}DefaultResponse>`;
   const clientOptionsParam = buildClientOptionsParam(op, ctx);
 
-  const queryFn = `() => ${op.methodName}({ ...clientOptions, throwOnError: true }).then(response => response.data as TData) as TData`;
+  const queryFn = `() => ${op.methodName}(${SDK_CALL_ARGS}).then(response => response.data as TData) as TData`;
 
   const body = `useSuspenseQuery<TData, TError>({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
 
@@ -150,14 +200,52 @@ export function buildUseSuspenseQueryHook(
 }
 
 /**
- * Build the nested type for getNextPageParam.
- * E.g., "meta.next" becomes "{ meta: { next: number } }"
+ * Build a useInfiniteQuery / useSuspenseInfiniteQuery hook. Both variants
+ * share the infinite query key (and therefore the cache); they differ only
+ * in the TanStack hook called, the options type, and the NonNullable TData
+ * default of the suspense variant.
  */
-export function buildNestedNextPageType(nextPageParam: string): string {
-  const segments = nextPageParam.split(".");
-  return segments.reduceRight((acc, segment) => {
-    return `{ ${segment}: ${acc} }`;
-  }, "number");
+function buildInfiniteHook(
+  op: OperationInfo,
+  ctx: GenerationContext,
+  suspense: boolean,
+): VariableStatementStructure | null {
+  if (!op.isPaginatable) {
+    return null;
+  }
+
+  const hookCall = suspense ? "useSuspenseInfiniteQuery" : "useInfiniteQuery";
+  const optionsTypeName = suspense
+    ? "UseSuspenseInfiniteQueryOptions"
+    : "UseInfiniteQueryOptions";
+  const hookName = suspense
+    ? `use${op.capitalizedMethodName}SuspenseInfinite`
+    : `use${op.capitalizedMethodName}Infinite`;
+
+  const errorType = getErrorType(op, ctx);
+  const baseDataType = `Common.${op.capitalizedMethodName}DefaultResponse`;
+  const dataTypeDefault = suspense
+    ? `InfiniteData<NonNullable<${baseDataType}>>`
+    : `InfiniteData<${baseDataType}>`;
+
+  const queryFn = buildPagedQueryFn(op, ctx, true);
+  const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx)}`;
+
+  const body = `${hookCall}({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
+
+  return {
+    kind: StructureKind.VariableStatement,
+    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
+    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
+    isExported: true,
+    declarationKind: VariableDeclarationKind.Const,
+    declarations: [
+      {
+        name: hookName,
+        initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${buildInfiniteClientOptionsParam(op)}, queryKey?: TQueryKey, options?: ${buildOverridableInfiniteOptionsType(optionsTypeName)}) => ${body}`,
+      },
+    ],
+  };
 }
 
 /**
@@ -167,90 +255,17 @@ export function buildUseInfiniteQueryHook(
   op: OperationInfo,
   ctx: GenerationContext,
 ): VariableStatementStructure | null {
-  if (!op.isPaginatable) {
-    return null;
-  }
-
-  const hookName = `use${op.capitalizedMethodName}Infinite`;
-  const errorType = getErrorType(op, ctx);
-  const baseDataType = `Common.${op.capitalizedMethodName}DefaultResponse`;
-  const dataTypeName = getDataTypeName(op, ctx);
-
-  // Infinite queries take a dedicated options type that excludes the page
-  // parameter — it is supplied by TanStack Query's pageParam mechanism
-  const defaultValue = op.allParamsOptional ? " = {}" : "";
-  const clientOptionsParam = `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
-
-  // Build the queryFn with pageParam handling
-  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam as number }, throwOnError: true } as Options<${dataTypeName}, true>).then(response => response.data as TData) as TData`;
-
-  // Build getNextPageParam with nested type
-  const nestedType = buildNestedNextPageType(ctx.nextPageParam);
-  const getNextPageParam = `getNextPageParam: (response) => (response as ${nestedType}).${ctx.nextPageParam}`;
-
-  // initialPageParam is a string literal
-  const infiniteOptions = `initialPageParam: "${ctx.initialPageParam}", ${getNextPageParam}`;
-
-  const body = `useInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
-
-  return {
-    kind: StructureKind.VariableStatement,
-    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
-    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: hookName,
-        initializer: `<TData = InfiniteData<${baseDataType}>, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & Partial<Pick<UseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>) => ${body}`,
-      },
-    ],
-  };
+  return buildInfiniteHook(op, ctx, false);
 }
 
 /**
  * Build useSuspenseInfiniteQuery hook.
- * Shares the infinite query key (and therefore the cache) with the
- * non-suspense useInfiniteQuery hook for the same operation.
  */
 export function buildUseSuspenseInfiniteQueryHook(
   op: OperationInfo,
   ctx: GenerationContext,
 ): VariableStatementStructure | null {
-  if (!op.isPaginatable) {
-    return null;
-  }
-
-  const hookName = `use${op.capitalizedMethodName}SuspenseInfinite`;
-  const errorType = getErrorType(op, ctx);
-  const baseDataType = `Common.${op.capitalizedMethodName}DefaultResponse`;
-  const dataTypeName = getDataTypeName(op, ctx);
-
-  const defaultValue = op.allParamsOptional ? " = {}" : "";
-  const clientOptionsParam = `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
-
-  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam as number }, throwOnError: true } as Options<${dataTypeName}, true>).then(response => response.data as TData) as TData`;
-
-  const nestedType = buildNestedNextPageType(ctx.nextPageParam);
-  const getNextPageParam = `getNextPageParam: (response) => (response as ${nestedType}).${ctx.nextPageParam}`;
-
-  const infiniteOptions = `initialPageParam: "${ctx.initialPageParam}", ${getNextPageParam}`;
-
-  const body = `useSuspenseInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
-
-  return {
-    kind: StructureKind.VariableStatement,
-    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
-    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: hookName,
-        initializer: `<TData = InfiniteData<NonNullable<${baseDataType}>>, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseSuspenseInfiniteQueryOptions<TData, TError>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & Partial<Pick<UseSuspenseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>) => ${body}`,
-      },
-    ],
-  };
+  return buildInfiniteHook(op, ctx, true);
 }
 
 /**
@@ -268,19 +283,8 @@ export function buildPrefetchFn(
   ctx: GenerationContext,
 ): VariableStatementStructure {
   const fnName = `prefetchUse${op.capitalizedMethodName}`;
-  const dataTypeName = ctx.modelNames.includes(
-    `${op.capitalizedMethodName}Data`,
-  )
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
 
-  const hasParams = op.parameters.length > 0;
-  const defaultValue = op.allParamsOptional ? " = {}" : "";
-  const clientOptionsParam = hasParams
-    ? `clientOptions: Options<${dataTypeName}, true>${defaultValue}`
-    : `clientOptions: Options<${dataTypeName}, true> = {}`;
-
-  const queryFn = `() => ${op.methodName}({ ...clientOptions, throwOnError: true }).then(response => response.data)`;
+  const queryFn = `() => ${op.methodName}(${SDK_CALL_ARGS}).then(response => response.data)`;
 
   const optionsParam = `options?: Omit<FetchQueryOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn">`;
   const body = `queryClient.prefetchQuery({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions), queryFn: ${queryFn}, ...options })`;
@@ -294,7 +298,7 @@ export function buildPrefetchFn(
     declarations: [
       {
         name: fnName,
-        initializer: `(queryClient: QueryClient, ${clientOptionsParam}, ${optionsParam}) => ${body}`,
+        initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op, ctx)}, ${optionsParam}) => ${body}`,
       },
     ],
   };
@@ -303,12 +307,13 @@ export function buildPrefetchFn(
 /**
  * Build prefetchInfiniteQuery function for a paginatable operation.
  * Example:
- * export const prefetchUseFindPaginatedPetsInfinite = (queryClient: QueryClient, clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}) =>
+ * export const prefetchUseFindPaginatedPetsInfinite = (queryClient: QueryClient, clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}, options?: Omit<FetchInfiniteQueryOptions<Common.FindPaginatedPetsDefaultResponse>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam">) =>
  *   queryClient.prefetchInfiniteQuery({
  *     queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions),
- *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam }, throwOnError: true } as Options<FindPaginatedPetsData, true>).then(response => response.data),
+ *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>).then(response => response.data),
  *     initialPageParam: 1,
- *     getNextPageParam: (response) => (response as { nextPage: number }).nextPage
+ *     getNextPageParam: (response: unknown) => (response as { nextPage: number }).nextPage,
+ *     ...options
  *   });
  */
 export function buildPrefetchInfiniteQueryFn(
@@ -320,25 +325,12 @@ export function buildPrefetchInfiniteQueryFn(
   }
 
   const fnName = `prefetchUse${op.capitalizedMethodName}Infinite`;
-  const dataTypeName = getDataTypeName(op, ctx);
 
-  const defaultValue = op.allParamsOptional ? " = {}" : "";
-  const clientOptionsParam = `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
+  const queryFn = buildPagedQueryFn(op, ctx, false);
+  const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx)}`;
 
-  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam }, throwOnError: true } as Options<${dataTypeName}, true>).then(response => response.data)`;
-
-  // Emit a numeric literal when possible so the inferred pageParam type
-  // matches what getNextPageParam returns
-  const initialPageParam = /^-?\d+$/.test(ctx.initialPageParam)
-    ? ctx.initialPageParam
-    : JSON.stringify(ctx.initialPageParam);
-
-  const nestedType = buildNestedNextPageType(ctx.nextPageParam);
-  // prefetchInfiniteQuery does not contextually type getNextPageParam's
-  // parameter, so annotate it explicitly to satisfy noImplicitAny
-  const getNextPageParam = `getNextPageParam: (response: unknown) => (response as ${nestedType}).${ctx.nextPageParam}`;
-
-  const body = `queryClient.prefetchInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions), queryFn: ${queryFn}, initialPageParam: ${initialPageParam}, ${getNextPageParam} })`;
+  const optionsParam = `options?: Omit<FetchInfiniteQueryOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam">`;
+  const body = `queryClient.prefetchInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return {
     kind: StructureKind.VariableStatement,
@@ -349,7 +341,7 @@ export function buildPrefetchInfiniteQueryFn(
     declarations: [
       {
         name: fnName,
-        initializer: `(queryClient: QueryClient, ${clientOptionsParam}) => ${body}`,
+        initializer: `(queryClient: QueryClient, ${buildInfiniteClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
       },
     ],
   };
@@ -358,10 +350,11 @@ export function buildPrefetchInfiniteQueryFn(
 /**
  * Build ensureQueryData function.
  * Example:
- * export const ensureUseFindPetsData = (queryClient: QueryClient, clientOptions: Options<FindPetsData, true> = {}) =>
+ * export const ensureUseFindPetsData = (queryClient: QueryClient, clientOptions: Options<FindPetsData, true> = {}, options?: Omit<EnsureQueryDataOptions<Common.FindPetsDefaultResponse>, "queryKey" | "queryFn">) =>
  *   queryClient.ensureQueryData({
  *     queryKey: Common.UseFindPetsKeyFn(clientOptions),
- *     queryFn: () => findPets({ ...clientOptions }).then(response => response.data)
+ *     queryFn: () => findPets({ ...clientOptions, throwOnError: true }).then(response => response.data),
+ *     ...options
  *   });
  */
 export function buildEnsureQueryDataFn(
@@ -369,21 +362,8 @@ export function buildEnsureQueryDataFn(
   ctx: GenerationContext,
 ): VariableStatementStructure {
   const fnName = `ensureUse${op.capitalizedMethodName}Data`;
-  const dataTypeName = ctx.modelNames.includes(
-    `${op.capitalizedMethodName}Data`,
-  )
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
 
-  const hasParams = op.parameters.length > 0;
-  const defaultValue = op.allParamsOptional ? " = {}" : "";
-  const clientOptionsParam = hasParams
-    ? `clientOptions: Options<${dataTypeName}, true>${defaultValue}`
-    : `clientOptions: Options<${dataTypeName}, true> = {}`;
-
-  // throwOnError: true makes the SDK call reject on error responses so
-  // ensureQueryData rejects instead of caching undefined (#172)
-  const queryFn = `() => ${op.methodName}({ ...clientOptions, throwOnError: true }).then(response => response.data)`;
+  const queryFn = `() => ${op.methodName}(${SDK_CALL_ARGS}).then(response => response.data)`;
 
   const optionsParam = `options?: Omit<EnsureQueryDataOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn">`;
   const body = `queryClient.ensureQueryData({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions), queryFn: ${queryFn}, ...options })`;
@@ -397,7 +377,7 @@ export function buildEnsureQueryDataFn(
     declarations: [
       {
         name: fnName,
-        initializer: `(queryClient: QueryClient, ${clientOptionsParam}, ${optionsParam}) => ${body}`,
+        initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op, ctx)}, ${optionsParam}) => ${body}`,
       },
     ],
   };

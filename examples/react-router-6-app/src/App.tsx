@@ -85,9 +85,7 @@ export function Compoment() {
       )}
       <ul>
         {Array.isArray(data) &&
-          data?.map((pet, index) => (
-            <li key={`${pet.id}-${index}`}>{pet.name}</li>
-          ))}
+          data?.map((pet) => <li key={pet.id}>{pet.name}</li>)}
       </ul>
     </div>
   );

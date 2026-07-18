@@ -4,6 +4,7 @@ import {
   type VariableStatementStructure,
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
+import { SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
 
 /**
  * Get the error type string based on client type.
@@ -48,9 +49,7 @@ export function buildUseMutationHook(
 
   const optionsType = `Options<${dataTypeName}, true>`;
 
-  // throwOnError: true forces the SDK call to reject on error responses so
-  // the mutation error state fires; the hey-api runtime default is false (#172)
-  const mutationFn = `clientOptions => ${op.methodName}({ ...clientOptions, throwOnError: true }) as unknown as Promise<TData>`;
+  const mutationFn = `clientOptions => ${op.methodName}(${SDK_CALL_ARGS}) as unknown as Promise<TData>`;
 
   const body = `useMutation<TData, TError, ${optionsType}, TContext>({ mutationKey: Common.Use${op.capitalizedMethodName}KeyFn(mutationKey), mutationFn: ${mutationFn}, ...options })`;
 

@@ -50,7 +50,6 @@
             "noUnusedFunctionParameters": "off"
           },
           "suspicious": {
-            "noArrayIndexKey": "off",
             "noUnknownAtRules": "off"
           }
         }

@@ -1,8 +1,4 @@
-import {
-  type ExportDeclarationStructure,
-  type ImportDeclarationStructure,
-  StructureKind,
-} from "ts-morph";
+import { type ImportDeclarationStructure, StructureKind } from "ts-morph";
 import { OpenApiRqFiles } from "../constants.mjs";
 import type {
   GeneratedFile,
@@ -81,33 +77,10 @@ function buildHookFileImports(
 
 /**
  * Generate the index.ts file content.
+ * The content is constant, so no ts-morph project is needed.
  */
 function generateIndexFile(): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.index}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  const exports: ExportDeclarationStructure[] = [
-    {
-      kind: StructureKind.ExportDeclaration,
-      moduleSpecifier: "./common",
-    },
-    {
-      kind: StructureKind.ExportDeclaration,
-      moduleSpecifier: "./queries",
-    },
-    {
-      kind: StructureKind.ExportDeclaration,
-      moduleSpecifier: "./queryOptions",
-    },
-  ];
-
-  sourceFile.addExportDeclarations(exports);
-
-  return sourceFile.getFullText();
+  return `export * from "./common";\nexport * from "./queries";\nexport * from "./queryOptions";\n`;
 }
 
 /**
@@ -264,7 +237,7 @@ function generateSuspenseFile(
   }
 
   // Add useSuspenseInfiniteQuery hooks for paginatable operations
-  for (const op of getOperations) {
+  for (const op of getOperations.filter((o) => o.isPaginatable)) {
     const hook = buildUseSuspenseInfiniteQueryHook(op, ctx);
     if (hook) {
       sourceFile.addVariableStatement(hook);
@@ -333,7 +306,7 @@ function generatePrefetchFile(
   }
 
   // Add prefetchInfiniteQuery functions for paginatable operations
-  for (const op of getOperations) {
+  for (const op of getOperations.filter((o) => o.isPaginatable)) {
     const fn = buildPrefetchInfiniteQueryFn(op, ctx);
     if (fn) {
       sourceFile.addVariableStatement(fn);

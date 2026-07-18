@@ -281,7 +281,7 @@ export const useFindPaginatedPetsInfinite = <
         (response) => response.data as TData,
       ) as TData,
     initialPageParam: "initial",
-    getNextPageParam: (response) =>
+    getNextPageParam: (response: unknown) =>
       (response as { meta: { next: number } }).meta.next,
     ...options,
   });
@@ -292,6 +292,7 @@ exports[`generate > prefetch.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
 import type {
+  FetchInfiniteQueryOptions,
   FetchQueryOptions,
   QueryClient,
 } from "@tanstack/react-query";
@@ -400,13 +401,17 @@ export const prefetchUseFindPaginatedPets = (
 export const prefetchUseFindPaginatedPetsInfinite = (
   queryClient: QueryClient,
   clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {},
+  options?: Omit<
+    FetchInfiniteQueryOptions<Common.FindPaginatedPetsDefaultResponse>,
+    "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"
+  >,
 ) =>
   queryClient.prefetchInfiniteQuery({
     queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions),
     queryFn: ({ pageParam }) =>
       findPaginatedPets({
         ...clientOptions,
-        query: { ...clientOptions.query, page: pageParam },
+        query: { ...clientOptions.query, page: pageParam as number },
         throwOnError: true,
       } as Options<FindPaginatedPetsData, true>).then(
         (response) => response.data,
@@ -414,6 +419,7 @@ export const prefetchUseFindPaginatedPetsInfinite = (
     initialPageParam: "initial",
     getNextPageParam: (response: unknown) =>
       (response as { meta: { next: number } }).meta.next,
+    ...options,
   });
 "
 `;
@@ -780,7 +786,7 @@ export const useFindPaginatedPetsSuspenseInfinite = <
         (response) => response.data as TData,
       ) as TData,
     initialPageParam: "initial",
-    getNextPageParam: (response) =>
+    getNextPageParam: (response: unknown) =>
       (response as { meta: { next: number } }).meta.next,
     ...options,
   });

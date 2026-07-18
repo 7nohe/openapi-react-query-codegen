@@ -219,7 +219,7 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain("useInfiniteQuery");
       expect(initializer).toContain("pageParam");
       expect(initializer).toContain("getNextPageParam");
-      expect(initializer).toContain('initialPageParam: "1"');
+      expect(initializer).toContain("initialPageParam: 1");
     });
 
     it("should make initialPageParam and getNextPageParam optional overrides", () => {

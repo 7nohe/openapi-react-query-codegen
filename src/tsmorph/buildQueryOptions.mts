@@ -6,8 +6,11 @@ import {
 import type { GenerationContext, OperationInfo } from "../types.mjs";
 import {
   buildClientOptionsParam,
-  buildNestedNextPageType,
-  getDataTypeName,
+  buildGetNextPageParamExpr,
+  buildInfiniteClientOptionsParam,
+  buildPagedQueryFn,
+  formatInitialPageParam,
+  SDK_CALL_ARGS,
 } from "./buildQueryHooks.mjs";
 
 /**
@@ -19,7 +22,7 @@ import {
  * export const findPetsOptions = (clientOptions: Options<FindPetsData, true> = {}, queryKey?: Array<unknown>) =>
  *   queryOptions({
  *     queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey),
- *     queryFn: () => findPets({ ...clientOptions }).then(response => response.data),
+ *     queryFn: () => findPets({ ...clientOptions, throwOnError: true }).then(response => response.data),
  *   });
  */
 export function buildQueryOptionsFn(
@@ -29,9 +32,7 @@ export function buildQueryOptionsFn(
   const fnName = `${op.methodName}Options`;
   const clientOptionsParam = buildClientOptionsParam(op, ctx);
 
-  // throwOnError: true forces the SDK call to reject on error responses; the
-  // hey-api runtime default is false, which would resolve undefined data (#172)
-  const queryFn = `() => ${op.methodName}({ ...clientOptions, throwOnError: true }).then(response => response.data)`;
+  const queryFn = `() => ${op.methodName}(${SDK_CALL_ARGS}).then(response => response.data)`;
   const body = `queryOptions({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn} })`;
 
   return {
@@ -56,9 +57,9 @@ export function buildQueryOptionsFn(
  * export const findPaginatedPetsInfiniteOptions = (clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) =>
  *   infiniteQueryOptions({
  *     queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey),
- *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam } } as Options<FindPaginatedPetsData, true>).then(response => response.data),
+ *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>).then(response => response.data),
  *     initialPageParam: 1,
- *     getNextPageParam: (response) => (response as { nextPage: number }).nextPage,
+ *     getNextPageParam: (response: unknown) => (response as { nextPage: number }).nextPage,
  *   });
  */
 export function buildInfiniteQueryOptionsFn(
@@ -70,23 +71,11 @@ export function buildInfiniteQueryOptionsFn(
   }
 
   const fnName = `${op.methodName}InfiniteOptions`;
-  const dataTypeName = getDataTypeName(op, ctx);
 
-  const defaultValue = op.allParamsOptional ? " = {}" : "";
-  const clientOptionsParam = `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
+  const queryFn = buildPagedQueryFn(op, ctx, false);
+  const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx)}`;
 
-  const queryFn = `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam }, throwOnError: true } as Options<${dataTypeName}, true>).then(response => response.data)`;
-
-  // Emit a numeric literal when possible so the inferred pageParam type
-  // matches what getNextPageParam returns
-  const initialPageParam = /^-?\d+$/.test(ctx.initialPageParam)
-    ? ctx.initialPageParam
-    : JSON.stringify(ctx.initialPageParam);
-
-  const nestedType = buildNestedNextPageType(ctx.nextPageParam);
-  const getNextPageParam = `(response) => (response as ${nestedType}).${ctx.nextPageParam}`;
-
-  const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, initialPageParam: ${initialPageParam}, getNextPageParam: ${getNextPageParam} })`;
+  const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions} })`;
 
   return {
     kind: StructureKind.VariableStatement,
@@ -97,7 +86,7 @@ export function buildInfiniteQueryOptionsFn(
     declarations: [
       {
         name: fnName,
-        initializer: `(${clientOptionsParam}, queryKey?: Array<unknown>) => ${body}`,
+        initializer: `(${buildInfiniteClientOptionsParam(op)}, queryKey?: Array<unknown>) => ${body}`,
       },
     ],
   };

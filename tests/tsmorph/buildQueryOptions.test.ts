@@ -124,10 +124,10 @@ describe("buildQueryOptions", () => {
         "infiniteQueryOptions({ queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey)",
       );
       expect(initializer).toContain(
-        "query: { ...clientOptions.query, page: pageParam }, throwOnError: true } as Options<FindPaginatedPetsData, true>",
+        "query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>",
       );
       expect(initializer).toContain(
-        "getNextPageParam: (response) => (response as { nextPage: number }).nextPage",
+        "getNextPageParam: (response: unknown) => (response as { nextPage: number }).nextPage",
       );
     });
 
