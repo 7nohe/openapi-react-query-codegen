@@ -10,12 +10,13 @@ v3 is a full rewrite of the code generator on top of a ts-morph pipeline, but th
 1. Update the package and regenerate your client:
 
    ```bash
-   npm install -D @7nohe/openapi-react-query-codegen@beta
+   npm install -D @7nohe/openapi-react-query-codegen@^3
    npx openapi-rq -i ./petstore.yaml
    ```
 
-2. If you don't use infinite queries, you are done.
+2. Be aware of the one change the compiler cannot catch: [error responses now reject](#behavior-change-error-responses-now-reject) instead of silently resolving `undefined` data. If your UI already handles TanStack Query error states, nothing to do.
 3. If you use infinite queries (`useXxxInfinite`), fix the type errors the compiler reports — see below. They are mechanical.
+4. Everything else is compatible — you are done.
 
 ## What stays the same
 
@@ -46,7 +47,7 @@ const { data } = useFindPaginatedPetsInfinite({ query: { limit: 10 } }, undefine
 
 The infinite query family is now complete ([#155](https://github.com/7nohe/openapi-react-query-codegen/issues/155)):
 
-- `prefetchUseXxxInfinite(queryClient, clientOptions)` — prefetch the first page on the server for SSR/Next.js hydration
+- `prefetchUseXxxInfinite(queryClient, clientOptions, options?)` — prefetch the first page (or more, via `options.pages`) on the server for SSR/Next.js hydration
 - `useXxxSuspenseInfinite(clientOptions, queryKey?, options?)` — Suspense variant sharing the same cache key as `useXxxInfinite`
 
 Prefetch and ensure functions also take TanStack Query options now ([#157](https://github.com/7nohe/openapi-react-query-codegen/issues/157)):
