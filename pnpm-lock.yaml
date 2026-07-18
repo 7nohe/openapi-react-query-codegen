@@ -19,6 +19,9 @@ importers:
       '@hey-api/openapi-ts':
         specifier: 0.99.0
         version: 0.99.0(patch_hash=uzpdsaqpo2bd4ydyvbzbqpdgxq)(magicast@0.5.3)(typescript@6.0.3)
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.59.13(react@18.3.1)
       cross-spawn:
         specifier: ^7.0.3
         version: 7.0.3
