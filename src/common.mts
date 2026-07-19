@@ -78,6 +78,12 @@ export function BuildCommonTypeName(name: string | ts.Identifier) {
  * @returns The parsed number or NaN if the value is not a valid number.
  */
 export function safeParseNumber(value: unknown): number {
+  // `Number("")` is 0, which would silently turn a blank option such as
+  // `--initialPageParam ""` into a numeric 0. Treat blank strings as NaN so
+  // callers keep the original value.
+  if (typeof value === "string" && value.trim() === "") {
+    return Number.NaN;
+  }
   const parsed = Number(value);
   if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
     return parsed;
