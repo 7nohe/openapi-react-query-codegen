@@ -78,6 +78,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
     pageParam: formattedOptions.pageParam,
     nextPageParam: formattedOptions.nextPageParam,
     initialPageParam: formattedOptions.initialPageParam.toString(),
+    omitInitialPageParam: formattedOptions.omitInitialPageParam ?? false,
   });
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);

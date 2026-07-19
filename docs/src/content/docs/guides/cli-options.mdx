@@ -25,6 +25,10 @@ Name of the response parameter used for next page. The default value is `nextPag
 
 Initial page value to infinite query. The default value is `1`.
 
+### --omitInitialPageParam
+
+Send no initial page parameter at all. When set, the generated infinite queries use `initialPageParam: undefined` and omit the page parameter from the first request entirely, so the initial page is fetched without it. Useful for APIs that expect no page parameter (or an empty one) on the first request. This overrides `--initialPageParam`.
+
 ## Client Options
 
 The generated clients (under the `openapi/requests` directory) are produced by `@hey-api/openapi-ts` using its plugins system. The CLI options below are mapped to the corresponding plugin configurations.

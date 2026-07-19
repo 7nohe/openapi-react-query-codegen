@@ -81,14 +81,23 @@ export function buildPagedQueryFn(
   const thenClause = castTData
     ? ".then(response => response.data as TData) as TData"
     : ".then(response => response.data)";
-  return `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${ctx.pageParam}: pageParam as number }, throwOnError: true } as Options<${dataTypeName}, true>)${thenClause}`;
+  // When the initial page param is omitted, the first request must send no
+  // page param at all, so spread it in only once TanStack Query provides one.
+  const pageQuery = ctx.omitInitialPageParam
+    ? `...(pageParam === undefined ? {} : { ${ctx.pageParam}: pageParam as number })`
+    : `${ctx.pageParam}: pageParam as number`;
+  return `({ pageParam }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${pageQuery} }, throwOnError: true } as Options<${dataTypeName}, true>)${thenClause}`;
 }
 
 /**
- * Format the initialPageParam literal. Emits a numeric literal when possible
- * so the inferred pageParam type matches what getNextPageParam returns.
+ * Format the initialPageParam literal. Emits `undefined` when the caller opted
+ * to omit it (#177); otherwise a numeric literal when possible so the inferred
+ * pageParam type matches what getNextPageParam returns.
  */
 export function formatInitialPageParam(ctx: GenerationContext): string {
+  if (ctx.omitInitialPageParam) {
+    return "undefined";
+  }
   return /^-?\d+$/.test(ctx.initialPageParam)
     ? ctx.initialPageParam
     : JSON.stringify(ctx.initialPageParam);

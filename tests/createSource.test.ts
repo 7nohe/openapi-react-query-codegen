@@ -15,6 +15,7 @@ describe(fileName, () => {
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
+      omitInitialPageParam: false,
       client: "@hey-api/client-fetch",
     });
 
@@ -53,6 +54,7 @@ describe(fileName, () => {
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
+      omitInitialPageParam: false,
       client: "@hey-api/client-axios",
     });
 
@@ -70,5 +72,31 @@ describe(fileName, () => {
 
     const prefetchTs = source.find((s) => s.name === "prefetch.ts");
     expect(prefetchTs?.content).toMatchSnapshot();
+  });
+
+  test("createSource - omitInitialPageParam", async () => {
+    const source = await createSource({
+      outputPath: outputPath(fileName),
+      version: "1.0.0",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
+      omitInitialPageParam: true,
+      client: "@hey-api/client-fetch",
+    });
+
+    const infiniteQueriesTs = source.find(
+      (s) => s.name === "infiniteQueries.ts",
+    );
+
+    // The initial page param is emitted as `undefined` instead of a literal.
+    expect(infiniteQueriesTs?.content).toContain("initialPageParam: undefined");
+    expect(infiniteQueriesTs?.content).not.toContain("initialPageParam: 1");
+
+    // The page param is spread in only once TanStack Query supplies one, so the
+    // first request sends no page param at all (#177).
+    expect(infiniteQueriesTs?.content).toContain(
+      "...(pageParam === undefined ? {} : { page: pageParam as number })",
+    );
   });
 });

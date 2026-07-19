@@ -109,6 +109,7 @@ describe("parseOperations", () => {
         "page",
         "nextPage",
         "1",
+        false,
         "1.0.0",
       );
 
@@ -116,6 +117,7 @@ describe("parseOperations", () => {
       expect(ctx.pageParam).toBe("page");
       expect(ctx.nextPageParam).toBe("nextPage");
       expect(ctx.initialPageParam).toBe("1");
+      expect(ctx.omitInitialPageParam).toBe(false);
       expect(ctx.version).toBe("1.0.0");
       expect(ctx.serviceNames.length).toBeGreaterThan(0);
       expect(ctx.modelNames.length).toBeGreaterThan(0);
@@ -131,6 +133,7 @@ describe("parseOperations", () => {
         "offset",
         "next",
         "0",
+        false,
         "2.0.0",
       );
 
@@ -149,6 +152,7 @@ describe("parseOperations", () => {
         "page",
         "nextPage",
         "1",
+        false,
         "1.0.0",
       );
 
@@ -168,6 +172,7 @@ describe("parseOperations", () => {
         "page",
         "nextPage",
         "1",
+        false,
         "1.0.0",
       );
 

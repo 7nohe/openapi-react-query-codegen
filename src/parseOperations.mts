@@ -140,6 +140,7 @@ export function buildGenerationContext(
   pageParam: string,
   nextPageParam: string,
   initialPageParam: string,
+  omitInitialPageParam: boolean,
   version: string,
 ): GenerationContext {
   const modelsFile = project
@@ -167,6 +168,7 @@ export function buildGenerationContext(
     pageParam,
     nextPageParam,
     initialPageParam,
+    omitInitialPageParam,
     version,
   };
 }

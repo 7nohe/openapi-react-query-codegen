@@ -16,6 +16,7 @@ export const createSource = async ({
   pageParam,
   nextPageParam,
   initialPageParam,
+  omitInitialPageParam,
 }: {
   outputPath: string;
   client: ClientType;
@@ -23,6 +24,7 @@ export const createSource = async ({
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;
+  omitInitialPageParam: boolean;
 }): Promise<GeneratedFile[]> => {
   // Initialize ts-morph project to read the generated OpenAPI client
   const project = new Project({
@@ -42,6 +44,7 @@ export const createSource = async ({
     pageParam,
     nextPageParam,
     initialPageParam,
+    omitInitialPageParam,
     version,
   );
 

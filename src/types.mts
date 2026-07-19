@@ -47,6 +47,8 @@ export interface GenerationContext {
   nextPageParam: string;
   /** Initial page param value for infinite queries */
   initialPageParam: string;
+  /** Omit the initial page param entirely (sends no page param on the first request) */
+  omitInitialPageParam: boolean;
   /** Package version for generated comment */
   version: string;
 }

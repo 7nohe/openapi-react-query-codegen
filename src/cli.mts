@@ -23,6 +23,7 @@ export type LimitedUserConfig = {
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string | number;
+  omitInitialPageParam?: boolean;
 };
 
 async function setupProgram() {
@@ -91,6 +92,10 @@ async function setupProgram() {
       "nextPage",
     )
     .option("--initialPageParam <value>", "Initial page value to query", "1")
+    .option(
+      "--omitInitialPageParam",
+      "Send no initial page parameter at all (overrides --initialPageParam)",
+    )
     .parse();
 
   const options = program.opts<LimitedUserConfig>();
