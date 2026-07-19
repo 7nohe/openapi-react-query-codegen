@@ -1,0 +1,12 @@
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index d4f7acfd6f4b0a65b9de871e7bc88a6151c8a520..1fdc18bb747a9dfc56b74e3e69e1e9ce3275ca85 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -3190,6 +3190,7 @@ declare function definePluginConfig<T extends Plugin.Types>(pluginConfig: Plugin
+     plugin: PluginInstance<T>;
+   }) => void;
+   imports?: ((plugin: PluginInstance<T>) => T["imports"]) | undefined;
++  // @ts-ignore TS2749 - bundled declaration references value 'log' as a type; upstream typing bug
+   symbolMeta?: (symbol: Omit<log, "name">) => log;
+   tags?: ReadonlyArray<PluginTag>;
+ };
