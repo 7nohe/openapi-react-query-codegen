@@ -65,8 +65,8 @@ function App() {
                 console.log("success");
               },
               onError: (error) => {
-                console.log(error.response);
-                setErrorText(`Error: ${error.response?.data.message}`);
+                console.log(error);
+                setErrorText(`Error: ${error.message}`);
               },
             },
           );
