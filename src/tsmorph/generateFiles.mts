@@ -1,4 +1,4 @@
-import { type ImportDeclarationStructure, StructureKind } from "ts-morph";
+import type { ImportDeclarationStructure } from "ts-morph";
 import { OpenApiRqFiles } from "../constants.mjs";
 import type {
   GeneratedFile,
