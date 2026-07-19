@@ -55,7 +55,7 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const { port } = server.address() as AddressInfo;
   // Deliberately NO throwOnError here — the generated code must set it per call
-  client.setConfig({ baseUrl: `http://localhost:${port}` });
+  client.setConfig({ baseURL: `http://localhost:${port}` });
 });
 
 afterAll(() => server.close());
