@@ -8,7 +8,6 @@
     "dev:mock": "prism mock ../petstore.yaml --dynamic",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
     "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
     "test:generated": "tsc -p ./tsconfig.json --noEmit"
   },
@@ -16,7 +15,7 @@
     "@hey-api/client-fetch": "^0.6.0",
     "@tanstack/react-query": "^5.59.13",
     "@tanstack/react-query-devtools": "^5.32.1",
-    "next": "^15.5.16",
+    "next": "^16.2.10",
     "react": "^18",
     "react-dom": "^18"
   },
