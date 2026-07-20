@@ -6,6 +6,7 @@
   "files": {
     "ignore": [
       ".vscode",
+      ".claude",
       "dist",
       "examples/react-app/openapi",
       "coverage",

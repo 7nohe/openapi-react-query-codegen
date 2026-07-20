@@ -78,6 +78,13 @@
       "@hey-api/openapi-ts@0.99.0": "patches/@hey-api__openapi-ts@0.99.0.patch",
       "@hey-api/shared@0.5.0": "patches/@hey-api__shared@0.5.0.patch"
     },
+    "packageExtensions": {
+      "ofetch": {
+        "dependencies": {
+          "undici": "6.27.0"
+        }
+      }
+    },
     "overrides": {
       "@babel/core": "7.29.6",
       "@babel/helpers": "7.26.10",
@@ -91,8 +98,7 @@
       "devalue": "5.6.4",
       "diff@4": "4.0.4",
       "diff@5": "5.2.2",
-      "esbuild": "0.25.0",
-      "fast-xml-parser": "4.5.5",
+      "fast-xml-parser": "5.7.0",
       "follow-redirects": "1.16.0",
       "form-data": "4.0.6",
       "glob@10": "10.5.0",
