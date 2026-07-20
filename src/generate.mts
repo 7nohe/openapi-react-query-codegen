@@ -17,7 +17,7 @@ import { print } from "./print.mjs";
 // (NodeNext) instead of the caller's project config. Anchoring the search
 // at cwd instead finds the tsconfig that actually applies to the generated
 // output, matching the resolution the caller's own `tsc` will use.
-function findNearestTsConfigPath(startDir: string): string | undefined {
+export function findNearestTsConfigPath(startDir: string): string | undefined {
   let dir = startDir;
   while (true) {
     const candidates = readdirSync(dir).filter(
