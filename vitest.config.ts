@@ -4,7 +4,14 @@ export default defineConfig({
   test: {
     coverage: {
       reporter: ["text", "json-summary", "json", "html"],
-      exclude: ["src/cli.mts", "examples/**", "tests/**", "docs/**"],
+      exclude: [
+        "src/cli.mts",
+        "examples/**",
+        "tests/**",
+        "docs/**",
+        "dist/**",
+        "vitest.config.ts",
+      ],
       reportOnFailure: true,
       thresholds: {
         lines: 95,
