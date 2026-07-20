@@ -65,8 +65,9 @@ describe("parseOperations", () => {
       );
       expect(findPaginatedPets).toBeDefined();
       expect(findPaginatedPets?.httpMethod).toBe("GET");
-      // Note: isPaginatable detection uses simplified regex which may not detect all cases
-      // The actual pagination support is validated via createSourceV2 integration tests
+      expect(findPaginatedPets?.isPaginatable).toBe(true);
+      expect(findPaginatedPets?.pageParamType).toBe("number");
+      expect(findPaginatedPets?.pageParamTypeKind).toBe("number");
     });
 
     it("should extract parameters correctly", async () => {
@@ -180,5 +181,27 @@ describe("parseOperations", () => {
       expect(ctx.serviceNames).toContain("addPet");
       expect(ctx.serviceNames).toContain("deletePet");
     });
+  });
+});
+
+describe("parseOperations - string pagination", () => {
+  const stringFileName = "parseOperations-string-pagination";
+
+  beforeAll(
+    async () =>
+      await generateTSClients(stringFileName, "string-pagination.yaml"),
+  );
+  afterAll(async () => await cleanOutputs(stringFileName));
+
+  it("should preserve a string page parameter type", async () => {
+    const project = new Project({ skipAddingFilesFromTsConfig: true });
+    project.addSourceFilesAtPaths(`${outputPath(stringFileName)}/**/*`);
+
+    const operations = await parseOperations(project, "cursor");
+    const listItems = operations.find((op) => op.methodName === "listItems");
+
+    expect(listItems?.isPaginatable).toBe(true);
+    expect(listItems?.pageParamType).toBe("Cursor");
+    expect(listItems?.pageParamTypeKind).toBe("string");
   });
 });

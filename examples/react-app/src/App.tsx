@@ -1,5 +1,5 @@
 import "./App.css";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   UseFindPetsKeyFn,
@@ -26,7 +26,15 @@ function App() {
   const { data: notDefined } = useGetNotDefined<undefined>();
   const { mutate: mutateNotDefined } = usePostNotDefined<undefined>();
 
-  const { mutate: addPet, isError } = useAddPet();
+  const { mutate: addPet, isError, isPending: isAddingPet } = useAddPet();
+  const addPetAbortController = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      addPetAbortController.current?.abort();
+    },
+    [],
+  );
 
   const [text, setText] = useState<string>("");
   const [errorText, setErrorText] = useState<string>();
@@ -53,9 +61,14 @@ function App() {
       <button
         type="button"
         onClick={() => {
+          addPetAbortController.current?.abort();
+          const controller = new AbortController();
+          addPetAbortController.current = controller;
+
           addPet(
             {
               body: { name: text },
+              signal: controller.signal,
             },
             {
               onSuccess: () => {
@@ -68,11 +81,23 @@ function App() {
                 console.log(error.response);
                 setErrorText(`Error: ${error.response?.data.message}`);
               },
+              onSettled: () => {
+                if (addPetAbortController.current === controller) {
+                  addPetAbortController.current = null;
+                }
+              },
             },
           );
         }}
       >
         Create a pet
+      </button>
+      <button
+        type="button"
+        disabled={!isAddingPet}
+        onClick={() => addPetAbortController.current?.abort()}
+      >
+        Cancel pet creation
       </button>
       {isError && (
         <p

@@ -24,6 +24,14 @@ const mockPaginatableOperation: OperationInfo = {
   parameters: [{ name: "page", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: true,
+  pageParamType: "number",
+  pageParamTypeKind: "number",
+};
+
+const mockStringPaginatableOperation: OperationInfo = {
+  ...mockPaginatableOperation,
+  pageParamType: "Cursor",
+  pageParamTypeKind: "string",
 };
 
 const mockRequiredParamsOperation: OperationInfo = {
@@ -69,7 +77,7 @@ describe("buildQueryOptions", () => {
         "queryOptions({ queryKey: Common.UseFindPetsKeyFn(clientOptions, queryKey)",
       );
       expect(initializer).toContain(
-        "queryFn: () => findPets({ ...clientOptions, throwOnError: true }).then(response => response.data)",
+        "queryFn: ({ signal }) => findPets({ ...clientOptions, signal, throwOnError: true }).then(response => response.data)",
       );
     });
 
@@ -124,7 +132,7 @@ describe("buildQueryOptions", () => {
         "infiniteQueryOptions({ queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey)",
       );
       expect(initializer).toContain(
-        "query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>",
+        "query: { ...clientOptions.query, page: pageParam as number }, signal, throwOnError: true } as Options<FindPaginatedPetsData, true>",
       );
       expect(initializer).toContain(
         "getNextPageParam: (response: unknown) => (response as { nextPage: number }).nextPage",
@@ -151,6 +159,20 @@ describe("buildQueryOptions", () => {
       const initializer = result?.declarations[0].initializer as string;
 
       expect(initializer).toContain('initialPageParam: "cursor-start",');
+    });
+
+    it("should preserve a string cursor type even for numeric-looking values", () => {
+      const result = buildInfiniteQueryOptionsFn(
+        mockStringPaginatableOperation,
+        mockContext,
+      );
+      const initializer = result?.declarations[0].initializer as string;
+
+      expect(initializer).toContain("page: pageParam as Cursor");
+      expect(initializer).toContain('initialPageParam: "1"');
+      expect(initializer).toContain(
+        "(response as { nextPage: Cursor }).nextPage",
+      );
     });
 
     it("should respect a custom pageParam and nested nextPageParam", () => {

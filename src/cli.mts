@@ -71,7 +71,7 @@ async function setupProgram() {
     )
     .option(
       "--useDateType",
-      "Use Date type instead of string for date types for models, this will not convert the data to a Date object",
+      "Use Date for date/date-time model properties and convert response values to Date objects",
     )
     .option("--debug", "Run in debug mode?")
     .option("--noSchemas", "Disable generating JSON schemas")
