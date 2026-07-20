@@ -12,6 +12,7 @@ export default defineConfig({
         "docs/**",
         "dist/**",
         "vitest.config.ts",
+        ".claude/**",
       ],
       reportOnFailure: true,
       thresholds: {
