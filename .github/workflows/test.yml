@@ -54,6 +54,9 @@ jobs:
       - name: Run tsc in nextjs-app
         run: pnpm --filter nextjs-app test:generated
 
+      - name: Run next build in nextjs-app
+        run: pnpm --filter nextjs-app build
+
       - name: Run tsc in tanstack-router-app
         run: pnpm --filter tanstack-router-app test:generated
 
