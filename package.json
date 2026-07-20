@@ -78,6 +78,13 @@
       "@hey-api/openapi-ts@0.99.0": "patches/@hey-api__openapi-ts@0.99.0.patch",
       "@hey-api/shared@0.5.0": "patches/@hey-api__shared@0.5.0.patch"
     },
+    "packageExtensions": {
+      "ofetch": {
+        "dependencies": {
+          "undici": "6.27.0"
+        }
+      }
+    },
     "overrides": {
       "@babel/core": "7.29.6",
       "@babel/helpers": "7.26.10",
