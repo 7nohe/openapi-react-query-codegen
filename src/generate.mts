@@ -29,22 +29,33 @@ export async function generate(options: LimitedUserConfig, version: string) {
         }
       : "@hey-api/typescript";
 
-  const sdkPlugin: NonNullable<UserConfig["plugins"]>[number] =
-    formattedOptions.noOperationId
+  const sdkPlugin: NonNullable<UserConfig["plugins"]>[number] = {
+    name: "@hey-api/sdk" as const,
+    ...(formattedOptions.noOperationId
       ? {
-          name: "@hey-api/sdk" as const,
           // `operationId: false` was deprecated in favor of `operations.nesting`
           operations: {
             nesting: "id" as const,
           },
         }
-      : "@hey-api/sdk";
+      : {}),
+    ...(formattedOptions.useDateType
+      ? { transformer: "@hey-api/transformers" as const }
+      : {}),
+  };
 
   const plugins: NonNullable<UserConfig["plugins"]>[number][] = [
     clientPlugin,
     typescriptPlugin,
     sdkPlugin,
   ];
+
+  if (formattedOptions.useDateType) {
+    plugins.push({
+      name: "@hey-api/transformers",
+      dates: "date",
+    });
+  }
 
   // Conditionally add schemas plugin
   if (!formattedOptions.noSchemas) {

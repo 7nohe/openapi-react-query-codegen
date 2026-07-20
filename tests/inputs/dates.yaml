@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: Dates API
+  version: 1.0.0
+paths:
+  /events:
+    get:
+      operationId: listEvents
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+components:
+  schemas:
+    Event:
+      type: object
+      required:
+        - createdAt
+      properties:
+        createdAt:
+          type: string
+          format: date-time

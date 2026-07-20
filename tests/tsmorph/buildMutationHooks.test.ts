@@ -95,6 +95,23 @@ describe("buildMutationHooks", () => {
       );
     });
 
+    it("should default to the complete SDK response so headers stay available", () => {
+      const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain("TData = Common.AddPetMutationResult");
+      expect(initializer).not.toContain('AddPetMutationResult["data"]');
+      expect(initializer).not.toContain("response.data");
+    });
+
+    it("should accept an AbortSignal through mutation client options", () => {
+      const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain("Options<AddPetData, true>");
+      expect(initializer).toContain("...clientOptions");
+    });
+
     it("should build useMutation hook for DELETE operation", () => {
       const result = buildUseMutationHook(
         mockDeleteOperation,

@@ -29,6 +29,14 @@ const mockPaginatableOperation: OperationInfo = {
   parameters: [{ name: "page", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: true,
+  pageParamType: "number",
+  pageParamTypeKind: "number",
+};
+
+const mockStringPaginatableOperation: OperationInfo = {
+  ...mockPaginatableOperation,
+  pageParamType: "Cursor",
+  pageParamTypeKind: "string",
 };
 
 const mockRequiredParamsOperation: OperationInfo = {
@@ -107,8 +115,9 @@ describe("buildQueryHooks", () => {
         "Common.UseFindPetsKeyFn(clientOptions, queryKey)",
       );
       expect(initializer).toContain(
-        "findPets({ ...clientOptions, throwOnError: true })",
+        "findPets({ ...clientOptions, signal, throwOnError: true })",
       );
+      expect(initializer).toContain("queryFn: ({ signal }) =>");
       expect(initializer).toContain("response.data as TData");
     });
 
@@ -152,7 +161,7 @@ describe("buildQueryHooks", () => {
         "clientOptions: Options<unknown, true> = {}",
       );
       expect(initializer).toContain(
-        "getStatus({ ...clientOptions, throwOnError: true })",
+        "getStatus({ ...clientOptions, signal, throwOnError: true })",
       );
     });
   });
@@ -191,7 +200,7 @@ describe("buildQueryHooks", () => {
         "clientOptions: Options<unknown, true> = {}",
       );
       expect(initializer).toContain(
-        "getStatus({ ...clientOptions, throwOnError: true })",
+        "getStatus({ ...clientOptions, signal, throwOnError: true })",
       );
     });
   });
@@ -249,6 +258,22 @@ describe("buildQueryHooks", () => {
       const initializer = result?.declarations[0].initializer as string;
 
       expect(initializer).toContain("page: pageParam as number");
+      expect(initializer).toContain("({ pageParam, signal }) =>");
+      expect(initializer).toContain("signal, throwOnError: true");
+    });
+
+    it("should preserve string cursor types and quote the initial value", () => {
+      const result = buildUseInfiniteQueryHook(
+        mockStringPaginatableOperation,
+        mockFetchContext,
+      );
+      const initializer = result?.declarations[0].initializer as string;
+
+      expect(initializer).toContain("page: pageParam as Cursor");
+      expect(initializer).toContain('initialPageParam: "1"');
+      expect(initializer).toContain(
+        "(response as { nextPage: Cursor }).nextPage",
+      );
     });
 
     it("should use unknown data type when not present in modelNames", () => {
@@ -278,8 +303,9 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain("queryClient.prefetchQuery");
       expect(initializer).toContain("Common.UseFindPetsKeyFn(clientOptions)");
       expect(initializer).toContain(
-        "findPets({ ...clientOptions, throwOnError: true })",
+        "findPets({ ...clientOptions, signal, throwOnError: true })",
       );
+      expect(initializer).toContain("queryFn: ({ signal }) =>");
       expect(initializer).toContain("response.data");
     });
 
@@ -326,7 +352,7 @@ describe("buildQueryHooks", () => {
         "clientOptions: Options<unknown, true> = {}",
       );
       expect(initializer).toContain(
-        "getStatus({ ...clientOptions, throwOnError: true })",
+        "getStatus({ ...clientOptions, signal, throwOnError: true })",
       );
     });
   });
@@ -369,7 +395,7 @@ describe("buildQueryHooks", () => {
         "clientOptions: Options<unknown, true> = {}",
       );
       expect(initializer).toContain(
-        "getStatus({ ...clientOptions, throwOnError: true })",
+        "getStatus({ ...clientOptions, signal, throwOnError: true })",
       );
     });
 
@@ -416,6 +442,7 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain("initialPageParam: 1");
       expect(initializer).toContain("getNextPageParam");
       expect(initializer).toContain("throwOnError: true");
+      expect(initializer).toContain("({ pageParam, signal }) =>");
     });
   });
 
@@ -453,6 +480,7 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         'Partial<Pick<UseSuspenseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>',
       );
+      expect(initializer).toContain("({ pageParam, signal }) =>");
     });
   });
 });

@@ -13,7 +13,35 @@ import type {
   GenerationContext,
   OperationInfo,
   OperationParameter,
+  PageParamTypeKind,
 } from "./types.mjs";
+
+type PageParamInfo = {
+  type: string;
+  typeKind: PageParamTypeKind;
+};
+
+function getPageParamTypeKind(type: ts.Type): PageParamTypeKind {
+  const types = type.isUnion()
+    ? type.types.filter(
+        (item) => !(item.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined)),
+      )
+    : [type];
+
+  if (
+    types.length > 0 &&
+    types.every((item) => item.flags & ts.TypeFlags.StringLike)
+  ) {
+    return "string";
+  }
+  if (
+    types.length > 0 &&
+    types.every((item) => item.flags & ts.TypeFlags.NumberLike)
+  ) {
+    return "number";
+  }
+  return "other";
+}
 
 /**
  * Extract parameter information from a method's variable declaration.
@@ -43,14 +71,18 @@ function extractParameters(
  * Get paginatable methods by checking if their Data type has the pageParam in query property.
  * Uses TypeScript compiler API for accurate AST traversal.
  */
-function getPaginatableMethods(project: Project, pageParam: string): string[] {
+function getPaginatableMethods(
+  project: Project,
+  pageParam: string,
+): Map<string, PageParamInfo> {
   const modelsFile = project
     .getSourceFiles()
     .find((sf) => sf.getFilePath().includes(modelsFileName));
 
-  if (!modelsFile) return [];
+  if (!modelsFile) return new Map();
 
-  const paginatableMethods: string[] = [];
+  const paginatableMethods = new Map<string, PageParamInfo>();
+  const typeChecker = project.getTypeChecker().compilerObject;
   const modelDeclarations = modelsFile.getExportedDeclarations();
   const entries = modelDeclarations.entries();
 
@@ -77,17 +109,27 @@ function getPaginatableMethods(project: Project, pageParam: string): string[] {
     const queryType = (query as ts.PropertySignature).type;
     if (!queryType || queryType.kind !== ts.SyntaxKind.TypeLiteral) continue;
 
-    const hasPageParam = (queryType as ts.TypeLiteralNode).members.some(
-      (m) => m.name?.getText() === pageParam,
+    const pageParamNode = (queryType as ts.TypeLiteralNode).members.find(
+      (m): m is ts.PropertySignature =>
+        ts.isPropertySignature(m) && m.name?.getText() === pageParam,
     );
 
-    if (hasPageParam) {
+    if (pageParamNode) {
       // Extract method name from Data type name (e.g., "FindPetsData" -> "findPets")
       const methodName = key.slice(0, -4); // Remove "Data" suffix
       // Convert first letter to lowercase
       const methodNameLower =
         methodName.charAt(0).toLowerCase() + methodName.slice(1);
-      paginatableMethods.push(methodNameLower);
+      const pageParamType = pageParamNode.type?.getText(
+        modelsFile.compilerNode,
+      );
+      const resolvedType = typeChecker.getTypeAtLocation(
+        pageParamNode.type ?? pageParamNode,
+      );
+      paginatableMethods.set(methodNameLower, {
+        type: pageParamType ?? "unknown",
+        typeKind: getPageParamTypeKind(resolvedType),
+      });
     }
   }
 
@@ -115,8 +157,8 @@ export async function parseOperations(
     const sdkParams = getVariableArrowFunctionParameters(desc.method);
     const allParamsOptional =
       sdkParams.length === 0 || sdkParams[0].isOptional();
-    const isPaginatable =
-      httpMethod === "GET" && paginatableMethods.includes(methodName);
+    const pageParamInfo = paginatableMethods.get(methodName);
+    const isPaginatable = httpMethod === "GET" && pageParamInfo !== undefined;
 
     return {
       methodName,
@@ -127,6 +169,8 @@ export async function parseOperations(
       parameters,
       allParamsOptional,
       isPaginatable,
+      pageParamType: isPaginatable ? pageParamInfo.type : undefined,
+      pageParamTypeKind: isPaginatable ? pageParamInfo.typeKind : undefined,
     };
   });
 }

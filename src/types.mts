@@ -19,7 +19,13 @@ export interface OperationInfo {
   allParamsOptional: boolean;
   /** Whether this operation supports pagination (for infinite queries) */
   isPaginatable: boolean;
+  /** Type of the configured page query parameter */
+  pageParamType?: string;
+  /** Resolved primitive kind of the configured page query parameter */
+  pageParamTypeKind?: PageParamTypeKind;
 }
+
+export type PageParamTypeKind = "string" | "number" | "other";
 
 export interface OperationParameter {
   /** Parameter name */

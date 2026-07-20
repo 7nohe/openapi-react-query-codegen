@@ -10,7 +10,7 @@ import {
   buildInfiniteClientOptionsParam,
   buildPagedQueryFn,
   formatInitialPageParam,
-  SDK_CALL_ARGS,
+  QUERY_SDK_CALL_ARGS,
 } from "./buildQueryHooks.mjs";
 
 /**
@@ -32,7 +32,7 @@ export function buildQueryOptionsFn(
   const fnName = `${op.methodName}Options`;
   const clientOptionsParam = buildClientOptionsParam(op, ctx);
 
-  const queryFn = `() => ${op.methodName}(${SDK_CALL_ARGS}).then(response => response.data)`;
+  const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data)`;
   const body = `queryOptions({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn} })`;
 
   return {
@@ -73,7 +73,7 @@ export function buildInfiniteQueryOptionsFn(
   const fnName = `${op.methodName}InfiniteOptions`;
 
   const queryFn = buildPagedQueryFn(op, ctx, false);
-  const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx)}`;
+  const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
 
   const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions} })`;
 
