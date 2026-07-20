@@ -1,0 +1,20 @@
+diff --git a/dist/index.d.mts b/dist/index.d.mts
+index f2ca29144731f9320cea459d0e290352e2701e92..4255212e3846fee11fa9dd77a782d5ce1a2e00c9 100644
+--- a/dist/index.d.mts
++++ b/dist/index.d.mts
+@@ -1475,6 +1475,7 @@ declare class ImplFuncTsDsl<M extends FuncMode = 'arrow'> extends Mixed$31 {
+   decl(): FuncTsDsl<'decl'>;
+   /** Switches the function to a function expression form. */
+   expr(): FuncTsDsl<'expr'>;
++  // @ts-ignore TS2416 - bundled declaration has incorrect base type TsDsl<ArrowFunction>; conditional return is valid at source level
+   toAst(): M extends 'decl' ? ts.FunctionDeclaration : M extends 'expr' ? ts.FunctionExpression : ts.ArrowFunction;
+   $validate(): asserts this;
+   private missingRequiredCalls;
+@@ -1848,6 +1849,7 @@ declare class ImplForTsDsl<M extends ForMode = 'for'> extends Mixed$16 {
+   of(iterable?: ForIterable): ForTsDsl<'of'>;
+   /** Sets the update expression (e.g., `i++`). */
+   update(update: ForIterable): this;
++  // @ts-ignore TS2416 - bundled declaration has incorrect base type TsDsl<ForStatement>; conditional return is valid at source level
+   toAst(): M extends 'for' ? ts.ForStatement : M extends 'of' ? ts.ForOfStatement : ts.ForInStatement;
+   $validate(): asserts this is this & {
+     _iterableOrUpdate: ForIterable;

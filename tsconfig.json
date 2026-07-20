@@ -6,12 +6,10 @@
     "strict": true,
     "esModuleInterop": true,
     "noImplicitAny": true,
-    "downlevelIteration": true,
     "resolveJsonModule": true,
     "outDir": "dist",
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
-    "baseUrl": ".",
     "rootDir": "src",
     "declaration": true
   },
