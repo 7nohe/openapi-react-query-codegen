@@ -11,7 +11,8 @@
     "outDir": "dist",
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
-    "rootDir": "src"
+    "rootDir": "src",
+    "declaration": true
   },
   "include": ["src"]
 }
