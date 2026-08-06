@@ -11,9 +11,13 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "OpenAPI React Query Codegen",
-      social: {
-        github: "https://github.com/7nohe/openapi-react-query-codegen",
-      },
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/7nohe/openapi-react-query-codegen",
+        },
+      ],
       head: [
         {
           tag: "meta",
@@ -36,7 +40,7 @@ export default defineConfig({
         },
         {
           label: "Examples",
-          autogenerate: { directory: "examples" },
+          items: [{ autogenerate: { directory: "examples" } }],
         },
         {
           slug: "contributing",
