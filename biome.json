@@ -5,7 +5,7 @@
     "includes": [
       "**",
       "!**/.vscode",
-      "!**/.claude",
+      "!.claude",
       "!**/dist",
       "!**/examples/react-app/openapi",
       "!**/coverage",
