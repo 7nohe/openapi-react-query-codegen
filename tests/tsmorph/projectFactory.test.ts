@@ -95,14 +95,27 @@ describe("projectFactory", () => {
       expect(result.namedImports).toContainEqual({ name: "useQuery" });
       expect(result.namedImports).toContainEqual({ name: "useSuspenseQuery" });
       expect(result.namedImports).toContainEqual({ name: "useMutation" });
-      expect(result.namedImports).toContainEqual({ name: "UseQueryResult" });
-      expect(result.namedImports).toContainEqual({ name: "UseQueryOptions" });
+      // Type symbols are emitted with `isTypeOnly` so generated code
+      // compiles under `verbatimModuleSyntax`.
+      expect(result.namedImports).toContainEqual({
+        name: "UseQueryResult",
+        isTypeOnly: true,
+      });
+      expect(result.namedImports).toContainEqual({
+        name: "UseQueryOptions",
+        isTypeOnly: true,
+      });
       expect(result.namedImports).toContainEqual({
         name: "UseMutationOptions",
+        isTypeOnly: true,
       });
-      expect(result.namedImports).toContainEqual({ name: "UseMutationResult" });
+      expect(result.namedImports).toContainEqual({
+        name: "UseMutationResult",
+        isTypeOnly: true,
+      });
       expect(result.namedImports).toContainEqual({
         name: "UseSuspenseQueryOptions",
+        isTypeOnly: true,
       });
     });
   });
@@ -127,6 +140,9 @@ describe("projectFactory", () => {
       expect(result).not.toBeNull();
       expect(result?.kind).toBe(StructureKind.ImportDeclaration);
       expect(result?.moduleSpecifier).toBe("../requests/types.gen");
+      // Models are pure types; a type-only declaration keeps generated
+      // code compatible with `verbatimModuleSyntax`.
+      expect(result?.isTypeOnly).toBe(true);
       expect(result?.namedImports).toContainEqual({ name: "Pet" });
       expect(result?.namedImports).toContainEqual({ name: "NewPet" });
       expect(result?.namedImports).toContainEqual({ name: "Error" });
