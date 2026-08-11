@@ -61,7 +61,14 @@ jobs:
 
       - name: Publish release
         if: ${{ github.event_name == 'push' }}
-        run: pnpm publish --no-git-checks
+        # Prerelease versions (e.g. 3.0.0-beta.1) go to the beta dist-tag so
+        # they never override latest
+        run: |
+          if node -e "process.exit(require('./package.json').version.includes('-') ? 0 : 1)"; then
+            pnpm publish --no-git-checks --tag beta
+          else
+            pnpm publish --no-git-checks
+          fi
 
       - name: Publish prerelease
         if: ${{ github.event_name == 'issue_comment' }}

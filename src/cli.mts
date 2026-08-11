@@ -23,6 +23,7 @@ export type LimitedUserConfig = {
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string | number;
+  omitInitialPageParam?: boolean;
 };
 
 async function setupProgram() {
@@ -70,7 +71,7 @@ async function setupProgram() {
     )
     .option(
       "--useDateType",
-      "Use Date type instead of string for date types for models, this will not convert the data to a Date object",
+      "Use Date for date/date-time model properties and convert response values to Date objects",
     )
     .option("--debug", "Run in debug mode?")
     .option("--noSchemas", "Disable generating JSON schemas")
@@ -91,6 +92,10 @@ async function setupProgram() {
       "nextPage",
     )
     .option("--initialPageParam <value>", "Initial page value to query", "1")
+    .option(
+      "--omitInitialPageParam",
+      "Send no initial page parameter at all (overrides --initialPageParam)",
+    )
     .parse();
 
   const options = program.opts<LimitedUserConfig>();

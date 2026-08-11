@@ -35,6 +35,7 @@ export default defineConfig({
             { slug: "guides/introduction" },
             { slug: "guides/usage" },
             { slug: "guides/cli-options" },
+            { slug: "guides/migrating-to-v3" },
           ],
         },
         {

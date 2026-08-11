@@ -1,35 +1,16 @@
 import type { PathLike } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
-import type {
-  ClassDeclaration,
-  ParameterDeclaration,
-  SourceFile,
-  Type,
-  VariableDeclaration,
+import {
+  ArrowFunction,
+  type ClassDeclaration,
+  type ParameterDeclaration,
+  type SourceFile,
+  type VariableDeclaration,
 } from "ts-morph";
-import { ArrowFunction } from "ts-morph";
 import ts from "typescript";
 import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
-
-export const TData = ts.factory.createIdentifier("TData");
-export const TError = ts.factory.createIdentifier("TError");
-export const TContext = ts.factory.createIdentifier("TContext");
-
-export const EqualsOrGreaterThanToken = ts.factory.createToken(
-  ts.SyntaxKind.EqualsGreaterThanToken,
-);
-
-export const QuestionToken = ts.factory.createToken(
-  ts.SyntaxKind.QuestionToken,
-);
-
-export const queryKeyGenericType =
-  ts.factory.createTypeReferenceNode("TQueryKey");
-export const queryKeyConstraint = ts.factory.createTypeReferenceNode("Array", [
-  ts.factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
-]);
 
 export const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -97,6 +78,12 @@ export function BuildCommonTypeName(name: string | ts.Identifier) {
  * @returns The parsed number or NaN if the value is not a valid number.
  */
 export function safeParseNumber(value: unknown): number {
+  // `Number("")` is 0, which would silently turn a blank option such as
+  // `--initialPageParam ""` into a numeric 0. Treat blank strings as NaN so
+  // callers keep the original value.
+  if (typeof value === "string" && value.trim() === "") {
+    return Number.NaN;
+  }
   const parsed = Number(value);
   if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
     return parsed;
@@ -199,164 +186,4 @@ export function buildRequestsOutputPath(outputPath: string) {
 
 export function buildQueriesOutputPath(outputPath: string) {
   return path.join(outputPath, queriesOutputPath);
-}
-
-export function getQueryKeyFnName(queryKey: string) {
-  return `${capitalizeFirstLetter(queryKey)}Fn`;
-}
-
-/**
- * Create QueryKey/MutationKey exports
- */
-export function createQueryKeyExport({
-  methodName,
-  queryKey,
-}: {
-  methodName: string;
-  queryKey: string;
-}) {
-  return ts.factory.createVariableStatement(
-    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createVariableDeclarationList(
-      [
-        ts.factory.createVariableDeclaration(
-          ts.factory.createIdentifier(queryKey),
-          undefined,
-          undefined,
-          ts.factory.createStringLiteral(
-            `${capitalizeFirstLetter(methodName)}`,
-          ),
-        ),
-      ],
-      ts.NodeFlags.Const,
-    ),
-  );
-}
-
-export function createQueryKeyFnExport(
-  queryKey: string,
-  method: VariableDeclaration,
-  type: "query" | "mutation" = "query",
-  modelNames: string[] = [],
-) {
-  // Mutation keys don't require clientOptions
-  const params =
-    type === "query"
-      ? getRequestParamFromMethod(method, undefined, modelNames)
-      : null;
-
-  // override key is used to allow the user to override the the queryKey values
-  const overrideKey = ts.factory.createParameterDeclaration(
-    undefined,
-    undefined,
-    ts.factory.createIdentifier(type === "query" ? "queryKey" : "mutationKey"),
-    QuestionToken,
-    ts.factory.createTypeReferenceNode("Array<unknown>", []),
-  );
-
-  return ts.factory.createVariableStatement(
-    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createVariableDeclarationList(
-      [
-        ts.factory.createVariableDeclaration(
-          ts.factory.createIdentifier(getQueryKeyFnName(queryKey)),
-          undefined,
-          undefined,
-          ts.factory.createArrowFunction(
-            undefined,
-            undefined,
-            params ? [params, overrideKey] : [overrideKey],
-            undefined,
-            EqualsOrGreaterThanToken,
-            type === "query"
-              ? queryKeyFn(queryKey, method)
-              : mutationKeyFn(queryKey),
-          ),
-        ),
-      ],
-      ts.NodeFlags.Const,
-    ),
-  );
-}
-
-function queryKeyFn(
-  queryKey: string,
-  method: VariableDeclaration,
-): ts.Expression {
-  return ts.factory.createArrayLiteralExpression(
-    [
-      ts.factory.createIdentifier(queryKey),
-      ts.factory.createSpreadElement(
-        ts.factory.createParenthesizedExpression(
-          ts.factory.createBinaryExpression(
-            ts.factory.createIdentifier("queryKey"),
-            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
-            getVariableArrowFunctionParameters(method)
-              ? // [...clientOptions]
-                ts.factory.createArrayLiteralExpression([
-                  ts.factory.createIdentifier("clientOptions"),
-                ])
-              : // []
-                ts.factory.createArrayLiteralExpression(),
-          ),
-        ),
-      ),
-    ],
-    false,
-  );
-}
-
-function mutationKeyFn(mutationKey: string): ts.Expression {
-  return ts.factory.createArrayLiteralExpression(
-    [
-      ts.factory.createIdentifier(mutationKey),
-      ts.factory.createSpreadElement(
-        ts.factory.createParenthesizedExpression(
-          ts.factory.createBinaryExpression(
-            ts.factory.createIdentifier("mutationKey"),
-            ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
-            ts.factory.createArrayLiteralExpression(),
-          ),
-        ),
-      ),
-    ],
-    false,
-  );
-}
-
-export function getRequestParamFromMethod(
-  method: VariableDeclaration,
-  pageParam?: string,
-  modelNames: string[] = [],
-) {
-  const sdkParams = getVariableArrowFunctionParameters(method);
-  if (!sdkParams.length) {
-    return null;
-  }
-  const methodName = getNameFromVariable(method);
-
-  // Use the SDK function's parameter optionality as the authoritative check.
-  // Generic types like Options<XData, ThrowOnError> may not resolve correctly
-  // via extractPropertiesFromObjectParam for type alias properties (path, url).
-  const areAllPropertiesOptional = sdkParams[0].isOptional();
-
-  return ts.factory.createParameterDeclaration(
-    undefined,
-    undefined,
-    ts.factory.createIdentifier("clientOptions"),
-    undefined,
-    ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("Options"), [
-      ts.factory.createTypeReferenceNode(
-        modelNames.includes(`${capitalizeFirstLetter(methodName)}Data`)
-          ? `${capitalizeFirstLetter(methodName)}Data`
-          : "unknown",
-      ),
-      ts.factory.createTypeReferenceNode(ts.factory.createIdentifier("true")),
-    ]),
-    // if all params are optional, we create an empty object literal
-    // so the hook can be called without any parameters
-    areAllPropertiesOptional
-      ? ts.factory.createObjectLiteralExpression()
-      : undefined,
-  );
 }

@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { type UserConfig, createClient } from "@hey-api/openapi-ts";
+import { createClient, type UserConfig } from "@hey-api/openapi-ts";
 import type { LimitedUserConfig } from "./cli.mjs";
 import {
   buildQueriesOutputPath,
@@ -51,22 +51,33 @@ export async function generate(options: LimitedUserConfig, version: string) {
         }
       : "@hey-api/typescript";
 
-  const sdkPlugin: NonNullable<UserConfig["plugins"]>[number] =
-    formattedOptions.noOperationId
+  const sdkPlugin: NonNullable<UserConfig["plugins"]>[number] = {
+    name: "@hey-api/sdk" as const,
+    ...(formattedOptions.noOperationId
       ? {
-          name: "@hey-api/sdk" as const,
           // `operationId: false` was deprecated in favor of `operations.nesting`
           operations: {
             nesting: "id" as const,
           },
         }
-      : "@hey-api/sdk";
+      : {}),
+    ...(formattedOptions.useDateType
+      ? { transformer: "@hey-api/transformers" as const }
+      : {}),
+  };
 
   const plugins: NonNullable<UserConfig["plugins"]>[number][] = [
     clientPlugin,
     typescriptPlugin,
     sdkPlugin,
   ];
+
+  if (formattedOptions.useDateType) {
+    plugins.push({
+      name: "@hey-api/transformers",
+      dates: "date",
+    });
+  }
 
   // Conditionally add schemas plugin
   if (!formattedOptions.noSchemas) {
@@ -106,11 +117,12 @@ export async function generate(options: LimitedUserConfig, version: string) {
 
   const source = await createSource({
     outputPath: openApiOutputPath,
-    client: formattedOptions.client,
+    client: clientPlugin,
     version,
     pageParam: formattedOptions.pageParam,
     nextPageParam: formattedOptions.nextPageParam,
     initialPageParam: formattedOptions.initialPageParam.toString(),
+    omitInitialPageParam: formattedOptions.omitInitialPageParam ?? false,
   });
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);

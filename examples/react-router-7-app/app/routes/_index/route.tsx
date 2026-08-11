@@ -1,11 +1,10 @@
-import { useState } from "react";
-
 import {
+  dehydrate,
   HydrationBoundary,
   QueryClient,
-  dehydrate,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   UseFindPetsKeyFn,
   useAddPet,
@@ -91,9 +90,7 @@ function Pets() {
       )}
       <ul>
         {Array.isArray(data) &&
-          data?.map((pet, index) => (
-            <li key={`${pet.id}-${index}`}>{pet.name}</li>
-          ))}
+          data?.map((pet) => <li key={pet.id}>{pet.name}</li>)}
       </ul>
     </div>
   );

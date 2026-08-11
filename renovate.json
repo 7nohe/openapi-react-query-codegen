@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "ignorePaths": ["examples/**", "docs/**"],
+  "packageRules": [
+    {
+      "description": "hey-api is exact-pinned; every update PR must pass the full snapshot suite before merging (see the stability policy in README)",
+      "matchPackageNames": ["@hey-api/openapi-ts", "@hey-api/shared"],
+      "rangeStrategy": "pin",
+      "groupName": "hey-api",
+      "prPriority": 10
+    },
+    {
+      "description": "Group non-major dev tooling updates to keep PR noise low",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev tooling (non-major)"
+    }
+  ]
+}

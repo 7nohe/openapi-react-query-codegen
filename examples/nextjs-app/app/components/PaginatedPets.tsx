@@ -1,8 +1,8 @@
 "use client";
 
-import { useFindPaginatedPetsInfinite } from "@/openapi/queries/infiniteQueries";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import React from "react";
+import { useFindPaginatedPetsInfinite } from "@/openapi/queries/infiniteQueries";
 
 export default function PaginatedPets() {
   const { data, fetchNextPage } = useFindPaginatedPetsInfinite({
@@ -16,7 +16,7 @@ export default function PaginatedPets() {
     <>
       <h1>Pet List with Pagination</h1>
       <ul>
-        {data?.pages.map((group, i) => (
+        {data?.pages.map((group) => (
           <React.Fragment key={group?.pets?.at(0)?.id}>
             {group?.pets?.map((pet) => (
               <li key={pet.id}>{pet.name}</li>

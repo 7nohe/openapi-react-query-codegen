@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: Cursor API
+  version: 1.0.0
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Cursor"
+      responses:
+        "200":
+          description: Items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nextCursor:
+                    $ref: "#/components/schemas/Cursor"
+                  items:
+                    type: array
+                    items:
+                      type: string
+components:
+  schemas:
+    Cursor:
+      type: string

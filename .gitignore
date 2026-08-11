@@ -26,3 +26,5 @@ dist-ssr
 openapi
 *.tsbuildinfo
 coverage
+
+.agents

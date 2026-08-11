@@ -15,8 +15,8 @@ import {
   exists,
   extractPropertiesFromObjectParam,
   formatOptions,
-  getClassNameFromClassNode,
   getClassesFromService,
+  getClassNameFromClassNode,
   getNameFromVariable,
   getShortType,
   getVariableArrowFunctionParameters,
@@ -37,6 +37,12 @@ describe("common", () => {
 
     const falseVal = safeParseNumber(false);
     expect(falseVal).toBe(0);
+
+    const emptyString = safeParseNumber("");
+    expect(emptyString).toBeNaN();
+
+    const blankString = safeParseNumber("   ");
+    expect(blankString).toBeNaN();
   });
 
   test("capitalizeFirstLetter", () => {
@@ -164,6 +170,19 @@ describe("common", () => {
     const formatted = formatOptions(options);
 
     expect(formatted.debug).toStrictEqual(123);
+  });
+
+  test("formatOptions - preserves a blank initial page parameter", () => {
+    const options: LimitedUserConfig = {
+      input: "input",
+      output: "output",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "",
+    };
+    const formatted = formatOptions(options);
+
+    expect(formatted.initialPageParam).toBe("");
   });
 
   test("formatOptions - leaves other values unchanged", () => {

@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
 import { findNearestTsConfigPath, generate } from "../src/generate.mjs";
@@ -27,7 +28,7 @@ describe("generate", () => {
       operationId: true,
     };
     await generate(options, "1.0.0");
-  });
+  }, 60000);
 
   afterAll(async () => {
     if (existsSync(path.join(__dirname, "outputs"))) {
@@ -43,6 +44,10 @@ describe("generate", () => {
 
   test("queries.ts", () => {
     expect(readOutput("queries.ts")).toMatchSnapshot();
+  });
+
+  test("queryOptions.ts", () => {
+    expect(readOutput("queryOptions.ts")).toMatchSnapshot();
   });
 
   test("infiniteQueries.ts", () => {
@@ -131,6 +136,58 @@ describe("generate - noSchemas option", () => {
 
   test("queries.ts", () => {
     expect(readNoSchemasOutput("queries.ts")).toMatchSnapshot();
+  });
+});
+
+describe("generate - useDateType", () => {
+  const outputDir = "outputs-generate-dates";
+  const readDateOutput = (fileName: string) =>
+    readFileSync(
+      path.join(__dirname, outputDir, "requests", fileName),
+      "utf-8",
+    );
+
+  beforeAll(async () => {
+    const options: LimitedUserConfig = {
+      input: path.join(__dirname, "inputs", "dates.yaml"),
+      output: path.join("tests", outputDir),
+      client: "@hey-api/client-fetch",
+      useDateType: true,
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
+    };
+    await generate(options, "1.0.0");
+  });
+
+  afterAll(async () => {
+    if (existsSync(path.join(__dirname, outputDir))) {
+      await rm(path.join(__dirname, outputDir), { recursive: true });
+    }
+  });
+
+  test("uses Date in generated model types", () => {
+    expect(readDateOutput("types.gen.ts")).toContain("createdAt: Date");
+  });
+
+  test("wires the runtime date transformer into the SDK", async () => {
+    const transformer = readDateOutput("transformers.gen.ts");
+    expect(transformer).toContain("new Date");
+    expect(transformer).toContain("createdAt");
+
+    const sdk = readDateOutput("sdk.gen.ts");
+    expect(sdk).toContain("listEventsResponseTransformer");
+    expect(sdk).toContain("responseTransformer: listEventsResponseTransformer");
+
+    const transformerModule = await import(
+      pathToFileURL(
+        path.join(__dirname, outputDir, "requests", "transformers.gen.ts"),
+      ).href
+    );
+    const transformed = await transformerModule.listEventsResponseTransformer([
+      { createdAt: "2026-07-20T00:00:00.000Z" },
+    ]);
+    expect(transformed[0].createdAt).toBeInstanceOf(Date);
   });
 });
 

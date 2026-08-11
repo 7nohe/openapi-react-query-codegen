@@ -25,6 +25,10 @@ Name of the response parameter used for next page. The default value is `nextPag
 
 Initial page value to infinite query. The default value is `1`.
 
+### --omitInitialPageParam
+
+Send no initial page parameter at all. When set, the generated infinite queries use `initialPageParam: undefined` and omit the page parameter from the first request entirely, so the initial page is fetched without it. Useful for APIs that expect no page parameter (or an empty one) on the first request. This overrides `--initialPageParam`.
+
 ## Client Options
 
 The generated clients (under the `openapi/requests` directory) are produced by `@hey-api/openapi-ts` using its plugins system. The CLI options below are mapped to the corresponding plugin configurations.
@@ -38,6 +42,8 @@ The available options are:
 
 - `@hey-api/client-fetch`
 - `@hey-api/client-axios`
+
+Note: these client plugins are provided by `@hey-api/openapi-ts`, so you don't need to install `@hey-api/client-fetch` or `@hey-api/client-axios` separately. If you use the axios client, you still need to add `axios` to your project dependencies.
 
 More details about the clients can be found in [Hey API Documentation](https://heyapi.vercel.app/openapi-ts/clients.html)
 
@@ -71,9 +77,9 @@ The available options are:
 
 ### --useDateType
 
-> **Deprecated:** This option is currently accepted but has no effect. It will be removed in a future version.
-
-Use Date type instead of string for date. The default value is `false`.
+Use `Date` instead of `string` for `date` and `date-time` model properties.
+Generated SDK transformers also convert matching response values into `Date`
+objects at runtime. The default value is `false`.
 
 ### --debug
 
@@ -92,4 +98,3 @@ The available options are:
 
 - `json`
 - `form`
-
