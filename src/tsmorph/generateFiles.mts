@@ -32,48 +32,15 @@ import {
   buildQueryOptionsFn,
 } from "./buildQueryOptions.mjs";
 import {
-  buildAxiosErrorImport,
   buildClientImport,
+  buildCommonFileImports,
   buildCommonImport,
+  buildHookFileImports,
   buildModelImport,
-  buildQueryImport,
   buildQueryOptionsImport,
   buildServiceImport,
   createGenerationProject,
 } from "./projectFactory.mjs";
-
-/**
- * Build imports for common.ts file.
- */
-function buildCommonFileImports(
-  ctx: GenerationContext,
-): ImportDeclarationStructure[] {
-  const imports: ImportDeclarationStructure[] = [
-    buildClientImport(ctx),
-    buildQueryImport(),
-    buildServiceImport(ctx),
-  ];
-
-  const modelImport = buildModelImport(ctx);
-  if (modelImport) {
-    imports.push(modelImport);
-  }
-
-  if (ctx.client === "@hey-api/client-axios") {
-    imports.push(buildAxiosErrorImport());
-  }
-
-  return imports;
-}
-
-/**
- * Build imports for hook files (queries, suspense, infinite, prefetch, ensure).
- */
-function buildHookFileImports(
-  ctx: GenerationContext,
-): ImportDeclarationStructure[] {
-  return [buildCommonImport(), ...buildCommonFileImports(ctx)];
-}
 
 /**
  * Generate the index.ts file content.
@@ -236,12 +203,14 @@ function generateSuspenseFile(
     sourceFile.addVariableStatement(buildUseSuspenseQueryHook(op, ctx));
   }
 
-  // Add useSuspenseInfiniteQuery hooks for paginatable operations
-  for (const op of getOperations.filter((o) => o.isPaginatable)) {
-    const hook = buildUseSuspenseInfiniteQueryHook(op, ctx);
-    if (hook) {
-      sourceFile.addVariableStatement(hook);
-    }
+  // Add useSuspenseInfiniteQuery hooks. The builder returns null for
+  // non-paginatable operations, so dropping the nulls yields exactly the
+  // paginatable subset.
+  const suspenseInfiniteHooks = getOperations
+    .map((op) => buildUseSuspenseInfiniteQueryHook(op, ctx))
+    .filter((hook) => hook !== null);
+  for (const hook of suspenseInfiniteHooks) {
+    sourceFile.addVariableStatement(hook);
   }
 
   return sourceFile.getFullText();
@@ -264,17 +233,16 @@ function generateInfiniteQueriesFile(
   // Add imports
   sourceFile.addImportDeclarations(buildHookFileImports(ctx));
 
-  // Only paginatable GET operations
-  const paginatableOperations = operations.filter(
-    (op) => op.httpMethod === "GET" && op.isPaginatable,
-  );
+  // Only GET operations can be paginatable
+  const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
-  // Add useInfiniteQuery hooks
-  for (const op of paginatableOperations) {
-    const hook = buildUseInfiniteQueryHook(op, ctx);
-    if (hook) {
-      sourceFile.addVariableStatement(hook);
-    }
+  // Add useInfiniteQuery hooks. The builder returns null for non-paginatable
+  // operations, so dropping the nulls yields exactly the paginatable subset.
+  const infiniteHooks = getOperations
+    .map((op) => buildUseInfiniteQueryHook(op, ctx))
+    .filter((hook) => hook !== null);
+  for (const hook of infiniteHooks) {
+    sourceFile.addVariableStatement(hook);
   }
 
   return sourceFile.getFullText();
@@ -305,12 +273,14 @@ function generatePrefetchFile(
     sourceFile.addVariableStatement(buildPrefetchFn(op, ctx));
   }
 
-  // Add prefetchInfiniteQuery functions for paginatable operations
-  for (const op of getOperations.filter((o) => o.isPaginatable)) {
-    const fn = buildPrefetchInfiniteQueryFn(op, ctx);
-    if (fn) {
-      sourceFile.addVariableStatement(fn);
-    }
+  // Add prefetchInfiniteQuery functions. The builder returns null for
+  // non-paginatable operations, so dropping the nulls yields exactly the
+  // paginatable subset.
+  const prefetchInfiniteFns = getOperations
+    .map((op) => buildPrefetchInfiniteQueryFn(op, ctx))
+    .filter((fn) => fn !== null);
+  for (const fn of prefetchInfiniteFns) {
+    sourceFile.addVariableStatement(fn);
   }
 
   return sourceFile.getFullText();
