@@ -123,7 +123,11 @@ describe("createSource - digit-leading operationId (#213)", () => {
   });
   afterAll(async () => await cleanOutputs(prefix));
 
-  test("emits infinite hooks and output that typechecks", async () => {
+  // Type-checking the generated output against the real @tanstack/react-query
+  // types takes longer than the default 5s timeout on CI runners
+  test("emits infinite hooks and output that typechecks", {
+    timeout: 60_000,
+  }, async () => {
     const source = await createSource({
       outputPath: path.join(dir, "requests"),
       version: "1.0.0",
