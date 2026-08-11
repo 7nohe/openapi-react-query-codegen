@@ -56,14 +56,14 @@ export function buildQueryImport(): ImportDeclarationStructure {
       { name: "useInfiniteQuery" },
       { name: "useSuspenseInfiniteQuery" },
       { name: "useMutation" },
-      { name: "UseQueryResult" },
-      { name: "UseQueryOptions" },
-      { name: "UseInfiniteQueryOptions" },
-      { name: "UseSuspenseInfiniteQueryOptions" },
-      { name: "UseMutationOptions" },
-      { name: "UseMutationResult" },
-      { name: "UseSuspenseQueryOptions" },
-      { name: "InfiniteData" },
+      { name: "UseQueryResult", isTypeOnly: true },
+      { name: "UseQueryOptions", isTypeOnly: true },
+      { name: "UseInfiniteQueryOptions", isTypeOnly: true },
+      { name: "UseSuspenseInfiniteQueryOptions", isTypeOnly: true },
+      { name: "UseMutationOptions", isTypeOnly: true },
+      { name: "UseMutationResult", isTypeOnly: true },
+      { name: "UseSuspenseQueryOptions", isTypeOnly: true },
+      { name: "InfiniteData", isTypeOnly: true },
       { name: "FetchQueryOptions", isTypeOnly: true },
       { name: "FetchInfiniteQueryOptions", isTypeOnly: true },
       { name: "EnsureQueryDataOptions", isTypeOnly: true },
@@ -97,6 +97,8 @@ export function buildServiceImport(
 
 /**
  * Build import structure for models.
+ * Emitted as a type-only import so generated code compiles under
+ * `verbatimModuleSyntax` (enabled by default in recent Vite templates).
  */
 export function buildModelImport(
   ctx: GenerationContext,
@@ -108,6 +110,7 @@ export function buildModelImport(
   return {
     kind: StructureKind.ImportDeclaration,
     moduleSpecifier: "../requests/types.gen",
+    isTypeOnly: true,
     namedImports: ctx.modelNames.map((name) => ({ name })),
   };
 }
