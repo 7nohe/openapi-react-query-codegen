@@ -94,12 +94,15 @@ export function getPageType(op: OperationInfo): string {
  * TQueryFnData the infinite options are instantiated with (#203). Spelled as
  * a cast rather than `!` because generated code is linted downstream, and a
  * non-null assertion trips biome's noNonNullAssertion.
+ *
+ * Only ever called for paginatable operations, so the `<Method>Data` type is
+ * guaranteed to exist — see buildInfiniteClientOptionsType for why.
  */
 export function buildPagedQueryFn(
   op: OperationInfo,
   ctx: GenerationContext,
 ): string {
-  const dataTypeName = getDataTypeName(op, ctx);
+  const dataTypeName = `${op.capitalizedMethodName}Data`;
   const thenClause = `.then(response => response.data as ${getPageType(op)})`;
   const pageParamType = getPageParamType(op);
   // When the initial page param is omitted, the first request must send no

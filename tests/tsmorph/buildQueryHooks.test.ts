@@ -62,16 +62,6 @@ const mockNoParamsOperation: OperationInfo = {
   isPaginatable: false,
 };
 
-const mockPaginatableNoDataOperation: OperationInfo = {
-  methodName: "listThings",
-  capitalizedMethodName: "ListThings",
-  httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [],
-  allParamsOptional: true,
-  isPaginatable: true,
-};
-
 const mockFetchContext: GenerationContext = {
   client: "@hey-api/client-fetch",
   modelNames: [
@@ -318,18 +308,6 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain('initialPageParam: "1"');
       expect(initializer).toContain(
         "(response as { nextPage: Cursor }).nextPage",
-      );
-    });
-
-    it("should use unknown data type when not present in modelNames", () => {
-      const result = buildUseInfiniteQueryHook(
-        mockPaginatableNoDataOperation,
-        mockUnknownDataContext,
-      );
-      const initializer = result?.declarations[0].initializer as string;
-
-      expect(initializer).toContain(
-        "clientOptions: Common.ListThingsInfiniteClientOptions = {}",
       );
     });
   });

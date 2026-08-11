@@ -219,15 +219,6 @@ describe("buildCommon", () => {
         'Omit<Options<FindPaginatedPetsData, true>, "query"> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> }',
       );
     });
-
-    it("should fall back to Options<unknown, true> without a Data type", () => {
-      const result = buildInfiniteClientOptionsType(
-        mockPaginatableOperation,
-        mockContext,
-      );
-
-      expect(result.type).toBe("Options<unknown, true>");
-    });
   });
 
   describe("buildInfiniteQueryKeyConst", () => {
@@ -252,6 +243,17 @@ describe("buildCommon", () => {
       );
       expect(result.declarations[0].initializer).toBe(
         "(clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])]",
+      );
+    });
+
+    it("should omit the default value when the operation has required params", () => {
+      const result = buildInfiniteQueryKeyFn({
+        ...mockPaginatableOperation,
+        allParamsOptional: false,
+      });
+
+      expect(result.declarations[0].initializer).toBe(
+        "(clientOptions: FindPaginatedPetsInfiniteClientOptions, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])]",
       );
     });
   });

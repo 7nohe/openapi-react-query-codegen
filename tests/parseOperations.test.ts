@@ -70,6 +70,36 @@ describe("parseOperations", () => {
       expect(findPaginatedPets?.pageParamTypeKind).toBe("number");
     });
 
+    // The infinite-query builders spell the Data type as `${capitalizedMethodName}Data`
+    // with no fallback, because `getPaginatableMethods` only marks an operation
+    // paginatable after finding the page parameter inside that very type, and it reads
+    // the same exported declarations that become `modelNames`. That coupling is what
+    // makes the fallback unnecessary, so it is pinned here rather than left implicit:
+    // resolving Data types by any other route must keep this invariant or the
+    // generated code will reference a type that does not exist.
+    it("should expose a Data type in modelNames for every paginatable operation", async () => {
+      const project = new Project({ skipAddingFilesFromTsConfig: true });
+      project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
+
+      const operations = await parseOperations(project, "page");
+      const ctx = buildGenerationContext(
+        project,
+        "@hey-api/client-fetch",
+        "page",
+        "nextPage",
+        "1",
+        false,
+        "1.0.0",
+      );
+
+      const paginatable = operations.filter((op) => op.isPaginatable);
+      expect(paginatable.length).toBeGreaterThan(0);
+
+      for (const op of paginatable) {
+        expect(ctx.modelNames).toContain(`${op.capitalizedMethodName}Data`);
+      }
+    });
+
     it("should extract parameters correctly", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
       project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);

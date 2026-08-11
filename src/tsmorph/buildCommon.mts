@@ -158,21 +158,18 @@ export function buildMutationKeyFn(
  * Example:
  * export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> &
  *   { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
+ *
+ * The `<Method>Data` type is always in scope here: `parseOperations` only marks
+ * an operation paginatable when it found the page parameter inside that very
+ * type, and it discovers it through the same exported declarations that become
+ * `ctx.modelNames`. So there is no missing-Data case to fall back on.
  */
 export function buildInfiniteClientOptionsType(
   op: OperationInfo,
   ctx: GenerationContext,
 ): TypeAliasDeclarationStructure {
-  const dataTypeName = ctx.modelNames.includes(
-    `${op.capitalizedMethodName}Data`,
-  )
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
-
-  const type =
-    dataTypeName === "unknown"
-      ? "Options<unknown, true>"
-      : `Omit<Options<${dataTypeName}, true>, "query"> & { query?: Omit<NonNullable<${dataTypeName}["query"]>, "${ctx.pageParam}"> }`;
+  const dataTypeName = `${op.capitalizedMethodName}Data`;
+  const type = `Omit<Options<${dataTypeName}, true>, "query"> & { query?: Omit<NonNullable<${dataTypeName}["query"]>, "${ctx.pageParam}"> }`;
 
   return {
     kind: StructureKind.TypeAlias,
