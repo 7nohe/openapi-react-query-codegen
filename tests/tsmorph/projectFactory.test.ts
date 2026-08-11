@@ -8,6 +8,7 @@ import {
   buildHookFileImports,
   buildModelImport,
   buildQueryImport,
+  buildQueryOptionsFileImports,
   buildServiceImport,
   createGenerationProject,
 } from "../../src/tsmorph/projectFactory.mjs";
@@ -230,6 +231,38 @@ describe("projectFactory", () => {
       expect(
         result.some((i) => i.moduleSpecifier === "@tanstack/react-query"),
       ).toBe(true);
+    });
+  });
+
+  describe("buildQueryOptionsFileImports", () => {
+    it("should include Common, the queryOptions helpers, sdk and models", () => {
+      const result = buildQueryOptionsFileImports(mockFetchContext);
+
+      // Import order is emitted verbatim, so it is part of the contract
+      expect(result.map((i) => i.moduleSpecifier)).toEqual([
+        "./common",
+        "@tanstack/react-query",
+        "../requests/sdk.gen",
+        "../requests/sdk.gen",
+        "../requests/types.gen",
+      ]);
+      expect(result[0].namespaceImport).toBe("Common");
+      // queryOptions never calls the TanStack hooks, so no hook import
+      expect(
+        result.some((i) =>
+          i.namedImports?.some(
+            (n) => typeof n === "object" && n.name === "useQuery",
+          ),
+        ),
+      ).toBe(false);
+    });
+
+    it("should not include model import when no models", () => {
+      const result = buildQueryOptionsFileImports(mockEmptyModelsContext);
+
+      expect(
+        result.some((i) => i.moduleSpecifier === "../requests/types.gen"),
+      ).toBe(false);
     });
   });
 });

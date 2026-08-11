@@ -174,3 +174,26 @@ export function buildHookFileImports(
 ): ImportDeclarationStructure[] {
   return [buildCommonImport(), ...buildCommonFileImports(ctx)];
 }
+
+/**
+ * Build all imports needed for the queryOptions file.
+ * Narrower than the hook file imports: queryOptions only needs the
+ * queryOptions/infiniteQueryOptions helpers, not the TanStack hooks.
+ */
+export function buildQueryOptionsFileImports(
+  ctx: GenerationContext,
+): ImportDeclarationStructure[] {
+  const imports: ImportDeclarationStructure[] = [
+    buildCommonImport(),
+    buildQueryOptionsImport(),
+    buildClientImport(ctx),
+    buildServiceImport(ctx),
+  ];
+
+  const modelImport = buildModelImport(ctx);
+  if (modelImport) {
+    imports.push(modelImport);
+  }
+
+  return imports;
+}
