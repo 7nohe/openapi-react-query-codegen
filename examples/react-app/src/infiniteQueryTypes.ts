@@ -43,9 +43,12 @@ export function useInfiniteHookTypes() {
     },
   });
 
-  // Non-pagination options still work alongside the overrides.
+  // Non-pagination options still work alongside the overrides, and
+  // initialPageParam is overridable too — TanStack Query marks it required,
+  // so it has to be re-added as optional rather than merely omitted.
   useFindPaginatedPetsInfinite({}, undefined, {
     enabled: false,
+    initialPageParam: 5,
     getNextPageParam,
   });
 
@@ -88,6 +91,7 @@ export function prefetchInfiniteTypes(queryClient: QueryClient) {
       // `pages` is the documented way to prefetch more than the first page,
       // and TanStack Query only accepts it alongside getNextPageParam
       pages: 3,
+      initialPageParam: 5,
       getNextPageParam,
     },
   );
@@ -96,7 +100,10 @@ export function prefetchInfiniteTypes(queryClient: QueryClient) {
 export function useInfiniteOptionsFactoryTypes() {
   // #203: the factory took no options at all, so it could not be customised.
   const query = useInfiniteQuery(
-    findPaginatedPetsInfiniteOptions({}, undefined, { getNextPageParam }),
+    findPaginatedPetsInfiniteOptions({}, undefined, {
+      initialPageParam: 5,
+      getNextPageParam,
+    }),
   );
 
   // Customising must not degrade what the factory hands to the hook.

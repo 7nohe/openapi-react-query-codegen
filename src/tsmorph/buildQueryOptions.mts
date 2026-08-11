@@ -74,14 +74,13 @@ export function buildInfiniteQueryOptionsFn(
 
   const fnName = `${op.methodName}InfiniteOptions`;
 
-  const pageType = getPageType(op);
-  const queryFn = buildPagedQueryFn(op, ctx, pageType);
+  const queryFn = buildPagedQueryFn(op, ctx);
   const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
 
   // Only the pagination fields are overridable here: the factory's return type
   // is what every downstream consumer infers from, and a wider options type
   // (select, placeholderData, ...) would make that inference ambiguous (#203).
-  const optionsParam = `options?: Partial<Pick<UseInfiniteQueryOptions<${pageType}>, "initialPageParam" | "getNextPageParam">>`;
+  const optionsParam = `options?: Partial<Pick<UseInfiniteQueryOptions<${getPageType(op)}>, "initialPageParam" | "getNextPageParam">>`;
 
   const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
