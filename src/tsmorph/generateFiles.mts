@@ -1,3 +1,4 @@
+import type { SourceFile, VariableStatementStructure } from "ts-morph";
 import { OpenApiRqFiles } from "../constants.mjs";
 import type {
   GeneratedFile,
@@ -36,6 +37,25 @@ import {
   buildQueryOptionsFileImports,
   createGenerationProject,
 } from "./projectFactory.mjs";
+
+/**
+ * Add one variable statement per operation, skipping the ones the builder
+ * declines. A builder returns null when the operation is out of its scope —
+ * every infinite-query builder returns null for non-paginatable operations,
+ * which is how the paginatable subset gets selected.
+ */
+function addStatements(
+  sourceFile: SourceFile,
+  operations: OperationInfo[],
+  build: (op: OperationInfo) => VariableStatementStructure | null,
+): void {
+  for (const op of operations) {
+    const statement = build(op);
+    if (statement) {
+      sourceFile.addVariableStatement(statement);
+    }
+  }
+}
 
 /**
  * Generate the index.ts file content.
@@ -153,12 +173,10 @@ function generateQueryOptionsFile(
     sourceFile.addVariableStatement(buildQueryOptionsFn(op, ctx));
   }
 
-  for (const op of getOperations) {
-    const infiniteOptions = buildInfiniteQueryOptionsFn(op, ctx);
-    if (infiniteOptions) {
-      sourceFile.addVariableStatement(infiniteOptions);
-    }
-  }
+  // Add infiniteQueryOptions factories
+  addStatements(sourceFile, getOperations, (op) =>
+    buildInfiniteQueryOptionsFn(op, ctx),
+  );
 
   return sourceFile.getFullText();
 }
@@ -188,15 +206,10 @@ function generateSuspenseFile(
     sourceFile.addVariableStatement(buildUseSuspenseQueryHook(op, ctx));
   }
 
-  // Add useSuspenseInfiniteQuery hooks. The builder returns null for
-  // non-paginatable operations, so dropping the nulls yields exactly the
-  // paginatable subset.
-  const suspenseInfiniteHooks = getOperations
-    .map((op) => buildUseSuspenseInfiniteQueryHook(op, ctx))
-    .filter((hook) => hook !== null);
-  for (const hook of suspenseInfiniteHooks) {
-    sourceFile.addVariableStatement(hook);
-  }
+  // Add useSuspenseInfiniteQuery hooks
+  addStatements(sourceFile, getOperations, (op) =>
+    buildUseSuspenseInfiniteQueryHook(op, ctx),
+  );
 
   return sourceFile.getFullText();
 }
@@ -221,14 +234,10 @@ function generateInfiniteQueriesFile(
   // Only GET operations can be paginatable
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
-  // Add useInfiniteQuery hooks. The builder returns null for non-paginatable
-  // operations, so dropping the nulls yields exactly the paginatable subset.
-  const infiniteHooks = getOperations
-    .map((op) => buildUseInfiniteQueryHook(op, ctx))
-    .filter((hook) => hook !== null);
-  for (const hook of infiniteHooks) {
-    sourceFile.addVariableStatement(hook);
-  }
+  // Add useInfiniteQuery hooks
+  addStatements(sourceFile, getOperations, (op) =>
+    buildUseInfiniteQueryHook(op, ctx),
+  );
 
   return sourceFile.getFullText();
 }
@@ -258,15 +267,10 @@ function generatePrefetchFile(
     sourceFile.addVariableStatement(buildPrefetchFn(op, ctx));
   }
 
-  // Add prefetchInfiniteQuery functions. The builder returns null for
-  // non-paginatable operations, so dropping the nulls yields exactly the
-  // paginatable subset.
-  const prefetchInfiniteFns = getOperations
-    .map((op) => buildPrefetchInfiniteQueryFn(op, ctx))
-    .filter((fn) => fn !== null);
-  for (const fn of prefetchInfiniteFns) {
-    sourceFile.addVariableStatement(fn);
-  }
+  // Add prefetchInfiniteQuery functions
+  addStatements(sourceFile, getOperations, (op) =>
+    buildPrefetchInfiniteQueryFn(op, ctx),
+  );
 
   return sourceFile.getFullText();
 }

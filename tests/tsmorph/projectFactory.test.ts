@@ -238,14 +238,15 @@ describe("projectFactory", () => {
     it("should include Common, the queryOptions helpers, sdk and models", () => {
       const result = buildQueryOptionsFileImports(mockFetchContext);
 
-      expect(result[0].moduleSpecifier).toBe("./common");
+      // Import order is emitted verbatim, so it is part of the contract
+      expect(result.map((i) => i.moduleSpecifier)).toEqual([
+        "./common",
+        "@tanstack/react-query",
+        "../requests/sdk.gen",
+        "../requests/sdk.gen",
+        "../requests/types.gen",
+      ]);
       expect(result[0].namespaceImport).toBe("Common");
-      expect(
-        result.some((i) => i.moduleSpecifier === "../requests/sdk.gen"),
-      ).toBe(true);
-      expect(
-        result.some((i) => i.moduleSpecifier === "../requests/types.gen"),
-      ).toBe(true);
       // queryOptions never calls the TanStack hooks, so no hook import
       expect(
         result.some((i) =>
