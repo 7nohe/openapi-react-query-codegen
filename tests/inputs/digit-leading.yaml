@@ -1,0 +1,26 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Digit-leading operationId
+  description: >
+    Regression spec for #213. hey-api names the SDK function `_123NumericLead`
+    (identifiers cannot start with a digit) but names the Data type
+    `NumericLeadData` (digits are dropped), so the two names diverge.
+paths:
+  /d:
+    get:
+      operationId: 123numericLead
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string

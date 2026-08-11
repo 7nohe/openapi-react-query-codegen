@@ -4,7 +4,7 @@ import {
   type VariableStatementStructure,
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
-import { SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
+import { getDataTypeName, SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
 
 /**
  * Get the error type string based on client type.
@@ -41,13 +41,7 @@ export function buildUseMutationHook(
   const errorType = getErrorType(op, ctx);
   const dataTypeDefault = `Common.${op.capitalizedMethodName}MutationResult`;
 
-  const dataTypeName = ctx.modelNames.includes(
-    `${op.capitalizedMethodName}Data`,
-  )
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
-
-  const optionsType = `Options<${dataTypeName}, true>`;
+  const optionsType = `Options<${getDataTypeName(op)}, true>`;
 
   const mutationFn = `clientOptions => ${op.methodName}(${SDK_CALL_ARGS}) as unknown as Promise<TData>`;
 

@@ -93,7 +93,7 @@ function generateCommonFile(
     sourceFile.addTypeAlias(buildDefaultResponseType(op));
     sourceFile.addTypeAlias(buildQueryResultType(op));
     sourceFile.addVariableStatement(buildQueryKeyConst(op));
-    sourceFile.addVariableStatement(buildQueryKeyFn(op, ctx));
+    sourceFile.addVariableStatement(buildQueryKeyFn(op));
   }
 
   // Add dedicated infinite query types and keys for paginatable operations
@@ -170,7 +170,7 @@ function generateQueryOptionsFile(
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
   for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildQueryOptionsFn(op, ctx));
+    sourceFile.addVariableStatement(buildQueryOptionsFn(op));
   }
 
   // Add infiniteQueryOptions factories
@@ -264,7 +264,7 @@ function generatePrefetchFile(
 
   // Add prefetch functions
   for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildPrefetchFn(op, ctx));
+    sourceFile.addVariableStatement(buildPrefetchFn(op));
   }
 
   // Add prefetchInfiniteQuery functions
@@ -297,7 +297,7 @@ function generateEnsureQueryDataFile(
 
   // Add ensureQueryData functions
   for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildEnsureQueryDataFn(op, ctx));
+    sourceFile.addVariableStatement(buildEnsureQueryDataFn(op));
   }
 
   return sourceFile.getFullText();

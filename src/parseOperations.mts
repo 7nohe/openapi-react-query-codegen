@@ -1,4 +1,4 @@
-import type { Project, VariableDeclaration } from "ts-morph";
+import { Node, type Project, type VariableDeclaration } from "ts-morph";
 import ts from "typescript";
 import {
   capitalizeFirstLetter,
@@ -68,8 +68,29 @@ function extractParameters(
 }
 
 /**
- * Get paginatable methods by checking if their Data type has the pageParam in query property.
+ * Read the operation's Data type name from the SDK function signature.
+ * hey-api types every SDK function as `(options: Options<XData, ThrowOnError>) => ...`,
+ * and the first type argument of Options is the authoritative Data type name.
+ * Deriving it from the method name instead breaks for digit-leading
+ * operationIds, where hey-api prefixes the function (`_123NumericLead`) but
+ * strips the digits from the type (`NumericLeadData`) (#213).
+ */
+function getDataTypeNameFromSignature(
+  method: VariableDeclaration,
+): string | undefined {
+  const [optionsParam] = getVariableArrowFunctionParameters(method);
+  const typeNode = optionsParam?.getTypeNode();
+  if (!typeNode || !Node.isTypeReference(typeNode)) return undefined;
+  if (typeNode.getTypeName().getText() !== "Options") return undefined;
+  const [dataTypeArg] = typeNode.getTypeArguments();
+  return dataTypeArg ? getShortType(dataTypeArg.getText()) : undefined;
+}
+
+/**
+ * Get paginatable Data types by checking if they have the pageParam in their query property.
  * Uses TypeScript compiler API for accurate AST traversal.
+ * The map is keyed by the Data type name (e.g., "FindPetsData") so callers can
+ * look it up with the name read from the SDK signature.
  */
 function getPaginatableMethods(
   project: Project,
@@ -115,18 +136,13 @@ function getPaginatableMethods(
     );
 
     if (pageParamNode) {
-      // Extract method name from Data type name (e.g., "FindPetsData" -> "findPets")
-      const methodName = key.slice(0, -4); // Remove "Data" suffix
-      // Convert first letter to lowercase
-      const methodNameLower =
-        methodName.charAt(0).toLowerCase() + methodName.slice(1);
       const pageParamType = pageParamNode.type?.getText(
         modelsFile.compilerNode,
       );
       const resolvedType = typeChecker.getTypeAtLocation(
         pageParamNode.type ?? pageParamNode,
       );
-      paginatableMethods.set(methodNameLower, {
+      paginatableMethods.set(key, {
         type: pageParamType ?? "unknown",
         typeKind: getPageParamTypeKind(resolvedType),
       });
@@ -157,12 +173,16 @@ export async function parseOperations(
     const sdkParams = getVariableArrowFunctionParameters(desc.method);
     const allParamsOptional =
       sdkParams.length === 0 || sdkParams[0].isOptional();
-    const pageParamInfo = paginatableMethods.get(methodName);
+    const dataTypeName = getDataTypeNameFromSignature(desc.method);
+    const pageParamInfo = dataTypeName
+      ? paginatableMethods.get(dataTypeName)
+      : undefined;
     const isPaginatable = httpMethod === "GET" && pageParamInfo !== undefined;
 
     return {
       methodName,
       capitalizedMethodName: capitalizeFirstLetter(methodName),
+      dataTypeName,
       httpMethod,
       jsDoc: desc.jsDoc,
       isDeprecated: desc.isDeprecated,

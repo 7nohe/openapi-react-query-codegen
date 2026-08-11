@@ -5,6 +5,7 @@ import {
   type VariableStatementStructure,
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
+import { getDataTypeName } from "./buildQueryHooks.mjs";
 
 /**
  * Build the default response type alias.
@@ -100,15 +101,8 @@ export function buildMutationKeyConst(
  * Example: export const UseFindPetsKeyFn = (clientOptions: Options<FindPetsData, true> = {}, queryKey?: Array<unknown>) =>
  *   [useFindPetsKey, ...(queryKey ?? [clientOptions])];
  */
-export function buildQueryKeyFn(
-  op: OperationInfo,
-  ctx: GenerationContext,
-): VariableStatementStructure {
-  const dataTypeName = ctx.modelNames.includes(
-    `${op.capitalizedMethodName}Data`,
-  )
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
+export function buildQueryKeyFn(op: OperationInfo): VariableStatementStructure {
+  const dataTypeName = getDataTypeName(op);
 
   const params: string[] = [];
   const defaultValue = op.allParamsOptional ? " = {}" : "";
@@ -159,16 +153,17 @@ export function buildMutationKeyFn(
  * export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> &
  *   { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
  *
- * The `<Method>Data` type is always in scope here: `parseOperations` only marks
- * an operation paginatable when it found the page parameter inside that very
- * type, and it discovers it through the same exported declarations that become
- * `ctx.modelNames`. So there is no missing-Data case to fall back on.
+ * The Data type is always in scope here: `parseOperations` only marks an
+ * operation paginatable when it resolved `dataTypeName` from the SDK signature
+ * and found the page parameter inside that very type, and it discovers it
+ * through the same exported declarations that become `ctx.modelNames`. So
+ * there is no missing-Data case to fall back on.
  */
 export function buildInfiniteClientOptionsType(
   op: OperationInfo,
   ctx: GenerationContext,
 ): TypeAliasDeclarationStructure {
-  const dataTypeName = `${op.capitalizedMethodName}Data`;
+  const dataTypeName = getDataTypeName(op);
   const type = `Omit<Options<${dataTypeName}, true>, "query"> & { query?: Omit<NonNullable<${dataTypeName}["query"]>, "${ctx.pageParam}"> }`;
 
   return {

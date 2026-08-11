@@ -17,6 +17,7 @@ import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 const mockOperation: OperationInfo = {
   methodName: "findPets",
   capitalizedMethodName: "FindPets",
+  dataTypeName: "FindPetsData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "limit", typeName: "number", optional: true }],
@@ -27,6 +28,7 @@ const mockOperation: OperationInfo = {
 const mockPaginatableOperation: OperationInfo = {
   methodName: "findPaginatedPets",
   capitalizedMethodName: "FindPaginatedPets",
+  dataTypeName: "FindPaginatedPetsData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "page", typeName: "number", optional: true }],
@@ -45,6 +47,7 @@ const mockStringPaginatableOperation: OperationInfo = {
 const mockRequiredParamsOperation: OperationInfo = {
   methodName: "findPetById",
   capitalizedMethodName: "FindPetById",
+  dataTypeName: "FindPetByIdData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "id", typeName: "number", optional: false }],
@@ -52,7 +55,8 @@ const mockRequiredParamsOperation: OperationInfo = {
   isPaginatable: false,
 };
 
-const mockNoParamsOperation: OperationInfo = {
+// No dataTypeName: the SDK signature exposed no Options<XData, ...> parameter
+const mockNoDataTypeOperation: OperationInfo = {
   methodName: "getStatus",
   capitalizedMethodName: "GetStatus",
   httpMethod: "GET",
@@ -60,6 +64,21 @@ const mockNoParamsOperation: OperationInfo = {
   parameters: [],
   allParamsOptional: true,
   isPaginatable: false,
+};
+
+// hey-api prefixes a digit-leading operationId in the function name but strips
+// the digits from the Data type, so the two names diverge (#213)
+const mockDigitLeadingOperation: OperationInfo = {
+  methodName: "_123NumericLead",
+  capitalizedMethodName: "_123NumericLead",
+  dataTypeName: "NumericLeadData",
+  httpMethod: "GET",
+  isDeprecated: false,
+  parameters: [{ name: "page", typeName: "number", optional: true }],
+  allParamsOptional: true,
+  isPaginatable: true,
+  pageParamType: "number",
+  pageParamTypeKind: "number",
 };
 
 const mockFetchContext: GenerationContext = {
@@ -83,11 +102,6 @@ const mockFetchContext: GenerationContext = {
 const mockAxiosContext: GenerationContext = {
   ...mockFetchContext,
   client: "@hey-api/client-axios",
-};
-
-const mockUnknownDataContext: GenerationContext = {
-  ...mockFetchContext,
-  modelNames: [],
 };
 
 describe("buildQueryHooks", () => {
@@ -163,10 +177,10 @@ describe("buildQueryHooks", () => {
       expect(initializer).not.toContain("= {}");
     });
 
-    it("should handle operations without params and unknown data type", () => {
+    it("should fall back to unknown when the SDK signature exposes no Data type", () => {
       const result = buildUseQueryHook(
-        mockNoParamsOperation,
-        mockUnknownDataContext,
+        mockNoDataTypeOperation,
+        mockFetchContext,
       );
       const initializer = result.declarations[0].initializer as string;
 
@@ -176,6 +190,20 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "getStatus({ ...clientOptions, signal, throwOnError: true })",
       );
+    });
+
+    it("should use the signature Data type for digit-leading operationIds (#213)", () => {
+      const result = buildUseQueryHook(
+        mockDigitLeadingOperation,
+        mockFetchContext,
+      );
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        "clientOptions: Options<NumericLeadData, true> = {}",
+      );
+      expect(initializer).not.toContain("Options<unknown, true>");
+      expect(initializer).not.toContain("_123NumericLeadData");
     });
   });
 
@@ -202,10 +230,10 @@ describe("buildQueryHooks", () => {
       );
     });
 
-    it("should handle operations without params and unknown data type", () => {
+    it("should fall back to unknown when the SDK signature exposes no Data type", () => {
       const result = buildUseSuspenseQueryHook(
-        mockNoParamsOperation,
-        mockUnknownDataContext,
+        mockNoDataTypeOperation,
+        mockFetchContext,
       );
       const initializer = result.declarations[0].initializer as string;
 
@@ -242,6 +270,18 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain("pageParam");
       expect(initializer).toContain("getNextPageParam");
       expect(initializer).toContain("initialPageParam: 1");
+    });
+
+    it("should cast to the signature Data type for digit-leading operationIds (#213)", () => {
+      const result = buildUseInfiniteQueryHook(
+        mockDigitLeadingOperation,
+        mockFetchContext,
+      );
+
+      expect(result).not.toBeNull();
+      const initializer = result?.declarations[0].initializer as string;
+      expect(initializer).toContain("as Options<NumericLeadData, true>");
+      expect(initializer).not.toContain("_123NumericLeadData");
     });
 
     it("should make initialPageParam and getNextPageParam optional overrides", () => {
@@ -314,7 +354,7 @@ describe("buildQueryHooks", () => {
 
   describe("buildPrefetchFn", () => {
     it("should build prefetch function", () => {
-      const result = buildPrefetchFn(mockOperation, mockFetchContext);
+      const result = buildPrefetchFn(mockOperation);
 
       expect(result.declarations[0].name).toBe("prefetchUseFindPets");
 
@@ -333,17 +373,14 @@ describe("buildQueryHooks", () => {
     });
 
     it("should include default value for optional params", () => {
-      const result = buildPrefetchFn(mockOperation, mockFetchContext);
+      const result = buildPrefetchFn(mockOperation);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain("= {}");
     });
 
     it("should not include default value for required params", () => {
-      const result = buildPrefetchFn(
-        mockRequiredParamsOperation,
-        mockFetchContext,
-      );
+      const result = buildPrefetchFn(mockRequiredParamsOperation);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
@@ -355,7 +392,7 @@ describe("buildQueryHooks", () => {
     });
 
     it("should accept fetch query options (#157)", () => {
-      const result = buildPrefetchFn(mockOperation, mockFetchContext);
+      const result = buildPrefetchFn(mockOperation);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
@@ -364,11 +401,8 @@ describe("buildQueryHooks", () => {
       expect(initializer).toMatch(/\.\.\.options\s*\}\)/);
     });
 
-    it("should handle operations without params and unknown data type", () => {
-      const result = buildPrefetchFn(
-        mockNoParamsOperation,
-        mockUnknownDataContext,
-      );
+    it("should fall back to unknown when the SDK signature exposes no Data type", () => {
+      const result = buildPrefetchFn(mockNoDataTypeOperation);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
@@ -382,7 +416,7 @@ describe("buildQueryHooks", () => {
 
   describe("buildEnsureQueryDataFn", () => {
     it("should build ensureQueryData function", () => {
-      const result = buildEnsureQueryDataFn(mockOperation, mockFetchContext);
+      const result = buildEnsureQueryDataFn(mockOperation);
 
       expect(result.declarations[0].name).toBe("ensureUseFindPetsData");
 
@@ -393,11 +427,8 @@ describe("buildQueryHooks", () => {
     });
 
     it("should be similar to prefetch but use ensureQueryData", () => {
-      const prefetchResult = buildPrefetchFn(mockOperation, mockFetchContext);
-      const ensureResult = buildEnsureQueryDataFn(
-        mockOperation,
-        mockFetchContext,
-      );
+      const prefetchResult = buildPrefetchFn(mockOperation);
+      const ensureResult = buildEnsureQueryDataFn(mockOperation);
 
       const prefetchInit = prefetchResult.declarations[0].initializer as string;
       const ensureInit = ensureResult.declarations[0].initializer as string;
@@ -407,11 +438,8 @@ describe("buildQueryHooks", () => {
       expect(ensureInit).not.toContain("prefetchQuery");
     });
 
-    it("should handle operations without params and unknown data type", () => {
-      const result = buildEnsureQueryDataFn(
-        mockNoParamsOperation,
-        mockUnknownDataContext,
-      );
+    it("should fall back to unknown when the SDK signature exposes no Data type", () => {
+      const result = buildEnsureQueryDataFn(mockNoDataTypeOperation);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
@@ -423,7 +451,7 @@ describe("buildQueryHooks", () => {
     });
 
     it("should accept ensure query data options (#157)", () => {
-      const result = buildEnsureQueryDataFn(mockOperation, mockFetchContext);
+      const result = buildEnsureQueryDataFn(mockOperation);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
