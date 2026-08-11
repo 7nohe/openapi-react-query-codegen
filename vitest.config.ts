@@ -1,34 +1,24 @@
-import { fileURLToPath } from "node:url";
 import { defaultExclude, defineConfig } from "vitest/config";
-
-// `coverage.exclude` patterns are matched against absolute paths with picomatch's
-// `contains` option, so a bare `.claude/**` matches any path that merely contains a
-// `.claude` segment. That silently excludes every source file when the project itself
-// is checked out under a `.claude/` path (e.g. a git worktree in `.claude/worktrees/`),
-// which makes the coverage thresholds below pass against 0/0. Anchor it to this
-// project's own root instead. `new URL(".", ...)` keeps the trailing separator, and the
-// backslashes must be normalized because vitest slashes the file path but not the pattern.
-const projectRoot = fileURLToPath(new URL(".", import.meta.url)).replace(
-  /\\/g,
-  "/",
-);
 
 export default defineConfig({
   test: {
-    // `test.exclude` is globbed by tinyglobby relative to the project root, so this one
-    // is already anchored and must stay relative.
+    // Globbed by tinyglobby relative to the project root, so this one is correctly
+    // anchored and must stay relative. It is load-bearing at the repo root: without it
+    // the agent worktrees under `.claude/worktrees/` are collected too (75 files
+    // instead of 15). Note that a CLI `--exclude` appends to this list rather than
+    // replacing it, so you cannot A/B this entry from the command line.
     exclude: [...defaultExclude, ".claude/**"],
     coverage: {
+      // Scope coverage with `include`, not `exclude`. `coverage.exclude` is matched
+      // against absolute paths with picomatch's `contains` option, so every relative
+      // spelling of a `.claude/**` ignore (`./.claude/**`, `/.claude/**`, `**/.claude/**`)
+      // also matches the project's own root when the repo is checked out under a
+      // `.claude/` path — e.g. a git worktree in `.claude/worktrees/`. That excluded every
+      // source file and silently passed the thresholds below against 0/0. `include` is
+      // anchored to the project root, so it has no such failure mode.
+      include: ["src/**"],
+      exclude: ["src/cli.mts"],
       reporter: ["text", "json-summary", "json", "html"],
-      exclude: [
-        "src/cli.mts",
-        "examples/**",
-        "tests/**",
-        "docs/**",
-        "dist/**",
-        "vitest.config.ts",
-        `${projectRoot}.claude/**`,
-      ],
       reportOnFailure: true,
       thresholds: {
         lines: 95,
