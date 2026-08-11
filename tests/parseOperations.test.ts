@@ -181,6 +181,40 @@ describe("parseOperations", () => {
       expect(ctx.serviceNames).toContain("addPet");
       expect(ctx.serviceNames).toContain("deletePet");
     });
+
+    it("should throw when the service file is missing", () => {
+      const project = new Project();
+
+      expect(() =>
+        buildGenerationContext(
+          project,
+          "@hey-api/client-fetch",
+          "page",
+          "nextPage",
+          "1",
+          false,
+          "1.0.0",
+        ),
+      ).toThrow("No service node found");
+    });
+
+    it("should fall back to empty model names when the models file is missing", () => {
+      const project = new Project();
+      project.createSourceFile("sdk.gen.ts", "export const findPets = 1;");
+
+      const ctx = buildGenerationContext(
+        project,
+        "@hey-api/client-fetch",
+        "page",
+        "nextPage",
+        "1",
+        false,
+        "1.0.0",
+      );
+
+      expect(ctx.modelNames).toEqual([]);
+      expect(ctx.serviceNames).toContain("findPets");
+    });
   });
 });
 
