@@ -35,7 +35,11 @@ export function useInfiniteHookTypes() {
   useFindPaginatedPetsInfinite({}, undefined, {
     getNextPageParam: (lastPage) => {
       const isPage: Exact<typeof lastPage, Page> = true;
-      return isPage ? 1 : undefined;
+      // Exact<> is satisfied by `any` too, so prove the parameter is not `any`:
+      // if it were, this directive would itself error as unused.
+      // @ts-expect-error a page has no such property
+      const notOnAPage: unknown = lastPage.notAProperty;
+      return isPage && notOnAPage === undefined ? 1 : undefined;
     },
   });
 
@@ -63,7 +67,9 @@ export function useSuspenseInfiniteHookTypes() {
   const query = useFindPaginatedPetsSuspenseInfinite({}, undefined, {
     getNextPageParam: (lastPage) => {
       const isPage: Exact<typeof lastPage, Page> = true;
-      return isPage ? 1 : undefined;
+      // @ts-expect-error a page has no such property
+      const notOnAPage: unknown = lastPage.notAProperty;
+      return isPage && notOnAPage === undefined ? 1 : undefined;
     },
   });
 
@@ -79,6 +85,9 @@ export function prefetchInfiniteTypes(queryClient: QueryClient) {
     {},
     {
       staleTime: 1000,
+      // `pages` is the documented way to prefetch more than the first page,
+      // and TanStack Query only accepts it alongside getNextPageParam
+      pages: 3,
       getNextPageParam,
     },
   );
