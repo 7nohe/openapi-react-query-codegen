@@ -28,10 +28,9 @@ import {
  */
 export function buildQueryOptionsFn(
   op: OperationInfo,
-  ctx: GenerationContext,
 ): VariableStatementStructure {
   const fnName = `${op.methodName}Options`;
-  const clientOptionsParam = buildClientOptionsParam(op, ctx);
+  const clientOptionsParam = buildClientOptionsParam(op);
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data)`;
   const body = `queryOptions({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn} })`;

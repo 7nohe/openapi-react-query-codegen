@@ -8,6 +8,9 @@ export default defineConfig({
     // instead of 15). Note that a CLI `--exclude` appends to this list rather than
     // replacing it, so you cannot A/B this entry from the command line.
     exclude: [...defaultExclude, ".claude/**"],
+    // Tests run real codegen (hey-api generation, TypeScript programs), which is
+    // multi-second work; under CI runner contention the 5s default flakes.
+    testTimeout: 30_000,
     coverage: {
       // Scope coverage with `include`, not `exclude`. `coverage.exclude` is matched
       // against absolute paths with picomatch's `contains` option, so every relative

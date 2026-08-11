@@ -1,5 +1,10 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { createClient } from "@hey-api/openapi-ts";
+import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createSource } from "../src/createSource.mjs";
+import { formatOutput } from "../src/format.mjs";
 import { cleanOutputs, generateTSClients, outputPath } from "./utils";
 
 const fileName = "createSource";
@@ -98,5 +103,75 @@ describe(fileName, () => {
     expect(infiniteQueriesTs?.content).toContain(
       "...(pageParam === undefined ? {} : { page: pageParam as number })",
     );
+  });
+});
+
+// End-to-end pin for #213: hey-api names the SDK function `_123NumericLead`
+// but the Data type `NumericLeadData`. The full pipeline must still detect
+// pagination and produce output that typechecks — the bug's two symptoms were
+// a silently missing infinite hook and `Options<unknown, true>` failing TS2344.
+describe("createSource - digit-leading operationId (#213)", () => {
+  const prefix = "createSource-digit-leading";
+  const dir = outputPath(prefix);
+
+  beforeAll(async () => {
+    await createClient({
+      input: path.join(__dirname, "inputs", "digit-leading.yaml"),
+      output: path.join(dir, "requests"),
+      plugins: ["@hey-api/client-fetch", "@hey-api/typescript", "@hey-api/sdk"],
+    });
+  });
+  afterAll(async () => await cleanOutputs(prefix));
+
+  test("emits infinite hooks and output that typechecks", async () => {
+    const source = await createSource({
+      outputPath: path.join(dir, "requests"),
+      version: "1.0.0",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
+      omitInitialPageParam: false,
+      client: "@hey-api/client-fetch",
+    });
+
+    const infiniteQueriesTs = source.find(
+      (s) => s.name === "infiniteQueries.ts",
+    );
+    expect(infiniteQueriesTs?.content).toContain("use_123NumericLeadInfinite");
+    expect(infiniteQueriesTs?.content).toContain(
+      "Options<NumericLeadData, true>",
+    );
+
+    const queriesDir = path.join(dir, "queries");
+    await mkdir(queriesDir, { recursive: true });
+    await Promise.all(
+      source.map((file) =>
+        writeFile(path.join(queriesDir, file.name), file.content),
+      ),
+    );
+    // The real pipeline organizes imports after printing (generate.mts),
+    // which dedupes the Options import shared by the client and service
+    // import declarations — compile what users actually get.
+    await formatOutput(queriesDir);
+
+    const program = ts.createProgram(
+      source.map((file) => path.join(queriesDir, file.name)),
+      {
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+        esModuleInterop: true,
+        target: ts.ScriptTarget.ES2020,
+        module: ts.ModuleKind.ESNext,
+        moduleResolution: ts.ModuleResolutionKind.Bundler,
+      },
+    );
+    const diagnostics = ts
+      .getPreEmitDiagnostics(program)
+      .map(
+        (d) =>
+          `${d.file?.fileName ?? ""}: ${ts.flattenDiagnosticMessageText(d.messageText, "\n")}`,
+      );
+    expect(diagnostics).toEqual([]);
   });
 });

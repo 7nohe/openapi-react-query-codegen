@@ -9,6 +9,7 @@ import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 const mockOperation: OperationInfo = {
   methodName: "findPets",
   capitalizedMethodName: "FindPets",
+  dataTypeName: "FindPetsData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "limit", typeName: "number", optional: true }],
@@ -19,6 +20,7 @@ const mockOperation: OperationInfo = {
 const mockPaginatableOperation: OperationInfo = {
   methodName: "findPaginatedPets",
   capitalizedMethodName: "FindPaginatedPets",
+  dataTypeName: "FindPaginatedPetsData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "page", typeName: "number", optional: true }],
@@ -37,6 +39,7 @@ const mockStringPaginatableOperation: OperationInfo = {
 const mockRequiredParamsOperation: OperationInfo = {
   methodName: "findPetById",
   capitalizedMethodName: "FindPetById",
+  dataTypeName: "FindPetByIdData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "id", typeName: "number", optional: false }],
@@ -46,12 +49,7 @@ const mockRequiredParamsOperation: OperationInfo = {
 
 const mockContext: GenerationContext = {
   client: "@hey-api/client-fetch",
-  modelNames: [
-    "Pet",
-    "FindPetsData",
-    "FindPaginatedPetsData",
-    "FindPetByIdData",
-  ],
+  modelNames: ["Pet"],
   serviceNames: ["findPets", "findPaginatedPets", "findPetById"],
   pageParam: "page",
   nextPageParam: "nextPage",
@@ -62,7 +60,7 @@ const mockContext: GenerationContext = {
 describe("buildQueryOptions", () => {
   describe("buildQueryOptionsFn", () => {
     it("should build a queryOptions factory", () => {
-      const result = buildQueryOptionsFn(mockOperation, mockContext);
+      const result = buildQueryOptionsFn(mockOperation);
 
       expect(result.kind).toBe(StructureKind.VariableStatement);
       expect(result.isExported).toBe(true);
@@ -82,10 +80,7 @@ describe("buildQueryOptions", () => {
     });
 
     it("should not add a default value when the operation has required params", () => {
-      const result = buildQueryOptionsFn(
-        mockRequiredParamsOperation,
-        mockContext,
-      );
+      const result = buildQueryOptionsFn(mockRequiredParamsOperation);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
@@ -101,7 +96,7 @@ describe("buildQueryOptions", () => {
         ...mockOperation,
         jsDoc: "/**\n * Returns all pets\n */",
       };
-      const result = buildQueryOptionsFn(op, mockContext);
+      const result = buildQueryOptionsFn(op);
 
       expect(result.leadingTrivia).toBe("/**\n * Returns all pets\n */\n");
     });

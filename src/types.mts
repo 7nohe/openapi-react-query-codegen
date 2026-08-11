@@ -7,6 +7,20 @@ export interface OperationInfo {
   methodName: string;
   /** Capitalized method name (e.g., "FindPets") */
   capitalizedMethodName: string;
+  /**
+   * Generated Data type name read from the SDK function's own
+   * `Options<XData, ThrowOnError>` signature (e.g., "FindPetsData").
+   * Not derivable from the method name: for digit-leading operationIds
+   * hey-api prefixes the function but strips the digits from the type (#213).
+   * Undefined when the SDK signature exposes no Data type.
+   *
+   * The rule this encodes: names hey-api owns (Data, Error) must be read from
+   * the SDK signature or share this field's stem; names this codegen mints
+   * itself (DefaultResponse, MutationResult, key fns) may be derived from
+   * capitalizedMethodName because they anchor back to the SDK via
+   * `typeof methodName`.
+   */
+  dataTypeName?: string;
   /** HTTP method (e.g., "GET", "POST", "PUT", "PATCH", "DELETE") */
   httpMethod: string;
   /** JSDoc comment string (if present) */

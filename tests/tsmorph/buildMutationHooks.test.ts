@@ -6,6 +6,7 @@ import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 const mockPostOperation: OperationInfo = {
   methodName: "addPet",
   capitalizedMethodName: "AddPet",
+  dataTypeName: "AddPetData",
   httpMethod: "POST",
   isDeprecated: false,
   parameters: [{ name: "body", typeName: "NewPet", optional: false }],
@@ -16,6 +17,7 @@ const mockPostOperation: OperationInfo = {
 const mockDeleteOperation: OperationInfo = {
   methodName: "deletePet",
   capitalizedMethodName: "DeletePet",
+  dataTypeName: "DeletePetData",
   httpMethod: "DELETE",
   isDeprecated: false,
   parameters: [{ name: "id", typeName: "number", optional: false }],
@@ -26,6 +28,7 @@ const mockDeleteOperation: OperationInfo = {
 const mockPutOperation: OperationInfo = {
   methodName: "updatePet",
   capitalizedMethodName: "UpdatePet",
+  dataTypeName: "UpdatePetData",
   httpMethod: "PUT",
   isDeprecated: false,
   parameters: [
@@ -39,6 +42,7 @@ const mockPutOperation: OperationInfo = {
 const mockPatchOperation: OperationInfo = {
   methodName: "patchPet",
   capitalizedMethodName: "PatchPet",
+  dataTypeName: "PatchPetData",
   httpMethod: "PATCH",
   isDeprecated: false,
   parameters: [{ name: "body", typeName: "Partial<Pet>", optional: true }],
@@ -51,13 +55,9 @@ const mockFetchContext: GenerationContext = {
   modelNames: [
     "Pet",
     "NewPet",
-    "AddPetData",
     "AddPetError",
-    "DeletePetData",
     "DeletePetError",
-    "UpdatePetData",
     "UpdatePetError",
-    "PatchPetData",
     "PatchPetError",
   ],
   serviceNames: ["addPet", "deletePet", "updatePet", "patchPet"],
@@ -174,21 +174,38 @@ describe("buildMutationHooks", () => {
       );
     });
 
-    it("should use unknown for missing data type", () => {
+    it("should fall back to unknown when the SDK signature exposes no Data type", () => {
       const opWithoutData: OperationInfo = {
         ...mockPostOperation,
         methodName: "unknownMutation",
         capitalizedMethodName: "UnknownMutation",
-      };
-      const ctx: GenerationContext = {
-        ...mockFetchContext,
-        modelNames: ["Pet", "NewPet"], // no UnknownMutationData
+        dataTypeName: undefined,
       };
 
-      const result = buildUseMutationHook(opWithoutData, ctx);
+      const result = buildUseMutationHook(opWithoutData, mockFetchContext);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain("Options<unknown, true>");
+    });
+
+    it("should use the signature Data type for digit-leading operationIds (#213)", () => {
+      const op: OperationInfo = {
+        ...mockPostOperation,
+        methodName: "_123CreateThing",
+        capitalizedMethodName: "_123CreateThing",
+        dataTypeName: "CreateThingData",
+      };
+      const ctx: GenerationContext = {
+        ...mockFetchContext,
+        modelNames: [...mockFetchContext.modelNames, "CreateThingError"],
+      };
+
+      const result = buildUseMutationHook(op, ctx);
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain("Options<CreateThingData, true>");
+      // The Error type shares the Data type stem, not the method name
+      expect(initializer).toContain("TError = CreateThingError");
     });
 
     it("should spread options at the end", () => {

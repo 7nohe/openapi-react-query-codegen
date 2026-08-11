@@ -17,6 +17,7 @@ import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 const mockOperation: OperationInfo = {
   methodName: "findPets",
   capitalizedMethodName: "FindPets",
+  dataTypeName: "FindPetsData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "limit", typeName: "number", optional: true }],
@@ -27,6 +28,7 @@ const mockOperation: OperationInfo = {
 const mockMutationOperation: OperationInfo = {
   methodName: "addPet",
   capitalizedMethodName: "AddPet",
+  dataTypeName: "AddPetData",
   httpMethod: "POST",
   isDeprecated: false,
   parameters: [{ name: "body", typeName: "NewPet", optional: false }],
@@ -37,6 +39,7 @@ const mockMutationOperation: OperationInfo = {
 const mockPaginatableOperation: OperationInfo = {
   methodName: "findPaginatedPets",
   capitalizedMethodName: "FindPaginatedPets",
+  dataTypeName: "FindPaginatedPetsData",
   httpMethod: "GET",
   isDeprecated: false,
   parameters: [{ name: "page", typeName: "number", optional: true }],
@@ -46,7 +49,7 @@ const mockPaginatableOperation: OperationInfo = {
 
 const mockContext: GenerationContext = {
   client: "@hey-api/client-fetch",
-  modelNames: ["Pet", "NewPet", "FindPetsData", "AddPetData"],
+  modelNames: ["Pet", "NewPet"],
   serviceNames: ["findPets", "addPet"],
   pageParam: "page",
   nextPageParam: "nextPage",
@@ -136,7 +139,7 @@ describe("buildCommon", () => {
 
   describe("buildQueryKeyFn", () => {
     it("should build query key function with parameters", () => {
-      const result = buildQueryKeyFn(mockOperation, mockContext);
+      const result = buildQueryKeyFn(mockOperation);
 
       expect(result.kind).toBe(StructureKind.VariableStatement);
       expect(result.isExported).toBe(true);
@@ -157,15 +160,12 @@ describe("buildCommon", () => {
         ...mockOperation,
         methodName: "getPetById",
         capitalizedMethodName: "GetPetById",
+        dataTypeName: "GetPetByIdData",
         parameters: [{ name: "id", typeName: "number", optional: false }],
         allParamsOptional: false,
       };
-      const ctx: GenerationContext = {
-        ...mockContext,
-        modelNames: [...mockContext.modelNames, "GetPetByIdData"],
-      };
 
-      const result = buildQueryKeyFn(op, ctx);
+      const result = buildQueryKeyFn(op);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
@@ -174,17 +174,34 @@ describe("buildCommon", () => {
       expect(initializer).not.toContain("= {}");
     });
 
-    it("should use unknown for missing data type", () => {
+    it("should fall back to unknown when the SDK signature exposes no Data type", () => {
       const op: OperationInfo = {
         ...mockOperation,
         methodName: "unknownMethod",
         capitalizedMethodName: "UnknownMethod",
+        dataTypeName: undefined,
       };
 
-      const result = buildQueryKeyFn(op, mockContext);
+      const result = buildQueryKeyFn(op);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain("Options<unknown, true>");
+    });
+
+    it("should use the signature Data type for digit-leading operationIds (#213)", () => {
+      const op: OperationInfo = {
+        ...mockOperation,
+        methodName: "_123NumericLead",
+        capitalizedMethodName: "_123NumericLead",
+        dataTypeName: "NumericLeadData",
+      };
+
+      const result = buildQueryKeyFn(op);
+      const initializer = result.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        "clientOptions: Options<NumericLeadData, true>",
+      );
     });
   });
 
@@ -204,13 +221,9 @@ describe("buildCommon", () => {
   });
   describe("buildInfiniteClientOptionsType", () => {
     it("should exclude the page param from the query type", () => {
-      const ctx: GenerationContext = {
-        ...mockContext,
-        modelNames: [...mockContext.modelNames, "FindPaginatedPetsData"],
-      };
       const result = buildInfiniteClientOptionsType(
         mockPaginatableOperation,
-        ctx,
+        mockContext,
       );
 
       expect(result.isExported).toBe(true);

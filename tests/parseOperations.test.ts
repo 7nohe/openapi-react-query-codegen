@@ -26,6 +26,8 @@ describe("parseOperations", () => {
       expect(findPets).toBeDefined();
       expect(findPets?.httpMethod).toBe("GET");
       expect(findPets?.capitalizedMethodName).toBe("FindPets");
+      // Read from the SDK signature's Options<XData, ThrowOnError> type argument
+      expect(findPets?.dataTypeName).toBe("FindPetsData");
     });
 
     it("should parse POST operations", async () => {
@@ -70,13 +72,8 @@ describe("parseOperations", () => {
       expect(findPaginatedPets?.pageParamTypeKind).toBe("number");
     });
 
-    // The infinite-query builders spell the Data type as `${capitalizedMethodName}Data`
-    // with no fallback, because `getPaginatableMethods` only marks an operation
-    // paginatable after finding the page parameter inside that very type, and it reads
-    // the same exported declarations that become `modelNames`. That coupling is what
-    // makes the fallback unnecessary, so it is pinned here rather than left implicit:
-    // resolving Data types by any other route must keep this invariant or the
-    // generated code will reference a type that does not exist.
+    // Pins the invariant the infinite-query builders rely on: every paginatable
+    // operation has a dataTypeName that exists among the exported model names.
     it("should expose a Data type in modelNames for every paginatable operation", async () => {
       const project = new Project({ skipAddingFilesFromTsConfig: true });
       project.addSourceFilesAtPaths(`${outputPath(fileName)}/**/*`);
@@ -96,7 +93,7 @@ describe("parseOperations", () => {
       expect(paginatable.length).toBeGreaterThan(0);
 
       for (const op of paginatable) {
-        expect(ctx.modelNames).toContain(`${op.capitalizedMethodName}Data`);
+        expect(ctx.modelNames).toContain(op.dataTypeName);
       }
     });
 
@@ -245,6 +242,57 @@ describe("parseOperations", () => {
       expect(ctx.modelNames).toEqual([]);
       expect(ctx.serviceNames).toContain("findPets");
     });
+  });
+});
+
+describe("parseOperations - digit-leading operationId (#213)", () => {
+  const digitFileName = "parseOperations-digit-leading";
+
+  beforeAll(
+    async () => await generateTSClients(digitFileName, "digit-leading.yaml"),
+  );
+  afterAll(async () => await cleanOutputs(digitFileName));
+
+  // hey-api names the SDK function `_123NumericLead` but the Data type
+  // `NumericLeadData`, so deriving the type from the method name misses.
+  // The name must come from the SDK signature for pagination to be detected
+  // and for the generated output to compile.
+  it("should resolve the Data type from the SDK signature and keep pagination", async () => {
+    const project = new Project({ skipAddingFilesFromTsConfig: true });
+    project.addSourceFilesAtPaths(`${outputPath(digitFileName)}/**/*`);
+
+    const operations = await parseOperations(project, "page");
+    const op = operations.find((o) => o.httpMethod === "GET");
+
+    expect(op).toBeDefined();
+    expect(op?.methodName).toBe("_123NumericLead");
+    expect(op?.dataTypeName).toBe("NumericLeadData");
+    expect(op?.isPaginatable).toBe(true);
+    expect(op?.pageParamTypeKind).toBe("number");
+
+    const postOp = operations.find((o) => o.httpMethod === "POST");
+    expect(postOp?.methodName).toBe("_456CreateThing");
+    expect(postOp?.dataTypeName).toBe("CreateThingData");
+  });
+
+  // Pins the naming assumption getErrorType's stem derivation relies on:
+  // hey-api mints the Error type from the same stem as the Data type.
+  it("should generate Error types sharing the Data type stem", async () => {
+    const project = new Project({ skipAddingFilesFromTsConfig: true });
+    project.addSourceFilesAtPaths(`${outputPath(digitFileName)}/**/*`);
+
+    const ctx = buildGenerationContext(
+      project,
+      "@hey-api/client-fetch",
+      "page",
+      "nextPage",
+      "1",
+      false,
+      "1.0.0",
+    );
+
+    expect(ctx.modelNames).toContain("NumericLeadError");
+    expect(ctx.modelNames).toContain("CreateThingError");
   });
 });
 

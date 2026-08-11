@@ -4,34 +4,7 @@ import {
   type VariableStatementStructure,
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
-
-/**
- * Get the error type string based on client type.
- */
-function getErrorType(op: OperationInfo, ctx: GenerationContext): string {
-  const errorTypeName = `${op.capitalizedMethodName}Error`;
-  // Operations without error responses have no generated Error type
-  const errorType = ctx.modelNames.includes(errorTypeName)
-    ? errorTypeName
-    : "unknown";
-  if (ctx.client === "@hey-api/client-axios") {
-    return `AxiosError<${errorType}>`;
-  }
-  return errorType;
-}
-
-/**
- * Resolve the generated Data type name for an operation, falling back to
- * unknown when the operation has no generated Data type.
- */
-export function getDataTypeName(
-  op: OperationInfo,
-  ctx: GenerationContext,
-): string {
-  return ctx.modelNames.includes(`${op.capitalizedMethodName}Data`)
-    ? `${op.capitalizedMethodName}Data`
-    : "unknown";
-}
+import { getDataTypeName, getErrorType } from "./operationNames.mjs";
 
 /**
  * SDK call arguments shared by every generated queryFn/mutationFn.
@@ -53,11 +26,8 @@ export function getPageParamType(op: OperationInfo): string {
 /**
  * Build the client options parameter string.
  */
-export function buildClientOptionsParam(
-  op: OperationInfo,
-  ctx: GenerationContext,
-): string {
-  const dataTypeName = getDataTypeName(op, ctx);
+export function buildClientOptionsParam(op: OperationInfo): string {
+  const dataTypeName = getDataTypeName(op);
 
   const hasParams = op.parameters.length > 0;
   if (!hasParams) {
@@ -94,15 +64,12 @@ export function getPageType(op: OperationInfo): string {
  * TQueryFnData the infinite options are instantiated with (#203). Spelled as
  * a cast rather than `!` because generated code is linted downstream, and a
  * non-null assertion trips biome's noNonNullAssertion.
- *
- * Only ever called for paginatable operations, so the `<Method>Data` type is
- * guaranteed to exist — see buildInfiniteClientOptionsType for why.
  */
 export function buildPagedQueryFn(
   op: OperationInfo,
   ctx: GenerationContext,
 ): string {
-  const dataTypeName = `${op.capitalizedMethodName}Data`;
+  const dataTypeName = getDataTypeName(op);
   const thenClause = `.then(response => response.data as ${getPageType(op)})`;
   const pageParamType = getPageParamType(op);
   // When the initial page param is omitted, the first request must send no
@@ -208,7 +175,7 @@ export function buildUseQueryHook(
   const hookName = `use${op.capitalizedMethodName}`;
   const errorType = getErrorType(op, ctx);
   const dataTypeDefault = `Common.${op.capitalizedMethodName}DefaultResponse`;
-  const clientOptionsParam = buildClientOptionsParam(op, ctx);
+  const clientOptionsParam = buildClientOptionsParam(op);
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data as TData) as TData`;
 
@@ -239,7 +206,7 @@ export function buildUseSuspenseQueryHook(
   const hookName = `use${op.capitalizedMethodName}Suspense`;
   const errorType = getErrorType(op, ctx);
   const dataTypeDefault = `NonNullable<Common.${op.capitalizedMethodName}DefaultResponse>`;
-  const clientOptionsParam = buildClientOptionsParam(op, ctx);
+  const clientOptionsParam = buildClientOptionsParam(op);
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data as TData) as TData`;
 
@@ -339,10 +306,7 @@ export function buildUseSuspenseInfiniteQueryHook(
  *     ...options
  *   });
  */
-export function buildPrefetchFn(
-  op: OperationInfo,
-  ctx: GenerationContext,
-): VariableStatementStructure {
+export function buildPrefetchFn(op: OperationInfo): VariableStatementStructure {
   const fnName = `prefetchUse${op.capitalizedMethodName}`;
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data)`;
@@ -359,7 +323,7 @@ export function buildPrefetchFn(
     declarations: [
       {
         name: fnName,
-        initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op, ctx)}, ${optionsParam}) => ${body}`,
+        initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
       },
     ],
   };
@@ -428,7 +392,6 @@ export function buildPrefetchInfiniteQueryFn(
  */
 export function buildEnsureQueryDataFn(
   op: OperationInfo,
-  ctx: GenerationContext,
 ): VariableStatementStructure {
   const fnName = `ensureUse${op.capitalizedMethodName}Data`;
 
@@ -446,7 +409,7 @@ export function buildEnsureQueryDataFn(
     declarations: [
       {
         name: fnName,
-        initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op, ctx)}, ${optionsParam}) => ${body}`,
+        initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
       },
     ],
   };
