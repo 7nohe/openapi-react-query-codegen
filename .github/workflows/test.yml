@@ -1,6 +1,9 @@
 name: test
 concurrency:
-  group: test-${{ github.github.base_ref }}
+  # `github.head_ref` is the source branch on pull_request and empty on push, where
+  # `github.ref` takes over. Grouping per branch is what keeps a new push to one PR
+  # from cancelling an unrelated PR's in-flight run.
+  group: test-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 on:
   push:
