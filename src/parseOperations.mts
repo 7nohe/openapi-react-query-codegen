@@ -1,4 +1,9 @@
-import { Node, type Project, type VariableDeclaration } from "ts-morph";
+import {
+  Node,
+  type ParameterDeclaration,
+  type Project,
+  type VariableDeclaration,
+} from "ts-morph";
 import ts from "typescript";
 import {
   capitalizeFirstLetter,
@@ -68,22 +73,19 @@ function extractParameters(
 }
 
 /**
- * Read the operation's Data type name from the SDK function signature.
- * hey-api types every SDK function as `(options: Options<XData, ThrowOnError>) => ...`,
- * and the first type argument of Options is the authoritative Data type name.
- * Deriving it from the method name instead breaks for digit-leading
- * operationIds, where hey-api prefixes the function (`_123NumericLead`) but
- * strips the digits from the type (`NumericLeadData`) (#213).
+ * Read the operation's Data type name from the first type argument of the
+ * SDK options parameter (`Options<XData, ThrowOnError>`).
+ * See OperationInfo.dataTypeName for why the name is read from the signature
+ * instead of derived from the method name (#213).
  */
 function getDataTypeNameFromSignature(
-  method: VariableDeclaration,
+  optionsParam: ParameterDeclaration | undefined,
 ): string | undefined {
-  const [optionsParam] = getVariableArrowFunctionParameters(method);
   const typeNode = optionsParam?.getTypeNode();
   if (!typeNode || !Node.isTypeReference(typeNode)) return undefined;
   if (typeNode.getTypeName().getText() !== "Options") return undefined;
   const [dataTypeArg] = typeNode.getTypeArguments();
-  return dataTypeArg ? getShortType(dataTypeArg.getText()) : undefined;
+  return dataTypeArg?.getText();
 }
 
 /**
@@ -173,7 +175,7 @@ export async function parseOperations(
     const sdkParams = getVariableArrowFunctionParameters(desc.method);
     const allParamsOptional =
       sdkParams.length === 0 || sdkParams[0].isOptional();
-    const dataTypeName = getDataTypeNameFromSignature(desc.method);
+    const dataTypeName = getDataTypeNameFromSignature(sdkParams[0]);
     const pageParamInfo = dataTypeName
       ? paginatableMethods.get(dataTypeName)
       : undefined;

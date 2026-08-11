@@ -49,7 +49,7 @@ const mockPaginatableOperation: OperationInfo = {
 
 const mockContext: GenerationContext = {
   client: "@hey-api/client-fetch",
-  modelNames: ["Pet", "NewPet", "FindPetsData", "AddPetData"],
+  modelNames: ["Pet", "NewPet"],
   serviceNames: ["findPets", "addPet"],
   pageParam: "page",
   nextPageParam: "nextPage",
@@ -202,7 +202,6 @@ describe("buildCommon", () => {
       expect(initializer).toContain(
         "clientOptions: Options<NumericLeadData, true>",
       );
-      expect(initializer).not.toContain("_123NumericLeadData");
     });
   });
 
@@ -222,13 +221,9 @@ describe("buildCommon", () => {
   });
   describe("buildInfiniteClientOptionsType", () => {
     it("should exclude the page param from the query type", () => {
-      const ctx: GenerationContext = {
-        ...mockContext,
-        modelNames: [...mockContext.modelNames, "FindPaginatedPetsData"],
-      };
       const result = buildInfiniteClientOptionsType(
         mockPaginatableOperation,
-        ctx,
+        mockContext,
       );
 
       expect(result.isExported).toBe(true);

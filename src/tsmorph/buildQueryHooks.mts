@@ -4,32 +4,7 @@ import {
   type VariableStatementStructure,
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
-
-/**
- * Get the error type string based on client type.
- */
-function getErrorType(op: OperationInfo, ctx: GenerationContext): string {
-  const errorTypeName = `${op.capitalizedMethodName}Error`;
-  // Operations without error responses have no generated Error type
-  const errorType = ctx.modelNames.includes(errorTypeName)
-    ? errorTypeName
-    : "unknown";
-  if (ctx.client === "@hey-api/client-axios") {
-    return `AxiosError<${errorType}>`;
-  }
-  return errorType;
-}
-
-/**
- * Resolve the generated Data type name for an operation, falling back to
- * unknown when the SDK signature exposes no Data type. The name is read from
- * the SDK function's own `Options<XData, ThrowOnError>` parameter rather than
- * derived from the method name, which diverges for digit-leading
- * operationIds (#213).
- */
-export function getDataTypeName(op: OperationInfo): string {
-  return op.dataTypeName ?? "unknown";
-}
+import { getDataTypeName, getErrorType } from "./operationNames.mjs";
 
 /**
  * SDK call arguments shared by every generated queryFn/mutationFn.
@@ -89,9 +64,6 @@ export function getPageType(op: OperationInfo): string {
  * TQueryFnData the infinite options are instantiated with (#203). Spelled as
  * a cast rather than `!` because generated code is linted downstream, and a
  * non-null assertion trips biome's noNonNullAssertion.
- *
- * Only ever called for paginatable operations, so the Data type is
- * guaranteed to exist — see buildInfiniteClientOptionsType for why.
  */
 export function buildPagedQueryFn(
   op: OperationInfo,

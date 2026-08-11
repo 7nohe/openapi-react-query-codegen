@@ -69,27 +69,18 @@ const mockNoDataTypeOperation: OperationInfo = {
 // hey-api prefixes a digit-leading operationId in the function name but strips
 // the digits from the Data type, so the two names diverge (#213)
 const mockDigitLeadingOperation: OperationInfo = {
+  ...mockPaginatableOperation,
   methodName: "_123NumericLead",
   capitalizedMethodName: "_123NumericLead",
   dataTypeName: "NumericLeadData",
-  httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "page", typeName: "number", optional: true }],
-  allParamsOptional: true,
-  isPaginatable: true,
-  pageParamType: "number",
-  pageParamTypeKind: "number",
 };
 
 const mockFetchContext: GenerationContext = {
   client: "@hey-api/client-fetch",
   modelNames: [
     "Pet",
-    "FindPetsData",
     "FindPetsError",
-    "FindPaginatedPetsData",
     "FindPaginatedPetsError",
-    "FindPetByIdData",
     "FindPetByIdError",
   ],
   serviceNames: ["findPets", "findPaginatedPets", "findPetById"],
@@ -193,17 +184,18 @@ describe("buildQueryHooks", () => {
     });
 
     it("should use the signature Data type for digit-leading operationIds (#213)", () => {
-      const result = buildUseQueryHook(
-        mockDigitLeadingOperation,
-        mockFetchContext,
-      );
+      const ctx: GenerationContext = {
+        ...mockFetchContext,
+        modelNames: [...mockFetchContext.modelNames, "NumericLeadError"],
+      };
+      const result = buildUseQueryHook(mockDigitLeadingOperation, ctx);
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<NumericLeadData, true> = {}",
       );
-      expect(initializer).not.toContain("Options<unknown, true>");
-      expect(initializer).not.toContain("_123NumericLeadData");
+      // The Error type shares the Data type stem, not the method name
+      expect(initializer).toContain("TError = NumericLeadError");
     });
   });
 
@@ -281,7 +273,6 @@ describe("buildQueryHooks", () => {
       expect(result).not.toBeNull();
       const initializer = result?.declarations[0].initializer as string;
       expect(initializer).toContain("as Options<NumericLeadData, true>");
-      expect(initializer).not.toContain("_123NumericLeadData");
     });
 
     it("should make initialPageParam and getNextPageParam optional overrides", () => {

@@ -4,22 +4,8 @@ import {
   type VariableStatementStructure,
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
-import { getDataTypeName, SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
-
-/**
- * Get the error type string based on client type.
- */
-function getErrorType(op: OperationInfo, ctx: GenerationContext): string {
-  const errorTypeName = `${op.capitalizedMethodName}Error`;
-  // Operations without error responses have no generated Error type
-  const errorType = ctx.modelNames.includes(errorTypeName)
-    ? errorTypeName
-    : "unknown";
-  if (ctx.client === "@hey-api/client-axios") {
-    return `AxiosError<${errorType}>`;
-  }
-  return errorType;
-}
+import { SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
+import { getDataTypeName, getErrorType } from "./operationNames.mjs";
 
 /**
  * Build useMutation hook.

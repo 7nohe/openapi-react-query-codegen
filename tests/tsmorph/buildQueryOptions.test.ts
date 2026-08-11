@@ -49,12 +49,7 @@ const mockRequiredParamsOperation: OperationInfo = {
 
 const mockContext: GenerationContext = {
   client: "@hey-api/client-fetch",
-  modelNames: [
-    "Pet",
-    "FindPetsData",
-    "FindPaginatedPetsData",
-    "FindPetByIdData",
-  ],
+  modelNames: ["Pet"],
   serviceNames: ["findPets", "findPaginatedPets", "findPetById"],
   pageParam: "page",
   nextPageParam: "nextPage",

@@ -5,7 +5,7 @@ import {
   type VariableStatementStructure,
 } from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
-import { getDataTypeName } from "./buildQueryHooks.mjs";
+import { getDataTypeName } from "./operationNames.mjs";
 
 /**
  * Build the default response type alias.
@@ -152,12 +152,6 @@ export function buildMutationKeyFn(
  * Example:
  * export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedPetsData, true>, "query"> &
  *   { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> };
- *
- * The Data type is always in scope here: `parseOperations` only marks an
- * operation paginatable when it resolved `dataTypeName` from the SDK signature
- * and found the page parameter inside that very type, and it discovers it
- * through the same exported declarations that become `ctx.modelNames`. So
- * there is no missing-Data case to fall back on.
  */
 export function buildInfiniteClientOptionsType(
   op: OperationInfo,
