@@ -2,12 +2,15 @@ import { StructureKind, VariableDeclarationKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
   buildEnsureQueryDataFn,
+  buildGetNextPageParamExpr,
+  buildInfiniteClientOptionsParam,
   buildPrefetchFn,
   buildPrefetchInfiniteQueryFn,
   buildUseInfiniteQueryHook,
   buildUseQueryHook,
   buildUseSuspenseInfiniteQueryHook,
   buildUseSuspenseQueryHook,
+  formatInitialPageParam,
 } from "../../src/tsmorph/buildQueryHooks.mjs";
 import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 
@@ -98,6 +101,26 @@ const mockUnknownDataContext: GenerationContext = {
 };
 
 describe("buildQueryHooks", () => {
+  describe("infinite query helpers", () => {
+    it("should omit the default value when a paginatable op has required params", () => {
+      const result = buildInfiniteClientOptionsParam({
+        ...mockPaginatableOperation,
+        allParamsOptional: false,
+      });
+
+      expect(result).toBe(
+        "clientOptions: Common.FindPaginatedPetsInfiniteClientOptions",
+      );
+    });
+
+    it("should fall back to a numeric page param when no operation is given", () => {
+      expect(formatInitialPageParam(mockFetchContext)).toBe("1");
+      expect(buildGetNextPageParamExpr(mockFetchContext)).toBe(
+        "(response: unknown) => (response as { nextPage: number }).nextPage",
+      );
+    });
+  });
+
   describe("buildUseQueryHook", () => {
     it("should build useQuery hook with fetch client", () => {
       const result = buildUseQueryHook(mockOperation, mockFetchContext);
@@ -244,10 +267,32 @@ describe("buildQueryHooks", () => {
         '"queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"',
       );
       expect(initializer).toContain(
-        'Partial<Pick<UseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>',
+        'Partial<Pick<UseInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>, TError, TData>, "initialPageParam" | "getNextPageParam">>',
       );
       // options spread last so caller overrides win at runtime
       expect(initializer).toMatch(/\.\.\.options\s*\}\)/);
+    });
+
+    it("should type the options with a single page as TQueryFnData (#203)", () => {
+      const result = buildUseInfiniteQueryHook(
+        mockPaginatableOperation,
+        mockFetchContext,
+      );
+      const initializer = result?.declarations[0].initializer as string;
+
+      // TQueryFnData is one page, so getNextPageParam receives a page rather
+      // than the aggregated InfiniteData
+      expect(initializer).toContain(
+        "UseInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>, TError, TData>",
+      );
+      expect(initializer).not.toContain(
+        "UseInfiniteQueryOptions<TData, TError>",
+      );
+      // queryFn resolves to a page, matching that TQueryFnData
+      expect(initializer).toContain(
+        "response.data as NonNullable<Common.FindPaginatedPetsDefaultResponse>",
+      );
+      expect(initializer).not.toContain("response.data as TData");
     });
 
     it("should include pageParam in queryFn", () => {
@@ -444,6 +489,27 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain("throwOnError: true");
       expect(initializer).toContain("({ pageParam, signal }) =>");
     });
+
+    it("should allow overriding the pagination options (#203)", () => {
+      const result = buildPrefetchInfiniteQueryFn(
+        mockPaginatableOperation,
+        mockFetchContext,
+      );
+
+      const initializer = result?.declarations[0].initializer as string;
+
+      // ...options is spread after the defaults, so the type must not forbid
+      // what the runtime honours
+      expect(initializer).toContain(
+        'Partial<Pick<FetchInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>>, "initialPageParam">>',
+      );
+      // FetchInfiniteQueryOptions only exposes getNextPageParam on the union
+      // member that also requires `pages`, so it cannot be Picked
+      expect(initializer).toContain(
+        "getNextPageParam?: GetNextPageParamFunction<unknown, NonNullable<Common.FindPaginatedPetsDefaultResponse>>",
+      );
+      expect(initializer).toMatch(/\.\.\.options\s*\}\)/);
+    });
   });
 
   describe("buildUseSuspenseInfiniteQueryHook", () => {
@@ -478,7 +544,7 @@ describe("buildQueryHooks", () => {
       );
       // Pagination options are optional overrides, same as useInfiniteQuery
       expect(initializer).toContain(
-        'Partial<Pick<UseSuspenseInfiniteQueryOptions<TData, TError>, "initialPageParam" | "getNextPageParam">>',
+        'Partial<Pick<UseSuspenseInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>, TError, TData>, "initialPageParam" | "getNextPageParam">>',
       );
       expect(initializer).toContain("({ pageParam, signal }) =>");
     });

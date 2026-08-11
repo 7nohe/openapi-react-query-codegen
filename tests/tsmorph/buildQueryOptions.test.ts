@@ -139,6 +139,20 @@ describe("buildQueryOptions", () => {
       );
     });
 
+    it("should accept pagination overrides (#203)", () => {
+      const result = buildInfiniteQueryOptionsFn(
+        mockPaginatableOperation,
+        mockContext,
+      );
+      const initializer = result?.declarations[0].initializer as string;
+
+      expect(initializer).toContain(
+        'options?: Partial<Pick<UseInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>>, "initialPageParam" | "getNextPageParam">>',
+      );
+      // spread last so the caller's overrides win
+      expect(initializer).toMatch(/\.\.\.options\s*\}\)/);
+    });
+
     it("should emit a numeric initialPageParam so the pageParam type matches getNextPageParam", () => {
       const result = buildInfiniteQueryOptionsFn(
         mockPaginatableOperation,

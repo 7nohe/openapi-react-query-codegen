@@ -66,6 +66,7 @@ export function buildQueryImport(): ImportDeclarationStructure {
       { name: "InfiniteData", isTypeOnly: true },
       { name: "FetchQueryOptions", isTypeOnly: true },
       { name: "FetchInfiniteQueryOptions", isTypeOnly: true },
+      { name: "GetNextPageParamFunction", isTypeOnly: true },
       { name: "EnsureQueryDataOptions", isTypeOnly: true },
     ],
   };
@@ -78,7 +79,11 @@ export function buildQueryOptionsImport(): ImportDeclarationStructure {
   return {
     kind: StructureKind.ImportDeclaration,
     moduleSpecifier: "@tanstack/react-query",
-    namedImports: [{ name: "queryOptions" }, { name: "infiniteQueryOptions" }],
+    namedImports: [
+      { name: "queryOptions" },
+      { name: "infiniteQueryOptions" },
+      { name: "UseInfiniteQueryOptions", isTypeOnly: true },
+    ],
   };
 }
 

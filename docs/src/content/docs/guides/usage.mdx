@@ -287,3 +287,12 @@ const { data, fetchNextPage } = useInfiniteQuery(
 const queryClient = useQueryClient();
 await queryClient.prefetchInfiniteQuery(findPaginatedPetsInfiniteOptions());
 ```
+
+The factory takes a third argument for the pagination overrides, so a custom scheme can be defined once and reused everywhere the factory is:
+
+```tsx
+const petPages = findPaginatedPetsInfiniteOptions({}, undefined, {
+  initialPageParam: "",
+  getNextPageParam: (lastPage) => lastPage.meta?.cursor,
+});
+```

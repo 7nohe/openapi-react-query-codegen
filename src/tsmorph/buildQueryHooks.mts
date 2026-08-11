@@ -79,17 +79,28 @@ export function buildInfiniteClientOptionsParam(op: OperationInfo): string {
 }
 
 /**
+ * The type of a single page. TanStack Query instantiates the infinite options
+ * with this as TQueryFnData, so it is what `getNextPageParam` receives as
+ * `lastPage` (#203). NonNullable because `throwOnError: true` means a resolved
+ * page is always present.
+ */
+export function getPageType(op: OperationInfo): string {
+  return `NonNullable<Common.${op.capitalizedMethodName}DefaultResponse>`;
+}
+
+/**
  * Build the paginated SDK call shared by every infinite query builder.
+ * The resolved response is narrowed to the page type so it matches the
+ * TQueryFnData the infinite options are instantiated with (#203). Spelled as
+ * a cast rather than `!` because generated code is linted downstream, and a
+ * non-null assertion trips biome's noNonNullAssertion.
  */
 export function buildPagedQueryFn(
   op: OperationInfo,
   ctx: GenerationContext,
-  castTData: boolean,
 ): string {
   const dataTypeName = getDataTypeName(op, ctx);
-  const thenClause = castTData
-    ? ".then(response => response.data as TData) as TData"
-    : ".then(response => response.data)";
+  const thenClause = `.then(response => response.data as ${getPageType(op)})`;
   const pageParamType = getPageParamType(op);
   // When the initial page param is omitted, the first request must send no
   // page param at all, so spread it in only once TanStack Query provides one.
@@ -158,11 +169,19 @@ export function buildGetNextPageParamExpr(
  * Build an options type where the pagination fields TanStack Query marks as
  * required become optional overrides: the generator supplies them, and
  * callers may replace them for custom pagination schemes (#156, #146).
+ *
+ * The first type argument is TQueryFnData — a single page — not TData (#203).
+ * Passing TData there made `getNextPageParam` receive the aggregated
+ * `InfiniteData<...>` as `lastPage`, so any custom pagination logic failed to
+ * compile. Only the first three type arguments are written: TanStack Query
+ * dropped TQueryData from `UseInfiniteQueryOptions` within the v5 line, so
+ * positions beyond TData are not stable across the supported peer range.
  */
 export function buildOverridableInfiniteOptionsType(
   optionsTypeName: string,
+  pageType: string,
 ): string {
-  const instantiated = `${optionsTypeName}<TData, TError>`;
+  const instantiated = `${optionsTypeName}<${pageType}, TError, TData>`;
   return `Omit<${instantiated}, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & Partial<Pick<${instantiated}, "initialPageParam" | "getNextPageParam">>`;
 }
 
@@ -267,7 +286,7 @@ function buildInfiniteHook(
     ? `InfiniteData<NonNullable<${baseDataType}>>`
     : `InfiniteData<${baseDataType}>`;
 
-  const queryFn = buildPagedQueryFn(op, ctx, true);
+  const queryFn = buildPagedQueryFn(op, ctx);
   const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
 
   const body = `${hookCall}({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
@@ -281,7 +300,7 @@ function buildInfiniteHook(
     declarations: [
       {
         name: hookName,
-        initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${buildInfiniteClientOptionsParam(op)}, queryKey?: TQueryKey, options?: ${buildOverridableInfiniteOptionsType(optionsTypeName)}) => ${body}`,
+        initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${buildInfiniteClientOptionsParam(op)}, queryKey?: TQueryKey, options?: ${buildOverridableInfiniteOptionsType(optionsTypeName, getPageType(op))}) => ${body}`,
       },
     ],
   };
@@ -346,10 +365,10 @@ export function buildPrefetchFn(
 /**
  * Build prefetchInfiniteQuery function for a paginatable operation.
  * Example:
- * export const prefetchUseFindPaginatedPetsInfinite = (queryClient: QueryClient, clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}, options?: Omit<FetchInfiniteQueryOptions<Common.FindPaginatedPetsDefaultResponse>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam">) =>
+ * export const prefetchUseFindPaginatedPetsInfinite = (queryClient: QueryClient, clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}, options?: Omit<FetchInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & Partial<Pick<FetchInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>>, "initialPageParam">> & { getNextPageParam?: GetNextPageParamFunction<unknown, NonNullable<Common.FindPaginatedPetsDefaultResponse>> }) =>
  *   queryClient.prefetchInfiniteQuery({
  *     queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions),
- *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>).then(response => response.data),
+ *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>).then(response => response.data as NonNullable<Common.FindPaginatedPetsDefaultResponse>),
  *     initialPageParam: 1,
  *     getNextPageParam: (response: unknown) => (response as { nextPage: number }).nextPage,
  *     ...options
@@ -365,10 +384,18 @@ export function buildPrefetchInfiniteQueryFn(
 
   const fnName = `prefetchUse${op.capitalizedMethodName}Infinite`;
 
-  const queryFn = buildPagedQueryFn(op, ctx, false);
+  const queryFn = buildPagedQueryFn(op, ctx);
   const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
 
-  const optionsParam = `options?: Omit<FetchInfiniteQueryOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam">`;
+  // The pagination fields are re-added as optional overrides: `...options` is
+  // spread after the defaults, so replacing them works at runtime and must not
+  // be forbidden by the type (#203). getNextPageParam is spelled out rather
+  // than Picked, because FetchInfiniteQueryOptions only exposes it on the
+  // union member that also requires `pages`.
+  const pageType = getPageType(op);
+  const instantiated = `FetchInfiniteQueryOptions<${pageType}>`;
+  const overrides = `Partial<Pick<${instantiated}, "initialPageParam">> & { getNextPageParam?: GetNextPageParamFunction<unknown, ${pageType}> }`;
+  const optionsParam = `options?: Omit<${instantiated}, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & ${overrides}`;
   const body = `queryClient.prefetchInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return {
