@@ -1,4 +1,3 @@
-import type { ImportDeclarationStructure } from "ts-morph";
 import { OpenApiRqFiles } from "../constants.mjs";
 import type {
   GeneratedFile,
@@ -32,13 +31,9 @@ import {
   buildQueryOptionsFn,
 } from "./buildQueryOptions.mjs";
 import {
-  buildClientImport,
   buildCommonFileImports,
-  buildCommonImport,
   buildHookFileImports,
-  buildModelImport,
-  buildQueryOptionsImport,
-  buildServiceImport,
+  buildQueryOptionsFileImports,
   createGenerationProject,
 } from "./projectFactory.mjs";
 
@@ -149,17 +144,7 @@ function generateQueryOptionsFile(
   );
 
   // Add imports
-  const imports: ImportDeclarationStructure[] = [
-    buildCommonImport(),
-    buildQueryOptionsImport(),
-    buildClientImport(ctx),
-    buildServiceImport(ctx),
-  ];
-  const modelImport = buildModelImport(ctx);
-  if (modelImport) {
-    imports.push(modelImport);
-  }
-  sourceFile.addImportDeclarations(imports);
+  sourceFile.addImportDeclarations(buildQueryOptionsFileImports(ctx));
 
   // Only GET operations have query options
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
