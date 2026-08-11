@@ -10,6 +10,7 @@ import {
   buildInfiniteClientOptionsParam,
   buildPagedQueryFn,
   formatInitialPageParam,
+  getPageType,
   QUERY_SDK_CALL_ARGS,
 } from "./buildQueryHooks.mjs";
 
@@ -54,12 +55,13 @@ export function buildQueryOptionsFn(
  * Build an infiniteQueryOptions factory for a paginatable GET operation.
  * Uses the dedicated infinite query key and page-less options type.
  * Example:
- * export const findPaginatedPetsInfiniteOptions = (clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) =>
+ * export const findPaginatedPetsInfiniteOptions = (clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>, options?: Partial<Pick<UseInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>>, "initialPageParam" | "getNextPageParam">>) =>
  *   infiniteQueryOptions({
  *     queryKey: Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions, queryKey),
- *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>).then(response => response.data),
+ *     queryFn: ({ pageParam }) => findPaginatedPets({ ...clientOptions, query: { ...clientOptions.query, page: pageParam as number }, throwOnError: true } as Options<FindPaginatedPetsData, true>).then(response => response.data as NonNullable<Common.FindPaginatedPetsDefaultResponse>),
  *     initialPageParam: 1,
  *     getNextPageParam: (response: unknown) => (response as { nextPage: number }).nextPage,
+ *     ...options,
  *   });
  */
 export function buildInfiniteQueryOptionsFn(
@@ -72,10 +74,16 @@ export function buildInfiniteQueryOptionsFn(
 
   const fnName = `${op.methodName}InfiniteOptions`;
 
-  const queryFn = buildPagedQueryFn(op, ctx, false);
+  const pageType = getPageType(op);
+  const queryFn = buildPagedQueryFn(op, ctx, pageType);
   const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
 
-  const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions} })`;
+  // Only the pagination fields are overridable here: the factory's return type
+  // is what every downstream consumer infers from, and a wider options type
+  // (select, placeholderData, ...) would make that inference ambiguous (#203).
+  const optionsParam = `options?: Partial<Pick<UseInfiniteQueryOptions<${pageType}>, "initialPageParam" | "getNextPageParam">>`;
+
+  const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return {
     kind: StructureKind.VariableStatement,
@@ -86,7 +94,7 @@ export function buildInfiniteQueryOptionsFn(
     declarations: [
       {
         name: fnName,
-        initializer: `(${buildInfiniteClientOptionsParam(op)}, queryKey?: Array<unknown>) => ${body}`,
+        initializer: `(${buildInfiniteClientOptionsParam(op)}, queryKey?: Array<unknown>, ${optionsParam}) => ${body}`,
       },
     ],
   };
