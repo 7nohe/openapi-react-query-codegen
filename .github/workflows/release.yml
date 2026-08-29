@@ -1,50 +1,155 @@
 name: release
 
-permissions:
-  contents: write
-  id-token: write
-
 on:
   push:
     tags:
       - 'v*'
 
+# Nothing is granted by default. Each job opts in to the minimum it needs.
+# The 2026-08-28 incident was possible because `id-token: write` sat at the
+# workflow level, so every job in the file — including a forgotten
+# comment-triggered one — could mint an npm publish token.
+permissions: {}
+
 jobs:
-  release:
+  # Builds and packs the tarball. Runs third-party code (dependency lifecycle
+  # scripts) and is therefore deliberately kept without `id-token: write`.
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # only to check out the repository
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
+      # `version` is omitted on purpose: the action then reads
+      # `packageManager` from package.json, which pins the exact pnpm version.
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: 24.20.0
           cache: "pnpm"
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Create GitHub release notes
-        run: npx changelogithub
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Publish release
-        # Prerelease versions (e.g. 3.0.0-beta.1) go to the beta dist-tag so
-        # they never override latest
+      - name: Build
+        run: pnpm build
+
+      - name: Pack
+        run: pnpm pack --pack-destination ./artifact
+
+      # Prerelease versions (e.g. 3.1.0-beta.1) must go to the beta dist-tag so
+      # they never take over `latest`.
+      - name: Detect prerelease
+        id: version
         run: |
-          if node -e "process.exit(require('./package.json').version.includes('-') ? 0 : 1)"; then
-            pnpm publish --no-git-checks --tag beta
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          if [[ "$version" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
-            pnpm publish --no-git-checks
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Upload package tarball
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-tarball
+          path: ./artifact/*.tgz
+          if-no-files-found: error
+
+  # The only job holding `id-token: write`. It never checks out the repository
+  # and never runs a dependency install, so no third-party code executes here —
+  # only the npm CLI bundled with Node.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release # gated by a required-reviewer protection rule
+    permissions:
+      id-token: write
+    steps:
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.20.0
+          registry-url: 'https://registry.npmjs.org'
+
+      # npm gained OIDC trusted publishing in 11.5.0 (fixed in 11.5.1).
+      # Node 24.20.0 bundles npm 11.19.0; fail loudly rather than silently
+      # falling back if that ever stops holding.
+      - name: Verify npm supports trusted publishing
+        run: |
+          set -euo pipefail
+          npm_version=$(npm --version)
+          echo "npm $npm_version"
+          node -e '
+            const [maj, min, pat] = process.argv[1].split("-")[0].split(".").map(Number);
+            if (maj > 11 || (maj === 11 && (min > 5 || (min === 5 && pat >= 1)))) process.exit(0);
+            console.error("npm >= 11.5.1 is required for OIDC trusted publishing, got " + process.argv[1]);
+            process.exit(1);
+          ' "$npm_version"
+
+      # download-artifact v8 errors on a digest mismatch by default, which is
+      # what makes the build -> publish tarball handoff trustworthy.
+      - name: Download package tarball
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-tarball
+
+      - name: Publish to npm
+        env:
+          # Passed through the environment rather than interpolated into the
+          # script body, so the value can never be parsed as shell.
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          tarballs=(./*.tgz)
+          if [ "${#tarballs[@]}" -ne 1 ]; then
+            echo "expected exactly one tarball, found ${#tarballs[@]}: ${tarballs[*]}" >&2
+            exit 1
+          fi
+          tarball="${tarballs[0]}"
+          echo "publishing $tarball"
+          if [ "$PRERELEASE" = "true" ]; then
+            npm publish "$tarball" --provenance --access public --tag beta
+          else
+            npm publish "$tarball" --provenance --access public
+          fi
+
+  # Release notes are created only after npm publish succeeds, so a declined or
+  # expired approval never leaves a GitHub Release advertising a version that
+  # does not exist on npm. The tag stays put, so the run is simply retryable.
+  # Holds `contents: write` but never `id-token: write`.
+  release-notes:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # changelogithub creates the GitHub Release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # changelogithub diffs against the previous tag
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.20.0
+
+      # Pinned to an exact version: unpinned, this resolves the latest release
+      # from npm at release time, which is an unreviewed third-party code path.
+      - name: Create GitHub release notes
+        run: npx --yes changelogithub@15.0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
