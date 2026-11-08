@@ -590,3 +590,90 @@ describe("fetch runtime: security", () => {
     ).toBeUndefined();
   });
 });
+
+describe("fetch runtime: combined security requirements", () => {
+  const send = async (auth: unknown, security: unknown) => {
+    const { data } = await make({ auth }).get({
+      url: "/echo",
+      security,
+    } as never);
+    return data as { headers: Record<string, string>; search: string };
+  };
+  const a = { in: "header", name: "X-A", type: "apiKey" };
+  const b = { in: "header", name: "X-B", type: "apiKey" };
+
+  test("sends every scheme a requirement combines", async () => {
+    const { headers } = await send("k", [[a, b]]);
+    expect(headers["x-a"]).toBe("k");
+    expect(headers["x-b"]).toBe("k");
+  });
+
+  test("skips a requirement that is missing a token", async () => {
+    const auth = (scheme: { name?: string }) =>
+      scheme.name === "X-B" ? undefined : "k";
+    const { headers } = await send(auth, [
+      [a, b],
+      { in: "header", name: "X-C", type: "apiKey" },
+    ]);
+    expect(headers["x-a"]).toBeUndefined();
+    expect(headers["x-c"]).toBe("k");
+  });
+
+  test("uses only the first of several alternatives", async () => {
+    const { headers } = await send("k", [a, b]);
+    expect(headers["x-a"]).toBe("k");
+    expect(headers["x-b"]).toBeUndefined();
+  });
+
+  test("joins cookies with a semicolon", async () => {
+    const { headers } = await send("k", [
+      [
+        { in: "cookie", name: "one", type: "apiKey" },
+        { in: "cookie", name: "two", type: "apiKey" },
+      ],
+    ]);
+    expect(headers.cookie).toBe("one=k; two=k");
+  });
+});
+
+describe("fetch runtime: path parameter styles", () => {
+  const url = (
+    value: unknown,
+    style?: "simple" | "label" | "matrix",
+    explode?: boolean,
+  ) =>
+    make().buildUrl({
+      url: "/x/{id}",
+      path: { id: value },
+      pathSerializer: { parameters: { id: { style, explode } } },
+    } as never);
+  const base = () => make().buildUrl({ url: "" });
+  const tail = (value: string) => value.slice(base().length);
+  const obj = { R: 100, G: 200 };
+
+  test.each([
+    [5, undefined, undefined, "/x/5"],
+    [[3, 4], undefined, undefined, "/x/3,4"],
+    [obj, undefined, undefined, "/x/R,100,G,200"],
+    [obj, "simple", true, "/x/R=100,G=200"],
+    [5, "label", false, "/x/.5"],
+    [[3, 4], "label", false, "/x/.3,4"],
+    [[3, 4], "label", true, "/x/.3.4"],
+    [obj, "label", false, "/x/.R,100,G,200"],
+    [obj, "label", true, "/x/.R=100.G=200"],
+    [5, "matrix", false, "/x/;id=5"],
+    [[3, 4], "matrix", false, "/x/;id=3,4"],
+    [[3, 4], "matrix", true, "/x/;id=3;id=4"],
+    [obj, "matrix", false, "/x/;id=R,100,G,200"],
+    [obj, "matrix", true, "/x/;R=100;G=200"],
+  ] as const)("%j as %s explode=%s", (value, style, explode, expected) => {
+    expect(tail(url(value, style, explode))).toBe(expected);
+  });
+
+  test("encodes values and ignores null object members", () => {
+    expect(tail(url({ a: "x y", b: null }, "matrix", true))).toBe(
+      "/x/;a=x%20y",
+    );
+    expect(tail(url(new Date(0)))).toBe("/x/1970-01-01T00%3A00%3A00.000Z");
+  });
+});

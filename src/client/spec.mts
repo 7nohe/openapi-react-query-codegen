@@ -30,7 +30,14 @@ function parseText(text: string, source: string): Doc {
   return parsed as Doc;
 }
 
-async function readLocation(location: string): Promise<string> {
+/**
+ * Read a document. `location` in the result is where it really came from, which
+ * after a redirect is not the URL asked for and is what its relative `$ref`s
+ * resolve against.
+ */
+async function readLocation(
+  location: string,
+): Promise<{ text: string; location: string }> {
   if (URL_RE.test(location)) {
     const response = await fetch(location);
     if (!response.ok) {
@@ -38,9 +45,16 @@ async function readLocation(location: string): Promise<string> {
         `Failed to fetch ${location}: ${response.status} ${response.statusText}`,
       );
     }
-    return response.text();
+    return { text: await response.text(), location: response.url || location };
   }
-  return readFile(location, "utf-8");
+  return { text: await readFile(location, "utf-8"), location };
+}
+
+async function loadDocument(
+  location: string,
+): Promise<{ doc: Doc; location: string }> {
+  const read = await readLocation(location);
+  return { doc: parseText(read.text, location), location: read.location };
 }
 
 export type LoadedSpec = {
@@ -51,19 +65,10 @@ export type LoadedSpec = {
 
 /** Load a specification from a file path, a URL or inline JSON/YAML content. */
 export async function loadSpec(input: string): Promise<LoadedSpec> {
-  if (URL_RE.test(input)) {
-    return {
-      doc: parseText(await readLocation(input), input),
-      location: input,
-    };
-  }
+  if (URL_RE.test(input)) return loadDocument(input);
   const looksInline = input.includes("\n") || input.trimStart().startsWith("{");
   if (!looksInline && existsSync(input)) {
-    const location = path.resolve(input);
-    return {
-      doc: parseText(await readLocation(location), location),
-      location,
-    };
+    return loadDocument(path.resolve(input));
   }
   if (!looksInline) {
     throw new Error(`OpenAPI specification not found: ${input}`);
@@ -86,6 +91,39 @@ export function getByPointer(root: Json, pointer: string): Json {
   return current;
 }
 
+const REF_SIBLING_KEYWORDS = [
+  "additionalProperties",
+  "allOf",
+  "anyOf",
+  "const",
+  "enum",
+  "items",
+  "oneOf",
+  "prefixItems",
+  "properties",
+  "required",
+];
+
+/**
+ * The part of a schema that sits next to its `$ref` and changes the type, as a
+ * schema of its own. OpenAPI 3.1 applies such keywords together with the
+ * reference, while 3.0 says they are ignored. A name that `required` lists
+ * without declaring it becomes a property of unknown type.
+ */
+export function refSiblingSchema(doc: Doc, node: Json): Json | undefined {
+  if (typeof doc.openapi !== "string" || doc.openapi.startsWith("3.0")) {
+    return undefined;
+  }
+  if (!REF_SIBLING_KEYWORDS.some((key) => node[key] !== undefined)) {
+    return undefined;
+  }
+  const { $ref: _ref, ...siblings } = node;
+  if (!Array.isArray(siblings.required)) return siblings;
+  const properties = { ...siblings.properties };
+  for (const name of siblings.required) properties[name] ??= {};
+  return { ...siblings, properties };
+}
+
 function resolveLocation(base: string | undefined, target: string): string {
   if (URL_RE.test(target)) return target;
   if (!base) {
@@ -104,18 +142,20 @@ function resolveLocation(base: string | undefined, target: string): string {
  */
 export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
   const { doc, location: rootLocation } = loaded;
-  const cache = new Map<string, Doc>();
+  const cache = new Map<string, { doc: Doc; location: string }>();
   const hoisted = new Map<string, string>();
   const hoistedSchemas: Record<string, Json> = {};
 
   const usedNames = new Set<string>(Object.keys(doc.components?.schemas ?? {}));
 
-  async function loadFile(location: string): Promise<Doc> {
+  async function loadFile(
+    location: string,
+  ): Promise<{ doc: Doc; location: string }> {
     const cached = cache.get(location);
     if (cached) return cached;
-    const parsed = parseText(await readLocation(location), location);
-    cache.set(location, parsed);
-    return parsed;
+    const loadedFile = await loadDocument(location);
+    cache.set(location, loadedFile);
+    return loadedFile;
   }
 
   async function walk(
@@ -138,6 +178,9 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
         ? resolveLocation(nodeLocation, filePart)
         : (nodeLocation as string);
       const key = `${targetLocation}${pointer}`;
+      const siblings = refSiblingSchema(doc, node);
+      const walkedSiblings =
+        siblings && (await walk(siblings, nodeLocation, stack));
 
       if (stack.has(key)) {
         let name = hoisted.get(key);
@@ -146,26 +189,31 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
           const last = pointer.split("/").pop() ?? "";
           name = uniqueName(toTypeName(last || base), usedNames);
           hoisted.set(key, name);
-          const targetDoc = await loadFile(targetLocation);
-          const target = getByPointer(targetDoc, pointer);
+          const file = await loadFile(targetLocation);
+          const target = getByPointer(file.doc, pointer);
           hoistedSchemas[name] = await walk(
             target,
-            targetLocation,
+            file.location,
             new Set(stack).add(key),
           );
         }
-        return { $ref: `#/components/schemas/${name}` };
+        return { ...walkedSiblings, $ref: `#/components/schemas/${name}` };
       }
 
-      const targetDoc =
-        targetLocation === rootLocation && doc
-          ? doc
+      const file =
+        targetLocation === rootLocation
+          ? { doc, location: targetLocation }
           : await loadFile(targetLocation);
-      const target = getByPointer(targetDoc, pointer);
+      const target = getByPointer(file.doc, pointer);
       if (target === undefined) {
         throw new Error(`Unresolvable $ref: ${ref}`);
       }
-      return walk(target, targetLocation, new Set(stack).add(key));
+      const inlined = await walk(
+        target,
+        file.location,
+        new Set(stack).add(key),
+      );
+      return walkedSiblings ? { allOf: [inlined, walkedSiblings] } : inlined;
     }
 
     const result: Record<string, Json> = {};

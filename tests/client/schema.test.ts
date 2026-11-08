@@ -545,3 +545,72 @@ describe("schemaDescription", () => {
     ).toContain("   * A\n   *\n   * The a\n");
   });
 });
+
+describe("keywords next to a $ref", () => {
+  const withVersion = (openapi: string): SchemaCtx => ({
+    ...ctx,
+    doc: { ...doc, openapi },
+  });
+  const schema = {
+    $ref: "#/components/schemas/Pet",
+    description: "Only documentation",
+    properties: { extra: { type: "string" } },
+    required: ["extra", "other"],
+  };
+
+  test("OpenAPI 3.1 applies them together with the reference", () => {
+    const rendered = renderSchema(schema, withVersion("3.1.0"));
+    expect(rendered).toMatch(/^Pet & \{/);
+    expect(rendered).toContain("extra: string;");
+    expect(rendered).toContain("other: unknown;");
+  });
+
+  test("OpenAPI 3.0 ignores them", () => {
+    expect(renderSchema(schema, withVersion("3.0.3"))).toBe("Pet");
+  });
+
+  test("keywords that do not change the type stay out of it", () => {
+    expect(
+      renderSchema(
+        {
+          $ref: "#/components/schemas/Pet",
+          description: "d",
+          deprecated: true,
+        },
+        withVersion("3.1.0"),
+      ),
+    ).toBe("Pet");
+  });
+
+  test("a readOnly property next to a $ref needs a request-side type", () => {
+    const keys = findReadWriteOnlyKeys({
+      openapi: "3.1.0",
+      components: {
+        schemas: {
+          Base: { type: "object" },
+          Child: {
+            $ref: "#/components/schemas/Base",
+            properties: { id: { type: "string", readOnly: true } },
+          },
+        },
+      },
+    });
+    expect([...keys]).toEqual(["Child"]);
+  });
+});
+
+describe("global types shadowed by a schema", () => {
+  test("binary strings keep meaning the globals", () => {
+    const shadowing: SchemaCtx = {
+      doc,
+      names: new Map([
+        ["Blob", "Blob"],
+        ["File", "File"],
+      ]),
+    };
+    expect(renderSchema({ type: "string", format: "binary" }, shadowing)).toBe(
+      "globalThis.Blob | globalThis.File",
+    );
+    expect(render({ type: "string", format: "binary" })).toBe("Blob | File");
+  });
+});

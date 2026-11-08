@@ -205,3 +205,126 @@ describe("bundleExternalRefs", () => {
     expect(absolute.s).toEqual({ type: "integer" });
   });
 });
+
+describe("redirected specifications", () => {
+  const stubRedirect = () => {
+    const requested: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        requested.push(url);
+        const body =
+          url === "https://x.test/spec"
+            ? JSON.stringify({
+                openapi: "3.0.3",
+                paths: {},
+                components: {
+                  schemas: { Pet: { $ref: "./models.json#/Pet" } },
+                },
+              })
+            : JSON.stringify({ Pet: { type: "object" } });
+        const response = new Response(body);
+        Object.defineProperty(response, "url", {
+          value:
+            url === "https://x.test/spec"
+              ? "https://x.test/v1/openapi.json"
+              : url,
+        });
+        return response;
+      }),
+    );
+    return requested;
+  };
+
+  test("relative references resolve against the final URL", async () => {
+    const requested = stubRedirect();
+    const loaded = await loadSpec("https://x.test/spec");
+    expect(loaded.location).toBe("https://x.test/v1/openapi.json");
+    const bundled = await bundleExternalRefs(loaded);
+    expect(requested).toContain("https://x.test/v1/models.json");
+    expect(bundled.components.schemas.Pet).toEqual({ type: "object" });
+  });
+});
+
+describe("keywords next to an external $ref", () => {
+  test("OpenAPI 3.1 keeps them", async () => {
+    await write(
+      "sib/base.yaml",
+      "type: object\nproperties:\n  a:\n    type: string\n",
+    );
+    const root = await write(
+      "sib/root.yaml",
+      [
+        "openapi: 3.1.0",
+        "paths: {}",
+        "components:",
+        "  schemas:",
+        "    Child:",
+        "      $ref: ./base.yaml",
+        "      description: docs",
+        "      required: [extra]",
+        "      properties:",
+        "        extra:",
+        "          type: string",
+      ].join("\n"),
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    const child = bundled.components.schemas.Child;
+    expect(child.allOf[0].properties.a).toEqual({ type: "string" });
+    expect(child.allOf[1].properties.extra).toEqual({ type: "string" });
+    expect(child.allOf[1].required).toEqual(["extra"]);
+  });
+
+  test("OpenAPI 3.0 ignores them", async () => {
+    await write("sib30/base.yaml", "type: object\n");
+    const root = await write(
+      "sib30/root.yaml",
+      [
+        "openapi: 3.0.3",
+        "paths: {}",
+        "components:",
+        "  schemas:",
+        "    Child:",
+        "      $ref: ./base.yaml",
+        "      properties:",
+        "        extra:",
+        "          type: string",
+      ].join("\n"),
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    expect(bundled.components.schemas.Child).toEqual({ type: "object" });
+  });
+
+  test("a cyclic reference keeps them next to the hoisted $ref", async () => {
+    await write(
+      "sibcycle/node.yaml",
+      [
+        "type: object",
+        "properties:",
+        "  next:",
+        "    $ref: ./node.yaml",
+        "    required: [extra]",
+        "    properties:",
+        "      extra:",
+        "        type: string",
+      ].join("\n"),
+    );
+    const root = await write(
+      "sibcycle/root.yaml",
+      [
+        "openapi: 3.1.0",
+        "paths: {}",
+        "components:",
+        "  schemas:",
+        "    Tree:",
+        "      $ref: ./node.yaml",
+      ].join("\n"),
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    const hoisted = Object.values(bundled.components.schemas).find(
+      (schema) => (schema as { properties?: unknown }).properties,
+    ) as { properties: { next: Record<string, unknown> } };
+    expect(hoisted.properties.next.$ref).toMatch(/^#\/components\/schemas\//);
+    expect(hoisted.properties.next.required).toEqual(["extra"]);
+  });
+});

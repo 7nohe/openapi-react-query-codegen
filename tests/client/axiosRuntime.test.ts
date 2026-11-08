@@ -332,3 +332,71 @@ describe("axios runtime: security", () => {
     expect(echoed.headers["x-key"]).toBe("second");
   });
 });
+
+describe("axios runtime: JSON string bodies", () => {
+  test.each(["true", "123", "null", '{"a":1}', "plain"])(
+    "keeps %s a string",
+    async (value) => {
+      const { data } = await make().post<Echo>({
+        url: "/echo",
+        body: value,
+        bodyType: "json",
+      });
+      expect(JSON.parse((data as unknown as Echo).body)).toBe(value);
+    },
+  );
+});
+
+describe("axios runtime: combined security requirements", () => {
+  const a = { in: "header", name: "X-A", type: "apiKey" } as const;
+  const b = { in: "header", name: "X-B", type: "apiKey" } as const;
+  const send = async (auth: unknown, security: unknown) => {
+    const { data } = await make({ auth }).get({
+      url: "/echo",
+      security,
+    } as never);
+    return data as unknown as Echo;
+  };
+
+  test("sends every scheme a requirement combines", async () => {
+    const { headers } = await send("k", [[a, b]]);
+    expect(headers["x-a"]).toBe("k");
+    expect(headers["x-b"]).toBe("k");
+  });
+
+  test("skips a requirement that is missing a token", async () => {
+    const auth = (scheme: { name?: string }) =>
+      scheme.name === "X-B" ? undefined : "k";
+    const { headers } = await send(auth, [[a, b], { ...a, name: "X-C" }]);
+    expect(headers["x-a"]).toBeUndefined();
+    expect(headers["x-c"]).toBe("k");
+  });
+});
+
+describe("axios runtime: path parameter styles", () => {
+  const path = (value: unknown, style: string, explode: boolean) =>
+    make()
+      .buildUrl({
+        url: "/x/{id}",
+        path: { id: value },
+        pathSerializer: { parameters: { id: { style, explode } } },
+      } as never)
+      .slice(baseURL.length);
+
+  test("serializes the style through buildUrl", () => {
+    expect(path({ R: 1 }, "matrix", true)).toBe("/x/;R=1");
+    expect(path([3, 4], "label", true)).toBe("/x/.3.4");
+    expect(path({ R: 1 }, "simple", true)).toBe("/x/R=1");
+  });
+
+  test("uses the style for the request it sends", async () => {
+    const { data } = await make().get<Echo>({
+      url: "/echo/{id}",
+      path: { id: { R: 1 } },
+      pathSerializer: {
+        parameters: { id: { style: "matrix", explode: true } },
+      },
+    });
+    expect((data as unknown as Echo).path).toBe("/echo/;R=1");
+  });
+});

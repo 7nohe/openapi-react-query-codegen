@@ -28,6 +28,16 @@ export interface QuerySerializerOptions extends ParameterSerializer {
   parameters?: Record<string, ParameterSerializer>;
 }
 
+export interface PathParameterSerializer {
+  style?: "simple" | "label" | "matrix";
+  explode?: boolean;
+}
+
+export interface PathSerializerOptions {
+  /** Per-parameter settings, keyed by the parameter name. */
+  parameters?: Record<string, PathParameterSerializer>;
+}
+
 export interface Auth {
   in?: "header" | "query" | "cookie";
   name?: string;
@@ -64,10 +74,15 @@ export interface Config<T extends ClientOptions = ClientOptions>
     | "TRACE";
   /** How the response body is parsed. `auto` follows the content type. */
   parseAs?: ParseAs;
+  pathSerializer?: PathSerializerOptions;
   querySerializer?:
     | QuerySerializerOptions
     | ((query: Record<string, unknown>) => string);
-  security?: ReadonlyArray<Auth>;
+  /**
+   * Alternative ways to authenticate: the first one that has a token for every
+   * scheme it lists is used. An array lists schemes needed together.
+   */
+  security?: ReadonlyArray<Auth | ReadonlyArray<Auth>>;
   /** Throw the error instead of returning it. */
   throwOnError?: boolean;
 }
@@ -169,7 +184,12 @@ export interface Client {
   buildUrl: (
     options: Pick<
       RequestOptions,
-      "baseUrl" | "path" | "query" | "querySerializer" | "url"
+      | "baseUrl"
+      | "path"
+      | "pathSerializer"
+      | "query"
+      | "querySerializer"
+      | "url"
     >,
   ) => string;
   connect: MethodFn;
@@ -224,29 +244,52 @@ function primitive(value: unknown): string {
   return String(value);
 }
 
-function serializePathValue(value: unknown): string {
+function serializePathValue(
+  name: string,
+  value: unknown,
+  { style = "simple", explode = false }: PathParameterSerializer = {},
+): string {
+  const key = encode(name);
+  const prefix = style === "label" ? "." : style === "matrix" ? ";" : "";
   if (Array.isArray(value)) {
-    return value.map((item) => encode(primitive(item))).join(",");
+    const items = value.map((item) => encode(primitive(item)));
+    if (style === "matrix") {
+      return explode
+        ? items.map((item) => `;${key}=${item}`).join("")
+        : `;${key}=${items.join(",")}`;
+    }
+    return `${prefix}${items.join(explode && style === "label" ? "." : ",")}`;
   }
-  if (value instanceof Date) return encode(value.toISOString());
-  if (typeof value === "object" && value !== null) {
-    return Object.entries(value)
-      .flatMap(([key, item]) => [encode(key), encode(primitive(item))])
+  if (typeof value === "object" && value !== null && !(value instanceof Date)) {
+    const entries = Object.entries(value).filter(
+      ([, item]) => item !== undefined && item !== null,
+    );
+    if (explode) {
+      const pairs = entries.map(
+        ([prop, item]) => `${encode(prop)}=${encode(primitive(item))}`,
+      );
+      return `${prefix}${pairs.join(prefix || ",")}`;
+    }
+    const flat = entries
+      .flatMap(([prop, item]) => [encode(prop), encode(primitive(item))])
       .join(",");
+    return style === "matrix" ? `;${key}=${flat}` : `${prefix}${flat}`;
   }
-  return encode(String(value));
+  const text = encode(primitive(value));
+  return style === "matrix" ? `;${key}=${text}` : `${prefix}${text}`;
 }
 
 function serializePath(
   url: string,
   path: Record<string, unknown> | undefined,
+  serializer?: PathSerializerOptions,
 ): string {
   if (!path) return url;
   return url.replace(/\{([^{}]+)\}/g, (match, name: string) => {
     const value = path[name];
     return value === undefined || value === null
       ? match
-      : serializePathValue(value);
+      : serializePathValue(name, value, serializer?.parameters?.[name]);
   });
 }
 
@@ -314,10 +357,10 @@ const isAbsoluteUrl = (url: string): boolean =>
 function buildUrl(
   options: Pick<
     RequestOptions,
-    "baseUrl" | "path" | "query" | "querySerializer" | "url"
+    "baseUrl" | "path" | "pathSerializer" | "query" | "querySerializer" | "url"
   >,
 ): string {
-  const path = serializePath(options.url, options.path);
+  const path = serializePath(options.url, options.path, options.pathSerializer);
   let url: string;
   if (isAbsoluteUrl(path)) {
     url = path;
@@ -464,17 +507,29 @@ async function applySecurity(
   options: RequestOptions,
   headers: Headers,
 ): Promise<void> {
-  for (const auth of options.security ?? []) {
-    const token = await getAuthToken(auth, options.auth);
-    if (!token) continue;
-    const name = auth.name ?? "Authorization";
-    if (auth.in === "query") {
-      options.query = { ...options.query, [name]: token };
-    } else if (auth.in === "cookie") {
-      headers.append("Cookie", `${name}=${token}`);
-    } else {
-      headers.set(name, token);
-    }
+  for (const requirement of options.security ?? []) {
+    const schemes = (
+      Array.isArray(requirement) ? requirement : [requirement]
+    ) as ReadonlyArray<Auth>;
+    const tokens = await Promise.all(
+      schemes.map((auth) => getAuthToken(auth, options.auth)),
+    );
+    if (tokens.some((token) => !token)) continue;
+    schemes.forEach((auth, index) => {
+      const name = auth.name ?? "Authorization";
+      const token = tokens[index] as string;
+      if (auth.in === "query") {
+        options.query = { ...options.query, [name]: token };
+      } else if (auth.in === "cookie") {
+        const cookie = headers.get("Cookie");
+        headers.set(
+          "Cookie",
+          cookie ? `${cookie}; ${name}=${token}` : `${name}=${token}`,
+        );
+      } else {
+        headers.set(name, token);
+      }
+    });
     return;
   }
 }

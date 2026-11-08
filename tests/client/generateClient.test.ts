@@ -393,3 +393,187 @@ describe("detectImportExtension", () => {
     }
   });
 });
+
+describe("serialization and parsing the SDK asks for", () => {
+  const operation = async (
+    client: "fetch" | "axios",
+    definition: Record<string, unknown>,
+    url = "/x",
+  ) => {
+    const generated = await generateClient({
+      input: JSON.stringify({
+        openapi: "3.0.3",
+        info: { title: "t", version: "1" },
+        paths: {
+          [url]: { get: { operationId: "op", ...definition } },
+        },
+        components: {
+          schemas: {
+            Obj: { type: "object", properties: { r: { type: "string" } } },
+          },
+          securitySchemes: {
+            a: { type: "apiKey", in: "header", name: "X-A" },
+            b: { type: "apiKey", in: "header", name: "X-B" },
+          },
+        },
+      }),
+      client,
+      importExtension: "",
+      pageParam: "page",
+    });
+    const sdk = generated.files.find((f) => f.name === "sdk.gen.ts")?.content;
+    return sdk?.replace(/\s+/g, " ") ?? "";
+  };
+  const ok = (content: Record<string, unknown>) => ({
+    description: "ok",
+    content,
+  });
+  const json = { "application/json": { schema: { type: "string" } } };
+  const text = { "text/plain": { schema: { type: "string" } } };
+  const query = (parameter: Record<string, unknown>) => ({
+    parameters: [{ name: "p", in: "query", ...parameter }],
+    responses: { "204": { description: "none" } },
+  });
+  const obj = { type: "object", properties: { r: { type: "string" } } };
+  const list = { type: "array", items: { type: "string" } };
+
+  test("one parser when every success body reads the same way", async () => {
+    const sdk = await operation("fetch", {
+      responses: {
+        "200": ok(json),
+        "201": ok(json),
+        "204": { description: "none" },
+      },
+    });
+    expect(sdk).toContain('parseAs: "json"');
+  });
+
+  test("no fixed parser when success bodies differ", async () => {
+    const mixed = { responses: { "200": ok(json), "202": ok(text) } };
+    expect(await operation("fetch", mixed)).not.toContain("parseAs");
+    expect(await operation("axios", mixed)).not.toContain("responseType");
+  });
+
+  test("no fixed parser when one response offers both", async () => {
+    const sdk = await operation("fetch", {
+      responses: { "200": ok({ ...json, ...text }) },
+    });
+    expect(sdk).not.toContain("parseAs");
+  });
+
+  test("error bodies do not decide how success is parsed", async () => {
+    const sdk = await operation("fetch", {
+      responses: { "200": ok(text), "400": ok(json) },
+    });
+    expect(sdk).toContain('parseAs: "text"');
+  });
+
+  test.each(["fetch", "axios"] as const)(
+    "%s keeps a non-default array style",
+    async (client) => {
+      const sdk = await operation(
+        client,
+        query({ schema: list, style: "form", explode: false }),
+      );
+      expect(sdk).toContain(
+        'parameters: { "p": { array: { style: "form", explode: false } } }',
+      );
+    },
+  );
+
+  test("delimited styles default to not exploding", async () => {
+    const sdk = await operation(
+      "fetch",
+      query({ schema: list, style: "pipeDelimited" }),
+    );
+    expect(sdk).toContain('array: { style: "pipeDelimited", explode: false }');
+  });
+
+  test("an object without a style uses the OpenAPI default", async () => {
+    for (const schema of [obj, { $ref: "#/components/schemas/Obj" }]) {
+      expect(await operation("fetch", query({ schema }))).toContain(
+        '"p": { object: { style: "form", explode: true } }',
+      );
+    }
+  });
+
+  test("deepObject and default arrays need no override", async () => {
+    for (const parameter of [
+      { schema: obj, style: "deepObject", explode: true },
+      { schema: list },
+      { schema: { type: "string" }, style: "form", explode: false },
+    ]) {
+      expect(await operation("fetch", query(parameter))).not.toContain(
+        "querySerializer",
+      );
+    }
+  });
+
+  test("a schema that can hold either shape gets both settings", async () => {
+    const sdk = await operation(
+      "fetch",
+      query({ schema: { anyOf: [list, obj] }, explode: false }),
+    );
+    expect(sdk).toContain(
+      '"p": { array: { style: "form", explode: false }, object: { style: "form", explode: false } }',
+    );
+  });
+
+  test.each(["fetch", "axios"] as const)(
+    "%s passes path styles to the runtime",
+    async (client) => {
+      const sdk = await operation(
+        client,
+        {
+          parameters: [
+            {
+              name: "m",
+              in: "path",
+              required: true,
+              style: "matrix",
+              explode: true,
+              schema: obj,
+            },
+            {
+              name: "l",
+              in: "path",
+              required: true,
+              style: "label",
+              schema: list,
+            },
+            { name: "s", in: "path", required: true, schema: list },
+            {
+              name: "o",
+              in: "path",
+              required: true,
+              explode: true,
+              schema: obj,
+            },
+            {
+              name: "t",
+              in: "path",
+              required: true,
+              explode: true,
+              schema: { type: "string" },
+            },
+          ],
+          responses: { "204": { description: "none" } },
+        },
+        "/x/{m}/{l}/{s}/{o}/{t}",
+      );
+      expect(sdk).toContain(
+        'pathSerializer: { parameters: { "m": { style: "matrix", explode: true }, "l": { style: "label", explode: false }, "o": { style: "simple", explode: true } } }',
+      );
+    },
+  );
+
+  test("schemes required together are grouped", async () => {
+    const sdk = await operation("fetch", {
+      security: [{ a: [], b: [] }, { a: [] }],
+      responses: { "204": { description: "none" } },
+    });
+    expect(sdk).toContain(
+      'security: [[{ in: "header", name: "X-A", type: "apiKey" }, { in: "header", name: "X-B", type: "apiKey" }], { in: "header", name: "X-A", type: "apiKey" }]',
+    );
+  });
+});

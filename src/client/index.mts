@@ -143,11 +143,7 @@ export async function generateClient(
   const ctx: SchemaCtx = { doc, names, writableNames };
   const operations = collectOperations(doc, {
     useOperationId: !options.noOperationId,
-    reservedTypeNames: [
-      "ClientOptions",
-      ...names.values(),
-      ...writableNames.values(),
-    ],
+    reservedTypeNames: [...names.values(), ...writableNames.values()],
   });
 
   const ext = options.importExtension;

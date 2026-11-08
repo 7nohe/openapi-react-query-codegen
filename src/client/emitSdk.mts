@@ -1,6 +1,7 @@
 import {
   type BodyKind,
   classifyResponses,
+  mediaKind,
   type OperationIR,
   type ParameterIR,
   type SecurityIR,
@@ -46,29 +47,58 @@ function schemaType(doc: Doc, schema: Json): string | undefined {
   return undefined;
 }
 
-/** Query parameters whose OpenAPI style differs from the runtime defaults. */
+const PRIMITIVE_TYPES = new Set(["boolean", "integer", "number", "string"]);
+
+/**
+ * Query parameters the runtime defaults would serialize differently from the
+ * OpenAPI ones. The runtime leaves arrays in `form` style with `explode`, and
+ * objects in `deepObject` style, so only the rest is spelled out. OpenAPI
+ * defaults a query parameter to `form`, and `explode` to true for `form` only.
+ */
 function querySerializerEntries(doc: Doc, parameters: ParameterIR[]): string[] {
   const entries: string[] = [];
   for (const parameter of parameters) {
     if (parameter.in !== "query") continue;
     const type = schemaType(doc, parameter.schema);
-    const style = parameter.style;
-    if (type === "array") {
-      const explode = parameter.explode ?? true;
-      const isDefault = (style === undefined || style === "form") && explode;
-      if (isDefault) continue;
-      const arrayStyle =
-        style === "spaceDelimited" || style === "pipeDelimited"
-          ? style
-          : "form";
-      entries.push(
-        `${q(parameter.name)}: { array: { style: ${q(arrayStyle)}, explode: ${explode} } }`,
-      );
-    } else if (type === "object" && style === "form") {
-      entries.push(
-        `${q(parameter.name)}: { object: { style: "form", explode: ${parameter.explode ?? true} } }`,
-      );
+    if (type !== undefined && PRIMITIVE_TYPES.has(type)) continue;
+    const style = parameter.style ?? "form";
+    const explode = parameter.explode ?? style === "form";
+    if (style === "deepObject") continue;
+    // A schema without a plain type (`anyOf`, say) can hold either shape.
+    const settings: string[] = [];
+    if (type !== "object" && !(style === "form" && explode)) {
+      settings.push(`array: { style: ${q(style)}, explode: ${explode} }`);
     }
+    if (type !== "array") {
+      settings.push(`object: { style: "form", explode: ${explode} }`);
+    }
+    if (settings.length > 0) {
+      entries.push(`${q(parameter.name)}: { ${settings.join(", ")} }`);
+    }
+  }
+  return entries;
+}
+
+/** Path parameters that are not in the default `simple` style. */
+function pathSerializerEntries(doc: Doc, parameters: ParameterIR[]): string[] {
+  const entries: string[] = [];
+  for (const parameter of parameters) {
+    if (parameter.in !== "path") continue;
+    const style =
+      parameter.style === "label" || parameter.style === "matrix"
+        ? parameter.style
+        : "simple";
+    const explode = parameter.explode ?? false;
+    if (style === "simple") {
+      // `explode` only changes how an object is written.
+      const type = schemaType(doc, parameter.schema);
+      if (!explode || type === "array" || PRIMITIVE_TYPES.has(type ?? "")) {
+        continue;
+      }
+    }
+    entries.push(
+      `${q(parameter.name)}: { style: ${q(style)}, explode: ${explode} }`,
+    );
   }
   return entries;
 }
@@ -81,16 +111,30 @@ function securityLiteral(security: SecurityIR): string {
   return `{ scheme: ${q(scheme)}, type: "http" }`;
 }
 
+/** One alternative: a scheme, or the array of schemes it needs together. */
+function securityRequirementLiteral(requirement: SecurityIR[]): string {
+  const literals = requirement.map(securityLiteral);
+  return literals.length === 1 ? literals[0] : `[${literals.join(", ")}]`;
+}
+
+function parseKind(mediaType: string): string {
+  const kind = mediaKind(mediaType);
+  if (kind === "json" || kind === "text") return kind;
+  return kind === "form-data" ? "formData" : "blob";
+}
+
+/**
+ * How to read a successful response, when every body the operation can answer
+ * with is read the same way. With a mix (`200` JSON and `202` text, say) the
+ * runtime has to look at the response itself.
+ */
 function parseAsFor(operation: OperationIR): string | undefined {
-  const success = operation.responses.find(
-    (response) => /^[23]/.test(response.status) && response.mediaType,
+  const kinds = new Set(
+    operation.responses
+      .filter((response) => /^2/.test(response.status))
+      .flatMap((response) => response.mediaTypes.map(parseKind)),
   );
-  if (!success?.mediaType) return undefined;
-  const type = success.mediaType.toLowerCase().split(";")[0].trim();
-  if (type === "application/json" || type.endsWith("+json")) return "json";
-  if (type.startsWith("text/")) return "text";
-  if (type === "multipart/form-data") return "formData";
-  return "blob";
+  return kinds.size === 1 ? [...kinds][0] : undefined;
 }
 
 export function optionsAreOptional(operation: OperationIR): boolean {
@@ -131,14 +175,19 @@ function emitOperation(
     );
   }
 
-  const security = operation.security.map(securityLiteral);
+  const security = operation.security.map(securityRequirementLiteral);
   if (security.length > 0) lines.push(`security: [${security.join(", ")}]`);
 
   const queryEntries = querySerializerEntries(doc, operation.parameters);
-  if (queryEntries.length > 0 && kind === "fetch") {
+  if (queryEntries.length > 0) {
     lines.push(
       `querySerializer: { parameters: { ${queryEntries.join(", ")} } }`,
     );
+  }
+
+  const pathEntries = pathSerializerEntries(doc, operation.parameters);
+  if (pathEntries.length > 0) {
+    lines.push(`pathSerializer: { parameters: { ${pathEntries.join(", ")} } }`);
   }
 
   lines.push(`url: ${q(operation.path)}`);

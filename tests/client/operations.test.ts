@@ -139,17 +139,40 @@ describe("collectOperations", () => {
 
   test("collects security requirements, falling back to the document", () => {
     expect(byName("findPetById")?.security).toEqual([
-      { type: "http", scheme: "bearer" },
+      [{ type: "http", scheme: "bearer" }],
     ]);
     expect(byName("postPetsById")?.security).toEqual([
-      { type: "http", scheme: "bearer" },
-      { type: "apiKey", in: "query", name: "k" },
+      [{ type: "http", scheme: "bearer" }],
+      [{ type: "apiKey", in: "query", name: "k" }],
     ]);
     expect(
       collectOperations({
         paths: { "/x": { get: { security: [{ a: [] }, { a: [] }] } } },
       })[0].security,
     ).toEqual([]);
+  });
+
+  test("keeps schemes required together in one group", () => {
+    const security = collectOperations({
+      components: {
+        securitySchemes: {
+          a: { type: "apiKey", in: "header", name: "X-A" },
+          b: { type: "apiKey", in: "header", name: "X-B" },
+        },
+      },
+      paths: {
+        "/x": {
+          get: { security: [{ a: [], b: [] }, { a: [] }, { a: [] }, {}] },
+        },
+      },
+    })[0].security;
+    expect(security).toEqual([
+      [
+        { type: "apiKey", in: "header", name: "X-A" },
+        { type: "apiKey", in: "header", name: "X-B" },
+      ],
+      [{ type: "apiKey", in: "header", name: "X-A" }],
+    ]);
   });
 
   test("builds the JSDoc", () => {

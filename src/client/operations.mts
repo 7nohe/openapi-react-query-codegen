@@ -13,6 +13,41 @@ import {
 } from "./schema.mjs";
 import { type Doc, getByPointer, type Json } from "./spec.mjs";
 
+/**
+ * Type names a schema or an operation type cannot take: `ClientOptions` and
+ * `Options` are exported next to them, and the rest are what the generated hook
+ * files import or use, where an imported model of the same name would clash
+ * with or shadow them.
+ */
+export const RESERVED_TYPE_NAMES: readonly string[] = [
+  "ClientOptions",
+  "Options",
+  "Common",
+  "AxiosError",
+  "EnsureQueryDataOptions",
+  "FetchInfiniteQueryOptions",
+  "FetchQueryOptions",
+  "GetNextPageParamFunction",
+  "InfiniteData",
+  "QueryClient",
+  "UseInfiniteQueryOptions",
+  "UseMutationOptions",
+  "UseMutationResult",
+  "UseQueryOptions",
+  "UseQueryResult",
+  "UseSuspenseInfiniteQueryOptions",
+  "UseSuspenseQueryOptions",
+  "Array",
+  "Awaited",
+  "NonNullable",
+  "Omit",
+  "Partial",
+  "Pick",
+  "Promise",
+  "Record",
+  "ReturnType",
+];
+
 export const HTTP_METHODS = [
   "get",
   "put",
@@ -57,7 +92,10 @@ export interface ResponseIR {
   status: string;
   description?: string;
   schema?: Json;
+  /** The media type `schema` was taken from. */
   mediaType?: string;
+  /** Every media type the response declares. */
+  mediaTypes: string[];
 }
 
 export interface SecurityIR {
@@ -93,7 +131,11 @@ export interface OperationIR {
   parameters: ParameterIR[];
   body?: BodyIR;
   responses: ResponseIR[];
-  security: SecurityIR[];
+  /**
+   * Alternative ways to authenticate. Any one of them is enough, and each lists
+   * the schemes it needs together.
+   */
+  security: SecurityIR[][];
   /** `/** ... *\/` block, or undefined when the operation has no docs */
   jsDoc?: string;
 }
@@ -118,7 +160,7 @@ export function deref(doc: Doc, node: Json, depth = 0): Json {
   return node;
 }
 
-function mediaKind(mediaType: string): BodyKind {
+export function mediaKind(mediaType: string): BodyKind {
   const type = mediaType.toLowerCase().split(";")[0].trim();
   if (type === "application/json" || type.endsWith("+json")) return "json";
   if (type === "multipart/form-data") return "form-data";
@@ -172,11 +214,12 @@ function mergeParameters(doc: Doc, pathItem: Json, operation: Json) {
   return [...merged.values()];
 }
 
-function collectSecurity(doc: Doc, requirements: Json): SecurityIR[] {
+function collectSecurity(doc: Doc, requirements: Json): SecurityIR[][] {
   const schemes = doc.components?.securitySchemes ?? {};
-  const result: SecurityIR[] = [];
+  const result: SecurityIR[][] = [];
   const seen = new Set<string>();
   for (const requirement of Array.isArray(requirements) ? requirements : []) {
+    const group: SecurityIR[] = [];
     for (const name of Object.keys(requirement ?? {})) {
       const scheme = deref(doc, schemes[name]);
       if (!scheme?.type) continue;
@@ -191,11 +234,12 @@ function collectSecurity(doc: Doc, requirements: Json): SecurityIR[] {
         entry.in = scheme.in;
         entry.name = scheme.name;
       }
-      const id = JSON.stringify(entry);
-      if (!seen.has(id)) {
-        seen.add(id);
-        result.push(entry);
-      }
+      group.push(entry);
+    }
+    const id = JSON.stringify(group);
+    if (group.length > 0 && !seen.has(id)) {
+      seen.add(id);
+      result.push(group);
     }
   }
   return result;
@@ -222,8 +266,12 @@ export function collectOperations(
 ): OperationIR[] {
   const useOperationId = options.useOperationId ?? true;
   const operations: OperationIR[] = [];
-  const usedNames = new Set<string>();
-  const usedTypeNames = new Set<string>(options.reservedTypeNames ?? []);
+  // Functions and types share one set: `index.ts` re-exports both, and
+  // digit-leading names (`_1Abc`) look the same in either case.
+  const usedNames = new Set<string>([
+    ...RESERVED_TYPE_NAMES,
+    ...(options.reservedTypeNames ?? []),
+  ]);
   const paths: Record<string, Json> = doc.paths ?? {};
 
   for (const [pathKey, rawPathItem] of Object.entries(paths)) {
@@ -240,7 +288,7 @@ export function collectOperations(
       const functionName = uniqueName(toFunctionName(baseName), usedNames);
       const typeNames = claimTypeNames(
         functionName.charAt(0).toUpperCase() + functionName.slice(1),
-        usedTypeNames,
+        usedNames,
       );
 
       const parameters = mergeParameters(doc, pathItem, operation);
@@ -272,6 +320,7 @@ export function collectOperations(
           description: response.description,
           schema: content?.media?.schema,
           mediaType: content?.mediaType,
+          mediaTypes: Object.keys(response.content ?? {}),
         });
       }
 
@@ -300,7 +349,7 @@ export function buildWritableNames(
   doc: Doc,
   names: Map<string, string>,
 ): Map<string, string> {
-  const used = new Set<string>(["ClientOptions", ...names.values()]);
+  const used = new Set<string>([...RESERVED_TYPE_NAMES, ...names.values()]);
   const writable = new Map<string, string>();
   for (const key of findReadWriteOnlyKeys(doc)) {
     writable.set(
@@ -314,8 +363,7 @@ export function buildWritableNames(
 /** Map every component schema key to its generated type name. */
 export function buildSchemaNames(doc: Doc): Map<string, string> {
   const names = new Map<string, string>();
-  // `ClientOptions` is emitted by the generator itself.
-  const used = new Set<string>(["ClientOptions"]);
+  const used = new Set<string>(RESERVED_TYPE_NAMES);
   for (const key of Object.keys(doc.components?.schemas ?? {})) {
     names.set(key, uniqueName(toTypeName(key), used));
   }

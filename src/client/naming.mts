@@ -61,6 +61,31 @@ const RESERVED_WORDS = new Set([
   "eval",
 ]);
 
+/**
+ * Names generated code already uses wherever it calls an operation: the client
+ * instance, the TanStack helpers the hook files import, and the parameters and
+ * locals of the generated hooks. A function with one of these names could not
+ * be called there.
+ */
+const RESERVED_FUNCTION_NAMES = new Set([
+  "client",
+  "clientOptions",
+  "infiniteQueryOptions",
+  "initialPageParam",
+  "mutationKey",
+  "options",
+  "pageParam",
+  "queryClient",
+  "queryKey",
+  "queryOptions",
+  "response",
+  "useInfiniteQuery",
+  "useMutation",
+  "useQuery",
+  "useSuspenseInfiniteQuery",
+  "useSuspenseQuery",
+]);
+
 export function isValidIdentifier(name: string): boolean {
   return IDENTIFIER_RE.test(name);
 }
@@ -106,7 +131,9 @@ export function toCamelCase(input: string): string {
 export function toFunctionName(input: string): string {
   const name = toCamelCase(input);
   if (!name) return "operation";
-  return RESERVED_WORDS.has(name) ? `${name}_` : name;
+  return RESERVED_WORDS.has(name) || RESERVED_FUNCTION_NAMES.has(name)
+    ? `${name}_`
+    : name;
 }
 
 /**

@@ -1,5 +1,10 @@
 import { propertyKey, toTypeName } from "./naming.mjs";
-import { type Doc, getByPointer, type Json } from "./spec.mjs";
+import {
+  type Doc,
+  getByPointer,
+  type Json,
+  refSiblingSchema,
+} from "./spec.mjs";
 
 const COMPONENT_SCHEMA_PREFIX = "#/components/schemas/";
 
@@ -119,6 +124,21 @@ function addNull(type: string, schema: Json): string {
 
 type Seen = ReadonlySet<string>;
 
+const generatedNames = new WeakMap<Map<string, string>, Set<string>>();
+
+/**
+ * A global type the output refers to. Schemas named `Blob` and `File` are common
+ * enough to keep their names, so the global is qualified when one exists.
+ */
+function globalTypeRef(name: string, ctx: SchemaCtx): string {
+  let names = generatedNames.get(ctx.names);
+  if (!names) {
+    names = new Set(ctx.names.values());
+    generatedNames.set(ctx.names, names);
+  }
+  return names.has(name) ? `globalThis.${name}` : name;
+}
+
 /** Render the TypeScript type for an OpenAPI schema object. */
 export function renderSchema(
   schema: Json,
@@ -133,18 +153,11 @@ export function renderSchema(
   if (typeof schema !== "object") return "unknown";
 
   if (typeof schema.$ref === "string") {
-    const key = componentSchemaKey(schema.$ref);
-    if (key !== undefined) {
-      const writable = ctx.writableNames?.get(key);
-      if (ctx.mode === "write" && writable !== undefined) {
-        ctx.usedWritable?.add(key);
-        return writable;
-      }
-      return ctx.names.get(key) ?? toTypeName(key);
-    }
-    if (seen.has(schema.$ref)) return "unknown";
-    const target = getByPointer(ctx.doc, schema.$ref);
-    return renderSchema(target, ctx, indent, new Set(seen).add(schema.$ref));
+    const referenced = renderRef(schema.$ref, ctx, indent, seen);
+    const siblings = refSiblingSchema(ctx.doc, schema);
+    return siblings
+      ? intersection([referenced, renderSchema(siblings, ctx, indent, seen)])
+      : referenced;
   }
 
   if (schema.const !== undefined) {
@@ -202,7 +215,10 @@ export function renderSchema(
   let type: string;
   switch (schema.type) {
     case "string":
-      type = schema.format === "binary" ? "Blob | File" : "string";
+      type =
+        schema.format === "binary"
+          ? `${globalTypeRef("Blob", ctx)} | ${globalTypeRef("File", ctx)}`
+          : "string";
       break;
     case "number":
     case "integer":
@@ -229,6 +245,30 @@ export function renderSchema(
       }
   }
   return addNull(type, schema);
+}
+
+function renderRef(
+  ref: string,
+  ctx: SchemaCtx,
+  indent: string,
+  seen: Seen,
+): string {
+  const key = componentSchemaKey(ref);
+  if (key !== undefined) {
+    const writable = ctx.writableNames?.get(key);
+    if (ctx.mode === "write" && writable !== undefined) {
+      ctx.usedWritable?.add(key);
+      return writable;
+    }
+    return ctx.names.get(key) ?? toTypeName(key);
+  }
+  if (seen.has(ref)) return "unknown";
+  return renderSchema(
+    getByPointer(ctx.doc, ref),
+    ctx,
+    indent,
+    new Set(seen).add(ref),
+  );
 }
 
 /** True when the schema pins `property` to literal values (enum or const). */
@@ -404,7 +444,6 @@ function scanReadWriteOnly(
   if (typeof schema.$ref === "string") {
     const key = componentSchemaKey(schema.$ref);
     if (key !== undefined) found.refs.add(key);
-    return;
   }
   for (const value of Object.values(
     (schema.properties ?? {}) as Record<string, Json>,

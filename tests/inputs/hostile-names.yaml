@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  title: Names that collide with what generated code uses
+  version: 1.0.0
+paths:
+  /a:
+    get:
+      operationId: client
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Array"
+    post:
+      operationId: useMutation
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                blob:
+                  $ref: "#/components/schemas/Blob"
+                file:
+                  $ref: "#/components/schemas/File"
+                upload:
+                  type: string
+                  format: binary
+                names:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Options"
+  /b:
+    get:
+      operationId: options
+      parameters:
+        - { name: page, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Promise"
+                  nextPage:
+                    type: integer
+                  omit:
+                    $ref: "#/components/schemas/Omit"
+                  record:
+                    $ref: "#/components/schemas/Record"
+                  partial:
+                    $ref: "#/components/schemas/Partial"
+                  pick:
+                    $ref: "#/components/schemas/Pick"
+                  awaited:
+                    $ref: "#/components/schemas/Awaited"
+                  returnType:
+                    $ref: "#/components/schemas/ReturnType"
+                  nonNullable:
+                    $ref: "#/components/schemas/NonNullable"
+                  common:
+                    $ref: "#/components/schemas/Common"
+                  queryClient:
+                    $ref: "#/components/schemas/QueryClient"
+                  infiniteData:
+                    $ref: "#/components/schemas/InfiniteData"
+                  useQueryOptions:
+                    $ref: "#/components/schemas/UseQueryOptions"
+                  axiosError:
+                    $ref: "#/components/schemas/AxiosError"
+                  clientOptions:
+                    $ref: "#/components/schemas/ClientOptions"
+                  client:
+                    $ref: "#/components/schemas/Client"
+  /c: { get: { operationId: clientOptions, responses: { "200": { description: ok } } } }
+  /d: { get: { operationId: queryClient, responses: { "200": { description: ok } } } }
+  /e: { get: { operationId: queryKey, responses: { "200": { description: ok } } } }
+  /f: { get: { operationId: pageParam, responses: { "200": { description: ok } } } }
+  /g: { get: { operationId: useQuery, responses: { "200": { description: ok } } } }
+  /h: { get: { operationId: queryOptions, responses: { "200": { description: ok } } } }
+  /i: { get: { operationId: infiniteQueryOptions, responses: { "200": { description: ok } } } }
+  /j: { get: { operationId: response, responses: { "200": { description: ok } } } }
+  /k: { get: { operationId: infinite, responses: { "200": { description: ok } } } }
+  /l: { get: { operationId: 1abc, responses: { "200": { description: ok } } } }
+  /m: { post: { operationId: mutationKey, responses: { "200": { description: ok } } } }
+  /n: { get: { operationId: useSuspenseQuery, responses: { "200": { description: ok } } } }
+  /o: { get: { operationId: useInfiniteQuery, responses: { "200": { description: ok } } } }
+  /p: { get: { operationId: useSuspenseInfiniteQuery, responses: { "200": { description: ok } } } }
+  /q: { get: { operationId: initialPageParam, responses: { "200": { description: ok } } } }
+components:
+  schemas:
+    Array: { type: array, items: { type: string } }
+    Blob: { type: object, properties: { sha: { type: string } } }
+    File: { type: object, properties: { name: { type: string } } }
+    Options: { type: object, properties: { a: { type: string } } }
+    ClientOptions: { type: object, properties: { a: { type: string } } }
+    Client: { type: object, properties: { a: { type: string } } }
+    Promise: { type: object, properties: { a: { type: string } } }
+    Omit: { type: object, properties: { a: { type: string } } }
+    Record: { type: object, properties: { a: { type: string } } }
+    Partial: { type: object, properties: { a: { type: string } } }
+    Pick: { type: object, properties: { a: { type: string } } }
+    Awaited: { type: object, properties: { a: { type: string } } }
+    ReturnType: { type: object, properties: { a: { type: string } } }
+    NonNullable: { type: object, properties: { a: { type: string } } }
+    Common: { type: object, properties: { a: { type: string } } }
+    QueryClient: { type: object, properties: { a: { type: string } } }
+    InfiniteData: { type: object, properties: { a: { type: string } } }
+    UseQueryOptions: { type: object, properties: { a: { type: string } } }
+    AxiosError: { type: object, properties: { a: { type: string } } }
+    1abc: { type: object, properties: { a: { type: string } } }
