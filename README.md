@@ -4,7 +4,7 @@
 
 [![npm version](https://badge.fury.io/js/%407nohe%2Fopenapi-react-query-codegen.svg)](https://badge.fury.io/js/%407nohe%2Fopenapi-react-query-codegen)
 
-📖 **[Documentation](https://openapi-react-query-codegen.vercel.app)** · [Migrating to v3](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v3/)
+📖 **[Documentation](https://openapi-react-query-codegen.vercel.app)** · [Migrating to v3](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v3/) · [Coming from openapi-react-query](https://openapi-react-query-codegen.vercel.app/guides/migrating-from-openapi-react-query/)
 
 ## Features
 
@@ -35,17 +35,19 @@ See the [documentation](https://openapi-react-query-codegen.vercel.app) for CLI 
 
 ## How it compares
 
-|  | This library | @hey-api tanstack-query plugin | Orval |
-|---|---|---|---|
-| `queryOptions` / `infiniteQueryOptions` factories (TanStack v5 pattern) | ✅ | ✅ | ❌ |
-| Ready-to-use hooks (`useQuery` / suspense / infinite variants) | ✅ | ❌ (options only) | ✅ |
-| SSR helpers (`prefetchQuery` / `prefetchInfiniteQuery` / `ensureQueryData`) | ✅ | ❌ | Partial (`usePrefetch`) |
-| Hierarchical query keys for granular invalidation | ✅ | ✅ (tags) | Partial |
-| Stable release line | ✅ SemVer | pre-1.0, frequent breaking changes | ✅ |
-| MSW mock generation | ❌ (out of scope) | ❌ | ✅ |
-| Vue / Solid / Svelte / Angular | ❌ React-focused | ✅ | ✅ |
+|  | This library | @hey-api tanstack-query plugin | Orval | openapi-react-query |
+|---|---|---|---|---|
+| `queryOptions` / `infiniteQueryOptions` factories (TanStack v5 pattern) | ✅ | ✅ | ❌ | ✅ (`$api.queryOptions`) |
+| Ready-to-use hooks (`useQuery` / suspense / infinite variants) | ✅ generated per operation | ❌ (options only) | ✅ | ✅ runtime wrapper (method + path strings) |
+| SSR helpers (`prefetchQuery` / `prefetchInfiniteQuery` / `ensureQueryData`) | ✅ | ❌ | Partial (`usePrefetch`) | Not provided (use `queryOptions`) |
+| Hierarchical query keys for granular invalidation | ✅ | ✅ (tags) | Partial | Not documented |
+| Stable release line | ✅ SemVer | pre-1.0, frequent breaking changes | ✅ | ⚠️ upstream openapi-typescript is in [maintenance mode](https://github.com/openapi-ts/openapi-typescript/issues/2874) |
+| MSW mock generation | ❌ (out of scope) | ❌ | ✅ | ❌ |
+| Vue / Solid / Svelte / Angular | ❌ React-focused | ✅ | ✅ | ❌ |
 
 **Scope**: this library is deliberately React-focused and does not generate API mocks — use Orval if MSW mocks are your priority, or hey-api's own plugin if you need non-React frameworks.
+
+**Coming from openapi-typescript / openapi-fetch / openapi-react-query?** See the [migration guide](https://openapi-react-query-codegen.vercel.app/guides/migrating-from-openapi-react-query/).
 
 ## Stability policy
 
