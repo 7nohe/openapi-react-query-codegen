@@ -1,4 +1,8 @@
-import type { SourceFile, VariableStatementStructure } from "ts-morph";
+import type {
+  ImportDeclarationStructure,
+  TypeAliasDeclarationStructure,
+  VariableStatementStructure,
+} from "ts-morph";
 import { OpenApiRqFiles } from "../constants.mjs";
 import type {
   GeneratedFile,
@@ -38,23 +42,71 @@ import {
   createGenerationProject,
 } from "./projectFactory.mjs";
 
+type Statement = TypeAliasDeclarationStructure | VariableStatementStructure;
+
 /**
- * Add one variable statement per operation, skipping the ones the builder
+ * Build one variable statement per operation, skipping the ones the builder
  * declines. A builder returns null when the operation is out of its scope —
  * every infinite-query builder returns null for non-paginatable operations,
  * which is how the paginatable subset gets selected.
  */
-function addStatements(
-  sourceFile: SourceFile,
+function collectStatements(
   operations: OperationInfo[],
   build: (op: OperationInfo) => VariableStatementStructure | null,
-): void {
+): VariableStatementStructure[] {
+  const statements: VariableStatementStructure[] = [];
   for (const op of operations) {
     const statement = build(op);
     if (statement) {
-      sourceFile.addVariableStatement(statement);
+      statements.push(statement);
     }
   }
+  return statements;
+}
+
+/**
+ * ts-morph separates statements of different kinds with a blank line when
+ * they are added one at a time but not when they are added as a batch, so
+ * restore the separator where the kind changes.
+ */
+function separateKinds(statements: Statement[]): Statement[] {
+  return statements.map((statement, index) =>
+    index > 0 && statements[index - 1].kind !== statement.kind
+      ? { ...statement, leadingTrivia: `\n${statement.leadingTrivia ?? ""}` }
+      : statement,
+  );
+}
+
+const IDENTIFIER_RE = /[A-Za-z_$][\w$]*/g;
+
+/**
+ * Create a generated file. Statements go in as one batch so ts-morph reparses
+ * the file once, and only the model and service names the body actually
+ * mentions are imported: importing thousands of unused names forced every
+ * edit to rescan a huge import list and made the later import organising pass
+ * slow on large specifications.
+ */
+function createFile(
+  name: string,
+  ctx: GenerationContext,
+  buildImports: (ctx: GenerationContext) => ImportDeclarationStructure[],
+  statements: Statement[],
+): string {
+  const project = createGenerationProject();
+  const sourceFile = project.createSourceFile(`${name}.ts`, undefined, {
+    overwrite: true,
+  });
+  sourceFile.addStatements(statements);
+  const used = new Set(sourceFile.getFullText().match(IDENTIFIER_RE));
+  sourceFile.insertImportDeclarations(
+    0,
+    buildImports({
+      ...ctx,
+      modelNames: ctx.modelNames.filter((model) => used.has(model)),
+      serviceNames: ctx.serviceNames.filter((service) => used.has(service)),
+    }),
+  );
+  return sourceFile.getFullText();
 }
 
 /**
@@ -72,45 +124,47 @@ function generateCommonFile(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.common}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildCommonFileImports(ctx));
-
   // Group operations by HTTP method
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
   const mutationOperations = operations.filter((op) =>
     ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
   );
+  const statements: Statement[] = [];
 
   // Add query types and keys
   for (const op of getOperations) {
-    sourceFile.addTypeAlias(buildDefaultResponseType(op));
-    sourceFile.addTypeAlias(buildQueryResultType(op));
-    sourceFile.addVariableStatement(buildQueryKeyConst(op));
-    sourceFile.addVariableStatement(buildQueryKeyFn(op));
+    statements.push(
+      buildDefaultResponseType(op),
+      buildQueryResultType(op),
+      buildQueryKeyConst(op),
+      buildQueryKeyFn(op),
+    );
   }
 
   // Add dedicated infinite query types and keys for paginatable operations
   for (const op of getOperations.filter((o) => o.isPaginatable)) {
-    sourceFile.addTypeAlias(buildInfiniteClientOptionsType(op, ctx));
-    sourceFile.addVariableStatement(buildInfiniteQueryKeyConst(op));
-    sourceFile.addVariableStatement(buildInfiniteQueryKeyFn(op));
+    statements.push(
+      buildInfiniteClientOptionsType(op, ctx),
+      buildInfiniteQueryKeyConst(op),
+      buildInfiniteQueryKeyFn(op),
+    );
   }
 
   // Add mutation types and keys
   for (const op of mutationOperations) {
-    sourceFile.addTypeAlias(buildMutationResultType(op));
-    sourceFile.addVariableStatement(buildMutationKeyConst(op));
-    sourceFile.addVariableStatement(buildMutationKeyFn(op));
+    statements.push(
+      buildMutationResultType(op),
+      buildMutationKeyConst(op),
+      buildMutationKeyFn(op),
+    );
   }
 
-  return sourceFile.getFullText();
+  return createFile(
+    OpenApiRqFiles.common,
+    ctx,
+    buildCommonFileImports,
+    separateKinds(statements),
+  );
 }
 
 /**
@@ -120,33 +174,17 @@ function generateQueriesFile(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.queries}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildHookFileImports(ctx));
-
-  // Group operations
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
   const mutationOperations = operations.filter((op) =>
     ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
   );
 
-  // Add useQuery hooks
-  for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildUseQueryHook(op, ctx));
-  }
-
-  // Add useMutation hooks
-  for (const op of mutationOperations) {
-    sourceFile.addVariableStatement(buildUseMutationHook(op, ctx));
-  }
-
-  return sourceFile.getFullText();
+  return createFile(OpenApiRqFiles.queries, ctx, buildHookFileImports, [
+    // useQuery hooks
+    ...getOperations.map((op) => buildUseQueryHook(op, ctx)),
+    // useMutation hooks
+    ...mutationOperations.map((op) => buildUseMutationHook(op, ctx)),
+  ]);
 }
 
 /**
@@ -156,29 +194,21 @@ function generateQueryOptionsFile(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.queryOptions}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildQueryOptionsFileImports(ctx));
-
   // Only GET operations have query options
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
-  for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildQueryOptionsFn(op));
-  }
-
-  // Add infiniteQueryOptions factories
-  addStatements(sourceFile, getOperations, (op) =>
-    buildInfiniteQueryOptionsFn(op, ctx),
+  return createFile(
+    OpenApiRqFiles.queryOptions,
+    ctx,
+    buildQueryOptionsFileImports,
+    [
+      ...getOperations.map((op) => buildQueryOptionsFn(op)),
+      // infiniteQueryOptions factories
+      ...collectStatements(getOperations, (op) =>
+        buildInfiniteQueryOptionsFn(op, ctx),
+      ),
+    ],
   );
-
-  return sourceFile.getFullText();
 }
 
 /**
@@ -188,30 +218,17 @@ function generateSuspenseFile(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.suspense}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildHookFileImports(ctx));
-
   // Only GET operations for suspense
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
-  // Add useSuspenseQuery hooks
-  for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildUseSuspenseQueryHook(op, ctx));
-  }
-
-  // Add useSuspenseInfiniteQuery hooks
-  addStatements(sourceFile, getOperations, (op) =>
-    buildUseSuspenseInfiniteQueryHook(op, ctx),
-  );
-
-  return sourceFile.getFullText();
+  return createFile(OpenApiRqFiles.suspense, ctx, buildHookFileImports, [
+    // useSuspenseQuery hooks
+    ...getOperations.map((op) => buildUseSuspenseQueryHook(op, ctx)),
+    // useSuspenseInfiniteQuery hooks
+    ...collectStatements(getOperations, (op) =>
+      buildUseSuspenseInfiniteQueryHook(op, ctx),
+    ),
+  ]);
 }
 
 /**
@@ -221,25 +238,18 @@ function generateInfiniteQueriesFile(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.infiniteQueries}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildHookFileImports(ctx));
-
   // Only GET operations can be paginatable
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
-  // Add useInfiniteQuery hooks
-  addStatements(sourceFile, getOperations, (op) =>
-    buildUseInfiniteQueryHook(op, ctx),
+  return createFile(
+    OpenApiRqFiles.infiniteQueries,
+    ctx,
+    buildHookFileImports,
+    // useInfiniteQuery hooks
+    collectStatements(getOperations, (op) =>
+      buildUseInfiniteQueryHook(op, ctx),
+    ),
   );
-
-  return sourceFile.getFullText();
 }
 
 /**
@@ -249,30 +259,17 @@ function generatePrefetchFile(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.prefetch}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildHookFileImports(ctx));
-
   // Only GET operations for prefetch
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
-  // Add prefetch functions
-  for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildPrefetchFn(op));
-  }
-
-  // Add prefetchInfiniteQuery functions
-  addStatements(sourceFile, getOperations, (op) =>
-    buildPrefetchInfiniteQueryFn(op, ctx),
-  );
-
-  return sourceFile.getFullText();
+  return createFile(OpenApiRqFiles.prefetch, ctx, buildHookFileImports, [
+    // prefetch functions
+    ...getOperations.map((op) => buildPrefetchFn(op)),
+    // prefetchInfiniteQuery functions
+    ...collectStatements(getOperations, (op) =>
+      buildPrefetchInfiniteQueryFn(op, ctx),
+    ),
+  ]);
 }
 
 /**
@@ -282,25 +279,15 @@ function generateEnsureQueryDataFile(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(
-    `${OpenApiRqFiles.ensureQueryData}.ts`,
-    undefined,
-    { overwrite: true },
-  );
-
-  // Add imports
-  sourceFile.addImportDeclarations(buildHookFileImports(ctx));
-
   // Only GET operations for ensure
   const getOperations = operations.filter((op) => op.httpMethod === "GET");
 
-  // Add ensureQueryData functions
-  for (const op of getOperations) {
-    sourceFile.addVariableStatement(buildEnsureQueryDataFn(op));
-  }
-
-  return sourceFile.getFullText();
+  return createFile(
+    OpenApiRqFiles.ensureQueryData,
+    ctx,
+    buildHookFileImports,
+    getOperations.map((op) => buildEnsureQueryDataFn(op)),
+  );
 }
 
 /**

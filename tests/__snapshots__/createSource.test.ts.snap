@@ -15,7 +15,7 @@ exports[`createSource > createSource - @hey-api/client-axios 2`] = `
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import type { FindPetsData, GetNotDefinedData, FindPetByIdData, FindPaginatedPetsData } from "../requests/types.gen";
 import { AxiosError } from "axios";
 
 export type FindPetsDefaultResponse = Awaited<ReturnType<typeof findPets>>["data"];
@@ -71,7 +71,7 @@ import * as Common from "./common";
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import type { FindPetsData, FindPetsError, AddPetData, AddPetError, GetNotDefinedData, PostNotDefinedData, FindPetByIdData, FindPetByIdError, DeletePetData, DeletePetError, FindPaginatedPetsData } from "../requests/types.gen";
 import { AxiosError } from "axios";
 
 /**
@@ -120,8 +120,8 @@ exports[`createSource > createSource - @hey-api/client-axios 4`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import { findPets, getNotDefined, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import type { FindPetsData, FindPetsError, GetNotDefinedData, FindPetByIdData, FindPetByIdError, FindPaginatedPetsData } from "../requests/types.gen";
 import { AxiosError } from "axios";
 
 /**
@@ -161,8 +161,8 @@ exports[`createSource > createSource - @hey-api/client-axios 5`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import { findPets, getNotDefined, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import type { FindPetsData, GetNotDefinedData, FindPetByIdData, FindPaginatedPetsData } from "../requests/types.gen";
 import { AxiosError } from "axios";
 
 /**
@@ -211,7 +211,7 @@ exports[`createSource > createSource - @hey-api/client-fetch 2`] = `
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import type { FindPetsData, GetNotDefinedData, FindPetByIdData, FindPaginatedPetsData } from "../requests/types.gen";
 
 export type FindPetsDefaultResponse = Awaited<ReturnType<typeof findPets>>["data"];
 export type FindPetsQueryResult<TData = FindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
@@ -266,7 +266,7 @@ import * as Common from "./common";
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
 import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import type { FindPetsData, FindPetsError, AddPetData, AddPetError, GetNotDefinedData, PostNotDefinedData, FindPetByIdData, FindPetByIdError, DeletePetData, DeletePetError, FindPaginatedPetsData } from "../requests/types.gen";
 
 /**
  * Returns all pets from the system that the user has access to
@@ -314,8 +314,8 @@ exports[`createSource > createSource - @hey-api/client-fetch 4`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import { findPets, getNotDefined, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import type { FindPetsData, FindPetsError, GetNotDefinedData, FindPetByIdData, FindPetByIdError, FindPaginatedPetsData } from "../requests/types.gen";
 
 /**
  * Returns all pets from the system that the user has access to
@@ -354,8 +354,8 @@ exports[`createSource > createSource - @hey-api/client-fetch 5`] = `
 import * as Common from "./common";
 import { type Options } from "../requests/sdk.gen";
 import { type QueryClient, useQuery, useSuspenseQuery, useInfiniteQuery, useSuspenseInfiniteQuery, useMutation, type UseQueryResult, type UseQueryOptions, type UseInfiniteQueryOptions, type UseSuspenseInfiniteQueryOptions, type UseMutationOptions, type UseMutationResult, type UseSuspenseQueryOptions, type InfiniteData, type FetchQueryOptions, type FetchInfiniteQueryOptions, type GetNextPageParamFunction, type EnsureQueryDataOptions } from "@tanstack/react-query";
-import { findPets, addPet, getNotDefined, postNotDefined, findPetById, deletePet, findPaginatedPets } from "../requests/sdk.gen";
-import type { ClientOptions, Pet, NewPet, Error, FindPetsData, FindPetsErrors, FindPetsError, FindPetsResponses, FindPetsResponse, AddPetData, AddPetErrors, AddPetError, AddPetResponses, AddPetResponse, GetNotDefinedData, GetNotDefinedErrors, GetNotDefinedResponses, PostNotDefinedData, PostNotDefinedErrors, PostNotDefinedResponses, FindPetByIdData, FindPetByIdErrors, FindPetByIdError, FindPetByIdResponses, FindPetByIdResponse, DeletePetData, DeletePetErrors, DeletePetError, DeletePetResponses, DeletePetResponse, FindPaginatedPetsData, FindPaginatedPetsResponses, FindPaginatedPetsResponse } from "../requests/types.gen";
+import { findPets, getNotDefined, findPetById, findPaginatedPets } from "../requests/sdk.gen";
+import type { FindPetsData, GetNotDefinedData, FindPetByIdData, FindPaginatedPetsData } from "../requests/types.gen";
 
 /**
  * Returns all pets from the system that the user has access to
