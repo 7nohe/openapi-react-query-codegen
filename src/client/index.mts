@@ -106,7 +106,9 @@ function toOperationInfo(
 
   return {
     methodName: operation.functionName,
-    capitalizedMethodName: operation.typeStem,
+    capitalizedMethodName:
+      operation.functionName.charAt(0).toUpperCase() +
+      operation.functionName.slice(1),
     dataTypeName: `${operation.typeStem}Data`,
     httpMethod: method,
     jsDoc: operation.jsDoc,
@@ -135,6 +137,7 @@ export async function generateClient(
   const ctx: SchemaCtx = { doc, names };
   const operations = collectOperations(doc, {
     useOperationId: !options.noOperationId,
+    reservedTypeNames: ["ClientOptions", ...names.values()],
   });
 
   const ext = options.importExtension;

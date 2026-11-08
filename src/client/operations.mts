@@ -20,6 +20,10 @@ export const HTTP_METHODS = [
 ] as const;
 export type HttpMethod = (typeof HTTP_METHODS)[number];
 
+function isHttpMethod(value: string): value is HttpMethod {
+  return (HTTP_METHODS as readonly string[]).includes(value);
+}
+
 export type ParameterLocation = "path" | "query" | "header" | "cookie";
 
 export interface ParameterIR {
@@ -61,7 +65,11 @@ export interface SecurityIR {
 export interface OperationIR {
   /** Generated function name, e.g. `findPets` */
   functionName: string;
-  /** PascalCase stem shared by the generated types, e.g. `FindPets` */
+  /**
+   * PascalCase stem shared by the operation's generated types (`XData`,
+   * `XResponses`, `XErrors` …). Usually the capitalized function name, but
+   * suffixed when that would collide with a schema or another operation.
+   */
   typeStem: string;
   method: HttpMethod;
   path: string;
@@ -179,29 +187,50 @@ function collectSecurity(doc: Doc, requirements: Json): SecurityIR[] {
   return result;
 }
 
+const TYPE_SUFFIXES = ["Data", "Errors", "Error", "Responses", "Response"];
+
+/** Pick a stem whose derived type names are not taken yet, and claim them. */
+function uniqueTypeStem(stem: string, used: Set<string>): string {
+  let candidate = stem;
+  let counter = 2;
+  while (TYPE_SUFFIXES.some((suffix) => used.has(`${candidate}${suffix}`))) {
+    candidate = `${stem}${counter}`;
+    counter += 1;
+  }
+  for (const suffix of TYPE_SUFFIXES) used.add(`${candidate}${suffix}`);
+  return candidate;
+}
+
 /** Walk `paths` and normalise every operation. */
 export function collectOperations(
   doc: Doc,
-  options: { useOperationId?: boolean } = {},
+  options: {
+    useOperationId?: boolean;
+    reservedTypeNames?: Iterable<string>;
+  } = {},
 ): OperationIR[] {
   const useOperationId = options.useOperationId ?? true;
   const operations: OperationIR[] = [];
   const usedNames = new Set<string>();
+  const usedTypeNames = new Set<string>(options.reservedTypeNames ?? []);
   const paths: Record<string, Json> = doc.paths ?? {};
 
   for (const [pathKey, rawPathItem] of Object.entries(paths)) {
     const pathItem = deref(doc, rawPathItem) ?? {};
-    for (const method of HTTP_METHODS) {
+    for (const method of Object.keys(pathItem)) {
+      if (!isHttpMethod(method)) continue;
       const operation = pathItem[method];
-      if (!operation) continue;
+      if (!operation || typeof operation !== "object") continue;
 
       const baseName =
         useOperationId && operation.operationId
           ? String(operation.operationId)
           : nameFromPath(method, pathKey);
       const functionName = uniqueName(toFunctionName(baseName), usedNames);
-      const typeStem =
-        functionName.charAt(0).toUpperCase() + functionName.slice(1);
+      const typeStem = uniqueTypeStem(
+        functionName.charAt(0).toUpperCase() + functionName.slice(1),
+        usedTypeNames,
+      );
 
       const parameters = mergeParameters(doc, pathItem, operation);
 
@@ -258,7 +287,8 @@ export function collectOperations(
 /** Map every component schema key to its generated type name. */
 export function buildSchemaNames(doc: Doc): Map<string, string> {
   const names = new Map<string, string>();
-  const used = new Set<string>();
+  // `ClientOptions` is emitted by the generator itself.
+  const used = new Set<string>(["ClientOptions"]);
   for (const key of Object.keys(doc.components?.schemas ?? {})) {
     names.set(key, uniqueName(toTypeName(key), used));
   }

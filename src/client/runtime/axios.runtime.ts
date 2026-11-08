@@ -397,21 +397,28 @@ const NON_AXIOS_KEYS = [
   "headers",
 ] as const;
 
+/** The options axios itself understands; everything else is ours. */
+const pickAxiosSettings = (config: Config): Record<string, unknown> => {
+  const settings: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(config)) {
+    if (!(NON_AXIOS_KEYS as readonly string[]).includes(key)) {
+      settings[key] = value;
+    }
+  }
+  return settings;
+};
+
 export const createClient = (config: Config = {}): Client => {
   let currentConfig: Config = mergeConfigs(createConfig(), config);
-  const provided = currentConfig.axios;
-  const instance: AxiosInstance = provided
-    ? typeof provided.create === "function"
-      ? provided.create(currentConfig as CreateAxiosDefaults)
-      : (provided as AxiosInstance)
-    : axios.create(currentConfig as CreateAxiosDefaults);
+  // `baseURL`, headers and auth are applied per request from the current
+  // config, so the instance only carries axios' own settings (timeout, …).
+  const instance: AxiosInstance =
+    (currentConfig.axios as AxiosInstance | undefined) ??
+    axios.create(pickAxiosSettings(currentConfig) as CreateAxiosDefaults);
 
   const getConfig = (): Config => ({ ...currentConfig });
   const setConfig = (next: Config): Config => {
     currentConfig = mergeConfigs(currentConfig, next);
-    if (currentConfig.baseURL !== undefined) {
-      instance.defaults.baseURL = currentConfig.baseURL;
-    }
     return getConfig();
   };
 
@@ -434,12 +441,7 @@ export const createClient = (config: Config = {}): Client => {
       headers["Content-Type"] = "application/json";
     }
 
-    const axiosSettings: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(options)) {
-      if (!(NON_AXIOS_KEYS as readonly string[]).includes(key)) {
-        axiosSettings[key] = value;
-      }
-    }
+    const axiosSettings = pickAxiosSettings(options);
 
     const querySerializer = options.querySerializer;
     const finalConfig = {

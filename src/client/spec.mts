@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { toTypeName, uniqueName } from "./naming.mjs";
 
@@ -107,6 +106,7 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
   const { doc, location: rootLocation } = loaded;
   const cache = new Map<string, Doc>();
   const hoisted = new Map<string, string>();
+  const hoistedSchemas: Record<string, Json> = {};
 
   const usedNames = new Set<string>(Object.keys(doc.components?.schemas ?? {}));
 
@@ -148,9 +148,7 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
           hoisted.set(key, name);
           const targetDoc = await loadFile(targetLocation);
           const target = getByPointer(targetDoc, pointer);
-          doc.components ??= {};
-          doc.components.schemas ??= {};
-          doc.components.schemas[name] = await walk(
+          hoistedSchemas[name] = await walk(
             target,
             targetLocation,
             new Set(stack).add(key),
@@ -178,17 +176,12 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
   }
 
   const bundled = (await walk(doc, rootLocation, new Set())) as Doc;
-  // Hoisted schemas were written into the original object while walking.
   if (hoisted.size > 0) {
     bundled.components ??= {};
     bundled.components.schemas = {
       ...bundled.components.schemas,
-      ...doc.components?.schemas,
+      ...hoistedSchemas,
     };
   }
   return bundled;
-}
-
-export function fileUrl(location: string): string {
-  return URL_RE.test(location) ? location : pathToFileURL(location).toString();
 }

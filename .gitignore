@@ -27,4 +27,4 @@ openapi
 *.tsbuildinfo
 coverage
 
-.agents
+.agentstests/client/compile-*
