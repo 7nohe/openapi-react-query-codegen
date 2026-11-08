@@ -117,6 +117,7 @@ queryClient.invalidateQueries({ queryKey: [useFindPetsKey] });
 // Only the findPetById query made with these options
 queryClient.invalidateQueries({
   queryKey: UseFindPetByIdKeyFn({ path: { id: 5 } }),
+  exact: true,
 });
 ```
 
