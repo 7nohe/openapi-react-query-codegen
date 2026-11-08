@@ -44,7 +44,15 @@ describe("naming", () => {
 
   test("toTypeName", () => {
     expect(toTypeName("Pet")).toBe("Pet");
+    expect(toTypeName("NewPet")).toBe("NewPet");
+    expect(toTypeName("errorMessage")).toBe("ErrorMessage");
     expect(toTypeName("my-odd schema")).toBe("MyOddSchema");
+    expect(toTypeName("account_annual_revenue")).toBe("AccountAnnualRevenue");
+    expect(toTypeName("FineTuneDPOHyperparameters")).toBe(
+      "FineTuneDpoHyperparameters",
+    );
+    expect(toTypeName("MCPApprovalRequest")).toBe("McpApprovalRequest");
+    expect(toTypeName("Foo123Bar")).toBe("Foo123Bar");
     expect(toTypeName("123abc")).toBe("_123Abc");
     expect(toTypeName("string")).toBe("String");
     expect(toTypeName("class")).toBe("Class");
@@ -71,11 +79,15 @@ describe("naming", () => {
   });
 
   test("toEnumMemberName", () => {
-    expect(toEnumMemberName("in-progress")).toBe("InProgress");
+    expect(toEnumMemberName("in-progress")).toBe("IN_PROGRESS");
+    expect(toEnumMemberName("inProgress")).toBe("IN_PROGRESS");
+    expect(toEnumMemberName("active")).toBe("ACTIVE");
     expect(toEnumMemberName(1)).toBe("_1");
-    expect(toEnumMemberName(null)).toBe("Null");
-    expect(toEnumMemberName("")).toBe("Empty");
-    expect(toEnumMemberName("***")).toBe("Value");
+    expect(toEnumMemberName(1, { numericKeys: true })).toBe("1");
+    expect(toEnumMemberName("1st", { numericKeys: true })).toBe("_1ST");
+    expect(toEnumMemberName(null)).toBe("NULL");
+    expect(toEnumMemberName("")).toBe("EMPTY");
+    expect(toEnumMemberName("***")).toBe("VALUE");
   });
 
   test("capitalizeFirst", () => {

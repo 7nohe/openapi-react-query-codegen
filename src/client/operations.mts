@@ -5,7 +5,12 @@ import {
   uniqueName,
 } from "./naming.mjs";
 import type { SchemaCtx } from "./schema.mjs";
-import { componentSchemaKey, docComment, renderSchema } from "./schema.mjs";
+import {
+  componentSchemaKey,
+  docComment,
+  findReadWriteOnlyKeys,
+  renderSchema,
+} from "./schema.mjs";
 import { type Doc, getByPointer, type Json } from "./spec.mjs";
 
 export const HTTP_METHODS = [
@@ -282,6 +287,22 @@ export function collectOperations(
     }
   }
   return operations;
+}
+
+/** Names of the request-side variants (`PetWritable`) of schemas that need one. */
+export function buildWritableNames(
+  doc: Doc,
+  names: Map<string, string>,
+): Map<string, string> {
+  const used = new Set<string>(["ClientOptions", ...names.values()]);
+  const writable = new Map<string, string>();
+  for (const key of findReadWriteOnlyKeys(doc)) {
+    writable.set(
+      key,
+      uniqueName(`${names.get(key) ?? toTypeName(key)}Writable`, used),
+    );
+  }
+  return writable;
 }
 
 /** Map every component schema key to its generated type name. */

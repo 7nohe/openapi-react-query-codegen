@@ -169,9 +169,9 @@ describe("bundleExternalRefs", () => {
     );
     const bundled = await bundleExternalRefs(await loadSpec(root));
     expect(Object.keys(bundled.components.schemas).sort()).toEqual([
+      "A",
       "Holder",
       "a",
-      "a2",
     ]);
   });
 

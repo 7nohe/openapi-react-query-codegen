@@ -12,6 +12,7 @@ import {
 import { type EnumsMode, emitTypes, getBaseUrl } from "./emitTypes.mjs";
 import {
   buildSchemaNames,
+  buildWritableNames,
   collectOperations,
   type OperationIR,
   parameterType,
@@ -89,7 +90,7 @@ function toOperationInfo(
     parameters.push({
       name: "body",
       typeName: operation.body.schema
-        ? renderSchema(operation.body.schema, ctx)
+        ? renderSchema(operation.body.schema, { ...ctx, mode: "write" })
         : "unknown",
       optional: !operation.body.required,
     });
@@ -134,10 +135,15 @@ export async function generateClient(
   assertSupported(doc);
 
   const names = buildSchemaNames(doc);
-  const ctx: SchemaCtx = { doc, names };
+  const writableNames = buildWritableNames(doc, names);
+  const ctx: SchemaCtx = { doc, names, writableNames };
   const operations = collectOperations(doc, {
     useOperationId: !options.noOperationId,
-    reservedTypeNames: ["ClientOptions", ...names.values()],
+    reservedTypeNames: [
+      "ClientOptions",
+      ...names.values(),
+      ...writableNames.values(),
+    ],
   });
 
   const ext = options.importExtension;

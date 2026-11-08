@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   componentSchemaKey,
   docComment,
+  findReadWriteOnlyKeys,
   renderSchema,
   type SchemaCtx,
 } from "../../src/client/schema.mts";
@@ -89,10 +90,12 @@ describe("renderSchema", () => {
     expect(render({ enum: ["a", 1, true, null] })).toBe(
       '"a" | 1 | true | null',
     );
-    expect(render({ type: "string", enum: ["a"], nullable: true })).toBe(
+    // `nullable` does not widen an enum; null has to be listed (OpenAPI 3.0.3).
+    expect(render({ type: "string", enum: ["a"], nullable: true })).toBe('"a"');
+    expect(render({ type: "string", enum: ["a", null], nullable: true })).toBe(
       '"a" | null',
     );
-    expect(render({ enum: [null], nullable: true })).toBe("null");
+    expect(render({ enum: [null] })).toBe("null");
     expect(render({ enum: [{ x: 1 }] })).toBe("unknown");
     expect(render({ const: "x" })).toBe('"x"');
     expect(render({ const: 3, nullable: true })).toBe("3 | null");
@@ -128,6 +131,35 @@ describe("renderSchema", () => {
       }),
     ).toBe("[string]");
     expect(render({ items: { type: "string" } })).toBe("Array<string>");
+    expect(
+      render({
+        type: "array",
+        minItems: 2,
+        maxItems: 2,
+        items: {
+          type: "array",
+          minItems: 1,
+          maxItems: 1,
+          items: { type: "string" },
+        },
+      }),
+    ).toBe("[[string], [string]]");
+    expect(
+      render({
+        type: "array",
+        minItems: 0,
+        maxItems: 0,
+        items: { type: "string" },
+      }),
+    ).toBe("Array<string>");
+    expect(
+      render({
+        type: "array",
+        minItems: 1,
+        maxItems: 2,
+        items: { type: "string" },
+      }),
+    ).toBe("Array<string>");
   });
 
   test("objects", () => {
@@ -259,5 +291,202 @@ describe("renderSchema", () => {
         ],
       }),
     ).toBe("Array<string | number> & Pet");
+  });
+});
+
+describe("readOnly / writeOnly", () => {
+  const schema = {
+    type: "object",
+    required: ["id", "name", "secret"],
+    properties: {
+      id: { type: "integer", readOnly: true },
+      name: { type: "string" },
+      secret: { type: "string", writeOnly: true },
+      child: { $ref: "#/components/schemas/Pet" },
+    },
+  };
+  const rwCtx: SchemaCtx = {
+    doc,
+    names: new Map([["Pet", "Pet"]]),
+    writableNames: new Map([["Pet", "PetWritable"]]),
+  };
+
+  test("responses mark readOnly properties readonly and drop writeOnly ones", () => {
+    expect(renderSchema(schema, rwCtx)).toBe(
+      "{\n  readonly id: number;\n  name: string;\n  child?: Pet;\n}",
+    );
+  });
+
+  test("requests drop readOnly properties and use the writable variants", () => {
+    const used = new Set<string>();
+    expect(
+      renderSchema(schema, { ...rwCtx, mode: "write", usedWritable: used }),
+    ).toBe("{\n  name: string;\n  secret: string;\n  child?: PetWritable;\n}");
+    expect([...used]).toEqual(["Pet"]);
+    expect(
+      renderSchema(
+        { $ref: "#/components/schemas/Pet" },
+        { ...rwCtx, mode: "write" },
+      ),
+    ).toBe("PetWritable");
+  });
+
+  test("an object whose properties are all filtered out stays empty", () => {
+    expect(
+      renderSchema(
+        {
+          type: "object",
+          properties: { id: { type: "integer", readOnly: true } },
+        },
+        { ...rwCtx, mode: "write" },
+      ),
+    ).toBe("{}");
+  });
+});
+
+describe("findReadWriteOnlyKeys", () => {
+  test("follows references transitively and tolerates cycles", () => {
+    const keys = findReadWriteOnlyKeys({
+      components: {
+        schemas: {
+          Direct: {
+            type: "object",
+            properties: { id: { readOnly: true, type: "string" } },
+          },
+          Wrapper: { allOf: [{ $ref: "#/components/schemas/Direct" }] },
+          List: {
+            type: "array",
+            items: { $ref: "#/components/schemas/Wrapper" },
+          },
+          Map: { additionalProperties: { $ref: "#/components/schemas/List" } },
+          Tuple: { prefixItems: [{ $ref: "#/components/schemas/Direct" }] },
+          Loop: {
+            type: "object",
+            properties: { self: { $ref: "#/components/schemas/Loop" } },
+          },
+          Plain: { type: "object", properties: { a: { type: "string" } } },
+          Nested: {
+            type: "object",
+            properties: {
+              x: {
+                type: "object",
+                properties: { secret: { writeOnly: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect([...keys].sort()).toEqual([
+      "Direct",
+      "List",
+      "Map",
+      "Nested",
+      "Tuple",
+      "Wrapper",
+    ]);
+    expect(findReadWriteOnlyKeys({}).size).toBe(0);
+  });
+});
+
+describe("discriminated unions", () => {
+  const discDoc = {
+    components: {
+      schemas: {
+        Cat: { type: "object", properties: { kind: { type: "string" } } },
+        Dog: { type: "object", properties: { kind: { type: "string" } } },
+        Bird: {
+          type: "object",
+          properties: { kind: { type: "string", enum: ["bird"] } },
+        },
+        Fish: { allOf: [{ $ref: "#/components/schemas/Bird" }] },
+        Shared: {
+          type: "object",
+          properties: { kind: { $ref: "#/components/schemas/Kind" } },
+        },
+        Kind: { type: "string", enum: ["shared"] },
+        Plain: { type: "object", properties: { x: { type: "string" } } },
+        Const: { type: "object", properties: { kind: { const: "c" } } },
+      },
+    },
+  };
+  const discCtx: SchemaCtx = {
+    doc: discDoc,
+    names: new Map(
+      Object.keys(discDoc.components.schemas).map((key) => [key, key]),
+    ),
+  };
+  const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
+
+  test("adds the discriminator literal to members that do not pin it", () => {
+    expect(
+      renderSchema(
+        {
+          oneOf: [ref("Cat"), ref("Dog")],
+          discriminator: { propertyName: "kind" },
+        },
+        discCtx,
+      ),
+    ).toBe('({ kind: "Cat" } & Cat) | ({ kind: "Dog" } & Dog)');
+  });
+
+  test("honours the mapping, including several values for one member", () => {
+    expect(
+      renderSchema(
+        {
+          anyOf: [ref("Cat"), ref("Dog")],
+          discriminator: {
+            propertyName: "kind",
+            mapping: {
+              feline: "#/components/schemas/Cat",
+              kitten: "Cat",
+              canine: "#/components/schemas/Dog",
+            },
+          },
+        },
+        discCtx,
+      ),
+    ).toBe(
+      '({ kind: "feline" | "kitten" } & Cat) | ({ kind: "canine" } & Dog)',
+    );
+  });
+
+  test("leaves members that already pin the property, and non-ref members, alone", () => {
+    expect(
+      renderSchema(
+        {
+          oneOf: [
+            ref("Bird"),
+            ref("Fish"),
+            ref("Shared"),
+            ref("Const"),
+            { type: "string" },
+          ],
+          discriminator: { propertyName: "kind" },
+        },
+        discCtx,
+      ),
+    ).toBe("Bird | Fish | Shared | Const | string");
+  });
+
+  test("members without the property still get the literal", () => {
+    expect(
+      renderSchema(
+        { oneOf: [ref("Plain")], discriminator: { propertyName: "type-name" } },
+        discCtx,
+      ),
+    ).toBe('({ "type-name": "Plain" } & Plain)');
+    expect(
+      renderSchema(
+        {
+          oneOf: [{ $ref: "#/other/Thing" }],
+          discriminator: { propertyName: "k" },
+        },
+        {
+          doc: { other: { Thing: { type: "string" } } },
+          names: new Map(),
+        },
+      ),
+    ).toBe("string");
   });
 });

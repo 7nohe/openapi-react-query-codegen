@@ -7,6 +7,16 @@ export interface SchemaCtx {
   doc: Doc;
   /** Component schema key → generated TypeScript type name. */
   names: Map<string, string>;
+  /**
+   * `read` (default) describes what the API returns: `readOnly` properties
+   * are marked `readonly` and `writeOnly` ones are left out. `write` describes
+   * what a request sends: `readOnly` properties are left out.
+   */
+  mode?: "read" | "write";
+  /** Component schema key → name of its request-side (`write`) variant. */
+  writableNames?: Map<string, string>;
+  /** Collects the keys whose request-side variant was referenced. */
+  usedWritable?: Set<string>;
 }
 
 /** Name of the type generated for `#/components/schemas/<key>`, if any. */
@@ -112,6 +122,11 @@ export function renderSchema(
   if (typeof schema.$ref === "string") {
     const key = componentSchemaKey(schema.$ref);
     if (key !== undefined) {
+      const writable = ctx.writableNames?.get(key);
+      if (ctx.mode === "write" && writable !== undefined) {
+        ctx.usedWritable?.add(key);
+        return writable;
+      }
       return ctx.names.get(key) ?? toTypeName(key);
     }
     if (seen.has(schema.$ref)) return "unknown";
@@ -124,9 +139,9 @@ export function renderSchema(
   }
 
   if (Array.isArray(schema.enum)) {
-    const values: unknown[] = [...schema.enum];
-    if (schema.nullable === true && !values.includes(null)) values.push(null);
-    return union(values.map(literal));
+    // OpenAPI 3.0 only allows null in an enum that lists it, whatever
+    // `nullable` says, so `nullable` is deliberately not applied here.
+    return union((schema.enum as unknown[]).map(literal));
   }
 
   if (Array.isArray(schema.allOf) && schema.allOf.length > 0) {
@@ -143,7 +158,14 @@ export function renderSchema(
     const options = schema[key];
     if (Array.isArray(options) && options.length > 0) {
       const rendered = union(
-        options.map((member: Json) => renderSchema(member, ctx, indent, seen)),
+        options.map((member: Json) =>
+          withDiscriminator(
+            member,
+            renderSchema(member, ctx, indent, seen),
+            schema.discriminator,
+            ctx,
+          ),
+        ),
       );
       const withOwn =
         schema.properties || schema.additionalProperties
@@ -196,6 +218,71 @@ export function renderSchema(
   return addNull(type, schema);
 }
 
+/** True when the schema pins `property` to literal values (enum or const). */
+function pinsProperty(
+  schema: Json,
+  property: string,
+  ctx: SchemaCtx,
+  depth = 0,
+): boolean {
+  if (!schema || typeof schema !== "object" || depth > 16) return false;
+  if (typeof schema.$ref === "string") {
+    const key = componentSchemaKey(schema.$ref);
+    const target =
+      key !== undefined
+        ? ctx.doc.components?.schemas?.[key]
+        : getByPointer(ctx.doc, schema.$ref);
+    return pinsProperty(target, property, ctx, depth + 1);
+  }
+  const declared = schema.properties?.[property];
+  if (declared !== undefined) {
+    const resolved =
+      typeof declared?.$ref === "string"
+        ? getByPointer(ctx.doc, declared.$ref)
+        : declared;
+    return resolved?.const !== undefined || Array.isArray(resolved?.enum);
+  }
+  return (
+    Array.isArray(schema.allOf) &&
+    schema.allOf.some((member: Json) =>
+      pinsProperty(member, property, ctx, depth + 1),
+    )
+  );
+}
+
+/**
+ * Intersect a `oneOf`/`anyOf` member with its discriminator value so the
+ * union narrows on the discriminator property. Members that already pin the
+ * property to literals are left alone: adding a second literal (from an
+ * implicit mapping by schema name) could only make them unreachable.
+ */
+function withDiscriminator(
+  member: Json,
+  rendered: string,
+  discriminator: Json,
+  ctx: SchemaCtx,
+): string {
+  const property = discriminator?.propertyName;
+  if (typeof property !== "string" || typeof member?.$ref !== "string") {
+    return rendered;
+  }
+  const key = componentSchemaKey(member.$ref);
+  if (key === undefined || pinsProperty(member, property, ctx)) return rendered;
+
+  const values = Object.entries(
+    (discriminator.mapping ?? {}) as Record<string, string>,
+  )
+    .filter(
+      ([, target]) =>
+        target === member.$ref || target === key || target.endsWith(`/${key}`),
+    )
+    .map(([value]) => value);
+  const literals = (values.length > 0 ? values : [key]).map((value) =>
+    JSON.stringify(value),
+  );
+  return `({ ${propertyKey(property)}: ${literals.join(" | ")} } & ${rendered})`;
+}
+
 function renderArray(
   schema: Json,
   ctx: SchemaCtx,
@@ -210,6 +297,17 @@ function renderArray(
       items.push(`...Array<${renderSchema(schema.items, ctx, indent, seen)}>`);
     }
     return `[${items.join(", ")}]`;
+  }
+  // A fixed-length array (`minItems` equals `maxItems`) is a tuple.
+  const length = schema.maxItems;
+  if (
+    schema.items &&
+    typeof length === "number" &&
+    length > 0 &&
+    length === schema.minItems
+  ) {
+    const item = renderSchema(schema.items, ctx, indent, seen);
+    return `[${Array.from({ length }, () => item).join(", ")}]`;
   }
   return `Array<${renderSchema(schema.items, ctx, indent, seen)}>`;
 }
@@ -228,8 +326,12 @@ function renderObject(
   const lines: string[] = [];
   const propertyTypes: string[] = [];
   let hasOptional = false;
+  const writing = ctx.mode === "write";
 
   for (const [name, value] of Object.entries(properties)) {
+    if (writing ? value?.readOnly === true : value?.writeOnly === true) {
+      continue;
+    }
     const resolved =
       value && typeof value === "object" && typeof value.$ref === "string"
         ? undefined
@@ -245,8 +347,9 @@ function renderObject(
     const optional = !required.has(name);
     if (optional) hasOptional = true;
     propertyTypes.push(type);
+    const modifier = !writing && value?.readOnly === true ? "readonly " : "";
     lines.push(
-      `${comment}${inner}${propertyKey(name)}${optional ? "?" : ""}: ${type};`,
+      `${comment}${inner}${modifier}${propertyKey(name)}${optional ? "?" : ""}: ${type};`,
     );
   }
 
@@ -265,10 +368,72 @@ function renderObject(
       ]);
     }
     lines.push(`${inner}[key: string]: ${valueType};`);
-  } else if (!hasProperties && additional !== false) {
+  } else if (Object.keys(properties).length === 0 && additional !== false) {
     lines.push(`${inner}[key: string]: unknown;`);
   }
 
   if (lines.length === 0) return "{}";
   return `{\n${lines.join("\n")}\n${indent}}`;
+}
+
+function scanReadWriteOnly(
+  schema: Json,
+  found: { direct: boolean; refs: Set<string> },
+  depth = 0,
+): void {
+  if (!schema || typeof schema !== "object" || depth > 64) return;
+  if (typeof schema.$ref === "string") {
+    const key = componentSchemaKey(schema.$ref);
+    if (key !== undefined) found.refs.add(key);
+    return;
+  }
+  for (const value of Object.values(
+    (schema.properties ?? {}) as Record<string, Json>,
+  )) {
+    if (value?.readOnly === true || value?.writeOnly === true) {
+      found.direct = true;
+    }
+    scanReadWriteOnly(value, found, depth + 1);
+  }
+  for (const key of ["allOf", "oneOf", "anyOf", "prefixItems"] as const) {
+    if (Array.isArray(schema[key])) {
+      for (const member of schema[key]) {
+        scanReadWriteOnly(member, found, depth + 1);
+      }
+    }
+  }
+  scanReadWriteOnly(schema.items, found, depth + 1);
+  scanReadWriteOnly(schema.additionalProperties, found, depth + 1);
+}
+
+/**
+ * Component schemas that need a separate request-side type: the ones with a
+ * `readOnly`/`writeOnly` property, directly or through the schemas they
+ * reference.
+ */
+export function findReadWriteOnlyKeys(doc: Doc): Set<string> {
+  const schemas = (doc.components?.schemas ?? {}) as Record<string, Json>;
+  const direct = new Set<string>();
+  const references = new Map<string, Set<string>>();
+  for (const [key, schema] of Object.entries(schemas)) {
+    const found = { direct: false, refs: new Set<string>() };
+    scanReadWriteOnly(schema, found);
+    if (found.direct) direct.add(key);
+    references.set(key, found.refs);
+  }
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [key, refs] of references) {
+      if (direct.has(key)) continue;
+      for (const ref of refs) {
+        if (direct.has(ref)) {
+          direct.add(key);
+          changed = true;
+          break;
+        }
+      }
+    }
+  }
+  return direct;
 }

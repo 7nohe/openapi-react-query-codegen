@@ -267,8 +267,7 @@ components:
           type: object
           additionalProperties: true
         price:
-          type: number
-          nullable: true
+          type: [number, "null"]
         parent:
           oneOf:
             - $ref: "#/components/schemas/Item"
@@ -312,6 +311,16 @@ components:
     Empty:
       type: object
     Loose: {}
+    Grid:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        type: array
+        minItems: 2
+        maxItems: 2
+        items:
+          type: integer
     Pair:
       type: array
       prefixItems:

@@ -87,9 +87,10 @@ describe("generateClient - features fixture", () => {
     const create = generated.operations.find(
       (op) => op.methodName === "createItem",
     );
+    // Request bodies use the request-side variant (readOnly properties omitted).
     expect(create?.parameters.at(-1)).toEqual({
       name: "body",
-      typeName: "NewItem",
+      typeName: "NewItemWritable",
       optional: false,
     });
     const note = generated.operations.find((op) => op.methodName === "addNote");
@@ -109,7 +110,7 @@ describe("generateClient - options", () => {
       enums: "typescript",
     });
     expect(file(ts, "types.gen.ts")).toContain(
-      'export enum Status {\n  Active = "active",\n  InProgress = "in-progress",\n  Archived = "archived",\n}',
+      'export enum Status {\n  ACTIVE = "active",\n  IN_PROGRESS = "in-progress",\n  ARCHIVED = "archived",\n}',
     );
     expect(file(ts, "types.gen.ts")).toContain(
       "export enum Priority {\n  _1 = 1,",
@@ -118,10 +119,13 @@ describe("generateClient - options", () => {
       enums: "javascript",
     });
     expect(file(js, "types.gen.ts")).toContain(
-      'export const Status = {\n  Active: "active",',
+      'export const Status = {\n  ACTIVE: "active",',
     );
     expect(file(js, "types.gen.ts")).toContain(
       "export type Status = (typeof Status)[keyof typeof Status];",
+    );
+    expect(file(js, "types.gen.ts")).toContain(
+      "export const Priority = {\n  1: 1,",
     );
   });
 

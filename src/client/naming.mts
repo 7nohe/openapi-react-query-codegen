@@ -61,21 +61,6 @@ const RESERVED_WORDS = new Set([
   "eval",
 ]);
 
-const PREDEFINED_TYPE_NAMES = new Set([
-  "string",
-  "number",
-  "boolean",
-  "any",
-  "unknown",
-  "never",
-  "object",
-  "void",
-  "null",
-  "undefined",
-  "symbol",
-  "bigint",
-]);
-
 export function isValidIdentifier(name: string): boolean {
   return IDENTIFIER_RE.test(name);
 }
@@ -124,18 +109,22 @@ export function toFunctionName(input: string): string {
   return RESERVED_WORDS.has(name) ? `${name}_` : name;
 }
 
-/** Name of a type generated from a schema key. */
+/**
+ * Name of a type generated from a schema key, in PascalCase. Acronyms are
+ * folded like any other word (`FineTuneDPOHyperparameters` →
+ * `FineTuneDpoHyperparameters`, `account_annual_revenue` →
+ * `AccountAnnualRevenue`), which is what the v3 generator did, so existing
+ * imports of schema types keep working.
+ */
 export function toTypeName(input: string): string {
-  let name = input;
-  if (!isValidIdentifier(name)) {
-    const words = splitWords(input);
-    name = words.map(capitalize).join("");
-    if (!name) name = "Schema";
-    if (/^\d/.test(name)) name = `_${name}`;
-  }
-  if (PREDEFINED_TYPE_NAMES.has(name) || RESERVED_WORDS.has(name)) {
-    name = capitalize(name);
-  }
+  const words = splitWords(
+    input
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2"),
+  );
+  let name = words.map((word) => capitalize(word.toLowerCase())).join("");
+  if (!name) name = "Schema";
+  if (/^\d/.test(name)) name = `_${name}`;
   return name;
 }
 
@@ -171,14 +160,27 @@ export function uniqueName(base: string, used: Set<string>): string {
   return name;
 }
 
-/** Name for an enum member generated from its value. */
-export function toEnumMemberName(value: unknown): string {
-  if (value === null) return "Null";
+/**
+ * Name for an enum member generated from its value, in UPPER_SNAKE_CASE
+ * (`in-progress` → `IN_PROGRESS`). A name that would start with a digit gets a
+ * `_` prefix, except an all-digit name when `numericKeys` is set (valid as an
+ * object key, so `{ 1: 1 }` stays readable).
+ */
+export function toEnumMemberName(
+  value: unknown,
+  options: { numericKeys?: boolean } = {},
+): string {
+  if (value === null) return "NULL";
   const text = String(value);
-  const words = splitWords(text);
-  let name = words.map(capitalize).join("");
-  if (!name) name = text === "" ? "Empty" : "Value";
-  if (/^\d/.test(name)) name = `_${name}`;
+  const words = text
+    .split(/[^A-Za-z0-9]+/)
+    .flatMap((word) => word.split(/(?<=[a-z0-9])(?=[A-Z])/))
+    .filter(Boolean);
+  let name = words.map((word) => word.toUpperCase()).join("_");
+  if (!name) name = text === "" ? "EMPTY" : "VALUE";
+  if (/^\d/.test(name) && !(options.numericKeys && /^\d+$/.test(name))) {
+    name = `_${name}`;
+  }
   return name;
 }
 

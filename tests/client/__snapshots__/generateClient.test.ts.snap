@@ -128,7 +128,7 @@ export type ClientOptions = {
  */
 export type Item = NewItem & {
   id: string;
-  createdAt?: string;
+  readonly createdAt?: string;
 };
 
 export type NewItem = {
@@ -175,7 +175,37 @@ export type Empty = {
 
 export type Loose = unknown;
 
+export type Grid = [[number, number], [number, number]];
+
 export type Pair = [string, number, ...Array<boolean>];
+
+/**
+ * A stored item
+ */
+export type ItemWritable = NewItemWritable & {
+  id: string;
+};
+
+export type NewItemWritable = {
+  name: string;
+  status?: Status;
+  labels?: {
+    [key: string]: string;
+  };
+  attributes?: {
+    [key: string]: unknown;
+  };
+  price?: number | null;
+  parent?: ItemWritable | null;
+  kind?: "a" | "b" | number;
+  /**
+   * Use name instead
+   *
+   * @deprecated
+   */
+  legacy?: string;
+  "weird-key"?: "fixed";
+};
 
 export type ListItemsData = {
   body?: never;
@@ -221,7 +251,7 @@ export type ListItemsResponses = {
 export type ListItemsResponse = ListItemsResponses[keyof ListItemsResponses];
 
 export type CreateItemData = {
-  body: NewItem;
+  body: NewItemWritable;
   path?: never;
   query?: never;
   url: "/items";
@@ -264,7 +294,7 @@ export type GetItemResponses = {
 export type GetItemResponse = GetItemResponses[keyof GetItemResponses];
 
 export type ReplaceItemData = {
-  body?: NewItem;
+  body?: NewItemWritable;
   path: {
     itemId: string;
   };
