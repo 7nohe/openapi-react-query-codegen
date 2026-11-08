@@ -12,19 +12,21 @@ on:
 permissions: {}
 
 jobs:
-  # Builds and packs the tarball. Runs third-party code (dependency lifecycle
-  # scripts) and is therefore deliberately kept without `id-token: write`.
+  # Builds and packs the tarball. Holding no `id-token: write` protects the
+  # token, but this job's output is what gets released, so it must not be
+  # poisonable either:
+  # - no dependency cache: a cache written by another workflow could otherwise
+  #   end up inside a tarball with valid provenance (the TanStack compromise)
+  # - no lifecycle scripts: the build is only `tsc`, so nothing needs them
+  # - only the package itself is installed, not the example apps and docs
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read # only to check out the repository
-    outputs:
-      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       # `version` is omitted on purpose: the action then reads
@@ -36,29 +38,16 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.20.0
-          cache: "pnpm"
+          package-manager-cache: false
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @7nohe/openapi-react-query-codegen
 
       - name: Build
         run: pnpm build
 
       - name: Pack
         run: pnpm pack --pack-destination ./artifact
-
-      # Prerelease versions (e.g. 3.1.0-beta.1) must go to the beta dist-tag so
-      # they never take over `latest`.
-      - name: Detect prerelease
-        id: version
-        run: |
-          set -euo pipefail
-          version=$(node -p "require('./package.json').version")
-          if [[ "$version" == *-* ]]; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Upload package tarball
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -70,6 +59,11 @@ jobs:
   # The only job holding `id-token: write`. It never checks out the repository
   # and never runs a dependency install, so no third-party code executes here —
   # only the npm CLI bundled with Node.
+  #
+  # It can only stage: the npm trusted publisher allows `npm stage publish` and
+  # nothing else, so a version goes live only after a maintainer approves it
+  # with 2FA on npmjs.com or with `npm stage approve`. Even a fully compromised
+  # workflow cannot put a version in front of users.
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -83,18 +77,17 @@ jobs:
           node-version: 24.20.0
           registry-url: 'https://registry.npmjs.org'
 
-      # npm gained OIDC trusted publishing in 11.5.0 (fixed in 11.5.1).
-      # Node 24.20.0 bundles npm 11.19.0; fail loudly rather than silently
-      # falling back if that ever stops holding.
-      - name: Verify npm supports trusted publishing
+      # `npm stage` needs 11.15.0. Node 24.20.0 bundles npm 11.19.0; fail loudly
+      # if that ever stops holding.
+      - name: Verify npm supports staged publishing
         run: |
           set -euo pipefail
           npm_version=$(npm --version)
           echo "npm $npm_version"
           node -e '
-            const [maj, min, pat] = process.argv[1].split("-")[0].split(".").map(Number);
-            if (maj > 11 || (maj === 11 && (min > 5 || (min === 5 && pat >= 1)))) process.exit(0);
-            console.error("npm >= 11.5.1 is required for OIDC trusted publishing, got " + process.argv[1]);
+            const [maj, min] = process.argv[1].split("-")[0].split(".").map(Number);
+            if (maj > 11 || (maj === 11 && min >= 15)) process.exit(0);
+            console.error("npm >= 11.15.0 is required for npm stage, got " + process.argv[1]);
             process.exit(1);
           ' "$npm_version"
 
@@ -105,11 +98,11 @@ jobs:
         with:
           name: package-tarball
 
-      - name: Publish to npm
-        env:
-          # Passed through the environment rather than interpolated into the
-          # script body, so the value can never be parsed as shell.
-          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+      # Reads the tarball without running anything from it. The checks mirror
+      # how the 2026-08-28 versions looked: install hooks or a `binding.gyp`
+      # that node-gyp evaluates by itself, a payload of several MB outside
+      # `dist`, and version numbers unrelated to any tag.
+      - name: Verify package tarball
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -119,37 +112,70 @@ jobs:
             exit 1
           fi
           tarball="${tarballs[0]}"
-          echo "publishing $tarball"
-          if [ "$PRERELEASE" = "true" ]; then
-            npm publish "$tarball" --provenance --access public --tag beta
+          size=$(wc -c < "$tarball")
+          tar -tzf "$tarball" > "$RUNNER_TEMP/files.txt"
+          tar -xzOf "$tarball" package/package.json > "$RUNNER_TEMP/package.json"
+          node -e '
+            const fs = require("node:fs");
+            const [listPath, manifestPath, size] = process.argv.slice(1);
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+            const files = fs.readFileSync(listPath, "utf8").split("\n").filter(Boolean);
+            const errors = [];
+            if (manifest.name !== "@7nohe/openapi-react-query-codegen") {
+              errors.push("unexpected package name: " + manifest.name);
+            }
+            if ("v" + manifest.version !== process.env.GITHUB_REF_NAME) {
+              errors.push("version " + manifest.version + " does not match tag " + process.env.GITHUB_REF_NAME);
+            }
+            for (const hook of ["preinstall", "install", "postinstall", "prepare"]) {
+              if (manifest.scripts?.[hook]) errors.push("install hook present: " + hook);
+            }
+            if (manifest.gypfile) errors.push("gypfile is set");
+            for (const file of files) {
+              if (!/^package\/(package\.json|README\.md|LICENSE|dist\/.+)$/.test(file)) {
+                errors.push("unexpected file: " + file);
+              }
+              if (/(^|\/)binding\.gyp$|\.node$/i.test(file)) errors.push("native build file: " + file);
+            }
+            if (Number(size) > 1024 * 1024) errors.push("tarball is unexpectedly large: " + size + " bytes");
+            if (errors.length > 0) {
+              console.error(errors.join("\n"));
+              process.exit(1);
+            }
+            console.log("verified " + manifest.name + "@" + manifest.version + ": " + files.length + " files, " + size + " bytes");
+          ' "$RUNNER_TEMP/files.txt" "$RUNNER_TEMP/package.json" "$size"
+
+      # The previous step proved the version equals the tag, so the tag decides
+      # the dist-tag: prereleases (e.g. 3.1.0-beta.1) never take over `latest`.
+      - name: Stage for npm
+        run: |
+          set -euo pipefail
+          tarball=$(echo ./*.tgz)
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            npm stage publish "$tarball" --provenance --access public --tag beta
           else
-            npm publish "$tarball" --provenance --access public
+            npm stage publish "$tarball" --provenance --access public
           fi
 
-  # Release notes are created only after npm publish succeeds, so a declined or
-  # expired approval never leaves a GitHub Release advertising a version that
-  # does not exist on npm. The tag stays put, so the run is simply retryable.
-  # Holds `contents: write` but never `id-token: write`.
+  # At this point the version is only staged, so the release stays a draft.
+  # Publish the draft after approving the version on npm. A declined approval
+  # then leaves no public GitHub Release advertising a version that does not
+  # exist. Uses the gh CLI preinstalled on the runner, so no third-party package
+  # runs next to this write token.
   release-notes:
     needs: publish
     runs-on: ubuntu-latest
     permissions:
-      contents: write # changelogithub creates the GitHub Release
+      contents: write # to create the GitHub Release
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0 # changelogithub diffs against the previous tag
-          persist-credentials: false
-
-      - name: Install Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24.20.0
-
-      # Pinned to an exact version: unpinned, this resolves the latest release
-      # from npm at release time, which is an unreviewed third-party code path.
-      - name: Create GitHub release notes
-        run: npx --yes changelogithub@15.0.5
+      - name: Create draft GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          args=(--draft --generate-notes --verify-tag)
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+          gh release create "$GITHUB_REF_NAME" "${args[@]}"
