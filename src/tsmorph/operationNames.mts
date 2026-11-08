@@ -28,7 +28,7 @@ export function getErrorType(
   const errorType = ctx.modelNames.includes(errorTypeName)
     ? errorTypeName
     : "unknown";
-  if (ctx.client === "@hey-api/client-axios") {
+  if (ctx.client === "axios") {
     return `AxiosError<${errorType}>`;
   }
   return errorType;

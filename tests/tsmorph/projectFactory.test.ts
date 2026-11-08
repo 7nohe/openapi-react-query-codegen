@@ -15,7 +15,7 @@ import {
 import type { GenerationContext } from "../../src/types.mjs";
 
 const mockFetchContext: GenerationContext = {
-  client: "@hey-api/client-fetch",
+  client: "fetch",
   modelNames: ["Pet", "NewPet", "Error"],
   serviceNames: ["findPets", "addPet", "deletePet"],
   pageParam: "page",
@@ -26,7 +26,7 @@ const mockFetchContext: GenerationContext = {
 
 const mockAxiosContext: GenerationContext = {
   ...mockFetchContext,
-  client: "@hey-api/client-axios",
+  client: "axios",
 };
 
 const mockEmptyModelsContext: GenerationContext = {

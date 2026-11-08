@@ -1,27 +1,32 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createClient } from "@hey-api/openapi-ts";
 import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import {
+  type GeneratedClient,
+  writeGeneratedFiles,
+} from "../src/client/index.mjs";
 import { createSource } from "../src/createSource.mjs";
 import { formatOutput } from "../src/format.mjs";
-import { cleanOutputs, generateTSClients, outputPath } from "./utils";
+import { generateTestClient, outputPath } from "./utils";
 
 const fileName = "createSource";
 
 describe(fileName, () => {
-  beforeAll(async () => await generateTSClients(fileName));
-  afterAll(async () => await cleanOutputs(fileName));
+  let generated: GeneratedClient;
+  beforeAll(async () => {
+    generated = await generateTestClient();
+  });
 
   test("createSource - @hey-api/client-fetch", async () => {
-    const source = await createSource({
-      outputPath: outputPath(fileName),
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: false,
-      client: "@hey-api/client-fetch",
+      client: "fetch",
     });
 
     expect(source).toHaveLength(8);
@@ -53,14 +58,14 @@ describe(fileName, () => {
   });
 
   test("createSource - @hey-api/client-axios", async () => {
-    const source = await createSource({
-      outputPath: outputPath(fileName),
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: false,
-      client: "@hey-api/client-axios",
+      client: "axios",
     });
 
     const indexTs = source.find((s) => s.name === "index.ts");
@@ -80,14 +85,14 @@ describe(fileName, () => {
   });
 
   test("createSource - omitInitialPageParam", async () => {
-    const source = await createSource({
-      outputPath: outputPath(fileName),
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: true,
-      client: "@hey-api/client-fetch",
+      client: "fetch",
     });
 
     const infiniteQueriesTs = source.find(
@@ -106,32 +111,32 @@ describe(fileName, () => {
   });
 });
 
-// End-to-end pin for #213: hey-api names the SDK function `_123NumericLead`
-// but the Data type `NumericLeadData`. The full pipeline must still detect
-// pagination and produce output that typechecks — the bug's two symptoms were
-// a silently missing infinite hook and `Options<unknown, true>` failing TS2344.
+// End-to-end pin for #213: a digit-leading operationId yields the function
+// `_123NumericLead`. The full pipeline must detect pagination and produce
+// output that typechecks — the bug's two symptoms were a silently missing
+// infinite hook and `Options<unknown, true>` failing TS2344.
 describe("createSource - digit-leading operationId (#213)", () => {
   const prefix = "createSource-digit-leading";
   const dir = outputPath(prefix);
+  let generated: GeneratedClient;
 
   beforeAll(async () => {
-    await createClient({
-      input: path.join(__dirname, "inputs", "digit-leading.yaml"),
-      output: path.join(dir, "requests"),
-      plugins: ["@hey-api/client-fetch", "@hey-api/typescript", "@hey-api/sdk"],
-    });
+    generated = await generateTestClient("digit-leading.yaml");
+    await writeGeneratedFiles(path.join(dir, "requests"), generated.files);
   });
-  afterAll(async () => await cleanOutputs(prefix));
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
 
   test("emits infinite hooks and output that typechecks", async () => {
-    const source = await createSource({
-      outputPath: path.join(dir, "requests"),
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: false,
-      client: "@hey-api/client-fetch",
+      client: "fetch",
     });
 
     const infiniteQueriesTs = source.find(
@@ -139,7 +144,7 @@ describe("createSource - digit-leading operationId (#213)", () => {
     );
     expect(infiniteQueriesTs?.content).toContain("use_123NumericLeadInfinite");
     expect(infiniteQueriesTs?.content).toContain(
-      "Options<NumericLeadData, true>",
+      "Options<_123NumericLeadData, true>",
     );
 
     const queriesDir = path.join(dir, "queries");

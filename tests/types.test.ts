@@ -105,7 +105,7 @@ describe("types", () => {
   describe("GenerationContext", () => {
     it("should define context for fetch client", () => {
       const ctx: GenerationContext = {
-        client: "@hey-api/client-fetch",
+        client: "fetch",
         modelNames: ["Pet", "NewPet", "Error"],
         serviceNames: ["findPets", "addPet"],
         pageParam: "page",
@@ -114,14 +114,14 @@ describe("types", () => {
         version: "1.0.0",
       };
 
-      expect(ctx.client).toBe("@hey-api/client-fetch");
+      expect(ctx.client).toBe("fetch");
       expect(ctx.modelNames).toContain("Pet");
       expect(ctx.serviceNames).toContain("findPets");
     });
 
     it("should define context for axios client", () => {
       const ctx: GenerationContext = {
-        client: "@hey-api/client-axios",
+        client: "axios",
         modelNames: [],
         serviceNames: ["getData"],
         pageParam: "offset",
@@ -130,7 +130,7 @@ describe("types", () => {
         version: "2.0.0",
       };
 
-      expect(ctx.client).toBe("@hey-api/client-axios");
+      expect(ctx.client).toBe("axios");
     });
   });
 

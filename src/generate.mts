@@ -1,8 +1,11 @@
-import { readdirSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { createClient, type UserConfig } from "@hey-api/openapi-ts";
-import type { LimitedUserConfig } from "./cli.mjs";
+import type { ClientChoice, LimitedUserConfig } from "./cli.mjs";
+import {
+  type ClientKind,
+  detectImportExtension,
+  findNearestTsConfigPath,
+  generateClient,
+  writeGeneratedFiles,
+} from "./client/index.mjs";
 import {
   buildQueriesOutputPath,
   buildRequestsOutputPath,
@@ -12,112 +15,39 @@ import { createSource } from "./createSource.mjs";
 import { formatOutput, processOutput } from "./format.mjs";
 import { print } from "./print.mjs";
 
-// openapi-ts's own tsconfig auto-detection walks up from its *install*
-// location, which in this monorepo reaches this repo's own root tsconfig
-// (NodeNext) instead of the caller's project config. Anchoring the search
-// at cwd instead finds the tsconfig that actually applies to the generated
-// output, matching the resolution the caller's own `tsc` will use.
-export function findNearestTsConfigPath(startDir: string): string | undefined {
-  let dir = startDir;
-  while (true) {
-    const candidates = readdirSync(dir).filter(
-      (file) => file.startsWith("tsconfig") && file.endsWith(".json"),
-    );
-    if (candidates.length > 0) {
-      candidates.sort((a) => (a === "tsconfig.json" ? -1 : 1));
-      return path.join(dir, candidates[0]);
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) return undefined;
-    dir = parent;
+export { findNearestTsConfigPath };
+
+/** Map a `--client` value (including the v3 `@hey-api/*` aliases) to a kind. */
+export function resolveClientKind(
+  client: ClientChoice | undefined,
+): ClientKind {
+  switch (client) {
+    case "axios":
+    case "@hey-api/client-axios":
+      return "axios";
+    default:
+      return "fetch";
   }
 }
 
 export async function generate(options: LimitedUserConfig, version: string) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
+  const client = resolveClientKind(formattedOptions.client);
 
-  // Map CLI options to new plugins system
-  const clientPlugin =
-    formattedOptions.client === "@hey-api/client-axios"
-      ? "@hey-api/client-axios"
-      : "@hey-api/client-fetch";
-
-  const typescriptPlugin: NonNullable<UserConfig["plugins"]>[number] =
-    formattedOptions.enums
-      ? {
-          name: "@hey-api/typescript" as const,
-          enums: formattedOptions.enums,
-        }
-      : "@hey-api/typescript";
-
-  const sdkPlugin: NonNullable<UserConfig["plugins"]>[number] = {
-    name: "@hey-api/sdk" as const,
-    ...(formattedOptions.noOperationId
-      ? {
-          // `operationId: false` was deprecated in favor of `operations.nesting`
-          operations: {
-            nesting: "id" as const,
-          },
-        }
-      : {}),
-    ...(formattedOptions.useDateType
-      ? { transformer: "@hey-api/transformers" as const }
-      : {}),
-  };
-
-  const plugins: NonNullable<UserConfig["plugins"]>[number][] = [
-    clientPlugin,
-    typescriptPlugin,
-    sdkPlugin,
-  ];
-
-  if (formattedOptions.useDateType) {
-    plugins.push({
-      name: "@hey-api/transformers",
-      dates: "date",
-    });
-  }
-
-  // Conditionally add schemas plugin
-  if (!formattedOptions.noSchemas) {
-    plugins.push(
-      formattedOptions.schemaType
-        ? {
-            name: "@hey-api/schemas" as const,
-            type: formattedOptions.schemaType,
-          }
-        : "@hey-api/schemas",
-    );
-  }
-
-  const config: UserConfig = {
-    dryRun: false,
+  const generated = await generateClient({
     input: formattedOptions.input,
-    output: {
-      path: openApiOutputPath,
-      tsConfigPath: findNearestTsConfigPath(process.cwd()) ?? null,
-    },
-    plugins,
-  };
-  await createClient(config);
+    client,
+    enums: formattedOptions.enums,
+    importExtension: detectImportExtension(process.cwd()),
+    noOperationId: formattedOptions.noOperationId,
+    pageParam: formattedOptions.pageParam,
+  });
+  await writeGeneratedFiles(openApiOutputPath, generated.files);
 
-  // Generate backward-compatible services.gen.ts shim
-  // client.gen.ts has the `client` instance; sdk.gen.ts has SDK functions.
-  // Mirror whatever extension convention openapi-ts used for its own
-  // cross-file imports (e.g. `.js` for NodeNext, none for bundler resolution).
-  const sdkGenContent = await readFile(
-    path.join(openApiOutputPath, "sdk.gen.ts"),
-    "utf-8",
-  );
-  const importExtension =
-    sdkGenContent.match(/from ['"]\.\/client\.gen(\.\S*)?['"]/)?.[1] ?? "";
-  const shimContent = `// This file is auto-generated for backward compatibility\nexport * from './client.gen${importExtension}';\nexport * from './sdk.gen${importExtension}';\n`;
-  await writeFile(path.join(openApiOutputPath, "services.gen.ts"), shimContent);
-
-  const source = await createSource({
-    outputPath: openApiOutputPath,
-    client: clientPlugin,
+  const source = createSource({
+    generated,
+    client,
     version,
     pageParam: formattedOptions.pageParam,
     nextPageParam: formattedOptions.nextPageParam,

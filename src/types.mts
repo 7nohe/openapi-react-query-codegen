@@ -8,15 +8,11 @@ export interface OperationInfo {
   /** Capitalized method name (e.g., "FindPets") */
   capitalizedMethodName: string;
   /**
-   * Generated Data type name read from the SDK function's own
-   * `Options<XData, ThrowOnError>` signature (e.g., "FindPetsData").
-   * Not derivable from the method name: for digit-leading operationIds
-   * hey-api prefixes the function but strips the digits from the type (#213).
-   * Undefined when the SDK signature exposes no Data type.
-   *
-   * The rule this encodes: names hey-api owns (Data, Error) must be read from
-   * the SDK signature or share this field's stem; names this codegen mints
-   * itself (DefaultResponse, MutationResult, key fns) may be derived from
+   * Generated Data type name of the operation (e.g., "FindPetsData").
+   * The client generator owns the Data and Error type names, so they are
+   * taken from here (or share this field's stem) instead of being derived
+   * from the method name again; names this codegen mints itself
+   * (DefaultResponse, MutationResult, key fns) may be derived from
    * capitalizedMethodName because they anchor back to the SDK via
    * `typeof methodName`.
    */
@@ -55,8 +51,8 @@ export interface OperationParameter {
  * Contains shared information needed across all generators.
  */
 export interface GenerationContext {
-  /** Client type: "@hey-api/client-fetch" or "@hey-api/client-axios" */
-  client: "@hey-api/client-fetch" | "@hey-api/client-axios";
+  /** Client type: "fetch" or "axios" */
+  client: "fetch" | "axios";
   /** Model type names exported from the models file */
   modelNames: string[];
   /** Service function names exported from the service file */

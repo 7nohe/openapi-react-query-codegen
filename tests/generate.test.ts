@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
 import { findNearestTsConfigPath, generate } from "../src/generate.mjs";
@@ -19,13 +18,12 @@ describe("generate", () => {
     const options: LimitedUserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
-      client: "@hey-api/client-fetch",
+      client: "fetch",
       lint: "biome",
       format: "biome",
       pageParam: "page",
       nextPageParam: "meta.next",
       initialPageParam: "initial",
-      operationId: true,
     };
     await generate(options, "1.0.0");
   }, 60000);
@@ -84,10 +82,9 @@ describe("generate - axios client with enums, noOperationId, schemaType", () => 
     const options: LimitedUserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", outputDir),
-      client: "@hey-api/client-axios",
+      client: "axios",
       enums: "javascript",
       noOperationId: true,
-      schemaType: "json",
       pageParam: "page",
       nextPageParam: "meta.next",
       initialPageParam: "initial",
@@ -103,91 +100,6 @@ describe("generate - axios client with enums, noOperationId, schemaType", () => 
 
   test("queries.ts", () => {
     expect(readAxiosOutput("queries.ts")).toMatchSnapshot();
-  });
-});
-
-describe("generate - noSchemas option", () => {
-  const outputDir = "outputs-generate-noschemas";
-  const readNoSchemasOutput = (fileName: string) => {
-    return readFileSync(
-      path.join(__dirname, outputDir, "queries", fileName),
-      "utf-8",
-    );
-  };
-
-  beforeAll(async () => {
-    const options: LimitedUserConfig = {
-      input: path.join(__dirname, "inputs", "petstore.yaml"),
-      output: path.join("tests", outputDir),
-      client: "@hey-api/client-fetch",
-      noSchemas: true,
-      pageParam: "page",
-      nextPageParam: "meta.next",
-      initialPageParam: "initial",
-    };
-    await generate(options, "1.0.0");
-  });
-
-  afterAll(async () => {
-    if (existsSync(path.join(__dirname, outputDir))) {
-      await rm(path.join(__dirname, outputDir), { recursive: true });
-    }
-  });
-
-  test("queries.ts", () => {
-    expect(readNoSchemasOutput("queries.ts")).toMatchSnapshot();
-  });
-});
-
-describe("generate - useDateType", () => {
-  const outputDir = "outputs-generate-dates";
-  const readDateOutput = (fileName: string) =>
-    readFileSync(
-      path.join(__dirname, outputDir, "requests", fileName),
-      "utf-8",
-    );
-
-  beforeAll(async () => {
-    const options: LimitedUserConfig = {
-      input: path.join(__dirname, "inputs", "dates.yaml"),
-      output: path.join("tests", outputDir),
-      client: "@hey-api/client-fetch",
-      useDateType: true,
-      pageParam: "page",
-      nextPageParam: "nextPage",
-      initialPageParam: "1",
-    };
-    await generate(options, "1.0.0");
-  });
-
-  afterAll(async () => {
-    if (existsSync(path.join(__dirname, outputDir))) {
-      await rm(path.join(__dirname, outputDir), { recursive: true });
-    }
-  });
-
-  test("uses Date in generated model types", () => {
-    expect(readDateOutput("types.gen.ts")).toContain("createdAt: Date");
-  });
-
-  test("wires the runtime date transformer into the SDK", async () => {
-    const transformer = readDateOutput("transformers.gen.ts");
-    expect(transformer).toContain("new Date");
-    expect(transformer).toContain("createdAt");
-
-    const sdk = readDateOutput("sdk.gen.ts");
-    expect(sdk).toContain("listEventsResponseTransformer");
-    expect(sdk).toContain("responseTransformer: listEventsResponseTransformer");
-
-    const transformerModule = await import(
-      pathToFileURL(
-        path.join(__dirname, outputDir, "requests", "transformers.gen.ts"),
-      ).href
-    );
-    const transformed = await transformerModule.listEventsResponseTransformer([
-      { createdAt: "2026-07-20T00:00:00.000Z" },
-    ]);
-    expect(transformed[0].createdAt).toBeInstanceOf(Date);
   });
 });
 
@@ -255,7 +167,7 @@ describe("generate - import extension follows the caller's tsconfig", () => {
           // `generate()` joins this against `process.cwd()` internally, so
           // it must be relative (matching how the CLI is always invoked).
           output: "output",
-          client: "@hey-api/client-fetch",
+          client: "fetch",
           pageParam: "page",
           nextPageParam: "meta.next",
           initialPageParam: "initial",
@@ -273,10 +185,10 @@ describe("generate - import extension follows the caller's tsconfig", () => {
     try {
       const sdkGen = await readGenerated(outputDir, "sdk.gen.ts");
       const shim = await readGenerated(outputDir, "services.gen.ts");
-      expect(sdkGen).toContain("from './client.gen'");
-      expect(sdkGen).not.toContain("from './client.gen.js'");
+      expect(sdkGen).toContain('from "./client.gen"');
+      expect(sdkGen).not.toContain('from "./client.gen.js"');
       expect(shim).toBe(
-        "// This file is auto-generated for backward compatibility\nexport * from './client.gen';\nexport * from './sdk.gen';\n",
+        '// This file is auto-generated for backward compatibility\nexport * from "./client.gen";\nexport * from "./sdk.gen";\n',
       );
     } finally {
       await rm(fixtureDir, { recursive: true, force: true });
@@ -288,9 +200,9 @@ describe("generate - import extension follows the caller's tsconfig", () => {
     try {
       const sdkGen = await readGenerated(outputDir, "sdk.gen.ts");
       const shim = await readGenerated(outputDir, "services.gen.ts");
-      expect(sdkGen).toContain("from './client.gen.js'");
+      expect(sdkGen).toContain('from "./client.gen.js"');
       expect(shim).toBe(
-        "// This file is auto-generated for backward compatibility\nexport * from './client.gen.js';\nexport * from './sdk.gen.js';\n",
+        '// This file is auto-generated for backward compatibility\nexport * from "./client.gen.js";\nexport * from "./sdk.gen.js";\n',
       );
     } finally {
       await rm(fixtureDir, { recursive: true, force: true });

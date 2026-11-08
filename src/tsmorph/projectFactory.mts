@@ -159,7 +159,7 @@ export function buildCommonFileImports(
     imports.push(modelImport);
   }
 
-  if (ctx.client === "@hey-api/client-axios") {
+  if (ctx.client === "axios") {
     imports.push(buildAxiosErrorImport());
   }
 

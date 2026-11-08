@@ -48,7 +48,7 @@ const mockRequiredParamsOperation: OperationInfo = {
 };
 
 const mockContext: GenerationContext = {
-  client: "@hey-api/client-fetch",
+  client: "fetch",
   modelNames: ["Pet"],
   serviceNames: ["findPets", "findPaginatedPets", "findPetById"],
   pageParam: "page",

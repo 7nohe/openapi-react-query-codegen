@@ -48,7 +48,7 @@ const mockPaginatableOperation: OperationInfo = {
 };
 
 const mockContext: GenerationContext = {
-  client: "@hey-api/client-fetch",
+  client: "fetch",
   modelNames: ["Pet", "NewPet"],
   serviceNames: ["findPets", "addPet"],
   pageParam: "page",

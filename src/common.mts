@@ -1,54 +1,8 @@
 import type { PathLike } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
-import {
-  ArrowFunction,
-  type ClassDeclaration,
-  type ParameterDeclaration,
-  type SourceFile,
-  type VariableDeclaration,
-} from "ts-morph";
-import ts from "typescript";
 import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
-
-export const capitalizeFirstLetter = (str: string) => {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-
-export const lowercaseFirstLetter = (str: string) => {
-  return str.charAt(0).toLowerCase() + str.slice(1);
-};
-
-export const getVariableArrowFunctionParameters = (
-  variable: VariableDeclaration,
-) => {
-  const initializer = variable.getInitializer();
-  if (!initializer) {
-    throw new Error("Initializer not found");
-  }
-  if (!ArrowFunction.isArrowFunction(initializer)) {
-    throw new Error("Initializer is not an arrow function");
-  }
-  return initializer.getParameters();
-};
-
-export const getNameFromVariable = (variable: VariableDeclaration) => {
-  const variableName = variable.getName();
-  if (!variableName) {
-    throw new Error("Variable name not found");
-  }
-  return variableName;
-};
-
-export type FunctionDescription = {
-  node: SourceFile;
-  method: VariableDeclaration;
-  methodBlock?: ts.Block;
-  httpMethodName: string;
-  jsDoc: string;
-  isDeprecated: boolean;
-};
 
 export async function exists(f: PathLike) {
   try {
@@ -57,18 +11,6 @@ export async function exists(f: PathLike) {
   } catch {
     return false;
   }
-}
-
-const Common = "Common";
-
-/**
- * Build a common type name by prepending the Common namespace.
- */
-export function BuildCommonTypeName(name: string | ts.Identifier) {
-  if (typeof name === "string") {
-    return ts.factory.createIdentifier(`${Common}.${name}`);
-  }
-  return ts.factory.createIdentifier(`${Common}.${name.text}`);
 }
 
 /**
@@ -89,65 +31,6 @@ export function safeParseNumber(value: unknown): number {
     return parsed;
   }
   return Number.NaN;
-}
-
-export function extractPropertiesFromObjectParam(param: ParameterDeclaration) {
-  const referenced = param.findReferences()[0];
-  const def = referenced.getDefinition();
-  const paramNodes = def
-    .getNode()
-    .getType()
-    .getProperties()
-    .filter((prop) => prop.getValueDeclaration()?.getType())
-    .map((prop) => {
-      return {
-        name: prop.getName(),
-        optional: prop.isOptional(),
-        type: prop.getValueDeclaration()?.getType(),
-      };
-    });
-  return paramNodes;
-}
-
-/**
- * Replace the import("...") surrounding the type if there is one.
- * This can happen when the type is imported from another file, but
- * we are already importing all the types from that file.
- *
- * https://regex101.com/r/3DyHaQ/1
- *
- * TODO: Replace with a more robust solution.
- */
-export function getShortType(type: string) {
-  return type.replaceAll(/import\(".*?"\)\./g, "");
-}
-
-export function getClassesFromService(node: SourceFile) {
-  const klasses = node.getClasses();
-
-  if (!klasses.length) {
-    throw new Error("No classes found");
-  }
-
-  return klasses.map((klass) => {
-    const className = klass.getName();
-    if (!className) {
-      throw new Error("Class name not found");
-    }
-    return {
-      className,
-      klass,
-    };
-  });
-}
-
-export function getClassNameFromClassNode(klass: ClassDeclaration) {
-  const className = klass.getName();
-
-  if (!className) {
-    throw new Error("Class name not found");
-  }
-  return className;
 }
 
 export function formatOptions(options: LimitedUserConfig) {

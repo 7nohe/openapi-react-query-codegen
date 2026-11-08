@@ -6,20 +6,27 @@ import { Command, Option } from "commander";
 import { defaultOutputPath } from "./constants.mjs";
 import { generate } from "./generate.mjs";
 
+/**
+ * `fetch` and `axios` select the generated HTTP client. The `@hey-api/*`
+ * spellings are accepted as deprecated aliases for v3 command lines.
+ */
+export type ClientChoice =
+  | "fetch"
+  | "axios"
+  | "@hey-api/client-fetch"
+  | "@hey-api/client-axios";
+
 const program = new Command();
 
 export type LimitedUserConfig = {
   input: string;
   output: string;
-  client?: "@hey-api/client-fetch" | "@hey-api/client-axios";
+  client?: ClientChoice;
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
   noOperationId?: boolean;
   enums?: "javascript" | "typescript" | false;
-  useDateType?: boolean;
   debug?: boolean;
-  noSchemas?: boolean;
-  schemaType?: "form" | "json";
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string | number;
@@ -44,8 +51,13 @@ async function setupProgram() {
     .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
-        .choices(["@hey-api/client-fetch", "@hey-api/client-axios"])
-        .default("@hey-api/client-fetch"),
+        .choices([
+          "fetch",
+          "axios",
+          "@hey-api/client-fetch",
+          "@hey-api/client-axios",
+        ])
+        .default("fetch"),
     )
     .addOption(
       new Option(
@@ -69,18 +81,7 @@ async function setupProgram() {
         "Generate JavaScript objects from enum definitions?",
       ).choices(["javascript", "typescript"]),
     )
-    .option(
-      "--useDateType",
-      "Use Date for date/date-time model properties and convert response values to Date objects",
-    )
     .option("--debug", "Run in debug mode?")
-    .option("--noSchemas", "Disable generating JSON schemas")
-    .addOption(
-      new Option(
-        "--schemaType <value>",
-        "Type of JSON schema [Default: 'json']",
-      ).choices(["form", "json"]),
-    )
     .option(
       "--pageParam <value>",
       "Name of the query parameter used for pagination",

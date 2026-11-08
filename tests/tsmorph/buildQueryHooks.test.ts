@@ -76,7 +76,7 @@ const mockDigitLeadingOperation: OperationInfo = {
 };
 
 const mockFetchContext: GenerationContext = {
-  client: "@hey-api/client-fetch",
+  client: "fetch",
   modelNames: [
     "Pet",
     "FindPetsError",
@@ -92,7 +92,7 @@ const mockFetchContext: GenerationContext = {
 
 const mockAxiosContext: GenerationContext = {
   ...mockFetchContext,
-  client: "@hey-api/client-axios",
+  client: "axios",
 };
 
 describe("buildQueryHooks", () => {
