@@ -1,0 +1,80 @@
+---
+title: Migrating to v4
+description: Migration guide from v3 to v4 of OpenAPI React Query Codegen.
+---
+
+v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this package. The generated **hooks are unchanged** — same names, same signatures, same query keys — so for most projects migrating means updating the package, regenerating, and checking the handful of differences below.
+
+## TL;DR
+
+1. Update the package and regenerate:
+
+   ```bash
+   npm install -D @7nohe/openapi-react-query-codegen@^4
+   npx openapi-rq -i ./petstore.yaml
+   ```
+
+2. If you pass `-c @hey-api/client-fetch` or `-c @hey-api/client-axios`, both still work. Prefer the new spellings `-c fetch` and `-c axios`.
+3. Delete the stale `client/` and `core/` folders from `openapi/requests` (the easiest way is to remove the whole `openapi` folder before regenerating).
+4. If you used `--useDateType`, `--noSchemas` or `--schemaType`, see [removed options](#removed-options).
+5. Everything else is compatible — you are done.
+
+## What stays the same
+
+- Every generated hook, prefetch/`ensureQueryData` function, `queryOptions` factory, key constant and key function keeps its v3 name and signature. For the same specification the generated `openapi/queries` files differ from v3 only in the order of import specifiers.
+- `client` is still exported from `openapi/requests/client.gen` (and from the `services.gen` compatibility shim) with `setConfig()` and `interceptors`.
+- SDK functions keep the `{ data, error, request, response }` result and throw the error when `throwOnError` is set. The hooks always set it, so failed requests reject (as in v3).
+- `--format`, `--lint`, `--enums`, `--noOperationId`, `--pageParam`, `--nextPageParam`, `--initialPageParam` and `--omitInitialPageParam` behave as before.
+
+## What changed
+
+### `openapi/requests`
+
+| v3 | v4 |
+| --- | --- |
+| `client/`, `core/` (Hey API runtime) | `runtime.gen.ts` (one file) |
+| `client.gen.ts`, `sdk.gen.ts`, `types.gen.ts`, `services.gen.ts`, `index.ts` | same names |
+| `schemas.gen.ts` (JSON schemas) | not generated |
+
+Anything that imported from `openapi/requests/client` or `openapi/requests/core` needs to import from `openapi/requests/runtime.gen` instead (for example the `Config` and `Options` types).
+
+### The HTTP runtimes
+
+The runtimes are small, dependency-free TypeScript files generated into your project (`axios` aside). They cover what the hooks and typical applications use:
+
+- `baseUrl` (`baseURL` for axios), `headers`, `throwOnError`, `signal` and any other `fetch` option
+- request, response and error `interceptors` (fetch) or `client.instance.interceptors` (axios)
+- `auth` for operations with `security` (bearer, basic and API keys in header, query or cookie)
+- `querySerializer` and `bodySerializer`, with OpenAPI `style`/`explode` honoured per query parameter
+- JSON, `multipart/form-data`, `application/x-www-form-urlencoded`, text and binary request bodies; JSON, text, blob, form data and stream responses via `parseAs`
+
+Not carried over from the Hey API clients: server-sent events, `responseValidator`/`responseTransformer`, and the `runtimeConfigPath` option. If you relied on them, keep calling those parts of your API through your own code.
+
+### Specification support
+
+OpenAPI 3.0 and 3.1 are supported, including external `$ref`s to files and URLs. Swagger/OpenAPI 2.0 documents are rejected with an explicit error — convert them to OpenAPI 3 first.
+
+### Naming
+
+- Operations without an `operationId` are named after the method and path (`getPetsById`), as before.
+- Names that would collide are suffixed with a number instead of producing duplicate identifiers. When a response type would collide with a schema of the same name (for example the `ListRunsResponse` schema and the operation `listRuns`), the operation's types are suffixed (`ListRuns2Data`, `ListRuns2Responses`); the hooks keep their names.
+- A digit-leading `operationId` such as `123numericLead` yields the function `_123NumericLead` and the types `_123NumericLeadData` / `_123NumericLeadError` (v3 dropped the digits from the types only).
+
+### Performance
+
+Large specifications generate much faster, mostly because the hook files now import only the models they use: the 4 MB OpenAI specification (388 operations) takes about 5 seconds instead of about 30.
+
+## Removed options
+
+These options were thin pass-throughs to Hey API plugins and are not implemented in v4. Passing them now fails with an "unknown option" error rather than being ignored.
+
+| Option | What to do |
+| --- | --- |
+| `--useDateType` | Date-typed properties and the response transformer are not generated. `date`/`date-time` values stay `string`. Convert at the edge of your application or in an interceptor. |
+| `--noSchemas`, `--schemaType` | JSON schema objects (`schemas.gen.ts`) are no longer generated, so there is nothing to switch off. |
+
+## Dependency changes
+
+- `@hey-api/openapi-ts` is no longer a dependency, so its (FSL) license no longer applies to your install.
+- `yaml` (exact-pinned, no dependencies of its own) was added to parse YAML specifications.
+- Peer dependencies are unchanged. `axios` is needed in your project only with `-c axios`.

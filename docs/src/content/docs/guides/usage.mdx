@@ -132,10 +132,10 @@ body. This makes response headers available in `onSuccess` or from
 const { mutateAsync } = useDownloadReport();
 const result = await mutateAsync({ body: { reportId } });
 
-// @hey-api/client-fetch
+// fetch client
 const disposition = result.response.headers.get("content-disposition");
 
-// @hey-api/client-axios
+// axios client
 const axiosDisposition = result.headers["content-disposition"];
 ```
 
