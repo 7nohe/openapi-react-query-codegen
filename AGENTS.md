@@ -28,15 +28,14 @@
 - Commits: clear, descriptive messages (e.g., `fix: align imports for generated queries`, `chore: update ts-morph config`). Avoid bundling unrelated changes.
 - Pull requests: include summary of changes, affected areas (e.g., codegen output, docs, examples), and test commands run. Link issues when applicable. Add before/after notes or sample generated snippets if behavior changes.
 
-## Architecture: IR Boundary (Backend Portability)
-- The generation pipeline is split by an intermediate representation (IR): `OperationInfo` and `GenerationContext` in `src/types.mts`.
-- hey-api-specific knowledge must stay confined to the parsing side: the `createClient` invocation in `src/generate.mts` and the `sdk.gen`/`types.gen` parsing in `src/service.mts` / `src/createSource.mts`.
-- Generation-side modules (`src/tsmorph/build*.mts`, `generateFiles.mts`) should consume only the IR. Do not add new hey-api-specific parsing or imports there; extend the IR instead.
-- This boundary is what keeps the generator portable to a different SDK backend without rewriting the generation layer. Treat leaks across it as review findings.
+## Architecture: IR Boundary
+- `src/client/` is the client generator. It reads the OpenAPI document and writes `requests/` (`types.gen.ts`, `sdk.gen.ts`, `client.gen.ts`, `runtime.gen.ts`). It also returns the normalized operations (`OperationInfo` in `src/types.mts`) for the hook generators, so nothing re-parses the generated SDK.
+- Generation-side modules (`src/tsmorph/build*.mts`, `generateFiles.mts`) consume only `OperationInfo` and `GenerationContext`. Do not teach them about the OpenAPI document or the runtime's internals; extend the IR instead.
+- The generated hooks rely on a small SDK contract: `Options<XData, ThrowOnError>` exported from `sdk.gen`, calls returning `{ data }` and rejecting when `throwOnError` is set, and the `XData` / `XError` type names. Keep it in sync with `src/client/emitSdk.mts` and the runtimes in `src/client/runtime/`.
+- The runtimes (`src/client/runtime/*.runtime.ts`) are plain TypeScript that is copied verbatim into users' projects. Keep them dependency-free (axios aside), strict-mode clean, and free of syntax that needs a newer TypeScript than the generated code supports. `scripts/copy-runtime.mjs` ships them next to the compiled generator.
 
-## hey-api Version Policy
-- `@hey-api/openapi-ts` is pinned to an exact version and patched via `pnpm.patchedDependencies` when needed (see `patches/`).
-- Upgrades: bump the pin, run the full snapshot suite, regenerate an example app and type-check it, then release as a minor version. Breaking changes in hey-api are absorbed here — they must not leak into the generated API surface outside a major version.
+## Dependencies
+- Runtime dependencies are deliberately few (`cross-spawn`, `yaml`). Adding one needs a reason; the generator replaced `@hey-api/openapi-ts` to cut the supply-chain surface.
 
 ## Agent-Specific Notes
 - Use AST-aware paths (ts-morph/TypeScript factory) when editing generators to keep output structurally valid.

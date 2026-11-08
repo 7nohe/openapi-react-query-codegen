@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`createSource > createSource - @hey-api/client-axios 1`] = `
+exports[`createSource > createSource - axios client 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 export * from "./common";
@@ -9,7 +9,7 @@ export * from "./queryOptions";
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-axios 2`] = `
+exports[`createSource > createSource - axios client 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import { type Options } from "../requests/sdk.gen";
@@ -64,7 +64,7 @@ export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [useDeletePet
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-axios 3`] = `
+exports[`createSource > createSource - axios client 3`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
@@ -114,7 +114,7 @@ export const useDeletePet = <TData = Common.DeletePetMutationResult, TError = Ax
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-axios 4`] = `
+exports[`createSource > createSource - axios client 4`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
@@ -155,7 +155,7 @@ export const useFindPaginatedPetsSuspenseInfinite = <TData = InfiniteData<NonNul
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-axios 5`] = `
+exports[`createSource > createSource - axios client 5`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
@@ -196,7 +196,7 @@ export const prefetchUseFindPaginatedPetsInfinite = (queryClient: QueryClient, c
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-fetch 1`] = `
+exports[`createSource > createSource - fetch client 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 export * from "./common";
@@ -205,7 +205,7 @@ export * from "./queryOptions";
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-fetch 2`] = `
+exports[`createSource > createSource - fetch client 2`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import { type Options } from "../requests/sdk.gen";
@@ -259,7 +259,7 @@ export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [useDeletePet
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-fetch 3`] = `
+exports[`createSource > createSource - fetch client 3`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
@@ -308,7 +308,7 @@ export const useDeletePet = <TData = Common.DeletePetMutationResult, TError = De
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-fetch 4`] = `
+exports[`createSource > createSource - fetch client 4`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";
@@ -348,7 +348,7 @@ export const useFindPaginatedPetsSuspenseInfinite = <TData = InfiniteData<NonNul
 "
 `;
 
-exports[`createSource > createSource - @hey-api/client-fetch 5`] = `
+exports[`createSource > createSource - fetch client 5`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0 
 
 import * as Common from "./common";

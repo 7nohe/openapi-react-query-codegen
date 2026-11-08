@@ -66,8 +66,9 @@ const mockNoDataTypeOperation: OperationInfo = {
   isPaginatable: false,
 };
 
-// hey-api prefixes a digit-leading operationId in the function name but strips
-// the digits from the Data type, so the two names diverge (#213)
+// The Data type name is owned by the client generator and may differ from the
+// function name (for instance when it suffixes a colliding name), so the hooks
+// must use `dataTypeName` rather than derive it from the method name (#213)
 const mockDigitLeadingOperation: OperationInfo = {
   ...mockPaginatableOperation,
   methodName: "_123NumericLead",

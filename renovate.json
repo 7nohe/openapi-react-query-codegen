@@ -4,10 +4,9 @@
   "ignorePaths": ["examples/**", "docs/**"],
   "packageRules": [
     {
-      "description": "hey-api is exact-pinned; every update PR must pass the full snapshot suite before merging (see the stability policy in README)",
-      "matchPackageNames": ["@hey-api/openapi-ts", "@hey-api/shared"],
+      "description": "yaml parses user specifications and axios is type-checked against the shipped runtime; both are exact-pinned, so review the changelog before merging",
+      "matchPackageNames": ["yaml", "axios"],
       "rangeStrategy": "pin",
-      "groupName": "hey-api",
       "prPriority": 10
     },
     {

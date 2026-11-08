@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpenAPI React Query Codegen generates React Query (TanStack Query) hooks from OpenAPI specifications. It uses `@hey-api/openapi-ts` to generate TypeScript clients and then creates additional query/mutation hooks on top.
+OpenAPI React Query Codegen generates React Query (TanStack Query) hooks from OpenAPI specifications. It first generates a TypeScript client (types, SDK and a small fetch/axios runtime) with its own generator in `src/client/`, then creates query/mutation hooks on top.
 
 ## Commands
 
@@ -37,17 +37,11 @@ npm run preview:tanstack-router
 
 1. **CLI Entry** (`src/cli.mts`): Parses command-line options using Commander
 2. **Generate** (`src/generate.mts`): Orchestrates the generation process:
-   - Calls `@hey-api/openapi-ts` to generate base TypeScript client in `openapi/requests/`
+   - Calls `generateClient()` (`src/client/index.mts`) to build the client in `openapi/requests/` and the normalized operations
    - Calls `createSource()` to generate React Query hooks in `openapi/queries/`
-3. **Service Parsing** (`src/service.mts`): Uses ts-morph to parse the generated `services.gen.ts` file and extract function descriptions (method name, HTTP method, JSDoc, etc.)
-4. **Export Creation** (`src/createExports.mts`): Routes methods to appropriate generators based on HTTP method:
-   - GET methods → `createUseQuery()` (queries, suspense queries, infinite queries)
-   - POST/PUT/PATCH/DELETE → `createUseMutation()`
-5. **Hook Generators**:
-   - `src/createUseQuery.mts`: Generates `useQuery`, `useSuspenseQuery`, and `useInfiniteQuery` hooks
-   - `src/createUseMutation.mts`: Generates `useMutation` hooks
-   - `src/createPrefetchOrEnsure.mts`: Generates `prefetchQuery` and `ensureQueryData` functions
-6. **Print** (`src/print.mts`): Writes generated TypeScript to files
+3. **Client Generator** (`src/client/`): `spec.mts` loads/bundles the document, `operations.mts` normalizes operations, `schema.mts` renders types, `emitTypes.mts` / `emitSdk.mts` write the files, and `runtime/*.runtime.ts` are the fetch/axios runtimes copied into the output
+4. **Hook Generators** (`src/tsmorph/`): `generateFiles.mts` routes operations by HTTP method (GET → queries, suspense, infinite, prefetch, ensure; POST/PUT/PATCH/DELETE → mutations) to the `build*.mts` builders
+5. **Print** (`src/print.mts`): Writes generated TypeScript to files
 
 ### Generated Output Structure
 
@@ -62,12 +56,12 @@ The tool generates files in `openapi/queries/`:
 
 ### Key Dependencies
 
-- **ts-morph**: AST manipulation for reading the generated service file
-- **typescript**: AST creation for generating new TypeScript code
-- **@hey-api/openapi-ts**: Base OpenAPI to TypeScript client generator
+- **ts-morph**: building and formatting the hook source files
+- **typescript**: reading the caller's tsconfig and compiling generated output in tests
+- **yaml**: parsing YAML specifications
 
 ## Testing
 
-Tests use Vitest with snapshot testing. Test files in `tests/` correspond to source modules. The `tests/utils.ts` file provides a shared `project` fixture using `examples/petstore.yaml`.
+Tests use Vitest with snapshot testing. Test files in `tests/` correspond to source modules. `tests/utils.ts` has `generateTestClient()` to build the client for a spec in `tests/inputs/`; the runtimes are tested by importing `src/client/runtime/*.runtime.ts` directly against a local HTTP server.
 
 Coverage thresholds: 95% lines/functions/statements, 90% branches.

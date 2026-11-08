@@ -18,7 +18,7 @@ describe(fileName, () => {
     generated = await generateTestClient();
   });
 
-  test("createSource - @hey-api/client-fetch", async () => {
+  test("createSource - fetch client", async () => {
     const source = createSource({
       generated,
       version: "1.0.0",
@@ -57,7 +57,7 @@ describe(fileName, () => {
     expect(prefetchTs?.content).toMatchSnapshot();
   });
 
-  test("createSource - @hey-api/client-axios", async () => {
+  test("createSource - axios client", async () => {
     const source = createSource({
       generated,
       version: "1.0.0",
