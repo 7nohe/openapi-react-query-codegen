@@ -5,7 +5,12 @@ import {
   type ParameterIR,
   type ResponseIR,
 } from "./operations.mjs";
-import { docComment, renderSchema, type SchemaCtx } from "./schema.mjs";
+import {
+  docComment,
+  renderSchema,
+  type SchemaCtx,
+  schemaDescription,
+} from "./schema.mjs";
 import type { Doc, Json } from "./spec.mjs";
 
 export type EnumsMode = "javascript" | "typescript" | false | undefined;
@@ -146,7 +151,7 @@ function emitComponentSchema(
   enumsMode: EnumsMode,
 ): string {
   const comment = docComment({
-    description: schema?.description,
+    description: schemaDescription(schema),
     deprecated: schema?.deprecated,
   });
   const isLiteralEnum =

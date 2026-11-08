@@ -47,6 +47,19 @@ export function docComment(
   return `${indent}/**\n${body}\n${indent} */\n`;
 }
 
+/** `title` and `description` of a schema, as one documentation text. */
+export function schemaDescription(schema: Json): string | undefined {
+  if (!schema || typeof schema !== "object") return undefined;
+  const { title, description } = schema;
+  if (typeof title === "string" && title && typeof description === "string") {
+    return `${title}\n\n${description}`;
+  }
+  return (
+    (typeof description === "string" ? description : undefined) ??
+    (typeof title === "string" && title ? title : undefined)
+  );
+}
+
 function literal(value: unknown): string {
   if (value === null) return "null";
   if (typeof value === "string") return JSON.stringify(value);
@@ -338,7 +351,7 @@ function renderObject(
         : value;
     const comment = docComment(
       {
-        description: resolved?.description ?? value?.description,
+        description: schemaDescription(resolved) ?? value?.description,
         deprecated: resolved?.deprecated ?? value?.deprecated,
       },
       inner,

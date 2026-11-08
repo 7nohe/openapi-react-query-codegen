@@ -5,6 +5,7 @@ import {
   findReadWriteOnlyKeys,
   renderSchema,
   type SchemaCtx,
+  schemaDescription,
 } from "../../src/client/schema.mts";
 
 const doc = {
@@ -488,5 +489,30 @@ describe("discriminated unions", () => {
         },
       ),
     ).toBe("string");
+  });
+});
+
+describe("schemaDescription", () => {
+  test("combines title and description", () => {
+    expect(schemaDescription({ title: "T", description: "D" })).toBe("T\n\nD");
+    expect(schemaDescription({ title: "T" })).toBe("T");
+    expect(schemaDescription({ description: "D" })).toBe("D");
+    expect(schemaDescription({ title: "" })).toBeUndefined();
+    expect(schemaDescription(undefined)).toBeUndefined();
+    expect(schemaDescription("x")).toBeUndefined();
+  });
+
+  test("shows up in property and component documentation", () => {
+    expect(
+      renderSchema(
+        {
+          type: "object",
+          properties: {
+            a: { title: "A", description: "The a", type: "string" },
+          },
+        },
+        { doc: {}, names: new Map() },
+      ),
+    ).toContain("   * A\n   *\n   * The a\n");
   });
 });

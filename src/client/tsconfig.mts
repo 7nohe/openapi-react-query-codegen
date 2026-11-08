@@ -28,24 +28,33 @@ export function findNearestTsConfigPath(startDir: string): string | undefined {
  * resolution and must not under bundler-style resolution. Read the caller's
  * tsconfig to pick the matching convention.
  */
-export function detectImportExtension(startDir: string): "" | ".js" {
+export function detectImportExtension(
+  startDir: string,
+  host: ts.System | null = ts.sys,
+): "" | ".js" {
   const configPath = findNearestTsConfigPath(startDir);
   if (!configPath) return "";
-  const read = ts.readConfigFile(configPath, ts.sys.readFile);
-  if (read.error || !read.config) return "";
-  const parsed = ts.parseJsonConfigFileContent(
-    read.config,
-    ts.sys,
-    path.dirname(configPath),
-  );
-  const { moduleResolution, module } = parsed.options;
-  if (moduleResolution !== undefined) {
-    return moduleResolution === ts.ModuleResolutionKind.Node16 ||
-      moduleResolution === ts.ModuleResolutionKind.NodeNext
+  try {
+    const read = ts.readConfigFile(configPath, (host as ts.System).readFile);
+    if (read.error || !read.config) return "";
+    const parsed = ts.parseJsonConfigFileContent(
+      read.config,
+      host as ts.System,
+      path.dirname(configPath),
+    );
+    const { moduleResolution, module } = parsed.options;
+    if (moduleResolution !== undefined) {
+      return moduleResolution === ts.ModuleResolutionKind.Node16 ||
+        moduleResolution === ts.ModuleResolutionKind.NodeNext
+        ? ".js"
+        : "";
+    }
+    return module === ts.ModuleKind.Node16 || module === ts.ModuleKind.NodeNext
       ? ".js"
       : "";
+  } catch {
+    // An unusual TypeScript build without the compiler host API: fall back
+    // to the bundler convention rather than failing the whole run.
+    return "";
   }
-  return module === ts.ModuleKind.Node16 || module === ts.ModuleKind.NodeNext
-    ? ".js"
-    : "";
 }

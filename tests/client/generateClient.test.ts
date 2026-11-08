@@ -334,6 +334,17 @@ describe("detectImportExtension", () => {
     expect(detectImportExtension(sub)).toBe("");
   });
 
+  test("a TypeScript build without the host API yields no extension", async () => {
+    const sub = path.join(dir, "no-host");
+    await mkdir(sub, { recursive: true });
+    await writeFile(
+      path.join(sub, "tsconfig.json"),
+      JSON.stringify({ compilerOptions: { moduleResolution: "nodenext" } }),
+    );
+    // TypeScript 7's native build has no `ts.sys` host object.
+    expect(detectImportExtension(sub, null)).toBe("");
+  });
+
   test("a missing tsconfig yields no extension", async () => {
     // Real walk-up: relies on os.tmpdir() having no tsconfig ancestors.
     const sub = await mkdtemp(path.join(tmpdir(), "orqc-none-"));
