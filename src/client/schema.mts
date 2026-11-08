@@ -281,6 +281,12 @@ function withDiscriminator(
   }
   const key = componentSchemaKey(member.$ref);
   if (key === undefined || pinsProperty(member, property, ctx)) return rendered;
+  // Only object members can carry the property (an array or a primitive
+  // intersected with `{ kind: … }` would be unusable).
+  const target = ctx.doc.components?.schemas?.[key];
+  if (typeof target?.type === "string" && target.type !== "object") {
+    return rendered;
+  }
 
   const values = Object.entries(
     (discriminator.mapping ?? {}) as Record<string, string>,

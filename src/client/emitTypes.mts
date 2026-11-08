@@ -68,7 +68,7 @@ function renderEntries(
     seen.add(response.status);
     const type = response.schema
       ? renderSchema(response.schema, ctx, "  ")
-      : /^20[45]$/.test(response.status)
+      : response.status === "204"
         ? "void"
         : "unknown";
     types.push(type);
@@ -84,7 +84,7 @@ function emitOperationTypes(
   writeCtx: SchemaCtx,
 ): string[] {
   const out: string[] = [];
-  const stem = operation.typeStem;
+  const names = operation.typeNames;
 
   const byLocation = (location: string) =>
     operation.parameters.filter((parameter) => parameter.in === location);
@@ -121,25 +121,23 @@ function emitOperationTypes(
   addGroup("query", query);
   if (headers.length > 0) addGroup("headers", headers);
   fields.push(`  url: ${JSON.stringify(operation.path)};`);
-  out.push(`export type ${stem}Data = {\n${fields.join("\n")}\n};`);
+  out.push(`export type ${names.data} = {\n${fields.join("\n")}\n};`);
 
   const { responses, errors } = classifyResponses(operation);
   const emitGroup = (
-    suffix: "Errors" | "Responses",
-    aliasSuffix: "Error" | "Response",
+    groupName: string,
+    aliasName: string,
     group: ResponseIR[],
   ) => {
     if (group.length === 0) return;
     const { body, types } = renderEntries(group, ctx);
-    out.push(`export type ${stem}${suffix} = {\n${body}\n};`);
+    out.push(`export type ${groupName} = {\n${body}\n};`);
     if (types.some((type) => type !== "unknown")) {
-      out.push(
-        `export type ${stem}${aliasSuffix} = ${stem}${suffix}[keyof ${stem}${suffix}];`,
-      );
+      out.push(`export type ${aliasName} = ${groupName}[keyof ${groupName}];`);
     }
   };
-  emitGroup("Errors", "Error", errors);
-  emitGroup("Responses", "Response", responses);
+  emitGroup(names.errors, names.error, errors);
+  emitGroup(names.responses, names.response, responses);
   return out;
 }
 

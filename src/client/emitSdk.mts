@@ -105,11 +105,11 @@ function emitOperation(
   doc: Doc,
   kind: ClientKind,
 ): { code: string; usedTypes: string[] } {
-  const stem = operation.typeStem;
+  const names = operation.typeNames;
   const { responses, errors } = classifyResponses(operation);
-  const dataType = `${stem}Data`;
-  const responsesType = responses.length > 0 ? `${stem}Responses` : "unknown";
-  const errorsType = errors.length > 0 ? `${stem}Errors` : "unknown";
+  const dataType = names.data;
+  const responsesType = responses.length > 0 ? names.responses : "unknown";
+  const errorsType = errors.length > 0 ? names.errors : "unknown";
   const usedTypes = [dataType];
   if (responses.length > 0) usedTypes.push(responsesType);
   if (errors.length > 0) usedTypes.push(errorsType);

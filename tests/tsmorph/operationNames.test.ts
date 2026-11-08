@@ -1,0 +1,61 @@
+import { describe, expect, it } from "vitest";
+import {
+  getDataTypeName,
+  getErrorType,
+} from "../../src/tsmorph/operationNames.mts";
+import type { GenerationContext, OperationInfo } from "../../src/types.mts";
+
+const op = (overrides: Partial<OperationInfo> = {}): OperationInfo => ({
+  methodName: "findPets",
+  capitalizedMethodName: "FindPets",
+  dataTypeName: "FindPetsData",
+  httpMethod: "GET",
+  isDeprecated: false,
+  parameters: [],
+  allParamsOptional: true,
+  isPaginatable: false,
+  ...overrides,
+});
+
+const ctx = (
+  modelNames: string[],
+  client: GenerationContext["client"] = "fetch",
+): GenerationContext => ({
+  client,
+  modelNames,
+  serviceNames: [],
+  pageParam: "page",
+  nextPageParam: "nextPage",
+  initialPageParam: "1",
+  omitInitialPageParam: false,
+  version: "1.0.0",
+});
+
+describe("operationNames", () => {
+  it("getDataTypeName falls back to unknown", () => {
+    expect(getDataTypeName(op())).toBe("FindPetsData");
+    expect(getDataTypeName(op({ dataTypeName: undefined }))).toBe("unknown");
+  });
+
+  it("derives the error type from the data type's stem by default", () => {
+    expect(getErrorType(op(), ctx(["FindPetsError"]))).toBe("FindPetsError");
+    expect(getErrorType(op(), ctx([]))).toBe("unknown");
+    expect(
+      getErrorType(op({ dataTypeName: undefined }), ctx(["FindPetsError"])),
+    ).toBe("FindPetsError");
+  });
+
+  it("prefers the error type name chosen by the client generator", () => {
+    const named = op({ errorTypeName: "FindPetsError2" });
+    expect(getErrorType(named, ctx(["FindPetsError", "FindPetsError2"]))).toBe(
+      "FindPetsError2",
+    );
+    expect(getErrorType(named, ctx(["FindPetsError"]))).toBe("unknown");
+  });
+
+  it("wraps the error type for axios", () => {
+    expect(getErrorType(op(), ctx(["FindPetsError"], "axios"))).toBe(
+      "AxiosError<FindPetsError>",
+    );
+  });
+});

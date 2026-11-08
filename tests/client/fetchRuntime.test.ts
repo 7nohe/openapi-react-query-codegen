@@ -189,6 +189,12 @@ describe("fetch runtime: requests", () => {
     const client = make();
     const json = await client.post({ url: "/echo", body: { a: 1 } });
     expect((json.data as { body: string }).body).toBe('{"a":1}');
+    const quoted = await client.post({
+      url: "/echo",
+      body: "x",
+      bodyType: "json",
+    });
+    expect((quoted.data as { body: string }).body).toBe('"x"');
     const text = await client.post({
       url: "/echo",
       body: "raw",

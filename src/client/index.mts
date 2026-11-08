@@ -78,6 +78,7 @@ function toOperationInfo(
   operation: OperationIR,
   ctx: SchemaCtx,
   pageParam: string,
+  emittedTypes: ReadonlySet<string>,
 ): OperationInfo {
   const parameters = operation.parameters
     .filter((parameter) => parameter.in !== "cookie")
@@ -110,7 +111,10 @@ function toOperationInfo(
     capitalizedMethodName:
       operation.functionName.charAt(0).toUpperCase() +
       operation.functionName.slice(1),
-    dataTypeName: `${operation.typeStem}Data`,
+    dataTypeName: operation.typeNames.data,
+    errorTypeName: emittedTypes.has(operation.typeNames.error)
+      ? operation.typeNames.error
+      : undefined,
     httpMethod: method,
     jsDoc: operation.jsDoc,
     isDeprecated: operation.deprecated,
@@ -171,10 +175,11 @@ export async function generateClient(
     { name: "services.gen.ts", content: emitServicesShim(ext) },
   ];
 
+  const emittedTypes = new Set(types.exportedNames);
   return {
     files,
     operations: operations.map((operation) =>
-      toOperationInfo(operation, ctx, options.pageParam),
+      toOperationInfo(operation, ctx, options.pageParam, emittedTypes),
     ),
     modelNames: types.exportedNames,
     serviceNames: operations.map((operation) => operation.functionName),

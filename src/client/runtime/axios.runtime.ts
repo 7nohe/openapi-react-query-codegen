@@ -395,6 +395,8 @@ const NON_AXIOS_KEYS = [
   "url",
   "baseURL",
   "headers",
+  "client",
+  "meta",
 ] as const;
 
 /** The options axios itself understands; everything else is ours. */

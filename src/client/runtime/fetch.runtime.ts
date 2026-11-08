@@ -408,7 +408,9 @@ function serializeBody(options: Config): BodyInit | null | undefined {
   if (bodySerializer) return bodySerializer(body);
   if (bodyType === "form-data") return toFormData(body);
   if (bodyType === "urlencoded") return toSearchParams(body);
-  if (typeof body === "string") return body;
+  // A string is already a body unless the operation is JSON, where a string
+  // is a JSON string value and has to be quoted.
+  if (typeof body === "string" && bodyType !== "json") return body;
   if (
     bodyType === "json" ||
     (typeof body === "object" && body !== null && !isBinaryBody(body))

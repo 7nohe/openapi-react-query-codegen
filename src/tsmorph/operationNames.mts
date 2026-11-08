@@ -24,7 +24,9 @@ export function getErrorType(
   const stem = op.dataTypeName
     ? op.dataTypeName.replace(/Data$/, "")
     : op.capitalizedMethodName;
-  const errorTypeName = `${stem}Error`;
+  // The client generator names the error type; fall back to the stem for
+  // operations that carry no explicit name.
+  const errorTypeName = op.errorTypeName ?? `${stem}Error`;
   const errorType = ctx.modelNames.includes(errorTypeName)
     ? errorTypeName
     : "unknown";

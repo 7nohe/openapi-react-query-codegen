@@ -67,15 +67,24 @@ export interface SecurityIR {
   name?: string;
 }
 
+export interface OperationTypeNames {
+  data: string;
+  errors: string;
+  error: string;
+  responses: string;
+  response: string;
+}
+
 export interface OperationIR {
   /** Generated function name, e.g. `findPets` */
   functionName: string;
   /**
-   * PascalCase stem shared by the operation's generated types (`XData`,
-   * `XResponses`, `XErrors` …). Usually the capitalized function name, but
-   * suffixed when that would collide with a schema or another operation.
+   * Names of the operation's generated types. Each is the capitalized function
+   * name plus a suffix; a name that collides with a schema or another
+   * operation's type gets a number appended on its own (`ListRunsResponse2`),
+   * so the other names stay what users expect.
    */
-  typeStem: string;
+  typeNames: OperationTypeNames;
   method: HttpMethod;
   path: string;
   summary?: string;
@@ -192,18 +201,15 @@ function collectSecurity(doc: Doc, requirements: Json): SecurityIR[] {
   return result;
 }
 
-const TYPE_SUFFIXES = ["Data", "Errors", "Error", "Responses", "Response"];
-
-/** Pick a stem whose derived type names are not taken yet, and claim them. */
-function uniqueTypeStem(stem: string, used: Set<string>): string {
-  let candidate = stem;
-  let counter = 2;
-  while (TYPE_SUFFIXES.some((suffix) => used.has(`${candidate}${suffix}`))) {
-    candidate = `${stem}${counter}`;
-    counter += 1;
-  }
-  for (const suffix of TYPE_SUFFIXES) used.add(`${candidate}${suffix}`);
-  return candidate;
+/** Claim a distinct name for each of the operation's types. */
+function claimTypeNames(stem: string, used: Set<string>): OperationTypeNames {
+  return {
+    data: uniqueName(`${stem}Data`, used),
+    errors: uniqueName(`${stem}Errors`, used),
+    error: uniqueName(`${stem}Error`, used),
+    responses: uniqueName(`${stem}Responses`, used),
+    response: uniqueName(`${stem}Response`, used),
+  };
 }
 
 /** Walk `paths` and normalise every operation. */
@@ -232,7 +238,7 @@ export function collectOperations(
           ? String(operation.operationId)
           : nameFromPath(method, pathKey);
       const functionName = uniqueName(toFunctionName(baseName), usedNames);
-      const typeStem = uniqueTypeStem(
+      const typeNames = claimTypeNames(
         functionName.charAt(0).toUpperCase() + functionName.slice(1),
         usedTypeNames,
       );
@@ -272,7 +278,7 @@ export function collectOperations(
       const deprecated = operation.deprecated === true;
       operations.push({
         functionName,
-        typeStem,
+        typeNames,
         method,
         path: pathKey,
         summary: operation.summary,
@@ -327,8 +333,11 @@ export function classifyResponses(operation: OperationIR): {
   const errors: ResponseIR[] = [];
   for (const response of operation.responses) {
     if (response.status === "default") continue;
-    if (/^[45]/.test(response.status)) errors.push(response);
-    else responses.push(response);
+    // 2xx carries the data the caller asked for and 4xx/5xx the error. Other
+    // statuses (a 304 on a conditional request, say) are neither, and listing
+    // them would only widen `data` and the error type.
+    if (/^2/.test(response.status)) responses.push(response);
+    else if (/^[45]/.test(response.status)) errors.push(response);
   }
   const fallback = operation.responses.find(
     (response) => response.status === "default",

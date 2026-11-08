@@ -17,6 +17,13 @@ export interface OperationInfo {
    * `typeof methodName`.
    */
   dataTypeName?: string;
+  /**
+   * Name of the operation's error type alias (e.g., "FindPetsError"), or
+   * undefined when the operation declares no error responses with a body.
+   * Taken from the client generator because it is not always the data type's
+   * stem plus "Error": a colliding name gets a number appended on its own.
+   */
+  errorTypeName?: string;
   /** HTTP method (e.g., "GET", "POST", "PUT", "PATCH", "DELETE") */
   httpMethod: string;
   /** JSDoc comment string (if present) */

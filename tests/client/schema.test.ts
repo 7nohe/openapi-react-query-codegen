@@ -470,6 +470,35 @@ describe("discriminated unions", () => {
     ).toBe("Bird | Fish | Shared | Const | string");
   });
 
+  test("array and primitive members are not intersected", () => {
+    const arrayCtx: SchemaCtx = {
+      doc: {
+        components: {
+          schemas: {
+            List: { type: "array", items: { type: "string" } },
+            Cat: { type: "object", properties: { kind: { type: "string" } } },
+          },
+        },
+      },
+      names: new Map([
+        ["List", "List"],
+        ["Cat", "Cat"],
+      ]),
+    };
+    expect(
+      renderSchema(
+        {
+          oneOf: [ref("List"), ref("Cat")],
+          discriminator: {
+            propertyName: "kind",
+            mapping: { array: "#/components/schemas/List" },
+          },
+        },
+        arrayCtx,
+      ),
+    ).toBe('List | ({ kind: "Cat" } & Cat)');
+  });
+
   test("members without the property still get the literal", () => {
     expect(
       renderSchema(

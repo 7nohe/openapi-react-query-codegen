@@ -57,8 +57,19 @@ OpenAPI 3.0 and 3.1 are supported, including external `$ref`s to files and URLs.
 ### Naming
 
 - Operations without an `operationId` are named after the method and path (`getPetsById`), as before.
-- Names that would collide are suffixed with a number instead of producing duplicate identifiers. When a response type would collide with a schema of the same name (for example the `ListRunsResponse` schema and the operation `listRuns`), the operation's types are suffixed (`ListRuns2Data`, `ListRuns2Responses`); the hooks keep their names.
+- A name that would collide with a schema or another operation's type gets a number appended on its own, instead of producing duplicate identifiers or renaming the whole operation. For example, when the specification has a `ListRunsResponse` schema and an operation `listRuns`, the schema keeps its name, `ListRunsData` / `ListRunsResponses` / `ListRunsErrors` keep theirs, and only the alias becomes `ListRunsResponse2`. The hooks keep their names.
+- Schema names are converted to PascalCase as in v3 (`account_annual_revenue` → `AccountAnnualRevenue`, `FineTuneDPOHyperparameters` → `FineTuneDpoHyperparameters`).
 - A digit-leading `operationId` such as `123numericLead` yields the function `_123NumericLead` and the types `_123NumericLeadData` / `_123NumericLeadError` (v3 dropped the digits from the types only).
+
+### Types that are no longer generated
+
+v3 emitted a few helper types that no hook uses. They are gone in v4; if your code imports one, declare it yourself from the schema:
+
+- types for `components.parameters` (for example `Page` for a `Page` parameter) and for webhooks (`Webhooks`, `…WebhookRequest`)
+- anonymous helper names such as `Pet2` or `UserArray` for inline schemas
+- `*Writable` aliases of schemas that have no `readOnly`/`writeOnly` property. A real request-side variant (`PetWritable`, without the `readOnly` properties) is still generated, and the type of a `readOnly` property is now `readonly` in response types.
+
+Two typing differences to be aware of: a fixed-length array (`minItems` equal to `maxItems`) is a tuple, as before, and when `prefixItems` is followed by `items` the remaining elements are typed as `...Array<T>` rather than one extra tuple member. `oneOf`/`anyOf` members with a `discriminator` are narrowed by the discriminator value unless the member already pins the property to literals.
 
 ### Performance
 

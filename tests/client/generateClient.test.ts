@@ -165,6 +165,44 @@ describe("generateClient - options", () => {
     });
   });
 
+  test("a colliding type name is renumbered on its own and reported to the hooks", async () => {
+    const generated = await generateClient({
+      input: [
+        "openapi: 3.0.0",
+        "paths:",
+        "  /a:",
+        "    get:",
+        "      operationId: listRuns",
+        "      responses:",
+        '        "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/ListRunsResponse" } } } }',
+        '        "404": { description: no, content: { application/json: { schema: { type: string } } } }',
+        "components:",
+        "  schemas:",
+        "    ListRunsResponse: { type: object }",
+        "    ListRunsError: { type: string }",
+      ].join("\n"),
+      client: "fetch",
+      importExtension: "",
+      pageParam: "page",
+    });
+    const types = file(generated, "types.gen.ts");
+    expect(types).toContain("export type ListRunsData = {");
+    expect(types).toContain(
+      "export type ListRunsResponse2 = ListRunsResponses[keyof ListRunsResponses];",
+    );
+    expect(types).toContain(
+      "export type ListRunsError2 = ListRunsErrors[keyof ListRunsErrors];",
+    );
+    expect(generated.operations[0]).toMatchObject({
+      dataTypeName: "ListRunsData",
+      errorTypeName: "ListRunsError2",
+    });
+    const sdk = file(generated, "sdk.gen.ts");
+    expect(sdk).toContain(
+      "RequestResult<ListRunsResponses, ListRunsErrors, ThrowOnError>",
+    );
+  });
+
   test("rejects unsupported documents", async () => {
     const base = {
       importExtension: "" as const,

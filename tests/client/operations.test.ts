@@ -177,7 +177,24 @@ describe("collectOperations", () => {
       },
       { reservedTypeNames: ["ListRunsResponse"] },
     );
-    expect(ops.map((op) => op.typeStem)).toEqual(["ListRuns2", "ListRuns22"]);
+    // Only the colliding name is renumbered; the operation's other types keep
+    // the names users import.
+    expect(ops.map((op) => op.typeNames)).toEqual([
+      {
+        data: "ListRunsData",
+        errors: "ListRunsErrors",
+        error: "ListRunsError",
+        responses: "ListRunsResponses",
+        response: "ListRunsResponse2",
+      },
+      {
+        data: "ListRuns2Data",
+        errors: "ListRuns2Errors",
+        error: "ListRuns2Error",
+        responses: "ListRuns2Responses",
+        response: "ListRuns2Response",
+      },
+    ]);
     expect(ops.map((op) => op.functionName)).toEqual(["listRuns", "listRuns2"]);
   });
 
@@ -232,8 +249,17 @@ describe("classifyResponses", () => {
     expect(errors).toHaveLength(1);
   });
 
-  test("keeps 1xx/3xx as responses", () => {
-    expect(make("302").responses).toHaveLength(1);
+  test("ignores informational and redirect statuses", () => {
+    const { responses, errors } = make(
+      "100",
+      "200",
+      "2XX",
+      "304",
+      "3XX",
+      "4XX",
+    );
+    expect(responses.map((r) => r.status)).toEqual(["200", "2XX"]);
+    expect(errors.map((r) => r.status)).toEqual(["4XX"]);
   });
 });
 
