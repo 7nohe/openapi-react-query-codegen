@@ -173,7 +173,7 @@ function App() {
       <ul>{data?.map((pet) => <li key={pet.id}>{pet.name}</li>)}</ul>
       <button
         onClick={() => {
-          mutate({ body: { name: "Fluffy", photoUrls: [] } });
+          mutate({ body: { name: "Fluffy", photoUrls: [], status } });
         }}
       >
         Add Pet
