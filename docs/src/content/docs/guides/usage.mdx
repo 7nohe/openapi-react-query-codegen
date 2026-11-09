@@ -144,6 +144,7 @@ Learn more about invalidating queries [here](https://tanstack.com/query/latest/d
 To ensure the query key is created the same way as the query hook, you can use the query key function exported by the generated query hooks.
 
 ```tsx
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useFindPetsByStatus,
   useAddPet,
@@ -151,17 +152,17 @@ import {
 } from "../openapi/queries";
 
 function App() {
-  const [status, setStatus] = React.useState(["available"]);
+  const queryClient = useQueryClient();
+  const status = "available";
   const { data } = useFindPetsByStatus({ query: { status } });
-  const { mutate } = useAddPet({
+  // The first argument of a mutation hook is the mutation key
+  const { mutate } = useAddPet(undefined, {
     onSuccess: () => {
       queryClient.invalidateQueries({
         // Call the query key function to get the query key
         // This is important to ensure the query key is created the same way as the query hook
         // This insures the cache is invalidated correctly and is typed correctly
-        queryKey: [UseFindPetsByStatusKeyFn({
-          status
-        })],
+        queryKey: UseFindPetsByStatusKeyFn({ query: { status } }),
       });
     },
   });
@@ -172,7 +173,7 @@ function App() {
       <ul>{data?.map((pet) => <li key={pet.id}>{pet.name}</li>)}</ul>
       <button
         onClick={() => {
-          mutate({ name: "Fluffy", status: "available" });
+          mutate({ body: { name: "Fluffy", photoUrls: [] } });
         }}
       >
         Add Pet
