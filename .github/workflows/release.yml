@@ -57,8 +57,10 @@ jobs:
           if-no-files-found: error
 
   # The only job holding `id-token: write`. It never checks out the repository
-  # and never runs a dependency install, so no third-party code executes here —
-  # only the npm CLI bundled with Node.
+  # and never runs a dependency install, so neither this repository's code nor
+  # any package dependency executes here. What does run: two SHA-pinned
+  # GitHub-maintained actions (`setup-node`, `download-artifact`), the inline
+  # scripts below, and the npm CLI bundled with Node.
   #
   # It can only stage: the npm trusted publisher allows `npm stage publish` and
   # nothing else, so a version goes live only after a maintainer approves it
