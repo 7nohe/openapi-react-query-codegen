@@ -1,0 +1,49 @@
+name: lockfile review
+
+# Holds every package version a pull request adds to pnpm-lock.yaml to a
+# minimum release age and flags new install scripts. See
+# .github/scripts/check-lockfile-changes.mjs for the rules.
+on:
+  pull_request:
+    paths:
+      - pnpm-lock.yaml
+
+concurrency:
+  group: lockfile-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # to check out the base branch and fetch the head commit
+    steps:
+      # The checker comes from the base branch, so a pull request cannot
+      # weaken the rules it is reviewed against. The head commit is fetched
+      # only to read its lockfile as text; nothing from it is executed and no
+      # dependencies are installed.
+      - name: Checkout the base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.20.0
+          package-manager-cache: false
+
+      - name: Read both lockfiles
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$HEAD_SHA"
+          cp pnpm-lock.yaml "$RUNNER_TEMP/base-lock.yaml"
+          git show "$HEAD_SHA:pnpm-lock.yaml" > "$RUNNER_TEMP/head-lock.yaml"
+
+      - name: Review added package versions
+        run: node .github/scripts/check-lockfile-changes.mjs "$RUNNER_TEMP/base-lock.yaml" "$RUNNER_TEMP/head-lock.yaml"
