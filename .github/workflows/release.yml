@@ -37,7 +37,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.20.0
+          node-version: 26.13.0
           package-manager-cache: false
 
       - name: Install dependencies
@@ -76,10 +76,10 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.20.0
+          node-version: 26.13.0
           registry-url: 'https://registry.npmjs.org'
 
-      # `npm stage` needs 11.15.0. Node 24.20.0 bundles npm 11.19.0; fail loudly
+      # `npm stage` needs 11.15.0. Node 26.13.0 bundles npm 11.20.0; fail loudly
       # if that ever stops holding.
       - name: Verify npm supports staged publishing
         run: |
