@@ -102,6 +102,7 @@ paths:
   /o: { get: { operationId: useInfiniteQuery, responses: { "200": { description: ok } } } }
   /p: { get: { operationId: useSuspenseInfiniteQuery, responses: { "200": { description: ok } } } }
   /q: { get: { operationId: initialPageParam, responses: { "200": { description: ok } } } }
+  /r: { get: { operationId: signal, responses: { "200": { description: ok } } } }
 components:
   schemas:
     Array: { type: array, items: { type: string } }

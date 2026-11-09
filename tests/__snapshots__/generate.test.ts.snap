@@ -292,7 +292,7 @@ export const useFindPaginatedPetsInfinite = <
       ),
     initialPageParam: "initial",
     getNextPageParam: (response: unknown) =>
-      (response as { meta: { next: number } }).meta.next,
+      (response as { meta: { next: number } }).meta?.next,
     ...options,
   });
 "
@@ -446,7 +446,7 @@ export const prefetchUseFindPaginatedPetsInfinite = (
       ),
     initialPageParam: "initial",
     getNextPageParam: (response: unknown) =>
-      (response as { meta: { next: number } }).meta.next,
+      (response as { meta: { next: number } }).meta?.next,
     ...options,
   });
 "
@@ -771,7 +771,7 @@ export const findPaginatedPetsInfiniteOptions = (
       ),
     initialPageParam: "initial",
     getNextPageParam: (response: unknown) =>
-      (response as { meta: { next: number } }).meta.next,
+      (response as { meta: { next: number } }).meta?.next,
     ...options,
   });
 "
@@ -947,7 +947,7 @@ export const useFindPaginatedPetsSuspenseInfinite = <
       ),
     initialPageParam: "initial",
     getNextPageParam: (response: unknown) =>
-      (response as { meta: { next: number } }).meta.next,
+      (response as { meta: { next: number } }).meta?.next,
     ...options,
   });
 "

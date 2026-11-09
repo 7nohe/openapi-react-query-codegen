@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { OperationInfo } from "../types.mjs";
+import type { GeneratedFile, OperationInfo } from "../types.mjs";
 import {
   type ClientKind,
   emitClientFile,
@@ -10,12 +10,12 @@ import {
   optionsAreOptional,
 } from "./emitSdk.mjs";
 import { type EnumsMode, emitTypes, getBaseUrl } from "./emitTypes.mjs";
+import { capitalizeFirst } from "./naming.mjs";
 import {
   buildSchemaNames,
   buildWritableNames,
   collectOperations,
   type OperationIR,
-  parameterType,
   schemaPrimitiveKind,
 } from "./operations.mjs";
 import { renderSchema, type SchemaCtx } from "./schema.mjs";
@@ -36,11 +36,6 @@ export interface ClientGenOptions {
   noOperationId?: boolean;
   /** Query parameter used for pagination. */
   pageParam: string;
-}
-
-export interface GeneratedFile {
-  name: string;
-  content: string;
 }
 
 export interface GeneratedClient {
@@ -80,23 +75,6 @@ function toOperationInfo(
   pageParam: string,
   emittedTypes: ReadonlySet<string>,
 ): OperationInfo {
-  const parameters = operation.parameters
-    .filter((parameter) => parameter.in !== "cookie")
-    .map((parameter) => ({
-      name: parameter.name,
-      typeName: parameterType(parameter, ctx),
-      optional: !parameter.required,
-    }));
-  if (operation.body) {
-    parameters.push({
-      name: "body",
-      typeName: operation.body.schema
-        ? renderSchema(operation.body.schema, { ...ctx, mode: "write" })
-        : "unknown",
-      optional: !operation.body.required,
-    });
-  }
-
   const method = operation.method.toUpperCase();
   const pageParameter =
     method === "GET"
@@ -108,26 +86,22 @@ function toOperationInfo(
 
   return {
     methodName: operation.functionName,
-    capitalizedMethodName:
-      operation.functionName.charAt(0).toUpperCase() +
-      operation.functionName.slice(1),
+    capitalizedMethodName: capitalizeFirst(operation.functionName),
     dataTypeName: operation.typeNames.data,
     errorTypeName: emittedTypes.has(operation.typeNames.error)
       ? operation.typeNames.error
       : undefined,
     httpMethod: method,
     jsDoc: operation.jsDoc,
-    isDeprecated: operation.deprecated,
-    parameters,
     allParamsOptional: optionsAreOptional(operation),
     isPaginatable: pageParameter !== undefined,
     pageParamType: pageParameter
-      ? parameterType(pageParameter, ctx)
+      ? renderSchema(pageParameter.schema, ctx)
       : undefined,
     pageParamTypeKind: pageParameter
       ? schemaPrimitiveKind(ctx.doc, pageParameter.schema)
       : undefined,
-  } as OperationInfo;
+  };
 }
 
 /** Generate the TypeScript client (types, SDK, runtime) for a specification. */

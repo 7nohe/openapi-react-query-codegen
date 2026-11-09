@@ -7,9 +7,8 @@ const mockPostOperation: OperationInfo = {
   methodName: "addPet",
   capitalizedMethodName: "AddPet",
   dataTypeName: "AddPetData",
+  errorTypeName: "AddPetError",
   httpMethod: "POST",
-  isDeprecated: false,
-  parameters: [{ name: "body", typeName: "NewPet", optional: false }],
   allParamsOptional: false,
   isPaginatable: false,
 };
@@ -19,8 +18,6 @@ const mockDeleteOperation: OperationInfo = {
   capitalizedMethodName: "DeletePet",
   dataTypeName: "DeletePetData",
   httpMethod: "DELETE",
-  isDeprecated: false,
-  parameters: [{ name: "id", typeName: "number", optional: false }],
   allParamsOptional: false,
   isPaginatable: false,
 };
@@ -30,11 +27,6 @@ const mockPutOperation: OperationInfo = {
   capitalizedMethodName: "UpdatePet",
   dataTypeName: "UpdatePetData",
   httpMethod: "PUT",
-  isDeprecated: false,
-  parameters: [
-    { name: "id", typeName: "number", optional: false },
-    { name: "body", typeName: "Pet", optional: false },
-  ],
   allParamsOptional: false,
   isPaginatable: false,
 };
@@ -44,8 +36,6 @@ const mockPatchOperation: OperationInfo = {
   capitalizedMethodName: "PatchPet",
   dataTypeName: "PatchPetData",
   httpMethod: "PATCH",
-  isDeprecated: false,
-  parameters: [{ name: "body", typeName: "Partial<Pet>", optional: true }],
   allParamsOptional: true,
   isPaginatable: false,
 };
@@ -194,6 +184,7 @@ describe("buildMutationHooks", () => {
         methodName: "_123CreateThing",
         capitalizedMethodName: "_123CreateThing",
         dataTypeName: "CreateThingData",
+        errorTypeName: "CreateThingError",
       };
       const ctx: GenerationContext = {
         ...mockFetchContext,
@@ -204,7 +195,6 @@ describe("buildMutationHooks", () => {
       const initializer = result.declarations[0].initializer as string;
 
       expect(initializer).toContain("Options<CreateThingData, true>");
-      // The Error type shares the Data type stem, not the method name
       expect(initializer).toContain("TError = CreateThingError");
     });
 

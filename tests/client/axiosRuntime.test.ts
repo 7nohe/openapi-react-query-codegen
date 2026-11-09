@@ -1,6 +1,6 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import {
   createClient,
@@ -163,7 +163,8 @@ describe("axios runtime: requests", () => {
       url: "/echo",
       headers: { "Content-Type": "application/json" },
     });
-    expect(echo(empty).headers["content-type"]).not.toBe("application/json");
+    // As in v3, the header the SDK asked for stays without a body too.
+    expect(echo(empty).headers["content-type"]).toBe("application/json");
   });
 
   test("merges headers case-insensitively", async () => {
@@ -187,7 +188,7 @@ describe("axios runtime: requests", () => {
     const headers = echo(result).headers;
     expect(headers["x-base"]).toBe("override");
     expect(headers["x-drop"]).toBeUndefined();
-    expect(headers["x-list"]).toBe("a,b");
+    expect(headers["x-list"]).toBe("a, b");
     expect(headers["x-num"]).toBe("2");
     expect(headers["x-obj"]).toBe('{"a":1}');
   });
@@ -220,7 +221,7 @@ describe("axios runtime: requests", () => {
 
   test("accepts an axios static or an instance", async () => {
     const fromStatic = createClient({ baseURL, axios });
-    expect(fromStatic.instance).toBe(axios);
+    expect(fromStatic.instance).not.toBe(axios);
     expect(echo(await fromStatic.get({ url: "/echo" })).method).toBe("GET");
     const instance = axios.create();
     const fromInstance = createClient({ baseURL, axios: instance });
@@ -382,6 +383,291 @@ describe("axios runtime: path parameter styles", () => {
         pathSerializer: { parameters: { id: { style, explode } } },
       } as never)
       .slice(baseURL.length);
+
+  test("a failure without throwOnError stays an AxiosError", async () => {
+    const client = createClient({
+      baseURL,
+      adapter: (config) =>
+        Promise.reject(new AxiosError("Network Error", "ERR_NETWORK", config)),
+    } as never);
+    const result = (await client.get({
+      url: "/echo",
+    })) as unknown as AxiosError & {
+      error: unknown;
+    };
+    expect(result).toBeInstanceOf(AxiosError);
+    expect(result.toJSON()).toMatchObject({ message: "Network Error" });
+    expect(result.error).toBe(result);
+  });
+
+  test("a failure with a response puts its body in error", async () => {
+    const result = await make().get({ url: "/err-json" });
+    expect(result.data).toBeUndefined();
+    expect(result.error).toEqual({ code: 500 });
+    expect((result as unknown as AxiosError).response?.status).toBe(500);
+  });
+
+  test("an API key the caller supplies wins over the token", async () => {
+    const client = make();
+    client.setConfig({ auth: "global" });
+    const header = { in: "header", name: "X-Key", type: "apiKey" } as const;
+    const sent = echo(
+      await client.get({
+        url: "/echo",
+        security: [header],
+        headers: { "x-key": "mine" },
+      }),
+    );
+    expect(sent.headers["x-key"]).toBe("mine");
+    expect(
+      echo(await client.get({ url: "/echo", security: [header] })).headers[
+        "x-key"
+      ],
+    ).toBe("global");
+    const query = { in: "query", name: "key", type: "apiKey" } as const;
+    const inQuery = echo(
+      await client.get({
+        url: "/echo",
+        security: [query],
+        query: { key: "mine" },
+      }),
+    );
+    expect(inQuery.search).toBe("?key=mine");
+    const cookie = { in: "cookie", name: "key", type: "apiKey" } as const;
+    const withCookie = echo(
+      await client.get({
+        url: "/echo",
+        security: [cookie],
+        headers: { Cookie: "a=1; key=mine" },
+      }),
+    );
+    expect(withCookie.headers.cookie).toBe("a=1; key=mine");
+    const otherCookie = echo(
+      await client.get({
+        url: "/echo",
+        security: [cookie],
+        headers: { Cookie: "monkey=1" },
+      }),
+    );
+    expect(otherCookie.headers.cookie).toBe("monkey=1; key=global");
+  });
+
+  test("a paramsSerializer on the client is used", async () => {
+    const client = make();
+    client.setConfig({
+      paramsSerializer: { serialize: () => "ids[]=1&ids[]=2" },
+    } as never);
+    const sent = echo(
+      await client.get({ url: "/echo", query: { ids: [1, 2] } }),
+    );
+    expect(decodeURIComponent(sent.search)).toBe("?ids[]=1&ids[]=2");
+  });
+
+  test("a paramsSerializer on the axios instance is used", async () => {
+    const instance = axios.create({
+      paramsSerializer: { serialize: () => "from=instance" },
+    });
+    const sent = echo(
+      await createClient({ baseURL, axios: instance } as never).get({
+        url: "/echo",
+        query: { a: 1 },
+      }),
+    );
+    expect(sent.search).toBe("?from=instance");
+  });
+
+  test("bodySerializer null sends a serialized body as it is", async () => {
+    const sent = echo(
+      await make().post({
+        url: "/echo",
+        body: '{"x":1}',
+        bodyType: "json",
+        bodySerializer: null,
+      }),
+    );
+    expect(sent.body).toBe('{"x":1}');
+  });
+
+  test("clients given the default export keep their interceptors apart", async () => {
+    const a = createClient({ baseURL, axios } as never);
+    const b = createClient({ baseURL, axios } as never);
+    expect(a.instance).not.toBe(axios);
+    expect(a.instance).not.toBe(b.instance);
+    a.instance.interceptors.request.use((config) => {
+      config.headers.set("X-Client", "a");
+      return config;
+    });
+    expect(echo(await a.get({ url: "/echo" })).headers["x-client"]).toBe("a");
+    expect(
+      echo(await b.get({ url: "/echo" })).headers["x-client"],
+    ).toBeUndefined();
+  });
+
+  test("false suppresses a header instead of sending it", async () => {
+    const client = createClient({
+      baseURL,
+      headers: { "User-Agent": false },
+    } as never);
+    const sent = echo(await client.get({ url: "/echo" }));
+    expect(sent.headers["user-agent"]).toBeUndefined();
+  });
+
+  test("throwOnError left undefined falls back to the client's", async () => {
+    const client = make();
+    client.setConfig({ throwOnError: true });
+    await expect(
+      client.get({ url: "/err-json", throwOnError: undefined }),
+    ).rejects.toBeInstanceOf(AxiosError);
+  });
+
+  test("allowReserved leaves reserved characters in values", () => {
+    expect(serializeQuery({ q: "a/b:c" }, { allowReserved: true })).toBe(
+      "q=a/b:c",
+    );
+  });
+
+  test("a header left undefined keeps the configured value", async () => {
+    const client = make();
+    client.setConfig({ headers: { "X-Tenant": "acme" } });
+    const sent = echo(
+      await client.get({ url: "/echo", headers: { "x-tenant": undefined } }),
+    );
+    expect(sent.headers["x-tenant"]).toBe("acme");
+  });
+
+  test("request interceptors can read meta", async () => {
+    const instance = axios.create({ baseURL });
+    let seen: unknown;
+    instance.interceptors.request.use((config) => {
+      seen = (config as unknown as { meta: unknown }).meta;
+      return config;
+    });
+    await createClient({ axios: instance } as never).get({
+      url: "/echo",
+      meta: { traceId: "abc" },
+    } as never);
+    expect(seen).toEqual({ traceId: "abc" });
+  });
+
+  test("buildUrl falls back to the base URL of the axios instance", () => {
+    const instance = axios.create({ baseURL: "https://example.test/api" });
+    const client = createClient({ axios: instance } as never);
+    expect(client.buildUrl({ url: "/pets", query: { limit: 5 } })).toBe(
+      "https://example.test/api/pets?limit=5",
+    );
+    expect(client.buildUrl({ url: "/pets", baseURL: "" })).toBe("/pets");
+  });
+
+  test("headers grouped by method keep their structure", async () => {
+    const client = make();
+    client.setConfig({
+      headers: { common: { "X-Common": "a" }, get: { "X-Get": "b" } },
+    });
+    client.setConfig({ headers: { common: { "X-More": "c" } } });
+    const sent = echo(await client.get({ url: "/echo" }));
+    expect(sent.headers["x-common"]).toBe("a");
+    expect(sent.headers["x-more"]).toBe("c");
+    expect(sent.headers["x-get"]).toBe("b");
+    const posted = echo(await client.post({ url: "/echo", body: {} }));
+    expect(posted.headers["x-get"]).toBeUndefined();
+  });
+
+  test("a failing auth callback does not reject without throwOnError", async () => {
+    const security = [{ scheme: "bearer", type: "http" }] as const;
+    const client = make();
+    client.setConfig({
+      auth: async () => {
+        throw new Error("refresh failed");
+      },
+    });
+    const result = await client.get({ url: "/echo", security });
+    expect((result.error as Error).message).toBe("refresh failed");
+    await expect(
+      client.get({ url: "/echo", security, throwOnError: true }),
+    ).rejects.toThrow("refresh failed");
+  });
+
+  test("a multipart request drops a configured Content-Type", async () => {
+    const client = make();
+    client.setConfig({ headers: { "Content-Type": "application/json" } });
+    const sent = echo(
+      await client.post({
+        url: "/echo",
+        body: { a: "b" },
+        bodyType: "form-data",
+        headers: { "Content-Type": null },
+      }),
+    );
+    expect(sent.headers["content-type"]).toMatch(
+      /^multipart\/form-data; boundary=/,
+    );
+  });
+
+  test("a custom serializer may return a leading question mark", async () => {
+    const options = {
+      url: "/echo",
+      query: { page: 2 },
+      querySerializer: () => "?page=2",
+    };
+    expect(make().buildUrl(options).slice(baseURL.length)).toBe("/echo?page=2");
+    expect(echo(await make().get(options)).search).toBe("?page=2");
+  });
+
+  test("buildUrl uses the configured serializers", () => {
+    const client = make();
+    client.setConfig({
+      pathSerializer: { parameters: { id: { style: "label" } } },
+      querySerializer: () => "custom=1",
+    });
+    expect(
+      client
+        .buildUrl({ url: "/a/{id}", path: { id: 1 }, query: { b: 2 } })
+        .slice(baseURL.length),
+    ).toBe("/a/.1?custom=1");
+  });
+
+  test("a parameter marked as JSON sends null as a JSON text", async () => {
+    const options = {
+      url: "/echo/{id}",
+      path: { id: null },
+      pathSerializer: { parameters: { id: { json: true } } },
+      query: { filter: null, other: null },
+      querySerializer: { parameters: { filter: { json: true } } },
+    };
+    expect(make().buildUrl(options).slice(baseURL.length)).toBe(
+      "/echo/null?filter=null",
+    );
+    const sent = echo(await make().get(options));
+    expect(sent.path).toBe("/echo/null");
+    expect(sent.search).toBe("?filter=null");
+  });
+
+  test("a header marked as JSON is sent as a JSON text", async () => {
+    const sent = echo(
+      await make().get({
+        url: "/echo",
+        jsonHeaders: ["X-F", "X-N", "X-Missing"],
+        headers: { "X-F": ["a", "b"], "X-N": null, "X-T": ["c"] },
+      }),
+    );
+    expect(sent.headers["x-f"]).toBe('["a","b"]');
+    expect(sent.headers["x-n"]).toBe("null");
+    expect(sent.headers["x-t"]).toBe("c");
+    expect(sent.headers["x-missing"]).toBeUndefined();
+  });
+
+  test("a parameter marked as JSON is sent as a JSON text", () => {
+    const url = make()
+      .buildUrl({
+        url: "/x/{id}",
+        path: { id: { a: 1 } },
+        pathSerializer: { parameters: { id: { json: true } } },
+        query: { filter: { a: [1] } },
+        querySerializer: { parameters: { filter: { json: true } } },
+      })
+      .slice(baseURL.length);
+    expect(decodeURIComponent(url)).toBe('/x/{"a":1}?filter={"a":[1]}');
+  });
 
   test("serializes the style through buildUrl", () => {
     expect(path({ R: 1 }, "matrix", true)).toBe("/x/;R=1");

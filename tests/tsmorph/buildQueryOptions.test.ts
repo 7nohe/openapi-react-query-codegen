@@ -11,8 +11,6 @@ const mockOperation: OperationInfo = {
   capitalizedMethodName: "FindPets",
   dataTypeName: "FindPetsData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "limit", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: false,
 };
@@ -22,8 +20,6 @@ const mockPaginatableOperation: OperationInfo = {
   capitalizedMethodName: "FindPaginatedPets",
   dataTypeName: "FindPaginatedPetsData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "page", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: true,
   pageParamType: "number",
@@ -41,8 +37,6 @@ const mockRequiredParamsOperation: OperationInfo = {
   capitalizedMethodName: "FindPetById",
   dataTypeName: "FindPetByIdData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "id", typeName: "number", optional: false }],
   allParamsOptional: false,
   isPaginatable: false,
 };
@@ -195,7 +189,7 @@ describe("buildQueryOptions", () => {
 
       expect(initializer).toContain("offset: pageParam");
       expect(initializer).toContain(
-        "(response as { meta: { next: number } }).meta.next",
+        "(response as { meta: { next: number } }).meta?.next",
       );
     });
   });

@@ -116,7 +116,6 @@ describe("collectOperations", () => {
       ["q", "query", false],
     ]);
     expect(find?.parameters[2].schema).toEqual({ type: "string" });
-    expect(find?.summary).toBe("Find");
   });
 
   test("keeps the response media type and status", () => {
@@ -126,7 +125,7 @@ describe("collectOperations", () => {
       "404",
       "default",
     ]);
-    expect(find?.responses[0].mediaType).toBe("application/json");
+    expect(find?.responses[0].mediaTypes).toEqual(["application/json"]);
     expect(find?.responses[1].schema).toEqual({ type: "string" });
     expect(byName("deletePetsById")?.responses[0].status).toBe("default");
   });
@@ -139,10 +138,11 @@ describe("collectOperations", () => {
 
   test("collects security requirements, falling back to the document", () => {
     expect(byName("findPetById")?.security).toEqual([
-      [{ type: "http", scheme: "bearer" }],
+      [{ type: "http", scheme: "bearer", key: "bearer" }],
     ]);
     expect(byName("postPetsById")?.security).toEqual([
-      [{ type: "http", scheme: "bearer" }],
+      [{ type: "http", scheme: "bearer", key: "oauth" }],
+      [{ type: "http", scheme: "bearer", key: "oidc" }],
       [{ type: "apiKey", in: "query", name: "k" }],
     ]);
     expect(
@@ -245,6 +245,72 @@ describe("collectOperations", () => {
   });
 });
 
+describe("security schemes a request cannot carry", () => {
+  const security = (requirements: unknown) =>
+    collectOperations({
+      components: {
+        securitySchemes: {
+          mtls: { type: "mutualTLS" },
+          digest: { type: "http", scheme: "digest" },
+          basic: { type: "http", scheme: "Basic" },
+          bearer: { type: "http", scheme: "bearer" },
+          oauth: { type: "oauth2" },
+        },
+      },
+      paths: { "/x": { get: { security: requirements } } },
+    })[0].security;
+
+  test("are not sent as a bearer token", () => {
+    expect(security([{ mtls: [] }, { digest: [] }])).toEqual([]);
+  });
+
+  test("leave the rest of a requirement in place", () => {
+    expect(
+      security([{ mtls: [], basic: [] }, { digest: [] }, { oauth: [] }]),
+    ).toEqual([
+      [{ type: "http", scheme: "basic" }],
+      [{ type: "http", scheme: "bearer", key: "oauth" }],
+    ]);
+  });
+
+  test("schemes that look the same keep their names, as in v3", () => {
+    const security = collectOperations({
+      components: {
+        securitySchemes: {
+          user: { type: "http", scheme: "bearer" },
+          admin: { type: "oauth2" },
+          basic: { type: "http", scheme: "basic" },
+          k1: { type: "apiKey", in: "header", name: "X-K" },
+          k2: { type: "apiKey", in: "header", name: "X-K" },
+          k3: { type: "apiKey", in: "query", name: "X-K" },
+        },
+      },
+      paths: {
+        "/x": {
+          get: {
+            security: [
+              { user: [] },
+              { admin: [] },
+              { basic: [] },
+              { k1: [] },
+              { k2: [] },
+              { k3: [] },
+            ],
+          },
+        },
+      },
+    })[0].security;
+    expect(security).toEqual([
+      [{ type: "http", scheme: "bearer", key: "user" }],
+      [{ type: "http", scheme: "bearer", key: "admin" }],
+      [{ type: "http", scheme: "basic" }],
+      [{ type: "apiKey", in: "header", name: "X-K", key: "k1" }],
+      [{ type: "apiKey", in: "header", name: "X-K", key: "k2" }],
+      [{ type: "apiKey", in: "query", name: "X-K" }],
+    ]);
+  });
+});
+
 describe("deref", () => {
   test("follows chains and rejects dangling refs", () => {
     const doc = { a: { $ref: "#/b" }, b: { x: 1 } };
@@ -295,6 +361,32 @@ describe("buildSchemaNames", () => {
     });
     expect([...names.values()]).toEqual(["ClientOptions2", "AB", "AB2", "Pet"]);
     expect(buildSchemaNames({}).size).toBe(0);
+  });
+});
+
+describe("schemaPrimitiveKind of composed schemas", () => {
+  const doc = {
+    components: {
+      schemas: { Name: { type: "string" }, Null: { type: "null" } },
+    },
+  };
+  test.each([
+    [{ anyOf: [{ type: "string" }, { type: "null" }] }, "string"],
+    [{ oneOf: [{ type: "integer" }, { type: "null" }] }, "number"],
+    [
+      {
+        anyOf: [
+          { $ref: "#/components/schemas/Name" },
+          { $ref: "#/components/schemas/Null" },
+        ],
+      },
+      "string",
+    ],
+    [{ anyOf: [{ type: "string" }, { type: "number" }] }, "other"],
+    [{ anyOf: [{ type: "null" }] }, "other"],
+    [{ allOf: [{ type: "string" }] }, "string"],
+  ])("%j is %s", (schema, kind) => {
+    expect(schemaPrimitiveKind(doc, schema)).toBe(kind);
   });
 });
 

@@ -19,18 +19,27 @@ export type ArrayStyle = "form" | "spaceDelimited" | "pipeDelimited";
 export type ObjectStyle = "form" | "deepObject";
 
 export interface ParameterSerializer {
+  /** Leave reserved characters in values as they are. */
+  allowReserved?: boolean;
   array?: { style?: ArrayStyle; explode?: boolean };
   object?: { style?: ObjectStyle; explode?: boolean };
 }
 
+export interface QueryParameterSerializer extends ParameterSerializer {
+  /** Send the value as a JSON text (a parameter declared with `content`). */
+  json?: boolean;
+}
+
 export interface QuerySerializerOptions extends ParameterSerializer {
   /** Per-parameter overrides, keyed by the parameter name. */
-  parameters?: Record<string, ParameterSerializer>;
+  parameters?: Record<string, QueryParameterSerializer>;
 }
 
 export interface PathParameterSerializer {
   style?: "simple" | "label" | "matrix";
   explode?: boolean;
+  /** Send the value as a JSON text (a parameter declared with `content`). */
+  json?: boolean;
 }
 
 export interface PathSerializerOptions {
@@ -40,6 +49,8 @@ export interface PathSerializerOptions {
 
 export interface Auth {
   in?: "header" | "query" | "cookie";
+  /** The scheme's name, when another scheme would look the same at runtime. */
+  key?: string;
   name?: string;
   scheme?: "basic" | "bearer";
   type: "apiKey" | "http";
@@ -59,6 +70,8 @@ export interface Config<T extends ClientOptions = ClientOptions>
   /** Replaces the default body serialization. */
   bodySerializer?: ((body: unknown) => BodyInit | null | undefined) | null;
   bodyType?: BodyType;
+  /** Headers to send as a JSON text (declared with `content`). */
+  jsonHeaders?: ReadonlyArray<string>;
   /** Custom fetch implementation. Defaults to `globalThis.fetch`. */
   fetch?: typeof fetch;
   headers?: RequestInit["headers"] | Record<string, HeaderValue>;
@@ -79,8 +92,9 @@ export interface Config<T extends ClientOptions = ClientOptions>
     | QuerySerializerOptions
     | ((query: Record<string, unknown>) => string);
   /**
-   * Alternative ways to authenticate: the first one that has a token for every
-   * scheme it lists is used. An array lists schemes needed together.
+   * Ways to authenticate. Each one that has a token for every scheme it lists
+   * is applied, as an API that takes either of two schemes may only look at one
+   * of them. An array lists schemes needed together.
    */
   security?: ReadonlyArray<Auth | ReadonlyArray<Auth>>;
   /** Throw the error instead of returning it. */
@@ -133,20 +147,24 @@ export type RequestResult<
       }
     >;
 
+/** The options as a request uses them, with its headers merged. */
+export type ResolvedRequestOptions = RequestOptions & { headers: Headers };
+
 export type RequestInterceptor = (
   request: Request,
-  options: RequestOptions,
+  options: ResolvedRequestOptions,
 ) => Request | Promise<Request>;
 export type ResponseInterceptor = (
   response: Response,
   request: Request,
-  options: RequestOptions,
+  options: ResolvedRequestOptions,
 ) => Response | Promise<Response>;
+/** `request` is undefined when the failure came before there was a request. */
 export type ErrorInterceptor = (
   error: unknown,
   response: Response | undefined,
-  request: Request,
-  options: RequestOptions,
+  request: Request | undefined,
+  options: ResolvedRequestOptions,
 ) => unknown | Promise<unknown>;
 
 export class Interceptors<Fn> {
@@ -163,7 +181,14 @@ export class Interceptors<Fn> {
 
   exists(id: number | Fn): boolean {
     const index = typeof id === "number" ? id : this.fns.indexOf(id);
-    return index >= 0 && this.fns[index] !== null;
+    return Boolean(this.fns[index]);
+  }
+
+  update(id: number | Fn, fn: Fn): number | Fn | false {
+    const index = typeof id === "number" ? id : this.fns.indexOf(id);
+    if (!this.fns[index]) return false;
+    this.fns[index] = fn;
+    return id;
   }
 
   use(fn: Fn): number {
@@ -247,8 +272,9 @@ function primitive(value: unknown): string {
 function serializePathValue(
   name: string,
   value: unknown,
-  { style = "simple", explode = false }: PathParameterSerializer = {},
+  { style = "simple", explode = false, json }: PathParameterSerializer = {},
 ): string {
+  if (json) return encode(JSON.stringify(value));
   const key = encode(name);
   const prefix = style === "label" ? "." : style === "matrix" ? ";" : "";
   if (Array.isArray(value)) {
@@ -287,9 +313,10 @@ function serializePath(
   if (!path) return url;
   return url.replace(/\{([^{}]+)\}/g, (match, name: string) => {
     const value = path[name];
-    return value === undefined || value === null
+    const settings = serializer?.parameters?.[name];
+    return value === undefined || (value === null && !settings?.json)
       ? match
-      : serializePathValue(name, value, serializer?.parameters?.[name]);
+      : serializePathValue(name, value, settings);
   });
 }
 
@@ -299,9 +326,16 @@ export function serializeQuery(
 ): string {
   const parts: string[] = [];
   for (const [name, value] of Object.entries(query)) {
-    if (value === undefined || value === null) continue;
+    if (value === undefined) continue;
     const override = options.parameters?.[name];
     const key = encode(name);
+    const encodeValue =
+      (override?.allowReserved ?? options.allowReserved) ? String : encode;
+    if (override?.json) {
+      parts.push(`${key}=${encodeValue(JSON.stringify(value))}`);
+      continue;
+    }
+    if (value === null) continue;
     if (Array.isArray(value)) {
       const style = override?.array?.style ?? options.array?.style ?? "form";
       const explode =
@@ -309,7 +343,7 @@ export function serializeQuery(
       const items = value.filter((item) => item !== undefined && item !== null);
       if (explode) {
         for (const item of items)
-          parts.push(`${key}=${encode(primitive(item))}`);
+          parts.push(`${key}=${encodeValue(primitive(item))}`);
       } else {
         const separator =
           style === "spaceDelimited"
@@ -318,11 +352,11 @@ export function serializeQuery(
               ? "|"
               : ",";
         parts.push(
-          `${key}=${items.map((item) => encode(primitive(item))).join(separator)}`,
+          `${key}=${items.map((item) => encodeValue(primitive(item))).join(separator)}`,
         );
       }
     } else if (value instanceof Date) {
-      parts.push(`${key}=${encode(value.toISOString())}`);
+      parts.push(`${key}=${encodeValue(value.toISOString())}`);
     } else if (typeof value === "object") {
       const style =
         override?.object?.style ?? options.object?.style ?? "deepObject";
@@ -333,19 +367,19 @@ export function serializeQuery(
       );
       if (style === "deepObject") {
         for (const [prop, item] of entries) {
-          parts.push(`${key}[${encode(prop)}]=${encode(primitive(item))}`);
+          parts.push(`${key}[${encode(prop)}]=${encodeValue(primitive(item))}`);
         }
       } else if (explode) {
         for (const [prop, item] of entries) {
-          parts.push(`${encode(prop)}=${encode(primitive(item))}`);
+          parts.push(`${encode(prop)}=${encodeValue(primitive(item))}`);
         }
       } else {
         parts.push(
-          `${key}=${entries.flatMap(([prop, item]) => [encode(prop), encode(primitive(item))]).join(",")}`,
+          `${key}=${entries.flatMap(([prop, item]) => [encode(prop), encodeValue(primitive(item))]).join(",")}`,
         );
       }
     } else {
-      parts.push(`${key}=${encode(String(value))}`);
+      parts.push(`${key}=${encodeValue(String(value))}`);
     }
   }
   return parts.join("&");
@@ -372,11 +406,29 @@ function buildUrl(
   if (query) {
     const search =
       typeof options.querySerializer === "function"
-        ? options.querySerializer(query)
+        ? options.querySerializer(query).replace(/^\?/, "")
         : serializeQuery(query, options.querySerializer);
     if (search) url += `${url.includes("?") ? "&" : "?"}${search}`;
   }
   return url;
+}
+
+/** Encode the headers an operation declares as JSON, whatever their type. */
+function encodeJsonHeaders<T>(
+  headers: T,
+  names: ReadonlyArray<string> | undefined,
+): T {
+  if (!names || !headers || Array.isArray(headers)) return headers;
+  if (typeof Headers !== "undefined" && headers instanceof Headers) {
+    return headers;
+  }
+  const encoded = { ...headers } as Record<string, unknown>;
+  for (const name of names) {
+    if (encoded[name] !== undefined) {
+      encoded[name] = JSON.stringify(encoded[name]);
+    }
+  }
+  return encoded as T;
 }
 
 function mergeHeaders(
@@ -449,15 +501,18 @@ function serializeBody(options: Config): BodyInit | null | undefined {
   const { body, bodySerializer, bodyType } = options;
   if (body === undefined) return undefined;
   if (bodySerializer) return bodySerializer(body);
+  // `null` means the caller serialized the body already.
+  if (bodySerializer === null) return body as BodyInit;
   if (bodyType === "form-data") return toFormData(body);
   if (bodyType === "urlencoded") return toSearchParams(body);
   // A string is already a body unless the operation is JSON, where a string
   // is a JSON string value and has to be quoted.
   if (typeof body === "string" && bodyType !== "json") return body;
-  if (
-    bodyType === "json" ||
-    (typeof body === "object" && body !== null && !isBinaryBody(body))
-  ) {
+  // A file stays a file, even when the operation says it holds JSON.
+  if (typeof body === "object" && body !== null && isBinaryBody(body)) {
+    return body as BodyInit;
+  }
+  if (bodyType === "json" || (typeof body === "object" && body !== null)) {
     return JSON.stringify(body, (_key, value) =>
       typeof value === "bigint" ? value.toString() : value,
     );
@@ -503,6 +558,23 @@ async function getAuthToken(
   return token;
 }
 
+/** True when the caller already supplied this API key on the request. */
+function isProvided(
+  auth: Auth,
+  query: Record<string, unknown> | undefined,
+  headers: Headers,
+): boolean {
+  const { name } = auth;
+  if (!name) return false;
+  if (auth.in === "query") return query?.[name] != null;
+  if (auth.in === "cookie") {
+    return (headers.get("Cookie") ?? "")
+      .split(";")
+      .some((cookie) => cookie.trim().startsWith(`${name}=`));
+  }
+  return headers.has(name);
+}
+
 async function applySecurity(
   options: RequestOptions,
   headers: Headers,
@@ -511,11 +583,14 @@ async function applySecurity(
     const schemes = (
       Array.isArray(requirement) ? requirement : [requirement]
     ) as ReadonlyArray<Auth>;
+    const missing = schemes.filter(
+      (auth) => !isProvided(auth, options.query, headers),
+    );
     const tokens = await Promise.all(
-      schemes.map((auth) => getAuthToken(auth, options.auth)),
+      missing.map((auth) => getAuthToken(auth, options.auth)),
     );
     if (tokens.some((token) => !token)) continue;
-    schemes.forEach((auth, index) => {
+    missing.forEach((auth, index) => {
       const name = auth.name ?? "Authorization";
       const token = tokens[index] as string;
       if (auth.in === "query") {
@@ -530,7 +605,6 @@ async function applySecurity(
         headers.set(name, token);
       }
     });
-    return;
   }
 }
 
@@ -547,7 +621,12 @@ async function parseBody(
     response.status === 204 ||
     response.headers.get("Content-Length") === "0"
   ) {
-    return mode === "json" ? {} : undefined;
+    if (mode === "json") return {};
+    if (mode === "formData") return new FormData();
+    // TanStack Query rejects `undefined` as data.
+    if (parseAs === "auto" && !response.headers.has("Content-Type")) {
+      return null;
+    }
   }
   switch (mode) {
     case "json": {
@@ -597,89 +676,91 @@ export const createClient = (config: Config = {}): Client => {
   };
 
   const request = async (userOptions: RequestOptions) => {
-    const options: RequestOptions = {
+    const options = {
       ...currentConfig,
       ...userOptions,
-    } as RequestOptions;
-    const headers = mergeHeaders(currentConfig.headers, userOptions.headers);
-    await applySecurity(options, headers);
-
-    const body = serializeBody(options);
-    if (
-      body !== undefined &&
-      !headers.has("Content-Type") &&
-      options.bodyType === "json"
-    ) {
-      headers.set("Content-Type", "application/json");
-    }
-    if (body === undefined || body === "") headers.delete("Content-Type");
-
-    const init: Record<string, unknown> = {};
-    for (const key of REQUEST_INIT_KEYS) {
-      const value = (options as unknown as Record<string, unknown>)[key];
-      if (value !== undefined) init[key] = value;
-    }
-    if (init.redirect === undefined) init.redirect = "follow";
-    if (
-      body !== undefined &&
-      body !== null &&
-      typeof body === "object" &&
-      "getReader" in body
-    ) {
-      init.duplex = "half";
-    }
-
-    let req = new Request(buildUrl(options), {
-      ...init,
-      body: body as BodyInit | null | undefined,
-      headers,
-    });
-    for (const fn of interceptors.request.fns) {
-      if (fn) req = await fn(req, options);
-    }
-
-    const doFetch = options.fetch ?? globalThis.fetch;
-    let response: Response;
-    try {
-      response = await doFetch(req);
-    } catch (error) {
-      let finalError: unknown = error;
-      for (const fn of interceptors.error.fns) {
-        if (fn) finalError = await fn(finalError, undefined, req, options);
-      }
-      if (options.throwOnError) throw finalError;
-      return {
-        error: finalError,
-        request: req,
-        response: undefined as unknown as Response,
-      };
-    }
-
-    for (const fn of interceptors.response.fns) {
-      if (fn) response = await fn(response, req, options);
-    }
-
-    const result = { request: req, response };
-    if (response.ok) {
-      return {
-        data: await parseBody(response, options.parseAs ?? "auto"),
-        ...result,
-      };
-    }
-
-    const text = await response.text();
+    } as ResolvedRequestOptions;
+    const doFetch = options.fetch ?? currentConfig.fetch ?? globalThis.fetch;
+    let req: Request | undefined;
+    let response: Response | undefined;
     let error: unknown;
     try {
-      error = JSON.parse(text);
-    } catch {
-      error = text;
+      const headers = mergeHeaders(
+        currentConfig.headers,
+        encodeJsonHeaders(userOptions.headers, options.jsonHeaders),
+      );
+      // Interceptors read the headers the request really has.
+      options.headers = headers;
+      await applySecurity(options, headers);
+
+      const body = serializeBody(options);
+      // An object goes out as JSON whether or not the call says so.
+      const sendsJson =
+        options.bodyType === "json" ||
+        (options.bodyType === undefined &&
+          options.bodySerializer === undefined &&
+          typeof options.body === "object" &&
+          options.body !== null &&
+          !isBinaryBody(options.body));
+      if (body !== undefined && !headers.has("Content-Type") && sendsJson) {
+        headers.set("Content-Type", "application/json");
+      }
+      if (body === undefined || body === "") headers.delete("Content-Type");
+
+      const init: Record<string, unknown> = {};
+      for (const key of REQUEST_INIT_KEYS) {
+        const value = (options as unknown as Record<string, unknown>)[key];
+        if (value !== undefined) init[key] = value;
+      }
+      if (init.redirect === undefined) init.redirect = "follow";
+      if (
+        body !== undefined &&
+        body !== null &&
+        typeof body === "object" &&
+        "getReader" in body
+      ) {
+        init.duplex = "half";
+      }
+
+      req = new Request(buildUrl(options), {
+        ...init,
+        body: body as BodyInit | null | undefined,
+        headers,
+      });
+      for (const fn of interceptors.request.fns) {
+        if (fn) req = await fn(req, options);
+      }
+      response = await doFetch(req);
+      for (const fn of interceptors.response.fns) {
+        if (fn) response = await fn(response, req, options);
+      }
+      if (response.ok) {
+        return {
+          data: await parseBody(response, options.parseAs ?? "auto"),
+          request: req,
+          response,
+        };
+      }
+      const text = await response.text();
+      try {
+        error = JSON.parse(text);
+      } catch {
+        error = text;
+      }
+    } catch (cause) {
+      error = cause;
     }
+
     for (const fn of interceptors.error.fns) {
       if (fn) error = await fn(error, response, req, options);
     }
     error = error || {};
-    if (options.throwOnError) throw error;
-    return { error, ...result };
+    if (options.throwOnError ?? currentConfig.throwOnError) throw error;
+    return {
+      error,
+      request: req as Request,
+      response: response as Response,
+    };
   };
 
   const method =
@@ -688,7 +769,7 @@ export const createClient = (config: Config = {}): Client => {
       request({ ...options, method: name } as RequestOptions) as never;
 
   return {
-    buildUrl,
+    buildUrl: (options) => buildUrl({ ...currentConfig, ...options }),
     connect: method("CONNECT"),
     delete: method("DELETE"),
     get: method("GET"),

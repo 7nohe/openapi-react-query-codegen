@@ -1,3 +1,4 @@
+import { type ClientKind, HEADER } from "./emitSdk.mjs";
 import { propertyKey, toEnumMemberName, uniqueName } from "./naming.mjs";
 import {
   classifyResponses,
@@ -7,6 +8,7 @@ import {
 } from "./operations.mjs";
 import {
   docComment,
+  renderComponentSchema,
   renderSchema,
   type SchemaCtx,
   schemaDescription,
@@ -82,8 +84,13 @@ function emitOperationTypes(
   operation: OperationIR,
   ctx: SchemaCtx,
   writeCtx: SchemaCtx,
-): string[] {
-  const out: string[] = [];
+): { names: string[]; blocks: string[] } {
+  const typeNames: string[] = [];
+  const blocks: string[] = [];
+  const add = (name: string, type: string) => {
+    typeNames.push(name);
+    blocks.push(`export type ${name} = ${type};`);
+  };
   const names = operation.typeNames;
 
   const byLocation = (location: string) =>
@@ -113,15 +120,16 @@ function emitOperationTypes(
       return;
     }
     const required = group.some((parameter) => parameter.required);
+    // Parameters are sent, so they are the request-side types too.
     fields.push(
-      `  ${name}${required ? "" : "?"}: ${renderParamObject(group, ctx, "  ")};`,
+      `  ${name}${required ? "" : "?"}: ${renderParamObject(group, writeCtx, "  ")};`,
     );
   };
   addGroup("path", path);
   addGroup("query", query);
   if (headers.length > 0) addGroup("headers", headers);
   fields.push(`  url: ${JSON.stringify(operation.path)};`);
-  out.push(`export type ${names.data} = {\n${fields.join("\n")}\n};`);
+  add(names.data, `{\n${fields.join("\n")}\n}`);
 
   const { responses, errors } = classifyResponses(operation);
   const emitGroup = (
@@ -131,19 +139,24 @@ function emitOperationTypes(
   ) => {
     if (group.length === 0) return;
     const { body, types } = renderEntries(group, ctx);
-    out.push(`export type ${groupName} = {\n${body}\n};`);
+    add(groupName, `{\n${body}\n}`);
     if (types.some((type) => type !== "unknown")) {
-      out.push(`export type ${aliasName} = ${groupName}[keyof ${groupName}];`);
+      add(aliasName, `${groupName}[keyof ${groupName}]`);
     }
   };
   emitGroup(names.errors, names.error, errors);
   emitGroup(names.responses, names.response, responses);
-  return out;
+  return { names: typeNames, blocks };
+}
+
+function enumKey(name: string): string {
+  // `01` would be an octal literal, which TypeScript rejects.
+  return /^(0|[1-9]\d*)$/.test(name) ? name : propertyKey(name);
 }
 
 function emitComponentSchema(
-  key: string,
   schema: Json,
+  key: string,
   name: string,
   ctx: SchemaCtx,
   enumsMode: EnumsMode,
@@ -152,47 +165,68 @@ function emitComponentSchema(
     description: schemaDescription(schema),
     deprecated: schema?.deprecated,
   });
+  const values: unknown[] = Array.isArray(schema?.enum) ? schema.enum : [];
+  const isMember = (value: unknown) =>
+    typeof value === "string" || typeof value === "number";
+  // A TypeScript enum can only hold strings and numbers, an object anything.
   const isLiteralEnum =
-    Array.isArray(schema?.enum) &&
-    schema.enum.length > 0 &&
-    schema.enum.every(
-      (value: unknown) =>
-        typeof value === "string" || typeof value === "number",
+    values.some((value) => value !== null) &&
+    values.every(
+      (value) =>
+        isMember(value) ||
+        (enumsMode === "javascript" &&
+          (value === null || typeof value === "boolean")),
     );
 
   if (enumsMode && isLiteralEnum) {
     const used = new Set<string>();
-    const members = (schema.enum as Array<string | number>).map((value) => ({
-      key: uniqueName(
-        toEnumMemberName(value, { numericKeys: enumsMode === "javascript" }),
-        used,
-      ),
-      value: JSON.stringify(value),
-    }));
+    const memberNames = schema["x-enum-varnames"] ?? schema["x-enumNames"];
+    const descriptions = schema["x-enum-descriptions"];
+    const members = values.map((value, index) => {
+      const title = memberNames?.[index];
+      return {
+        comment: docComment(
+          {
+            description: schemaDescription({
+              title,
+              description: descriptions?.[index],
+            }),
+          },
+          "  ",
+        ),
+        key: enumKey(
+          uniqueName(
+            toEnumMemberName(title ?? value, {
+              numericKeys: enumsMode === "javascript",
+            }),
+            used,
+          ),
+        ),
+        value: JSON.stringify(value),
+      };
+    });
     if (enumsMode === "typescript") {
       const body = members
-        .map((member) => `  ${member.key} = ${member.value},`)
+        .map((member) => `${member.comment}  ${member.key} = ${member.value},`)
         .join("\n");
       return `${comment}export enum ${name} {\n${body}\n}`;
     }
     const body = members
-      .map((member) => `  ${member.key}: ${member.value},`)
+      .map((member) => `${member.comment}  ${member.key}: ${member.value},`)
       .join("\n");
     return `${comment}export const ${name} = {\n${body}\n} as const;\n\nexport type ${name} = (typeof ${name})[keyof typeof ${name}];`;
   }
-  void key;
-  return `${comment}export type ${name} = ${renderSchema(schema, ctx)};`;
+  return `${comment}export type ${name} = ${renderComponentSchema(schema, key, ctx)};`;
 }
 
 export function emitTypes(
   doc: Doc,
   operations: OperationIR[],
   ctx: SchemaCtx,
-  options: { enums?: EnumsMode; clientKind: "fetch" | "axios" },
+  options: { enums?: EnumsMode; clientKind: ClientKind },
 ): EmittedTypes {
-  const usedWritable = new Set<string>();
-  const readCtx: SchemaCtx = { ...ctx, mode: "read", usedWritable };
-  const writeCtx: SchemaCtx = { ...ctx, mode: "write", usedWritable };
+  const readCtx: SchemaCtx = { ...ctx, mode: "read" };
+  const writeCtx: SchemaCtx = { ...ctx, mode: "write" };
 
   const head: string[] = [];
   const exported: string[] = ["ClientOptions"];
@@ -209,46 +243,30 @@ export function emitTypes(
   for (const [key, schema] of Object.entries(schemas)) {
     const name = ctx.names.get(key) as string;
     exported.push(name);
-    head.push(emitComponentSchema(key, schema, name, readCtx, options.enums));
+    head.push(emitComponentSchema(schema, key, name, readCtx, options.enums));
   }
 
-  // Operation types are rendered before the request-side variants because
-  // rendering a request body is what discovers which variants are needed.
-  const operationBlocks: string[] = [];
-  for (const operation of operations) {
-    operationBlocks.push(...emitOperationTypes(operation, readCtx, writeCtx));
-  }
-
-  // A variant can reference further variants, so repeat until none is new.
-  const variants = new Map<string, string>();
-  let discovered = true;
-  while (discovered) {
-    discovered = false;
-    for (const key of Object.keys(schemas)) {
-      if (!usedWritable.has(key) || variants.has(key)) continue;
-      discovered = true;
-      const name = ctx.writableNames?.get(key) as string;
-      variants.set(
-        key,
-        emitComponentSchema(key, schemas[key], name, writeCtx, undefined),
-      );
-    }
-  }
   for (const key of Object.keys(schemas)) {
-    const block = variants.get(key);
-    if (block) {
-      head.push(block);
-      exported.push(ctx.writableNames?.get(key) as string);
-    }
+    const name = ctx.writableNames?.get(key);
+    if (name === undefined) continue;
+    head.push(
+      emitComponentSchema(schemas[key], key, name, writeCtx, undefined),
+    );
+    exported.push(name);
   }
 
-  for (const block of operationBlocks) {
-    const match = /^export type (\w+)/.exec(block);
-    if (match) exported.push(match[1]);
+  const operationBlocks: string[] = [];
+  const operationNames: string[] = [];
+  for (const operation of operations) {
+    const { names, blocks } = emitOperationTypes(operation, readCtx, writeCtx);
+    operationNames.push(...names);
+    operationBlocks.push(...blocks);
   }
+
+  exported.push(...operationNames);
 
   return {
-    content: `// This file is auto-generated by @7nohe/openapi-react-query-codegen\n\n${[...head, ...operationBlocks].join("\n\n")}\n`,
+    content: `${HEADER}\n${[...head, ...operationBlocks].join("\n\n")}\n`,
     exportedNames: exported,
   };
 }

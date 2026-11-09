@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { toTypeName, uniqueName } from "./naming.mjs";
 
@@ -10,13 +11,23 @@ export type Doc = Record<string, Json>;
 
 const URL_RE = /^https?:\/\//i;
 
+/** JSON when it is, which is much faster to parse than YAML. */
+function parseJsonOrYaml(text: string): unknown {
+  if (text.startsWith("{")) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      // A document in YAML's flow style starts the same way.
+    }
+  }
+  return parseYaml(text, { maxAliasCount: -1 });
+}
+
 function parseText(text: string, source: string): Doc {
   const trimmed = text.trim();
   let parsed: unknown;
   try {
-    parsed = trimmed.startsWith("{")
-      ? JSON.parse(trimmed)
-      : parseYaml(trimmed, { maxAliasCount: -1 });
+    parsed = parseJsonOrYaml(trimmed);
   } catch (error) {
     throw new Error(
       `Failed to parse the OpenAPI specification (${source}): ${(error as Error).message}`,
@@ -66,6 +77,9 @@ export type LoadedSpec = {
 /** Load a specification from a file path, a URL or inline JSON/YAML content. */
 export async function loadSpec(input: string): Promise<LoadedSpec> {
   if (URL_RE.test(input)) return loadDocument(input);
+  if (input.startsWith("file:")) {
+    return loadDocument(path.resolve(fileURLToPath(input)));
+  }
   const looksInline = input.includes("\n") || input.trimStart().startsWith("{");
   if (!looksInline && existsSync(input)) {
     return loadDocument(path.resolve(input));
@@ -107,8 +121,7 @@ const REF_SIBLING_KEYWORDS = [
 /**
  * The part of a schema that sits next to its `$ref` and changes the type, as a
  * schema of its own. OpenAPI 3.1 applies such keywords together with the
- * reference, while 3.0 says they are ignored. A name that `required` lists
- * without declaring it becomes a property of unknown type.
+ * reference, while 3.0 says they are ignored.
  */
 export function refSiblingSchema(doc: Doc, node: Json): Json | undefined {
   if (typeof doc.openapi !== "string" || doc.openapi.startsWith("3.0")) {
@@ -118,21 +131,114 @@ export function refSiblingSchema(doc: Doc, node: Json): Json | undefined {
     return undefined;
   }
   const { $ref: _ref, ...siblings } = node;
-  if (!Array.isArray(siblings.required)) return siblings;
-  const properties = { ...siblings.properties };
-  for (const name of siblings.required) properties[name] ??= {};
-  return { ...siblings, properties };
+  return siblings;
+}
+
+/** Follow a chain of `$ref`s. The result is undefined if one dangles. */
+export function resolveRef(doc: Doc, node: Json, depth = 0): Json {
+  return typeof node?.$ref === "string" && depth < 32
+    ? resolveRef(doc, getByPointer(doc, node.$ref), depth + 1)
+    : node;
+}
+
+/** Keywords holding data, where a `$ref` key is not a reference. */
+const DATA_KEYWORDS = new Set([
+  "const",
+  "default",
+  "enum",
+  "example",
+  "examples",
+]);
+
+/**
+ * Keywords whose keys are names the author chose, so that a property called
+ * `example` or a `default` response is not mistaken for a data keyword.
+ */
+const NAME_MAP_KEYWORDS = new Set([
+  "$defs",
+  "callbacks",
+  "definitions",
+  "dependentSchemas",
+  "encoding",
+  "headers",
+  "links",
+  "parameters",
+  "pathItems",
+  "paths",
+  "patternProperties",
+  "properties",
+  "requestBodies",
+  "responses",
+  "schemas",
+  "securitySchemes",
+  "webhooks",
+]);
+
+/**
+ * The discriminator value of an inlined `oneOf`/`anyOf` member, as a schema to
+ * intersect it with: once inlined, nothing else tells what it was called.
+ */
+function narrowInlinedMembers(node: Json, walked: Json): Json {
+  const property = node.discriminator?.propertyName;
+  if (typeof property !== "string") return walked;
+  for (const key of ["oneOf", "anyOf"]) {
+    if (!Array.isArray(node[key])) continue;
+    walked[key] = node[key].map((member: Json, index: number) => {
+      const inlined = walked[key][index];
+      const ref = member?.$ref;
+      const declared = inlined?.properties?.[property];
+      if (
+        typeof ref !== "string" ||
+        inlined?.$ref !== undefined ||
+        (inlined?.type !== undefined && inlined.type !== "object") ||
+        declared?.const !== undefined ||
+        Array.isArray(declared?.enum)
+      ) {
+        return inlined;
+      }
+      const mapped = Object.entries(node.discriminator.mapping ?? {})
+        .filter(([, target]) => target === ref)
+        .map(([value]) => value);
+      const name = ref
+        .split(/[#/]/)
+        .pop()
+        ?.replace(/\.[^.]+$/, "");
+      return {
+        allOf: [
+          inlined,
+          {
+            type: "object",
+            required: [property],
+            properties: {
+              [property]: { enum: mapped.length > 0 ? mapped : [name] },
+            },
+          },
+        ],
+      };
+    });
+  }
+  return walked;
 }
 
 function resolveLocation(base: string | undefined, target: string): string {
   if (URL_RE.test(target)) return target;
+  if (target.startsWith("file:")) return fileURLToPath(target);
   if (!base) {
     throw new Error(
       `Cannot resolve the external $ref "${target}" because the specification was passed as inline content.`,
     );
   }
   if (URL_RE.test(base)) return new URL(target, base).toString();
-  return path.resolve(path.dirname(base), target);
+  return path.resolve(path.dirname(base), decodeReference(target));
+}
+
+/** A `$ref` is a URI reference, so a file name in it can be percent-encoded. */
+function decodeReference(reference: string): string {
+  try {
+    return decodeURIComponent(reference);
+  } catch {
+    return reference;
+  }
 }
 
 /**
@@ -142,26 +248,30 @@ function resolveLocation(base: string | undefined, target: string): string {
  */
 export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
   const { doc, location: rootLocation } = loaded;
-  const cache = new Map<string, { doc: Doc; location: string }>();
+  // Promises, so that concurrent references to one file read it once.
+  const cache = new Map<string, Promise<{ doc: Doc; location: string }>>();
+  if (rootLocation) {
+    cache.set(rootLocation, Promise.resolve({ doc, location: rootLocation }));
+  }
   const hoisted = new Map<string, string>();
   const hoistedSchemas: Record<string, Json> = {};
 
   const usedNames = new Set<string>(Object.keys(doc.components?.schemas ?? {}));
 
-  async function loadFile(
-    location: string,
-  ): Promise<{ doc: Doc; location: string }> {
-    const cached = cache.get(location);
-    if (cached) return cached;
-    const loadedFile = await loadDocument(location);
-    cache.set(location, loadedFile);
-    return loadedFile;
+  function loadFile(location: string): Promise<{ doc: Doc; location: string }> {
+    let file = cache.get(location);
+    if (!file) {
+      file = loadDocument(location);
+      cache.set(location, file);
+    }
+    return file;
   }
 
   async function walk(
     node: Json,
     nodeLocation: string | undefined,
     stack: ReadonlySet<string>,
+    inNameMap = false,
   ): Promise<Json> {
     if (Array.isArray(node)) {
       return Promise.all(node.map((item) => walk(item, nodeLocation, stack)));
@@ -182,6 +292,11 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
       const walkedSiblings =
         siblings && (await walk(siblings, nodeLocation, stack));
 
+      // A file pointing back into the root keeps the root's named type.
+      if (targetLocation === rootLocation && pointer) {
+        return { ...walkedSiblings, $ref: pointer };
+      }
+
       if (stack.has(key)) {
         let name = hoisted.get(key);
         if (!name) {
@@ -200,10 +315,7 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
         return { ...walkedSiblings, $ref: `#/components/schemas/${name}` };
       }
 
-      const file =
-        targetLocation === rootLocation
-          ? { doc, location: targetLocation }
-          : await loadFile(targetLocation);
+      const file = await loadFile(targetLocation);
       const target = getByPointer(file.doc, pointer);
       if (target === undefined) {
         throw new Error(`Unresolvable $ref: ${ref}`);
@@ -218,9 +330,18 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
 
     const result: Record<string, Json> = {};
     for (const [key, value] of Object.entries(node)) {
-      result[key] = await walk(value, nodeLocation, stack);
+      const isData =
+        !inNameMap && (DATA_KEYWORDS.has(key) || key.startsWith("x-"));
+      result[key] = isData
+        ? value
+        : await walk(
+            value,
+            nodeLocation,
+            stack,
+            !inNameMap && NAME_MAP_KEYWORDS.has(key),
+          );
     }
-    return result;
+    return narrowInlinedMembers(node, result);
   }
 
   const bundled = (await walk(doc, rootLocation, new Set())) as Doc;

@@ -49,7 +49,10 @@ export function detectImportExtension(
         ? ".js"
         : "";
     }
-    return module === ts.ModuleKind.Node16 || module === ts.ModuleKind.NodeNext
+    // A range, so that `node18`, `node20` and later ones count as well.
+    return module !== undefined &&
+      module >= ts.ModuleKind.Node16 &&
+      module <= ts.ModuleKind.NodeNext
       ? ".js"
       : "";
   } catch {

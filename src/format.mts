@@ -18,7 +18,6 @@ export const formatOutput = async (outputPath: string) => {
 
   const tasks = sourceFiles.map((sourceFile) => {
     sourceFile.formatText();
-    sourceFile.fixMissingImports();
     sourceFile.organizeImports();
     return sourceFile.save();
   });

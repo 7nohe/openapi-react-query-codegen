@@ -77,7 +77,7 @@ function separateKinds(statements: Statement[]): Statement[] {
   );
 }
 
-const IDENTIFIER_RE = /[A-Za-z_$][\w$]*/g;
+const IDENTIFIER_RE = /[\p{ID_Start}_$][\p{ID_Continue}$]*/gu;
 
 /**
  * Create a generated file. Statements go in as one batch so ts-morph reparses
@@ -110,29 +110,17 @@ function createFile(
 }
 
 /**
- * Generate the index.ts file content.
- * The content is constant, so no ts-morph project is needed.
+ * The constant content of index.ts, which needs no ts-morph project.
  */
-function generateIndexFile(): string {
-  return `export * from "./common";\nexport * from "./queries";\nexport * from "./queryOptions";\n`;
-}
+const INDEX_FILE = `export * from "./common";\nexport * from "./queries";\nexport * from "./queryOptions";\n`;
 
-/**
- * Generate the common.ts file content.
- */
-function generateCommonFile(
-  operations: OperationInfo[],
+function commonStatements(
+  queries: OperationInfo[],
+  mutations: OperationInfo[],
   ctx: GenerationContext,
-): string {
-  // Group operations by HTTP method
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-  const mutationOperations = operations.filter((op) =>
-    ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
-  );
+): Statement[] {
   const statements: Statement[] = [];
-
-  // Add query types and keys
-  for (const op of getOperations) {
+  for (const op of queries) {
     statements.push(
       buildDefaultResponseType(op),
       buildQueryResultType(op),
@@ -140,154 +128,22 @@ function generateCommonFile(
       buildQueryKeyFn(op),
     );
   }
-
-  // Add dedicated infinite query types and keys for paginatable operations
-  for (const op of getOperations.filter((o) => o.isPaginatable)) {
+  // Dedicated infinite query types and keys for paginatable operations
+  for (const op of queries.filter((query) => query.isPaginatable)) {
     statements.push(
       buildInfiniteClientOptionsType(op, ctx),
       buildInfiniteQueryKeyConst(op),
       buildInfiniteQueryKeyFn(op),
     );
   }
-
-  // Add mutation types and keys
-  for (const op of mutationOperations) {
+  for (const op of mutations) {
     statements.push(
       buildMutationResultType(op),
       buildMutationKeyConst(op),
       buildMutationKeyFn(op),
     );
   }
-
-  return createFile(
-    OpenApiRqFiles.common,
-    ctx,
-    buildCommonFileImports,
-    separateKinds(statements),
-  );
-}
-
-/**
- * Generate the queries.ts file content.
- */
-function generateQueriesFile(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): string {
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-  const mutationOperations = operations.filter((op) =>
-    ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
-  );
-
-  return createFile(OpenApiRqFiles.queries, ctx, buildHookFileImports, [
-    // useQuery hooks
-    ...getOperations.map((op) => buildUseQueryHook(op, ctx)),
-    // useMutation hooks
-    ...mutationOperations.map((op) => buildUseMutationHook(op, ctx)),
-  ]);
-}
-
-/**
- * Generate the queryOptions.ts file content.
- */
-function generateQueryOptionsFile(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): string {
-  // Only GET operations have query options
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-
-  return createFile(
-    OpenApiRqFiles.queryOptions,
-    ctx,
-    buildQueryOptionsFileImports,
-    [
-      ...getOperations.map((op) => buildQueryOptionsFn(op)),
-      // infiniteQueryOptions factories
-      ...collectStatements(getOperations, (op) =>
-        buildInfiniteQueryOptionsFn(op, ctx),
-      ),
-    ],
-  );
-}
-
-/**
- * Generate the suspense.ts file content.
- */
-function generateSuspenseFile(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): string {
-  // Only GET operations for suspense
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-
-  return createFile(OpenApiRqFiles.suspense, ctx, buildHookFileImports, [
-    // useSuspenseQuery hooks
-    ...getOperations.map((op) => buildUseSuspenseQueryHook(op, ctx)),
-    // useSuspenseInfiniteQuery hooks
-    ...collectStatements(getOperations, (op) =>
-      buildUseSuspenseInfiniteQueryHook(op, ctx),
-    ),
-  ]);
-}
-
-/**
- * Generate the infiniteQueries.ts file content.
- */
-function generateInfiniteQueriesFile(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): string {
-  // Only GET operations can be paginatable
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-
-  return createFile(
-    OpenApiRqFiles.infiniteQueries,
-    ctx,
-    buildHookFileImports,
-    // useInfiniteQuery hooks
-    collectStatements(getOperations, (op) =>
-      buildUseInfiniteQueryHook(op, ctx),
-    ),
-  );
-}
-
-/**
- * Generate the prefetch.ts file content.
- */
-function generatePrefetchFile(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): string {
-  // Only GET operations for prefetch
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-
-  return createFile(OpenApiRqFiles.prefetch, ctx, buildHookFileImports, [
-    // prefetch functions
-    ...getOperations.map((op) => buildPrefetchFn(op)),
-    // prefetchInfiniteQuery functions
-    ...collectStatements(getOperations, (op) =>
-      buildPrefetchInfiniteQueryFn(op, ctx),
-    ),
-  ]);
-}
-
-/**
- * Generate the ensureQueryData.ts file content.
- */
-function generateEnsureQueryDataFile(
-  operations: OperationInfo[],
-  ctx: GenerationContext,
-): string {
-  // Only GET operations for ensure
-  const getOperations = operations.filter((op) => op.httpMethod === "GET");
-
-  return createFile(
-    OpenApiRqFiles.ensureQueryData,
-    ctx,
-    buildHookFileImports,
-    getOperations.map((op) => buildEnsureQueryDataFn(op)),
-  );
+  return separateKinds(statements);
 }
 
 /**
@@ -305,59 +161,84 @@ export function generateAllFiles(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): GeneratedFile[] {
+  const queries = operations.filter((op) => op.httpMethod === "GET");
+  const mutations = operations.filter((op) =>
+    ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
+  );
+
+  const files: Array<
+    [
+      name: string,
+      imports: (ctx: GenerationContext) => ImportDeclarationStructure[],
+      statements: Statement[],
+    ]
+  > = [
+    [
+      OpenApiRqFiles.common,
+      buildCommonFileImports,
+      commonStatements(queries, mutations, ctx),
+    ],
+    [
+      OpenApiRqFiles.queries,
+      buildHookFileImports,
+      [
+        ...queries.map((op) => buildUseQueryHook(op, ctx)),
+        ...mutations.map((op) => buildUseMutationHook(op, ctx)),
+      ],
+    ],
+    [
+      OpenApiRqFiles.queryOptions,
+      buildQueryOptionsFileImports,
+      [
+        ...queries.map((op) => buildQueryOptionsFn(op)),
+        ...collectStatements(queries, (op) =>
+          buildInfiniteQueryOptionsFn(op, ctx),
+        ),
+      ],
+    ],
+    [
+      OpenApiRqFiles.suspense,
+      buildHookFileImports,
+      [
+        ...queries.map((op) => buildUseSuspenseQueryHook(op, ctx)),
+        ...collectStatements(queries, (op) =>
+          buildUseSuspenseInfiniteQueryHook(op, ctx),
+        ),
+      ],
+    ],
+    [
+      OpenApiRqFiles.infiniteQueries,
+      buildHookFileImports,
+      collectStatements(queries, (op) => buildUseInfiniteQueryHook(op, ctx)),
+    ],
+    [
+      OpenApiRqFiles.prefetch,
+      buildHookFileImports,
+      [
+        ...queries.map((op) => buildPrefetchFn(op)),
+        ...collectStatements(queries, (op) =>
+          buildPrefetchInfiniteQueryFn(op, ctx),
+        ),
+      ],
+    ],
+    [
+      OpenApiRqFiles.ensureQueryData,
+      buildHookFileImports,
+      queries.map((op) => buildEnsureQueryDataFn(op)),
+    ],
+  ];
+
   return [
     {
       name: `${OpenApiRqFiles.index}.ts`,
-      content: addHeaderComment(generateIndexFile(), ctx.version),
+      content: addHeaderComment(INDEX_FILE, ctx.version),
     },
-    {
-      name: `${OpenApiRqFiles.common}.ts`,
+    ...files.map(([name, imports, statements]) => ({
+      name: `${name}.ts`,
       content: addHeaderComment(
-        generateCommonFile(operations, ctx),
+        createFile(name, ctx, imports, statements),
         ctx.version,
       ),
-    },
-    {
-      name: `${OpenApiRqFiles.queries}.ts`,
-      content: addHeaderComment(
-        generateQueriesFile(operations, ctx),
-        ctx.version,
-      ),
-    },
-    {
-      name: `${OpenApiRqFiles.queryOptions}.ts`,
-      content: addHeaderComment(
-        generateQueryOptionsFile(operations, ctx),
-        ctx.version,
-      ),
-    },
-    {
-      name: `${OpenApiRqFiles.suspense}.ts`,
-      content: addHeaderComment(
-        generateSuspenseFile(operations, ctx),
-        ctx.version,
-      ),
-    },
-    {
-      name: `${OpenApiRqFiles.infiniteQueries}.ts`,
-      content: addHeaderComment(
-        generateInfiniteQueriesFile(operations, ctx),
-        ctx.version,
-      ),
-    },
-    {
-      name: `${OpenApiRqFiles.prefetch}.ts`,
-      content: addHeaderComment(
-        generatePrefetchFile(operations, ctx),
-        ctx.version,
-      ),
-    },
-    {
-      name: `${OpenApiRqFiles.ensureQueryData}.ts`,
-      content: addHeaderComment(
-        generateEnsureQueryDataFile(operations, ctx),
-        ctx.version,
-      ),
-    },
+    })),
   ];
 }

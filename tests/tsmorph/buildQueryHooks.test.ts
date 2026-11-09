@@ -18,9 +18,8 @@ const mockOperation: OperationInfo = {
   methodName: "findPets",
   capitalizedMethodName: "FindPets",
   dataTypeName: "FindPetsData",
+  errorTypeName: "FindPetsError",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "limit", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: false,
 };
@@ -30,8 +29,6 @@ const mockPaginatableOperation: OperationInfo = {
   capitalizedMethodName: "FindPaginatedPets",
   dataTypeName: "FindPaginatedPetsData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "page", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: true,
   pageParamType: "number",
@@ -49,8 +46,6 @@ const mockRequiredParamsOperation: OperationInfo = {
   capitalizedMethodName: "FindPetById",
   dataTypeName: "FindPetByIdData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "id", typeName: "number", optional: false }],
   allParamsOptional: false,
   isPaginatable: false,
 };
@@ -60,8 +55,6 @@ const mockNoDataTypeOperation: OperationInfo = {
   methodName: "getStatus",
   capitalizedMethodName: "GetStatus",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [],
   allParamsOptional: true,
   isPaginatable: false,
 };
@@ -74,6 +67,7 @@ const mockDigitLeadingOperation: OperationInfo = {
   methodName: "_123NumericLead",
   capitalizedMethodName: "_123NumericLead",
   dataTypeName: "NumericLeadData",
+  errorTypeName: "NumericLeadError",
 };
 
 const mockFetchContext: GenerationContext = {
@@ -95,6 +89,20 @@ const mockAxiosContext: GenerationContext = {
   ...mockFetchContext,
   client: "axios",
 };
+
+describe("formatInitialPageParam with leading zeros", () => {
+  it("stays a string instead of an octal literal", () => {
+    expect(
+      formatInitialPageParam({
+        ...mockFetchContext,
+        initialPageParam: "001",
+      }),
+    ).toBe('"001"');
+    expect(
+      formatInitialPageParam({ ...mockFetchContext, initialPageParam: "0" }),
+    ).toBe("0");
+  });
+});
 
 describe("buildQueryHooks", () => {
   describe("infinite query helpers", () => {
@@ -195,7 +203,6 @@ describe("buildQueryHooks", () => {
       expect(initializer).toContain(
         "clientOptions: Options<NumericLeadData, true> = {}",
       );
-      // The Error type shares the Data type stem, not the method name
       expect(initializer).toContain("TError = NumericLeadError");
     });
   });

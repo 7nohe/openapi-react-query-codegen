@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import ts from "typescript";
@@ -8,6 +8,8 @@ import {
   generateClient,
   writeGeneratedFiles,
 } from "../../src/client/index.mts";
+import { generate } from "../../src/generate.mjs";
+import { buildGetNextPageParamExpr } from "../../src/tsmorph/buildQueryHooks.mjs";
 import { generateTestClient, inputPath } from "../utils";
 
 const file = (
@@ -77,30 +79,9 @@ describe("generateClient - features fixture", () => {
       pageParamType: "number",
       pageParamTypeKind: "number",
     });
-    expect(list?.parameters.map((p) => p.name)).toEqual([
-      "page",
-      "ids",
-      "tags",
-      "filter",
-      "X-Trace-Id",
-    ]);
-    const create = generated.operations.find(
-      (op) => op.methodName === "createItem",
-    );
-    // Request bodies use the request-side variant (readOnly properties omitted).
-    expect(create?.parameters.at(-1)).toEqual({
-      name: "body",
-      typeName: "NewItemWritable",
-      optional: false,
-    });
-    const note = generated.operations.find((op) => op.methodName === "addNote");
-    expect(note?.parameters).toEqual([
-      { name: "body", typeName: "string", optional: true },
-    ]);
     expect(
-      generated.operations.find((op) => op.methodName === "deleteItem")
-        ?.isDeprecated,
-    ).toBe(true);
+      generated.operations.find((op) => op.methodName === "deleteItem")?.jsDoc,
+    ).toContain("@deprecated");
   });
 });
 
@@ -202,6 +183,107 @@ describe("generateClient - options", () => {
       "RequestResult<ListRunsResponses, ListRunsErrors, ThrowOnError>",
     );
   });
+
+  test.each(["typescript", "javascript"] as const)(
+    "%s enums follow the x-enum extensions",
+    async (enums) => {
+      const generated = await generateClient({
+        input: JSON.stringify({
+          openapi: "3.0.3",
+          paths: {},
+          components: {
+            schemas: {
+              Level: {
+                type: "integer",
+                enum: [1, 2, 3],
+                "x-enum-varnames": ["Low", "mediumLevel"],
+                "x-enum-descriptions": ["lowest"],
+              },
+              Color: {
+                type: "string",
+                enum: ["r"],
+                "x-enumNames": ["Red"],
+              },
+            },
+          },
+        }),
+        client: "fetch",
+        enums,
+        importExtension: "",
+        pageParam: "page",
+      });
+      const types = file(generated, "types.gen.ts");
+      const assign = enums === "typescript" ? " = " : ": ";
+      expect(types).toContain(`LOW${assign}1,`);
+      expect(types).toContain(`MEDIUM_LEVEL${assign}2,`);
+      // A list that runs out falls back to the value.
+      expect(types).toMatch(new RegExp(`\\b_?3${assign}3,`));
+      expect(types).toContain(`RED${assign}"r",`);
+      expect(types).toMatch(/\* Low\n\s+\*\n\s+\* lowest\n/);
+    },
+  );
+
+  test("javascript enums can hold null and booleans, as in v3", async () => {
+    const enumsOf = async (enums: "typescript" | "javascript") =>
+      file(
+        await generateClient({
+          input: JSON.stringify({
+            openapi: "3.0.3",
+            paths: {},
+            components: {
+              schemas: {
+                Status: { type: "string", enum: ["active", null] },
+                Flag: { type: "boolean", enum: [true, false] },
+                OnlyNull: { enum: [null] },
+              },
+            },
+          }),
+          client: "fetch",
+          enums,
+          importExtension: "",
+          pageParam: "page",
+        }),
+        "types.gen.ts",
+      );
+    const javascript = await enumsOf("javascript");
+    expect(javascript).toContain('ACTIVE: "active",');
+    expect(javascript).toContain("NULL: null,");
+    expect(javascript).toContain("TRUE: true,");
+    expect(javascript).toContain("export type OnlyNull = null;");
+    const typescript = await enumsOf("typescript");
+    expect(typescript).toContain('export type Status = "active" | null;');
+    expect(typescript).toContain("export type Flag = true | false;");
+  });
+
+  test.each(["typescript", "javascript"] as const)(
+    "%s enums with leading zeros compile",
+    async (enums) => {
+      const generated = await generateClient({
+        input: JSON.stringify({
+          openapi: "3.0.3",
+          paths: {},
+          components: {
+            schemas: { Status: { type: "string", enum: ["01", "0", "10"] } },
+          },
+        }),
+        client: "fetch",
+        enums,
+        importExtension: "",
+        pageParam: "page",
+      });
+      const types = file(generated, "types.gen.ts");
+      if (enums === "javascript") {
+        expect(types).toContain('"01": "01",');
+        expect(types).toContain('0: "0",');
+        expect(types).toContain('10: "10",');
+      } else {
+        expect(types).toContain('_01 = "01",');
+      }
+      expect(
+        ts.transpileModule(types, { reportDiagnostics: true }).diagnostics,
+      ).toEqual([]);
+    },
+  );
 
   test("rejects unsupported documents", async () => {
     const base = {
@@ -321,6 +403,251 @@ describe("generated client compiles", () => {
   }
 });
 
+describe("request-side variants", () => {
+  test("exist even when no request uses the schema, as in v3", async () => {
+    const generated = await generateClient({
+      input: JSON.stringify({
+        openapi: "3.0.3",
+        components: {
+          schemas: {
+            Pet: {
+              type: "object",
+              required: ["id", "name"],
+              properties: {
+                id: { type: "string", readOnly: true },
+                name: { type: "string" },
+              },
+            },
+          },
+        },
+        paths: {
+          "/pet": {
+            get: {
+              operationId: "getPet",
+              responses: {
+                "200": {
+                  description: "ok",
+                  content: {
+                    "application/json": {
+                      schema: { $ref: "#/components/schemas/Pet" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      client: "fetch",
+      importExtension: "",
+      pageParam: "page",
+    });
+    expect(file(generated, "types.gen.ts")).toMatch(
+      /export type PetWritable = \{\s+name: string;\s+\};/,
+    );
+  });
+});
+
+describe("parameters use the request-side types", () => {
+  test("a writeOnly property of a parameter stays", async () => {
+    const generated = await generateClient({
+      input: JSON.stringify({
+        openapi: "3.0.3",
+        components: {
+          schemas: {
+            Credentials: {
+              type: "object",
+              required: ["username", "password"],
+              properties: {
+                username: { type: "string" },
+                password: { type: "string", writeOnly: true },
+              },
+            },
+          },
+        },
+        paths: {
+          "/login": {
+            get: {
+              operationId: "login",
+              parameters: [
+                {
+                  name: "credentials",
+                  in: "query",
+                  required: true,
+                  content: {
+                    "application/json": {
+                      schema: { $ref: "#/components/schemas/Credentials" },
+                    },
+                  },
+                },
+              ],
+              responses: { "204": { description: "none" } },
+            },
+          },
+        },
+      }),
+      client: "fetch",
+      importExtension: "",
+      pageParam: "page",
+    });
+    const types = file(generated, "types.gen.ts");
+    expect(types).toContain("credentials: CredentialsWritable;");
+    expect(types).toMatch(
+      /type CredentialsWritable = \{[^}]*password: string;/,
+    );
+  });
+});
+
+describe("a next page property that is not an identifier", () => {
+  test("is quoted in the type and in the access", () => {
+    const expr = buildGetNextPageParamExpr({
+      nextPageParam: "meta.next-page",
+    } as never);
+    expect(expr).toBe(
+      '(response: unknown) => (response as { meta: { "next-page": number } }).meta?.["next-page"]',
+    );
+    expect(
+      ts.transpileModule(`export const f = ${expr};`, {
+        reportDiagnostics: true,
+      }).diagnostics,
+    ).toEqual([]);
+  });
+});
+
+describe("a next page property inside something optional", () => {
+  test("ends the pagination instead of throwing", () => {
+    const expr = buildGetNextPageParamExpr({
+      nextPageParam: "meta.next",
+    } as never);
+    const js = ts.transpileModule(`(${expr})`, {}).outputText;
+    // biome-ignore lint/security/noGlobalEval: evaluates the expression above
+    const next = (0, eval)(js);
+    expect(next({ meta: { next: 2 } })).toBe(2);
+    expect(next({ items: [] })).toBeUndefined();
+    expect(next({ meta: null })).toBeUndefined();
+  });
+});
+
+describe("a page parameter that is not an identifier", () => {
+  test("is quoted in the query it builds", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "orqc-page-"));
+    try {
+      const input = path.join(dir, "spec.json");
+      await writeFile(
+        input,
+        JSON.stringify({
+          openapi: "3.0.3",
+          info: { title: "t", version: "1" },
+          paths: {
+            "/x": {
+              get: {
+                operationId: "listX",
+                parameters: [
+                  {
+                    name: "page[number]",
+                    in: "query",
+                    schema: { type: "integer" },
+                  },
+                ],
+                responses: {
+                  "200": {
+                    description: "ok",
+                    content: {
+                      "application/json": {
+                        schema: {
+                          type: "object",
+                          properties: { next: { type: "integer" } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+      );
+      await generate(
+        {
+          input,
+          output: path.relative(process.cwd(), dir),
+          client: "fetch",
+          pageParam: "page[number]",
+          nextPageParam: "next",
+          initialPageParam: "1",
+        },
+        "1.0.0",
+      );
+      const text = await readFile(
+        path.join(dir, "queries", "infiniteQueries.ts"),
+        "utf-8",
+      );
+      expect(text).toContain('"page[number]": pageParam');
+      const { diagnostics } = ts.transpileModule(text, {
+        reportDiagnostics: true,
+      });
+      expect(diagnostics).toEqual([]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+describe("names beyond ASCII", () => {
+  test("hooks import what they use", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "orqc-unicode-"));
+    try {
+      const output = path.relative(process.cwd(), dir);
+      const input = path.join(dir, "spec.json");
+      await writeFile(
+        input,
+        JSON.stringify({
+          openapi: "3.0.3",
+          info: { title: "t", version: "1" },
+          paths: {
+            "/x": {
+              get: {
+                operationId: "検索",
+                responses: {
+                  "200": {
+                    description: "ok",
+                    content: {
+                      "application/json": { schema: { type: "string" } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+      );
+      await generate(
+        {
+          input,
+          output,
+          client: "fetch",
+          pageParam: "page",
+          nextPageParam: "next",
+          initialPageParam: "1",
+        },
+        "1.0.0",
+      );
+      const common = await readFile(
+        path.join(dir, "queries", "common.ts"),
+        "utf-8",
+      );
+      expect(common).toMatch(/import \{[^}]*検索[^}]*\} from/);
+      const queries = await readFile(
+        path.join(dir, "queries", "queries.ts"),
+        "utf-8",
+      );
+      expect(queries).toMatch(/import type \{[^}]*検索Data[^}]*\} from/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
 describe("detectImportExtension", () => {
   let dir: string;
   beforeAll(async () => {
@@ -363,7 +690,21 @@ describe("detectImportExtension", () => {
     expect(
       await detect("module-esnext", { compilerOptions: { module: "esnext" } }),
     ).toBe("");
+    expect(
+      await detect("module-preserve", {
+        compilerOptions: { module: "preserve" },
+      }),
+    ).toBe("");
   });
+
+  test.each(["node16", "node18", "node20"])(
+    "module %s needs extensions",
+    async (module) => {
+      expect(
+        await detect(`module-${module}`, { compilerOptions: { module } }),
+      ).toBe(".js");
+    },
+  );
 
   test("an unreadable tsconfig yields no extension", async () => {
     const sub = path.join(dir, "broken");
@@ -438,34 +779,163 @@ describe("serialization and parsing the SDK asks for", () => {
   const list = { type: "array", items: { type: "string" } };
 
   test("one parser when every success body reads the same way", async () => {
-    const sdk = await operation("fetch", {
+    const sdk = await operation("axios", {
       responses: {
         "200": ok(json),
         "201": ok(json),
         "204": { description: "none" },
       },
     });
-    expect(sdk).toContain('parseAs: "json"');
+    expect(sdk).toContain('responseType: "json"');
+    expect(sdk).not.toContain("parseAs");
   });
 
   test("no fixed parser when success bodies differ", async () => {
     const mixed = { responses: { "200": ok(json), "202": ok(text) } };
-    expect(await operation("fetch", mixed)).not.toContain("parseAs");
     expect(await operation("axios", mixed)).not.toContain("responseType");
   });
 
-  test("no fixed parser when one response offers both", async () => {
+  test("a scheme's key is emitted when it needs one", async () => {
+    const generated = await generateClient({
+      input: JSON.stringify({
+        openapi: "3.0.3",
+        components: {
+          securitySchemes: {
+            user: { type: "http", scheme: "bearer" },
+            admin: { type: "http", scheme: "bearer" },
+            k1: { type: "apiKey", in: "header", name: "X" },
+            k2: { type: "apiKey", in: "header", name: "X" },
+          },
+        },
+        paths: {
+          "/x": {
+            get: {
+              operationId: "op",
+              security: [{ user: [] }, { k2: [] }],
+              responses: { "204": { description: "none" } },
+            },
+          },
+        },
+      }),
+      client: "fetch",
+      importExtension: "",
+      pageParam: "page",
+    });
+    const sdk = file(generated, "sdk.gen.ts");
+    expect(sdk).toContain('{ key: "user", scheme: "bearer", type: "http" }');
+    expect(sdk).toContain(
+      '{ in: "header", key: "k2", name: "X", type: "apiKey" }',
+    );
+  });
+
+  test("fetch leaves parsing to the response and the client", async () => {
     const sdk = await operation("fetch", {
-      responses: { "200": ok({ ...json, ...text }) },
+      responses: { "200": ok(json) },
     });
     expect(sdk).not.toContain("parseAs");
   });
 
+  test("no fixed parser when one response offers both", async () => {
+    const sdk = await operation("axios", {
+      responses: { "200": ok({ ...json, ...text }) },
+    });
+    expect(sdk).not.toContain("responseType");
+  });
+
   test("error bodies do not decide how success is parsed", async () => {
-    const sdk = await operation("fetch", {
+    const sdk = await operation("axios", {
       responses: { "200": ok(text), "400": ok(json) },
     });
-    expect(sdk).toContain('parseAs: "text"');
+    expect(sdk).toContain('responseType: "text"');
+  });
+
+  test.each([
+    ["application/xml", "text"],
+    ["application/atom+xml; charset=utf-8", "text"],
+    ["application/octet-stream", "blob"],
+  ])("a %s body is read as %s", async (mediaType, responseType) => {
+    const sdk = await operation("axios", {
+      responses: { "200": ok({ [mediaType]: { schema: { type: "string" } } }) },
+    });
+    expect(sdk).toContain(`responseType: "${responseType}"`);
+  });
+
+  test("a 3.1 type list keeps the settings of every shape", async () => {
+    const mixed = { type: ["string", "object"], properties: { id: {} } };
+    const sdk = await operation(
+      "fetch",
+      {
+        parameters: [
+          { name: "p", in: "query", schema: mixed },
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            explode: true,
+            schema: mixed,
+          },
+          { name: "n", in: "query", schema: { type: ["string", "null"] } },
+          { name: "m", in: "query", schema: { type: ["string", "number"] } },
+        ],
+        responses: { "204": { description: "none" } },
+      },
+      "/x/{id}",
+    );
+    expect(sdk).toContain('"p": { object: { style: "form", explode: true } }');
+    expect(sdk).toContain('"id": { style: "simple", explode: true }');
+    expect(sdk).not.toContain('"n":');
+    expect(sdk).not.toContain('"m":');
+  });
+
+  test("a header with JSON content is listed for the runtime", async () => {
+    const header = (name: string, media: string) => ({
+      name,
+      in: "header",
+      content: { [media]: { schema: list } },
+    });
+    const sdk = await operation("axios", {
+      parameters: [
+        header("X-F", "application/json"),
+        header("X-T", "text/csv"),
+      ],
+      responses: { "204": { description: "none" } },
+    });
+    expect(sdk).toContain('jsonHeaders: ["X-F"]');
+  });
+
+  test("a parameter with JSON content is sent as a JSON text", async () => {
+    const sdk = await operation(
+      "fetch",
+      {
+        parameters: [
+          {
+            name: "filter",
+            in: "query",
+            content: { "application/json": { schema: obj } },
+          },
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            content: { "application/vnd.x+json": { schema: obj } },
+          },
+          {
+            name: "note",
+            in: "query",
+            content: { "text/plain": { schema: { type: "string" } } },
+          },
+        ],
+        responses: { "204": { description: "none" } },
+      },
+      "/x/{id}",
+    );
+    expect(sdk).toContain(
+      'querySerializer: { parameters: { "filter": { json: true } } }',
+    );
+    expect(sdk).toContain(
+      'pathSerializer: { parameters: { "id": { json: true } } }',
+    );
+    expect(sdk).not.toContain('"note"');
   });
 
   test.each(["fetch", "axios"] as const)(

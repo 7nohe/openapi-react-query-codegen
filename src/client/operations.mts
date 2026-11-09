@@ -4,14 +4,8 @@ import {
   toTypeName,
   uniqueName,
 } from "./naming.mjs";
-import type { SchemaCtx } from "./schema.mjs";
-import {
-  componentSchemaKey,
-  docComment,
-  findReadWriteOnlyKeys,
-  renderSchema,
-} from "./schema.mjs";
-import { type Doc, getByPointer, type Json } from "./spec.mjs";
+import { docComment, findReadWriteOnlyKeys } from "./schema.mjs";
+import { type Doc, getByPointer, type Json, resolveRef } from "./spec.mjs";
 
 /**
  * Type names a schema or an operation type cannot take: `ClientOptions` and
@@ -19,7 +13,7 @@ import { type Doc, getByPointer, type Json } from "./spec.mjs";
  * files import or use, where an imported model of the same name would clash
  * with or shadow them.
  */
-export const RESERVED_TYPE_NAMES: readonly string[] = [
+const RESERVED_TYPE_NAMES: readonly string[] = [
   "ClientOptions",
   "Options",
   "Common",
@@ -48,7 +42,7 @@ export const RESERVED_TYPE_NAMES: readonly string[] = [
   "ReturnType",
 ];
 
-export const HTTP_METHODS = [
+const HTTP_METHODS = [
   "get",
   "put",
   "post",
@@ -58,13 +52,13 @@ export const HTTP_METHODS = [
   "patch",
   "trace",
 ] as const;
-export type HttpMethod = (typeof HTTP_METHODS)[number];
+type HttpMethod = (typeof HTTP_METHODS)[number];
 
 function isHttpMethod(value: string): value is HttpMethod {
   return (HTTP_METHODS as readonly string[]).includes(value);
 }
 
-export type ParameterLocation = "path" | "query" | "header" | "cookie";
+type ParameterLocation = "path" | "query" | "header";
 
 export interface ParameterIR {
   name: string;
@@ -75,6 +69,8 @@ export interface ParameterIR {
   deprecated?: boolean;
   style?: string;
   explode?: boolean;
+  /** Declared with `content` as JSON, so the value is sent as a JSON text. */
+  json?: boolean;
 }
 
 export type BodyKind = "json" | "form-data" | "urlencoded" | "text" | "binary";
@@ -92,17 +88,17 @@ export interface ResponseIR {
   status: string;
   description?: string;
   schema?: Json;
-  /** The media type `schema` was taken from. */
-  mediaType?: string;
   /** Every media type the response declares. */
   mediaTypes: string[];
 }
 
 export interface SecurityIR {
-  type: "http" | "apiKey" | "oauth2" | "openIdConnect";
-  scheme?: string;
+  type: "http" | "apiKey";
+  scheme?: "basic" | "bearer";
   in?: "header" | "query" | "cookie";
   name?: string;
+  /** The scheme's name, when another scheme would look the same at runtime. */
+  key?: string;
 }
 
 export interface OperationTypeNames {
@@ -125,9 +121,6 @@ export interface OperationIR {
   typeNames: OperationTypeNames;
   method: HttpMethod;
   path: string;
-  summary?: string;
-  description?: string;
-  deprecated: boolean;
   parameters: ParameterIR[];
   body?: BodyIR;
   responses: ResponseIR[];
@@ -196,45 +189,83 @@ function mergeParameters(doc: Doc, pathItem: Json, operation: Json) {
     if (!Array.isArray(list)) continue;
     for (const raw of list) {
       const parameter = deref(doc, raw);
-      if (!parameter?.name || !parameter.in) continue;
+      // Nothing can send a cookie parameter: the SDK has no option for it.
+      if (!parameter?.name || !parameter.in || parameter.in === "cookie") {
+        continue;
+      }
       const location = parameter.in as ParameterLocation;
+      const content = parameter.schema
+        ? undefined
+        : pickContent(parameter.content);
       merged.set(`${location}:${parameter.name}`, {
         name: parameter.name,
         in: location,
         required: location === "path" ? true : parameter.required === true,
-        schema:
-          parameter.schema ?? parameter.content?.["application/json"]?.schema,
+        schema: parameter.schema ?? content?.media?.schema,
         description: parameter.description,
         deprecated: parameter.deprecated === true,
         style: parameter.style,
         explode: parameter.explode,
+        json: content !== undefined && mediaKind(content.mediaType) === "json",
       });
     }
   }
   return [...merged.values()];
 }
 
-function collectSecurity(doc: Doc, requirements: Json): SecurityIR[][] {
+/**
+ * The scheme as a request carries it. The others (`mutualTLS`, HTTP `digest` and
+ * so on) happen outside the SDK, and must not be sent as a bearer token.
+ */
+function toSecurityIR(scheme: Json): SecurityIR | undefined {
+  switch (scheme?.type) {
+    case "apiKey":
+      return { type: "apiKey", in: scheme.in, name: scheme.name };
+    case "oauth2":
+    case "openIdConnect":
+      return { type: "http", scheme: "bearer" };
+    case "http": {
+      const name = String(scheme.scheme).toLowerCase();
+      return name === "basic" || name === "bearer"
+        ? { type: "http", scheme: name }
+        : undefined;
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Schemes that would look the same at runtime, which need their name for an
+ * `auth` callback to tell them apart.
+ */
+function findAmbiguousSchemes(doc: Doc): Set<string> {
+  const namesByShape = new Map<string, string[]>();
+  for (const [name, raw] of Object.entries(
+    (doc.components?.securitySchemes ?? {}) as Record<string, Json>,
+  )) {
+    const shape = JSON.stringify(toSecurityIR(deref(doc, raw)));
+    namesByShape.set(shape, [...(namesByShape.get(shape) ?? []), name]);
+  }
+  return new Set(
+    [...namesByShape.values()].filter((names) => names.length > 1).flat(),
+  );
+}
+
+function collectSecurity(
+  doc: Doc,
+  requirements: Json,
+  ambiguous: ReadonlySet<string>,
+): SecurityIR[][] {
   const schemes = doc.components?.securitySchemes ?? {};
   const result: SecurityIR[][] = [];
   const seen = new Set<string>();
   for (const requirement of Array.isArray(requirements) ? requirements : []) {
     const group: SecurityIR[] = [];
     for (const name of Object.keys(requirement ?? {})) {
-      const scheme = deref(doc, schemes[name]);
-      if (!scheme?.type) continue;
-      const entry: SecurityIR = { type: scheme.type };
-      if (scheme.type === "http")
-        entry.scheme = String(scheme.scheme).toLowerCase();
-      if (scheme.type === "oauth2" || scheme.type === "openIdConnect") {
-        entry.type = "http";
-        entry.scheme = "bearer";
-      }
-      if (scheme.type === "apiKey") {
-        entry.in = scheme.in;
-        entry.name = scheme.name;
-      }
-      group.push(entry);
+      const entry = toSecurityIR(deref(doc, schemes[name]));
+      if (entry)
+        group.push(ambiguous.has(name) ? { ...entry, key: name } : entry);
     }
     const id = JSON.stringify(group);
     if (group.length > 0 && !seen.has(id)) {
@@ -273,6 +304,7 @@ export function collectOperations(
     ...(options.reservedTypeNames ?? []),
   ]);
   const paths: Record<string, Json> = doc.paths ?? {};
+  const ambiguousSchemes = findAmbiguousSchemes(doc);
 
   for (const [pathKey, rawPathItem] of Object.entries(paths)) {
     const pathItem = deref(doc, rawPathItem) ?? {};
@@ -286,10 +318,7 @@ export function collectOperations(
           ? String(operation.operationId)
           : nameFromPath(method, pathKey);
       const functionName = uniqueName(toFunctionName(baseName), usedNames);
-      const typeNames = claimTypeNames(
-        functionName.charAt(0).toUpperCase() + functionName.slice(1),
-        usedNames,
-      );
+      const typeNames = claimTypeNames(toTypeName(functionName), usedNames);
 
       const parameters = mergeParameters(doc, pathItem, operation);
 
@@ -319,7 +348,6 @@ export function collectOperations(
               : status.toUpperCase(),
           description: response.description,
           schema: content?.media?.schema,
-          mediaType: content?.mediaType,
           mediaTypes: Object.keys(response.content ?? {}),
         });
       }
@@ -330,13 +358,14 @@ export function collectOperations(
         typeNames,
         method,
         path: pathKey,
-        summary: operation.summary,
-        description: operation.description,
-        deprecated,
         parameters,
         body,
         responses,
-        security: collectSecurity(doc, operation.security ?? doc.security),
+        security: collectSecurity(
+          doc,
+          operation.security ?? doc.security,
+          ambiguousSchemes,
+        ),
         jsDoc: buildJsDoc(operation.summary, operation.description, deprecated),
       });
     }
@@ -370,8 +399,6 @@ export function buildSchemaNames(doc: Doc): Map<string, string> {
   return names;
 }
 
-export type SuccessKind = "success" | "error";
-
 /** Split responses into the ones exposed as data and as errors. */
 export function classifyResponses(operation: OperationIR): {
   responses: ResponseIR[];
@@ -397,24 +424,23 @@ export function classifyResponses(operation: OperationIR): {
   return { responses, errors };
 }
 
-export function parameterType(parameter: ParameterIR, ctx: SchemaCtx): string {
-  return renderSchema(parameter.schema, ctx);
-}
-
 /** Resolve a schema (following `$ref` chains) down to its leading primitive. */
 export function schemaPrimitiveKind(
   doc: Doc,
-  schema: Json,
-  depth = 0,
+  node: Json,
 ): "string" | "number" | "other" {
-  if (!schema || typeof schema !== "object" || depth > 16) return "other";
-  if (typeof schema.$ref === "string") {
-    const key = componentSchemaKey(schema.$ref);
-    const target =
-      key !== undefined
-        ? doc.components?.schemas?.[key]
-        : getByPointer(doc, schema.$ref);
-    return schemaPrimitiveKind(doc, target, depth + 1);
+  const schema = resolveRef(doc, node);
+  if (!schema || typeof schema !== "object") return "other";
+  const alternatives: Json[] | undefined =
+    schema.anyOf ?? schema.oneOf ?? schema.allOf;
+  if (Array.isArray(alternatives)) {
+    const kinds = new Set(
+      alternatives
+        .filter((member) => resolveRef(doc, member)?.type !== "null")
+        .map((member) => schemaPrimitiveKind(doc, member)),
+    );
+    const [only] = kinds;
+    return kinds.size === 1 ? only : "other";
   }
   const kinds = new Set<string>();
   const collect = (value: Json) => {

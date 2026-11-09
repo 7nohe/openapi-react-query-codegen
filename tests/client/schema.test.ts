@@ -3,6 +3,7 @@ import {
   componentSchemaKey,
   docComment,
   findReadWriteOnlyKeys,
+  renderComponentSchema,
   renderSchema,
   type SchemaCtx,
   schemaDescription,
@@ -177,7 +178,6 @@ describe("renderSchema", () => {
       '{\n  /**\n   * The a\n   */\n  a: string;\n  /**\n   * @deprecated\n   */\n  "b-c"?: number;\n}',
     );
     expect(render({ type: "object" })).toBe("{\n  [key: string]: unknown;\n}");
-    expect(render({ type: "object", additionalProperties: false })).toBe("{}");
     expect(
       render({ type: "object", additionalProperties: { type: "string" } }),
     ).toBe("{\n  [key: string]: string;\n}");
@@ -319,11 +319,9 @@ describe("readOnly / writeOnly", () => {
   });
 
   test("requests drop readOnly properties and use the writable variants", () => {
-    const used = new Set<string>();
-    expect(
-      renderSchema(schema, { ...rwCtx, mode: "write", usedWritable: used }),
-    ).toBe("{\n  name: string;\n  secret: string;\n  child?: PetWritable;\n}");
-    expect([...used]).toEqual(["Pet"]);
+    expect(renderSchema(schema, { ...rwCtx, mode: "write" })).toBe(
+      "{\n  name: string;\n  secret: string;\n  child?: PetWritable;\n}",
+    );
     expect(
       renderSchema(
         { $ref: "#/components/schemas/Pet" },
@@ -342,6 +340,292 @@ describe("readOnly / writeOnly", () => {
         { ...rwCtx, mode: "write" },
       ),
     ).toBe("{}");
+  });
+});
+
+describe("a discriminator enum inherited by the members", () => {
+  const schemas = {
+    Pet: {
+      type: "object",
+      required: ["kind"],
+      properties: { kind: { type: "string", enum: ["cat", "dog"] } },
+    },
+    Cat: { allOf: [{ $ref: "#/components/schemas/Pet" }] },
+    Dog: { allOf: [{ $ref: "#/components/schemas/Pet" }] },
+    Fish: {
+      type: "object",
+      properties: { kind: { type: "string", enum: ["fish"] } },
+    },
+  };
+  const inherited: SchemaCtx = {
+    doc: { openapi: "3.0.3", components: { schemas } },
+    names: new Map(Object.keys(schemas).map((key) => [key, key])),
+  };
+  const member = (key: string) => ({ $ref: `#/components/schemas/${key}` });
+
+  test("is narrowed by the mapping", () => {
+    expect(
+      renderSchema(
+        {
+          oneOf: [member("Cat"), member("Dog")],
+          discriminator: {
+            propertyName: "kind",
+            mapping: {
+              cat: "#/components/schemas/Cat",
+              dog: "#/components/schemas/Dog",
+            },
+          },
+        },
+        inherited,
+      ),
+    ).toBe('({ kind: "cat" } & Cat) | ({ kind: "dog" } & Dog)');
+  });
+
+  test("stays when the name is not one of its values", () => {
+    expect(
+      renderSchema(
+        {
+          oneOf: [member("Cat"), member("Fish")],
+          discriminator: { propertyName: "kind" },
+        },
+        inherited,
+      ),
+    ).toBe("Cat | Fish");
+  });
+
+  test("a single value is left alone whatever the mapping says", () => {
+    expect(
+      renderSchema(
+        {
+          oneOf: [member("Fish")],
+          discriminator: {
+            propertyName: "kind",
+            mapping: { fish: "#/components/schemas/Fish" },
+          },
+        },
+        inherited,
+      ),
+    ).toBe("Fish");
+  });
+});
+
+describe("patternProperties", () => {
+  test("become the index signature", () => {
+    const pattern = { "^x-": { type: "number" }, "^y-": { type: "string" } };
+    expect(
+      render({
+        type: "object",
+        patternProperties: pattern,
+        additionalProperties: false,
+      }),
+    ).toBe("{\n  [key: string]: number | string;\n}");
+    expect(render({ patternProperties: { "^x-": { type: "number" } } })).toBe(
+      "{\n  [key: string]: unknown;\n}",
+    );
+    expect([
+      ...findReadWriteOnlyKeys({
+        components: {
+          schemas: {
+            Credentials: {
+              type: "object",
+              patternProperties: {
+                "^a": {
+                  type: "object",
+                  properties: {
+                    password: { type: "string", writeOnly: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]).toEqual(["Credentials"]);
+    expect(
+      render({
+        type: "object",
+        properties: { a: { type: "string" } },
+        patternProperties: { "^x-": { type: "number" } },
+      }),
+    ).toBe("{\n  a?: string;\n  [key: string]: unknown;\n}");
+    expect(
+      render({
+        type: "object",
+        patternProperties: { "^x-": { type: "number" } },
+        additionalProperties: { type: "boolean" },
+      }),
+    ).toBe("{\n  [key: string]: number | boolean;\n}");
+    expect(
+      render({
+        type: "object",
+        patternProperties: { "^x-": { type: "number" } },
+        additionalProperties: true,
+      }),
+    ).toBe("{\n  [key: string]: unknown;\n}");
+  });
+});
+
+describe("subtypes of a schema with a discriminator", () => {
+  const schemas = {
+    Pet: {
+      type: "object",
+      required: ["petType"],
+      properties: { petType: { type: "string" } },
+      discriminator: {
+        propertyName: "petType",
+        mapping: {
+          dog: "#/components/schemas/Dog",
+          hound: "#/components/schemas/Dog",
+          puppy: "#/components/schemas/Puppy",
+          kitty: "#/components/schemas/Cat",
+        },
+      },
+    },
+    Dog: { allOf: [{ $ref: "#/components/schemas/Pet" }] },
+    Puppy: { allOf: [{ $ref: "#/components/schemas/Dog" }] },
+    Lizard: { allOf: [{ $ref: "#/components/schemas/Pet" }] },
+    Cat: {
+      allOf: [
+        { $ref: "#/components/schemas/Pet" },
+        { properties: { petType: { enum: ["cat"] } } },
+      ],
+    },
+    Base: {
+      type: "object",
+      properties: { kind: { type: "string" } },
+      discriminator: { propertyName: "kind" },
+    },
+    Impl: { allOf: [{ $ref: "#/components/schemas/Base" }] },
+    Owner: { type: "object", properties: { name: { type: "string" } } },
+    Person: { allOf: [{ $ref: "#/components/schemas/Owner" }] },
+  };
+  const subtypeCtx: SchemaCtx = {
+    doc: { openapi: "3.0.3", components: { schemas } },
+    names: new Map(Object.keys(schemas).map((key) => [key, key])),
+  };
+  const emit = (key: keyof typeof schemas) =>
+    renderComponentSchema(schemas[key], key, subtypeCtx);
+
+  test("take their values from the mapping", () => {
+    expect(emit("Dog")).toBe('Pet & {\n  petType: "dog" | "hound";\n}');
+  });
+
+  test("or else from their name", () => {
+    expect(emit("Lizard")).toBe('Pet & {\n  petType: "Lizard";\n}');
+  });
+
+  test("replace the value of a parent that is a subtype too", () => {
+    expect(emit("Puppy")).toBe(
+      'Omit<Dog, "petType"> & {\n  petType: "puppy";\n}',
+    );
+  });
+
+  test("keep the property optional when the parent does", () => {
+    expect(emit("Impl")).toBe('Base & {\n  kind?: "Impl";\n}');
+  });
+
+  test("leave a value they pin themselves alone", () => {
+    expect(emit("Cat")).toBe('Pet & {\n  petType?: "cat";\n}');
+  });
+
+  test("do not touch a schema without a discriminator", () => {
+    expect(emit("Person")).toBe("Owner");
+    expect(emit("Pet")).toBe("{\n  petType: string;\n}");
+  });
+});
+
+describe("objects without properties", () => {
+  test("a closed one only accepts an empty object, as in v3", () => {
+    expect(render({ type: "object", additionalProperties: false })).toBe(
+      "{ [key: string]: never }",
+    );
+  });
+
+  test("an open one takes anything", () => {
+    expect(render({ type: "object" })).toBe("{\n  [key: string]: unknown;\n}");
+  });
+
+  test("one whose properties are hidden stays an object type", () => {
+    expect(
+      renderSchema(
+        {
+          type: "object",
+          additionalProperties: false,
+          properties: { id: { type: "string", readOnly: true } },
+        },
+        { ...ctx, mode: "write" },
+      ),
+    ).toBe("{}");
+  });
+});
+
+describe("readOnly and writeOnly behind a $ref", () => {
+  const doc = {
+    openapi: "3.0.3",
+    components: {
+      schemas: {
+        ReadId: { type: "integer", readOnly: true },
+        Secret: { type: "string", writeOnly: true },
+        Pet: {
+          type: "object",
+          required: ["id", "secret", "name"],
+          properties: {
+            id: { $ref: "#/components/schemas/ReadId" },
+            secret: { $ref: "#/components/schemas/Secret" },
+            name: { type: "string" },
+          },
+        },
+      },
+    },
+  };
+  const names = new Map([
+    ["ReadId", "ReadId"],
+    ["Secret", "Secret"],
+    ["Pet", "Pet"],
+  ]);
+  const pet = doc.components.schemas.Pet;
+
+  test("need a request-side type", () => {
+    expect([...findReadWriteOnlyKeys(doc)]).toEqual(["Pet"]);
+  });
+
+  test("count next to the $ref as well", () => {
+    const sibling = {
+      openapi: "3.1.0",
+      components: {
+        schemas: {
+          Id: { type: "string" },
+          Entity: {
+            type: "object",
+            required: ["id", "name"],
+            properties: {
+              id: { $ref: "#/components/schemas/Id", readOnly: true },
+              name: { type: "string" },
+            },
+          },
+        },
+      },
+    };
+    expect([...findReadWriteOnlyKeys(sibling)]).toEqual(["Entity"]);
+    expect(
+      renderSchema(sibling.components.schemas.Entity, {
+        doc: sibling,
+        names: new Map([
+          ["Id", "Id"],
+          ["Entity", "Entity"],
+        ]),
+        mode: "write",
+      }),
+    ).toBe("{\n  name: string;\n}");
+  });
+
+  test("are left out when writing and reading as they would be inline", () => {
+    expect(renderSchema(pet, { doc, names, mode: "write" })).toBe(
+      "{\n  secret: Secret;\n  name: string;\n}",
+    );
+    expect(renderSchema(pet, { doc, names, mode: "read" })).toBe(
+      "{\n  id: ReadId;\n  name: string;\n}",
+    );
   });
 });
 
@@ -543,6 +827,199 @@ describe("schemaDescription", () => {
         { doc: {}, names: new Map() },
       ),
     ).toContain("   * A\n   *\n   * The a\n");
+  });
+});
+
+describe("doc comments and union detection", () => {
+  test.each(["don't", 'a "quote', "open { brace", "tick ` and < angle"])(
+    "a description with %s keeps the union in parentheses",
+    (description) => {
+      const rendered = render({
+        allOf: [
+          {
+            oneOf: [
+              {
+                type: "object",
+                properties: { a: { type: "string", description } },
+              },
+              { type: "string" },
+            ],
+          },
+          { type: "object", properties: { b: { type: "string" } } },
+        ],
+      });
+      expect(rendered).toMatch(/^\(\{[\s\S]*\} \| string\) & \{/);
+    },
+  );
+});
+
+describe("properties an allOf requires", () => {
+  const base = {
+    type: "object",
+    properties: {
+      id: { type: "string", nullable: true },
+      secret: { type: "string", writeOnly: true },
+      stamp: { type: "string", readOnly: true },
+    },
+  };
+  const requiredCtx = (mode: "read" | "write" = "read"): SchemaCtx => ({
+    doc: { openapi: "3.0.3", components: { schemas: { Base: base } } },
+    names: new Map([["Base", "Base"]]),
+    mode,
+  });
+  const ref = { $ref: "#/components/schemas/Base" };
+
+  test("a member that only lists names adds them with their type", () => {
+    expect(
+      renderSchema({ allOf: [ref, { required: ["id"] }] }, requiredCtx()),
+    ).toBe("Base & {\n  id: string | null;\n}");
+  });
+
+  test("a typed member without properties adds no index signature", () => {
+    const rendered = renderSchema(
+      { allOf: [ref, { type: "object", required: ["id"] }] },
+      requiredCtx(),
+    );
+    expect(rendered).toBe("Base & {\n  id: string | null;\n}");
+  });
+
+  test("the schema's own list counts as well", () => {
+    expect(
+      renderSchema(
+        {
+          allOf: [ref],
+          properties: { extra: { type: "string" } },
+          required: ["extra", "id"],
+        },
+        requiredCtx(),
+      ),
+    ).toBe("Base & {\n  extra: string;\n} & {\n  id: string | null;\n}");
+  });
+
+  test("a member with a type of its own stays in the intersection", () => {
+    const ctx31 = requiredCtx();
+    expect(
+      renderSchema(
+        { allOf: [{ type: "string" }, { required: [], enum: ["a", "b"] }] },
+        ctx31,
+      ),
+    ).toBe('string & ("a" | "b")');
+    expect(
+      renderSchema({ allOf: [ref, { required: [], const: "x" }] }, ctx31),
+    ).toBe('Base & "x"');
+    expect(
+      renderSchema(
+        {
+          allOf: [
+            { type: "array", items: { type: "string" } },
+            { required: [], items: { type: "number" } },
+          ],
+        },
+        ctx31,
+      ),
+    ).toContain("Array<number>");
+  });
+
+  test("a nested list of names finds the type outside it", () => {
+    expect(
+      renderSchema(
+        { allOf: [ref, { allOf: [{ required: ["id"] }] }] },
+        requiredCtx(),
+      ),
+    ).toBe("Base & {\n  id: string | null;\n}");
+  });
+
+  test("a referenced list of names finds the type outside it", () => {
+    const withList = requiredCtx();
+    withList.doc.components.schemas.RequiredId = {
+      type: "object",
+      required: ["id"],
+    };
+    withList.names.set("RequiredId", "RequiredId");
+    expect(
+      renderSchema(
+        { allOf: [ref, { $ref: "#/components/schemas/RequiredId" }] },
+        withList,
+      ),
+    ).toBe("Base & RequiredId & {\n  id: string | null;\n}");
+  });
+
+  test("a referenced name declared nowhere adds nothing", () => {
+    const withList = requiredCtx();
+    withList.doc.components.schemas.Sloppy = {
+      type: "object",
+      properties: { a: { type: "string" } },
+      required: ["nope"],
+    };
+    withList.names.set("Sloppy", "Sloppy");
+    expect(
+      renderSchema(
+        { allOf: [ref, { $ref: "#/components/schemas/Sloppy" }] },
+        withList,
+      ),
+    ).toBe("Base & Sloppy");
+  });
+
+  test("a member that declares what it requires adds nothing", () => {
+    const withOwn = requiredCtx();
+    withOwn.doc.components.schemas.Own = {
+      type: "object",
+      properties: { a: { type: "string" } },
+      required: ["a"],
+    };
+    withOwn.names.set("Own", "Own");
+    expect(
+      renderSchema(
+        { allOf: [ref, { $ref: "#/components/schemas/Own" }] },
+        withOwn,
+      ),
+    ).toBe("Base & Own");
+  });
+
+  test("a name declared nowhere has an unknown type", () => {
+    expect(
+      renderSchema({ allOf: [ref, { required: ["nope"] }] }, requiredCtx()),
+    ).toBe("Base & {\n  nope: unknown;\n}");
+  });
+
+  test("properties hidden in this direction stay hidden", () => {
+    expect(
+      renderSchema({ allOf: [ref, { required: ["secret"] }] }, requiredCtx()),
+    ).toBe("Base");
+    expect(
+      renderSchema(
+        { allOf: [ref, { required: ["stamp"] }] },
+        requiredCtx("write"),
+      ),
+    ).toBe("Base");
+  });
+
+  test("a cycle of allOf ends", () => {
+    const cyclic: SchemaCtx = {
+      doc: {
+        openapi: "3.0.3",
+        components: {
+          schemas: {
+            Loop: { allOf: [{ $ref: "#/components/schemas/Loop" }] },
+          },
+        },
+      },
+      names: new Map([["Loop", "Loop"]]),
+    };
+    expect(
+      renderSchema(
+        { allOf: [{ $ref: "#/components/schemas/Loop" }, { required: ["x"] }] },
+        cyclic,
+      ),
+    ).toBe("Loop & {\n  x: unknown;\n}");
+  });
+
+  test("OpenAPI 3.1 finds the type behind a $ref with required next to it", () => {
+    const ctx31 = requiredCtx();
+    ctx31.doc = { ...ctx31.doc, openapi: "3.1.0" };
+    expect(renderSchema({ ...ref, required: ["id"] }, ctx31)).toBe(
+      "Base & {\n  id: string | null;\n}",
+    );
   });
 });
 

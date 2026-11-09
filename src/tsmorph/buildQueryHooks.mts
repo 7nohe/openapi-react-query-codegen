@@ -3,6 +3,7 @@ import {
   VariableDeclarationKind,
   type VariableStatementStructure,
 } from "ts-morph";
+import { isValidIdentifier, propertyKey } from "../client/naming.mjs";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
 import { getDataTypeName, getErrorType } from "./operationNames.mjs";
 
@@ -27,15 +28,8 @@ export function getPageParamType(op: OperationInfo): string {
  * Build the client options parameter string.
  */
 export function buildClientOptionsParam(op: OperationInfo): string {
-  const dataTypeName = getDataTypeName(op);
-
-  const hasParams = op.parameters.length > 0;
-  if (!hasParams) {
-    return `clientOptions: Options<${dataTypeName}, true> = {}`;
-  }
-
   const defaultValue = op.allParamsOptional ? " = {}" : "";
-  return `clientOptions: Options<${dataTypeName}, true>${defaultValue}`;
+  return `clientOptions: Options<${getDataTypeName(op)}, true>${defaultValue}`;
 }
 
 /**
@@ -74,9 +68,10 @@ export function buildPagedQueryFn(
   const pageParamType = getPageParamType(op);
   // When the initial page param is omitted, the first request must send no
   // page param at all, so spread it in only once TanStack Query provides one.
+  const pageKey = propertyKey(ctx.pageParam);
   const pageQuery = ctx.omitInitialPageParam
-    ? `...(pageParam === undefined ? {} : { ${ctx.pageParam}: pageParam as ${pageParamType} })`
-    : `${ctx.pageParam}: pageParam as ${pageParamType}`;
+    ? `...(pageParam === undefined ? {} : { ${pageKey}: pageParam as ${pageParamType} })`
+    : `${pageKey}: pageParam as ${pageParamType}`;
   return `({ pageParam, signal }) => ${op.methodName}({ ...clientOptions, query: { ...clientOptions.query, ${pageQuery} }, signal, throwOnError: true } as Options<${dataTypeName}, true>)${thenClause}`;
 }
 
@@ -100,7 +95,8 @@ export function formatInitialPageParam(
   if (isStringPageParam) {
     return JSON.stringify(ctx.initialPageParam);
   }
-  return /^-?\d+$/.test(ctx.initialPageParam)
+  // `001` would be an octal literal, which TypeScript rejects.
+  return /^-?(0|[1-9]\d*)$/.test(ctx.initialPageParam)
     ? ctx.initialPageParam
     : JSON.stringify(ctx.initialPageParam);
 }
@@ -115,7 +111,7 @@ export function buildNestedNextPageType(
 ): string {
   const segments = nextPageParam.split(".");
   return segments.reduceRight((acc, segment) => {
-    return `{ ${segment}: ${acc} }`;
+    return `{ ${propertyKey(segment)}: ${acc} }`;
   }, pageParamType);
 }
 
@@ -132,7 +128,17 @@ export function buildGetNextPageParamExpr(
     ctx.nextPageParam,
     op ? getPageParamType(op) : "number",
   );
-  return `(response: unknown) => (response as ${nestedType}).${ctx.nextPageParam}`;
+  const access = ctx.nextPageParam
+    .split(".")
+    .map((segment, index) => {
+      // The last page can leave out what holds the next one, or set it to null.
+      const optional = index > 0 ? "?." : "";
+      return isValidIdentifier(segment)
+        ? `${optional || "."}${segment}`
+        : `${optional}[${JSON.stringify(segment)}]`;
+    })
+    .join("");
+  return `(response: unknown) => (response as ${nestedType})${access}`;
 }
 
 /**

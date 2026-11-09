@@ -19,8 +19,6 @@ const mockOperation: OperationInfo = {
   capitalizedMethodName: "FindPets",
   dataTypeName: "FindPetsData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "limit", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: false,
 };
@@ -30,8 +28,6 @@ const mockMutationOperation: OperationInfo = {
   capitalizedMethodName: "AddPet",
   dataTypeName: "AddPetData",
   httpMethod: "POST",
-  isDeprecated: false,
-  parameters: [{ name: "body", typeName: "NewPet", optional: false }],
   allParamsOptional: false,
   isPaginatable: false,
 };
@@ -41,8 +37,6 @@ const mockPaginatableOperation: OperationInfo = {
   capitalizedMethodName: "FindPaginatedPets",
   dataTypeName: "FindPaginatedPetsData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [{ name: "page", typeName: "number", optional: true }],
   allParamsOptional: true,
   isPaginatable: true,
 };
@@ -161,7 +155,6 @@ describe("buildCommon", () => {
         methodName: "getPetById",
         capitalizedMethodName: "GetPetById",
         dataTypeName: "GetPetByIdData",
-        parameters: [{ name: "id", typeName: "number", optional: false }],
         allParamsOptional: false,
       };
 

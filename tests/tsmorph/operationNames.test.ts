@@ -10,8 +10,6 @@ const op = (overrides: Partial<OperationInfo> = {}): OperationInfo => ({
   capitalizedMethodName: "FindPets",
   dataTypeName: "FindPetsData",
   httpMethod: "GET",
-  isDeprecated: false,
-  parameters: [],
   allParamsOptional: true,
   isPaginatable: false,
   ...overrides,
@@ -37,25 +35,19 @@ describe("operationNames", () => {
     expect(getDataTypeName(op({ dataTypeName: undefined }))).toBe("unknown");
   });
 
-  it("derives the error type from the data type's stem by default", () => {
-    expect(getErrorType(op(), ctx(["FindPetsError"]))).toBe("FindPetsError");
-    expect(getErrorType(op(), ctx([]))).toBe("unknown");
-    expect(
-      getErrorType(op({ dataTypeName: undefined }), ctx(["FindPetsError"])),
-    ).toBe("FindPetsError");
+  it("uses the error type name chosen by the client generator", () => {
+    const named = op({ errorTypeName: "FindPetsError2" });
+    expect(getErrorType(named, ctx([]))).toBe("FindPetsError2");
   });
 
-  it("prefers the error type name chosen by the client generator", () => {
-    const named = op({ errorTypeName: "FindPetsError2" });
-    expect(getErrorType(named, ctx(["FindPetsError", "FindPetsError2"]))).toBe(
-      "FindPetsError2",
-    );
-    expect(getErrorType(named, ctx(["FindPetsError"]))).toBe("unknown");
+  it("is unknown without an error type, even if a schema has that name", () => {
+    expect(getErrorType(op(), ctx(["FindPetsError"]))).toBe("unknown");
   });
 
   it("wraps the error type for axios", () => {
-    expect(getErrorType(op(), ctx(["FindPetsError"], "axios"))).toBe(
-      "AxiosError<FindPetsError>",
-    );
+    expect(
+      getErrorType(op({ errorTypeName: "FindPetsError" }), ctx([], "axios")),
+    ).toBe("AxiosError<FindPetsError>");
+    expect(getErrorType(op(), ctx([], "axios"))).toBe("AxiosError<unknown>");
   });
 });

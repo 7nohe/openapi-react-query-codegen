@@ -2,9 +2,11 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import {
+  type Auth,
   createClient,
   createConfig,
   Interceptors,
+  type ParseAs,
   serializeQuery,
 } from "../../src/client/runtime/fetch.runtime.ts";
 
@@ -170,8 +172,476 @@ describe("fetch runtime: requests", () => {
     expect(
       client.buildUrl({ url: "https://other.test/a?x=1", query: { y: 2 } }),
     ).toBe("https://other.test/a?x=1&y=2");
-    expect(client.buildUrl({ url: "/a", query: {} })).toBe("/a");
-    expect(client.buildUrl({ url: "" })).toBe("");
+    expect(client.buildUrl({ url: "/a", baseUrl: "", query: {} })).toBe("/a");
+    expect(client.buildUrl({ url: "", baseUrl: "" })).toBe("");
+  });
+
+  test("a custom serializer may return a leading question mark", () => {
+    const url = createClient({ baseUrl: "https://x.test" }).buildUrl({
+      url: "/a",
+      query: { page: 2 },
+      querySerializer: () => "?page=2",
+    });
+    expect(url).toBe("https://x.test/a?page=2");
+  });
+
+  test("buildUrl uses the configured serializers", () => {
+    const client = createClient({
+      baseUrl: "https://x.test",
+      pathSerializer: { parameters: { id: { style: "label" } } },
+      querySerializer: () => "custom=1",
+    });
+    expect(
+      client.buildUrl({ url: "/a/{id}", path: { id: 1 }, query: { b: 2 } }),
+    ).toBe("https://x.test/a/.1?custom=1");
+  });
+
+  test("an empty body is never undefined", async () => {
+    const respond = (headers: Record<string, string>) =>
+      (async () =>
+        new Response(null, { status: 204, headers })) as typeof fetch;
+    const read = async (parseAs: ParseAs, type?: string) =>
+      (
+        await createClient({
+          baseUrl: "https://x.test",
+          fetch: respond(type ? { "Content-Type": type } : {}),
+        }).get({ url: "/a", parseAs })
+      ).data;
+    expect(await read("auto")).toBe(null);
+    expect(await read("json")).toEqual({});
+    expect(await read("text")).toBe("");
+    expect(await read("auto", "text/plain")).toBe("");
+    expect(await read("formData")).toBeInstanceOf(FormData);
+    expect(await read("blob")).toBeInstanceOf(Blob);
+  });
+
+  test("a multipart request drops a configured Content-Type", async () => {
+    let seen: Request | undefined;
+    const client = createClient({
+      baseUrl: "https://x.test",
+      headers: { "Content-Type": "application/json" },
+      fetch: (async (request: Request) => {
+        seen = request;
+        return new Response(null, { status: 204 });
+      }) as typeof fetch,
+    });
+    await client.post({
+      url: "/a",
+      body: { a: "b" },
+      bodyType: "form-data",
+      headers: { "Content-Type": null },
+    });
+    expect(seen?.headers.get("Content-Type")).toMatch(
+      /^multipart\/form-data; boundary=/,
+    );
+  });
+
+  describe("an API key the caller supplies", () => {
+    const send = async (
+      security: Auth,
+      options: { headers?: Record<string, string>; query?: object },
+    ) => {
+      let seen: Request | undefined;
+      await createClient({
+        baseUrl: "https://x.test",
+        auth: "global",
+        fetch: (async (request: Request) => {
+          seen = request;
+          return new Response(null, { status: 204 });
+        }) as typeof fetch,
+      }).get({ url: "/a", security: [security], ...options } as never);
+      return seen as unknown as Request;
+    };
+
+    test("wins in a header, whatever its case", async () => {
+      const auth: Auth = { in: "header", name: "X-Key", type: "apiKey" };
+      const sent = await send(auth, { headers: { "x-key": "mine" } });
+      expect(sent.headers.get("X-Key")).toBe("mine");
+      expect((await send(auth, {})).headers.get("X-Key")).toBe("global");
+    });
+
+    test("wins in the query", async () => {
+      const auth: Auth = { in: "query", name: "key", type: "apiKey" };
+      const sent = await send(auth, { query: { key: "mine" } });
+      expect(new URL(sent.url).searchParams.get("key")).toBe("mine");
+    });
+
+    test("wins in a cookie, and another cookie does not count", async () => {
+      const auth: Auth = { in: "cookie", name: "key", type: "apiKey" };
+      const mine = await send(auth, { headers: { Cookie: "a=1; key=mine" } });
+      expect(mine.headers.get("Cookie")).toBe("a=1; key=mine");
+      const other = await send(auth, { headers: { Cookie: "monkey=1" } });
+      expect(other.headers.get("Cookie")).toBe("monkey=1; key=global");
+    });
+
+    test("does not stand in for a scheme it does not name", async () => {
+      const auth: Auth = { scheme: "bearer", type: "http" };
+      const sent = await send(auth, { headers: { Authorization: "mine" } });
+      expect(sent.headers.get("Authorization")).toBe("Bearer global");
+    });
+
+    test("leaves the other scheme of a requirement to the token", async () => {
+      let seen: Request | undefined;
+      await createClient({
+        baseUrl: "https://x.test",
+        auth: "global",
+        fetch: (async (request: Request) => {
+          seen = request;
+          return new Response(null, { status: 204 });
+        }) as typeof fetch,
+      }).get({
+        url: "/a",
+        headers: { "X-A": "mine" },
+        security: [
+          [
+            { in: "header", name: "X-A", type: "apiKey" },
+            { in: "header", name: "X-B", type: "apiKey" },
+          ],
+        ],
+      });
+      expect(seen?.headers.get("X-A")).toBe("mine");
+      expect(seen?.headers.get("X-B")).toBe("global");
+    });
+  });
+
+  test("an object sent without a bodyType says it is JSON", async () => {
+    const seen: Array<string | null> = [];
+    const client = createClient({
+      baseUrl: "https://x.test",
+      fetch: (async (request: Request) => {
+        seen.push(request.headers.get("Content-Type"));
+        return new Response(null, { status: 204 });
+      }) as typeof fetch,
+    });
+    await client.post({ url: "/a", body: { hello: "world" } });
+    await client.post({ url: "/a", body: "text" });
+    await client.post({ url: "/a", body: new Blob(["x"]) });
+    await client.post({
+      url: "/a",
+      body: { a: 1 },
+      bodySerializer: () => "a=1",
+    });
+    expect(seen[0]).toBe("application/json");
+    expect(seen[1]).toBe("text/plain;charset=UTF-8");
+    expect(seen[2]).toBeNull();
+    expect(seen[3]).toBe("text/plain;charset=UTF-8");
+  });
+
+  test("a file sent to a JSON operation stays a file", async () => {
+    let seen = "";
+    const client = createClient({
+      baseUrl: "https://x.test",
+      fetch: (async (request: Request) => {
+        seen = await request.text();
+        return new Response(null, { status: 204 });
+      }) as typeof fetch,
+    });
+    await client.post({
+      url: "/a",
+      body: new Blob(['{"pets":[]}']),
+      bodyType: "json",
+    });
+    expect(seen).toBe('{"pets":[]}');
+  });
+
+  test("bodySerializer null sends a serialized body as it is", async () => {
+    let seen = "";
+    const client = createClient({
+      baseUrl: "https://x.test",
+      fetch: (async (request: Request) => {
+        seen = await request.text();
+        return new Response(null, { status: 204 });
+      }) as typeof fetch,
+    });
+    await client.post({
+      url: "/a",
+      body: '{"x":1}',
+      bodyType: "json",
+      bodySerializer: null,
+    });
+    expect(seen).toBe('{"x":1}');
+  });
+
+  test("interceptors see the merged headers", async () => {
+    const seen: Array<string | null> = [];
+    const client = createClient({
+      baseUrl: "https://x.test",
+      headers: { "X-Tenant": "a" },
+      fetch: (async () => new Response("{}")) as typeof fetch,
+    });
+    client.interceptors.request.use((request, options) => {
+      seen.push(options.headers.get("X-Tenant"));
+      return request;
+    });
+    client.interceptors.response.use((response, _request, options) => {
+      seen.push(options.headers.get("X-Trace"));
+      return response;
+    });
+    await client.get({ url: "/a", headers: { "X-Trace": "1" } });
+    expect(seen).toEqual(["a", "1"]);
+    expect(client.getConfig().headers).not.toBe(undefined);
+    expect((client.getConfig().headers as Headers).has("X-Trace")).toBe(false);
+  });
+
+  test("the parser configured on the client applies", async () => {
+    const client = createClient({
+      baseUrl: "https://x.test",
+      parseAs: "stream",
+      fetch: (async () =>
+        new Response("{}", {
+          headers: { "Content-Type": "application/json" },
+        })) as typeof fetch,
+    });
+    expect((await client.get({ url: "/a" })).data).toBeInstanceOf(
+      ReadableStream,
+    );
+  });
+
+  test("update replaces an interceptor that is there", () => {
+    const interceptors = new Interceptors<() => number>();
+    const first = () => 1;
+    const second = () => 2;
+    const id = interceptors.use(first);
+    expect(interceptors.update(id, second)).toBe(id);
+    expect(interceptors.fns[id]).toBe(second);
+    expect(interceptors.update(second, first)).toBe(second);
+    expect(interceptors.fns[id]).toBe(first);
+    expect(interceptors.update(99, second)).toBe(false);
+    interceptors.eject(id);
+    expect(interceptors.update(id, second)).toBe(false);
+  });
+
+  test("an auth callback can tell schemes apart by key", async () => {
+    const tokens: Record<string, string> = { user: "u", admin: "a" };
+    const seen: Array<string | null> = [];
+    const client = createClient({
+      baseUrl: "https://x.test",
+      auth: (auth) => tokens[auth.key ?? ""],
+      fetch: (async (request: Request) => {
+        seen.push(request.headers.get("Authorization"));
+        return new Response(null, { status: 204 });
+      }) as typeof fetch,
+    });
+    for (const key of ["user", "admin"]) {
+      await client.get({
+        url: "/a",
+        security: [{ key, scheme: "bearer", type: "http" }],
+      });
+    }
+    expect(seen).toEqual(["Bearer u", "Bearer a"]);
+  });
+
+  test("allowReserved leaves reserved characters in values", () => {
+    const query = { q: "a/b:c", "k/1": ["x/y"], o: { p: "c/d" } };
+    expect(serializeQuery(query, { allowReserved: true })).toBe(
+      "q=a/b:c&k%2F1=x/y&o[p]=c/d",
+    );
+    expect(
+      serializeQuery(
+        { a: "x/y", b: "x/y" },
+        { parameters: { a: { allowReserved: true } } },
+      ),
+    ).toBe("a=x/y&b=x%2Fy");
+  });
+
+  test("options left undefined fall back to the client's", async () => {
+    let calls = 0;
+    const client = createClient({
+      baseUrl: "https://x.test",
+      throwOnError: true,
+      fetch: (async () => {
+        calls += 1;
+        return new Response("{}", { status: 400 });
+      }) as typeof fetch,
+    });
+    await expect(
+      client.get({ url: "/a", throwOnError: undefined, fetch: undefined }),
+    ).rejects.toEqual({});
+    expect(calls).toBe(1);
+  });
+
+  test("exists is false for an interceptor that is not there", () => {
+    const interceptors = new Interceptors<() => void>();
+    expect(interceptors.exists(0)).toBe(false);
+    const id = interceptors.use(() => {});
+    expect(interceptors.exists(id)).toBe(true);
+    interceptors.clear();
+    expect(interceptors.exists(id)).toBe(false);
+    expect(interceptors.exists(-1)).toBe(false);
+  });
+
+  describe("failures before the request is made", () => {
+    const secured = () =>
+      createClient({
+        baseUrl: "https://x.test",
+        fetch: (async () => new Response("{}")) as typeof fetch,
+        auth: async () => {
+          throw new Error("refresh failed");
+        },
+      });
+    const security = [{ scheme: "bearer", type: "http" }] as const;
+
+    test("a failing auth callback goes through the error path", async () => {
+      const client = secured();
+      let calls = 0;
+      client.interceptors.error.use((error) => {
+        calls += 1;
+        return error;
+      });
+      const result = await client.get({ url: "/a", security });
+      expect((result.error as Error).message).toBe("refresh failed");
+      expect(calls).toBe(1);
+      await expect(
+        client.get({ url: "/a", security, throwOnError: true }),
+      ).rejects.toThrow("refresh failed");
+    });
+
+    test("a failing body serializer goes through the error path", async () => {
+      const client = createClient({ baseUrl: "https://x.test" });
+      const result = await client.post({
+        url: "/a",
+        body: {},
+        bodySerializer: () => {
+          throw new Error("no");
+        },
+      });
+      expect((result.error as Error).message).toBe("no");
+    });
+  });
+
+  describe("failures after the request is made", () => {
+    const failing = (body: string, type = "application/json") =>
+      (async () =>
+        new Response(body, {
+          status: 200,
+          headers: { "Content-Type": type },
+        })) as typeof fetch;
+
+    test("a body that cannot be parsed goes through the error path", async () => {
+      const client = createClient({
+        baseUrl: "https://x.test",
+        fetch: failing("{bad"),
+      });
+      const seen: unknown[] = [];
+      client.interceptors.error.use((error, response) => {
+        seen.push(response?.status);
+        return error;
+      });
+      const result = await client.get({ url: "/a" });
+      expect(result.error).toBeInstanceOf(SyntaxError);
+      expect(result.response.status).toBe(200);
+      expect(seen).toEqual([200]);
+      await expect(
+        client.get({ url: "/a", throwOnError: true }),
+      ).rejects.toBeInstanceOf(SyntaxError);
+      expect(seen).toEqual([200, 200]);
+    });
+
+    test("an interceptor that throws goes through the error path", async () => {
+      const client = createClient({
+        baseUrl: "https://x.test",
+        fetch: failing("{}"),
+      });
+      const boom = new Error("boom");
+      const id = client.interceptors.response.use(() => {
+        throw boom;
+      });
+      expect((await client.get({ url: "/a" })).error).toBe(boom);
+      client.interceptors.response.eject(id);
+      client.interceptors.request.use(() => {
+        throw boom;
+      });
+      const result = await client.get({ url: "/a" });
+      expect(result.error).toBe(boom);
+      expect(result.response).toBeUndefined();
+    });
+
+    test("an error status runs the interceptors once", async () => {
+      const client = createClient({
+        baseUrl: "https://x.test",
+        fetch: (async () =>
+          new Response('{"code":1}', { status: 500 })) as typeof fetch,
+      });
+      let calls = 0;
+      client.interceptors.error.use((error) => {
+        calls += 1;
+        return error;
+      });
+      await expect(
+        client.get({ url: "/a", throwOnError: true }),
+      ).rejects.toEqual({ code: 1 });
+      expect(calls).toBe(1);
+    });
+  });
+
+  test("buildUrl uses the configured base URL", () => {
+    const client = createClient({ baseUrl: "https://x.test/api/" });
+    expect(client.buildUrl({ url: "/a" })).toBe("https://x.test/api/a");
+    client.setConfig({ baseUrl: "https://y.test" });
+    expect(client.buildUrl({ url: "/z" })).toBe("https://y.test/z");
+  });
+
+  test("a parameter marked as JSON sends null as a JSON text", () => {
+    const url = createClient().buildUrl({
+      url: "/x/{id}",
+      path: { id: null },
+      pathSerializer: { parameters: { id: { json: true } } },
+      query: { filter: null, other: null },
+      querySerializer: { parameters: { filter: { json: true } } },
+    });
+    expect(url).toBe("/x/null?filter=null");
+  });
+
+  test("a header marked as JSON is sent as a JSON text", async () => {
+    let seen: Headers | undefined;
+    const client = createClient({
+      baseUrl: "https://x.test",
+      fetch: (async (request: Request) => {
+        seen = request.headers;
+        return new Response(null, { status: 204 });
+      }) as typeof fetch,
+      headers: { "X-Plain": "keep" },
+    });
+    await client.get({
+      url: "/a",
+      jsonHeaders: ["X-F", "X-N", "X-S", "X-Missing"],
+      headers: { "X-F": ["a", "b"], "X-N": null, "X-S": "s", "X-T": ["c"] },
+    });
+    expect(seen?.get("X-F")).toBe('["a","b"]');
+    expect(seen?.get("X-N")).toBe("null");
+    expect(seen?.get("X-S")).toBe('"s"');
+    expect(seen?.get("X-T")).toBe("c");
+    expect(seen?.get("X-Plain")).toBe("keep");
+    expect(seen?.has("X-Missing")).toBe(false);
+  });
+
+  test("JSON headers leave a Headers instance and a list alone", async () => {
+    const seen: Headers[] = [];
+    const client = createClient({
+      baseUrl: "https://x.test",
+      fetch: (async (request: Request) => {
+        seen.push(request.headers);
+        return new Response(null, { status: 204 });
+      }) as typeof fetch,
+    });
+    for (const headers of [
+      new Headers({ "X-F": "a" }),
+      [["X-F", "a"]] as [string, string][],
+    ]) {
+      await client.get({ url: "/a", jsonHeaders: ["X-F"], headers });
+    }
+    expect(seen.map((item) => item.get("X-F"))).toEqual(["a", "a"]);
+  });
+
+  test("a parameter marked as JSON is sent as a JSON text", () => {
+    const url = createClient().buildUrl({
+      url: "/x/{id}",
+      path: { id: { a: 1 } },
+      pathSerializer: { parameters: { id: { json: true } } },
+      query: { filter: { a: [1] } },
+      querySerializer: { parameters: { filter: { json: true } } },
+    });
+    expect(decodeURIComponent(url)).toBe('/x/{"a":1}?filter={"a":[1]}');
   });
 
   test("serializes JSON bodies", async () => {
@@ -384,7 +854,7 @@ describe("fetch runtime: responses", () => {
     expect((await client.get({ url: "/text" })).data).toBe("plain text");
     expect(((await client.get({ url: "/bin" })).data as Blob).size).toBe(3);
     expect((await client.get({ url: "/nocontent-type" })).data).toBe("raw");
-    expect((await client.get({ url: "/empty" })).data).toBe(undefined);
+    expect((await client.get({ url: "/empty" })).data).toBe(null);
     expect((await client.get({ url: "/empty", parseAs: "json" })).data).toEqual(
       {},
     );
@@ -619,10 +1089,19 @@ describe("fetch runtime: combined security requirements", () => {
     expect(headers["x-c"]).toBe("k");
   });
 
-  test("uses only the first of several alternatives", async () => {
+  test("applies each alternative that has a token, as v3 did", async () => {
     const { headers } = await send("k", [a, b]);
     expect(headers["x-a"]).toBe("k");
-    expect(headers["x-b"]).toBeUndefined();
+    expect(headers["x-b"]).toBe("k");
+  });
+
+  test("a token for one alternative leaves the other out", async () => {
+    const { headers } = await send(
+      (auth: Auth) => (auth.name === "X-B" ? "k" : undefined),
+      [a, b],
+    );
+    expect(headers["x-a"]).toBeUndefined();
+    expect(headers["x-b"]).toBe("k");
   });
 
   test("joins cookies with a semicolon", async () => {

@@ -117,6 +117,21 @@ for (const client of ["fetch", "axios"] as const) {
         pages: Array<{ pets: Array<{ id: number }> }>;
       };
       expect(data.pages[0].pets[0].id).toBe(1);
+
+      // The server answers with the page it was asked for, so the second id
+      // shows that `nextPage` reached the query string of the next request.
+      const { findPaginatedPetsInfiniteOptions } = await import(
+        path.join(importDir, "queries", "queryOptions.ts")
+      );
+      const fetched = await qc.fetchInfiniteQuery({
+        ...findPaginatedPetsInfiniteOptions(),
+        pages: 2,
+      });
+      expect(
+        (fetched.pages as Array<{ pets: Array<{ id: number }> }>).map(
+          (page) => page.pets[0].id,
+        ),
+      ).toEqual([1, 2]);
     });
   });
 }

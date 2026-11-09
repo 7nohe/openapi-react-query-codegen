@@ -19,18 +19,27 @@ export type ArrayStyle = "form" | "spaceDelimited" | "pipeDelimited";
 export type ObjectStyle = "form" | "deepObject";
 
 export interface ParameterSerializer {
+  /** Leave reserved characters in values as they are. */
+  allowReserved?: boolean;
   array?: { style?: ArrayStyle; explode?: boolean };
   object?: { style?: ObjectStyle; explode?: boolean };
 }
 
+export interface QueryParameterSerializer extends ParameterSerializer {
+  /** Send the value as a JSON text (a parameter declared with `content`). */
+  json?: boolean;
+}
+
 export interface QuerySerializerOptions extends ParameterSerializer {
   /** Per-parameter overrides, keyed by the parameter name. */
-  parameters?: Record<string, ParameterSerializer>;
+  parameters?: Record<string, QueryParameterSerializer>;
 }
 
 export interface PathParameterSerializer {
   style?: "simple" | "label" | "matrix";
   explode?: boolean;
+  /** Send the value as a JSON text (a parameter declared with `content`). */
+  json?: boolean;
 }
 
 export interface PathSerializerOptions {
@@ -40,6 +49,8 @@ export interface PathSerializerOptions {
 
 export interface Auth {
   in?: "header" | "query" | "cookie";
+  /** The scheme's name, when another scheme would look the same at runtime. */
+  key?: string;
   name?: string;
   scheme?: "basic" | "bearer";
   type: "apiKey" | "http";
@@ -64,6 +75,8 @@ export interface Config<T extends ClientOptions = ClientOptions>
   /** Replaces the default body serialization. */
   bodySerializer?: ((body: unknown) => unknown) | null;
   bodyType?: BodyType;
+  /** Headers to send as a JSON text (declared with `content`). */
+  jsonHeaders?: ReadonlyArray<string>;
   headers?: Record<string, HeaderValue>;
   method?:
     | "connect"
@@ -80,8 +93,9 @@ export interface Config<T extends ClientOptions = ClientOptions>
     | QuerySerializerOptions
     | ((query: Record<string, unknown>) => string);
   /**
-   * Alternative ways to authenticate: the first one that has a token for every
-   * scheme it lists is used. An array lists schemes needed together.
+   * Ways to authenticate. Each one that has a token for every scheme it lists
+   * is applied, as an API that takes either of two schemes may only look at one
+   * of them. An array lists schemes needed together.
    */
   security?: ReadonlyArray<Auth | ReadonlyArray<Auth>>;
   /** Throw the error instead of returning it. */
@@ -185,8 +199,9 @@ function primitive(value: unknown): string {
 function serializePathValue(
   name: string,
   value: unknown,
-  { style = "simple", explode = false }: PathParameterSerializer = {},
+  { style = "simple", explode = false, json }: PathParameterSerializer = {},
 ): string {
+  if (json) return encode(JSON.stringify(value));
   const key = encode(name);
   const prefix = style === "label" ? "." : style === "matrix" ? ";" : "";
   if (Array.isArray(value)) {
@@ -225,9 +240,10 @@ function serializePath(
   if (!path) return url;
   return url.replace(/\{([^{}]+)\}/g, (match, name: string) => {
     const value = path[name];
-    return value === undefined || value === null
+    const settings = serializer?.parameters?.[name];
+    return value === undefined || (value === null && !settings?.json)
       ? match
-      : serializePathValue(name, value, serializer?.parameters?.[name]);
+      : serializePathValue(name, value, settings);
   });
 }
 
@@ -237,9 +253,16 @@ export function serializeQuery(
 ): string {
   const parts: string[] = [];
   for (const [name, value] of Object.entries(query)) {
-    if (value === undefined || value === null) continue;
+    if (value === undefined) continue;
     const override = options.parameters?.[name];
     const key = encode(name);
+    const encodeValue =
+      (override?.allowReserved ?? options.allowReserved) ? String : encode;
+    if (override?.json) {
+      parts.push(`${key}=${encodeValue(JSON.stringify(value))}`);
+      continue;
+    }
+    if (value === null) continue;
     if (Array.isArray(value)) {
       const style = override?.array?.style ?? options.array?.style ?? "form";
       const explode =
@@ -247,7 +270,7 @@ export function serializeQuery(
       const items = value.filter((item) => item !== undefined && item !== null);
       if (explode) {
         for (const item of items)
-          parts.push(`${key}=${encode(primitive(item))}`);
+          parts.push(`${key}=${encodeValue(primitive(item))}`);
       } else {
         const separator =
           style === "spaceDelimited"
@@ -256,11 +279,11 @@ export function serializeQuery(
               ? "|"
               : ",";
         parts.push(
-          `${key}=${items.map((item) => encode(primitive(item))).join(separator)}`,
+          `${key}=${items.map((item) => encodeValue(primitive(item))).join(separator)}`,
         );
       }
     } else if (value instanceof Date) {
-      parts.push(`${key}=${encode(value.toISOString())}`);
+      parts.push(`${key}=${encodeValue(value.toISOString())}`);
     } else if (typeof value === "object") {
       const style =
         override?.object?.style ?? options.object?.style ?? "deepObject";
@@ -271,44 +294,82 @@ export function serializeQuery(
       );
       if (style === "deepObject") {
         for (const [prop, item] of entries) {
-          parts.push(`${key}[${encode(prop)}]=${encode(primitive(item))}`);
+          parts.push(`${key}[${encode(prop)}]=${encodeValue(primitive(item))}`);
         }
       } else if (explode) {
         for (const [prop, item] of entries) {
-          parts.push(`${encode(prop)}=${encode(primitive(item))}`);
+          parts.push(`${encode(prop)}=${encodeValue(primitive(item))}`);
         }
       } else {
         parts.push(
-          `${key}=${entries.flatMap(([prop, item]) => [encode(prop), encode(primitive(item))]).join(",")}`,
+          `${key}=${entries.flatMap(([prop, item]) => [encode(prop), encodeValue(primitive(item))]).join(",")}`,
         );
       }
     } else {
-      parts.push(`${key}=${encode(String(value))}`);
+      parts.push(`${key}=${encodeValue(String(value))}`);
     }
   }
   return parts.join("&");
 }
 
+/** Encode the headers an operation declares as JSON, whatever their type. */
+function encodeJsonHeaders<T>(
+  headers: T,
+  names: ReadonlyArray<string> | undefined,
+): T {
+  if (!names || !headers || Array.isArray(headers)) return headers;
+  if (typeof Headers !== "undefined" && headers instanceof Headers) {
+    return headers;
+  }
+  const encoded = { ...headers } as Record<string, unknown>;
+  for (const name of names) {
+    if (encoded[name] !== undefined) {
+      encoded[name] = JSON.stringify(encoded[name]);
+    }
+  }
+  return encoded as T;
+}
+
+/** Keys of an axios `headers` object that hold the headers of a method. */
+const HEADER_GROUPS = [
+  "common",
+  "delete",
+  "get",
+  "head",
+  "patch",
+  "post",
+  "put",
+];
+
 function mergeHeaders(
   ...sources: Array<Record<string, HeaderValue> | undefined>
-): Record<string, string> {
-  const merged: Record<string, string> = {};
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = {};
   const names = new Map<string, string>();
   for (const source of sources) {
     if (!source) continue;
     for (const [key, value] of Object.entries(source)) {
+      if (value === undefined) continue;
       const lower = key.toLowerCase();
+      if (
+        HEADER_GROUPS.includes(lower) &&
+        typeof value === "object" &&
+        value !== null
+      ) {
+        merged[key] = { ...(merged[key] as object | undefined), ...value };
+        continue;
+      }
       const existing = names.get(lower);
       if (existing !== undefined) delete merged[existing];
       if (value === null) {
         names.delete(lower);
-      } else if (value !== undefined) {
+      } else {
         names.set(lower, key);
         merged[key] = Array.isArray(value)
-          ? value.map(String).join(",")
+          ? value.map(String)
           : typeof value === "object"
             ? JSON.stringify(value)
-            : String(value);
+            : value;
       }
     }
   }
@@ -353,6 +414,8 @@ function serializeBody(options: Config): unknown {
   const { body, bodySerializer, bodyType } = options;
   if (body === undefined) return undefined;
   if (bodySerializer) return bodySerializer(body);
+  // `null` means the caller serialized the body already.
+  if (bodySerializer === null) return body;
   if (bodyType === "form-data") return toFormData(body);
   if (bodyType === "urlencoded") return toSearchParams(body);
   // Axios sends a string that already parses as JSON as it is, so `"true"`
@@ -375,19 +438,42 @@ async function getAuthToken(
   return token;
 }
 
+/** True when the caller already supplied this API key on the request. */
+function isProvided(
+  auth: Auth,
+  query: Record<string, unknown> | undefined,
+  headers: Record<string, unknown>,
+): boolean {
+  const { name } = auth;
+  if (!name) return false;
+  if (auth.in === "query") return query?.[name] != null;
+  const lower = (auth.in === "cookie" ? "Cookie" : name).toLowerCase();
+  const key = Object.keys(headers).find((item) => item.toLowerCase() === lower);
+  if (!key) return false;
+  return (
+    auth.in !== "cookie" ||
+    String(headers[key])
+      .split(";")
+      .some((cookie) => cookie.trim().startsWith(`${name}=`))
+  );
+}
+
 async function applySecurity(
   options: RequestOptions,
-  headers: Record<string, string>,
+  headers: Record<string, unknown>,
 ): Promise<void> {
   for (const requirement of options.security ?? []) {
     const schemes = (
       Array.isArray(requirement) ? requirement : [requirement]
     ) as ReadonlyArray<Auth>;
+    const missing = schemes.filter(
+      (auth) => !isProvided(auth, options.query, headers),
+    );
     const tokens = await Promise.all(
-      schemes.map((auth) => getAuthToken(auth, options.auth)),
+      missing.map((auth) => getAuthToken(auth, options.auth)),
     );
     if (tokens.some((token) => !token)) continue;
-    schemes.forEach((auth, index) => {
+    missing.forEach((auth, index) => {
       const name = auth.name ?? "Authorization";
       const token = tokens[index] as string;
       if (auth.in === "query") {
@@ -400,7 +486,6 @@ async function applySecurity(
         headers[name] = token;
       }
     });
-    return;
   }
 }
 
@@ -417,7 +502,7 @@ function buildUrl(
   if (options.query) {
     const search =
       typeof options.querySerializer === "function"
-        ? options.querySerializer(options.query)
+        ? options.querySerializer(options.query).replace(/^\?/, "")
         : serializeQuery(options.query, options.querySerializer);
     if (search) url += `${url.includes("?") ? "&" : "?"}${search}`;
   }
@@ -452,8 +537,8 @@ const NON_AXIOS_KEYS = [
   "url",
   "baseURL",
   "headers",
+  "jsonHeaders",
   "client",
-  "meta",
 ] as const;
 
 /** The options axios itself understands; everything else is ours. */
@@ -471,9 +556,16 @@ export const createClient = (config: Config = {}): Client => {
   let currentConfig: Config = mergeConfigs(createConfig(), config);
   // `baseURL`, headers and auth are applied per request from the current
   // config, so the instance only carries axios' own settings (timeout, …).
+  // The default export belongs to the whole application, so a client given it
+  // makes an instance of its own, and its interceptors stay its own too.
+  const given = currentConfig.axios;
+  const shared = given && "Axios" in given ? given : undefined;
   const instance: AxiosInstance =
-    (currentConfig.axios as AxiosInstance | undefined) ??
-    axios.create(pickAxiosSettings(currentConfig) as CreateAxiosDefaults);
+    given && !shared
+      ? (given as AxiosInstance)
+      : (shared ?? axios).create(
+          pickAxiosSettings(currentConfig) as CreateAxiosDefaults,
+        );
 
   const getConfig = (): Config => ({ ...currentConfig });
   const setConfig = (next: Config): Config => {
@@ -486,50 +578,59 @@ export const createClient = (config: Config = {}): Client => {
       ...currentConfig,
       ...userOptions,
     } as RequestOptions;
-    const headers = mergeHeaders(currentConfig.headers, userOptions.headers);
-    await applySecurity(options, headers);
-
-    const data = serializeBody(options);
-    const hasContentType = () =>
-      Object.keys(headers).some((key) => key.toLowerCase() === "content-type");
-    if (data === undefined) {
-      for (const key of Object.keys(headers)) {
-        if (key.toLowerCase() === "content-type") delete headers[key];
-      }
-    } else if (options.bodyType === "json" && !hasContentType()) {
-      headers["Content-Type"] = "application/json";
-    }
-
-    const axiosSettings = pickAxiosSettings(options);
-
-    const querySerializer = options.querySerializer;
-    const finalConfig = {
-      ...axiosSettings,
-      data,
-      headers,
-      params: options.query,
-      paramsSerializer: {
-        serialize: (params: Record<string, unknown>) =>
-          typeof querySerializer === "function"
-            ? querySerializer(params)
-            : serializeQuery(params, querySerializer),
-      },
-      url: serializePath(options.url, options.path, options.pathSerializer),
-    } as AxiosRequestConfig;
-    if (options.baseURL !== undefined) finalConfig.baseURL = options.baseURL;
-
-    const client = (options.axios as AxiosInstance | undefined) ?? instance;
+    const client =
+      !options.axios || options.axios === shared
+        ? instance
+        : (options.axios as AxiosInstance);
     try {
+      const headers = mergeHeaders(
+        currentConfig.headers,
+        encodeJsonHeaders(userOptions.headers, options.jsonHeaders),
+      );
+      await applySecurity(options, headers);
+
+      const data = serializeBody(options);
+      const hasContentType = Object.keys(headers).some(
+        (key) => key.toLowerCase() === "content-type",
+      );
+      if (
+        data !== undefined &&
+        options.bodyType === "json" &&
+        !hasContentType
+      ) {
+        headers["Content-Type"] = "application/json";
+      }
+
+      const axiosSettings = pickAxiosSettings(options);
+
+      const querySerializer = options.querySerializer;
+      const finalConfig = {
+        ...axiosSettings,
+        data,
+        headers,
+        params: options.query,
+        // A serializer set on the client or on its instance is the caller's choice.
+        paramsSerializer: options.paramsSerializer ??
+          client.defaults?.paramsSerializer ?? {
+            serialize: (params: Record<string, unknown>) =>
+              typeof querySerializer === "function"
+                ? querySerializer(params).replace(/^\?/, "")
+                : serializeQuery(params, querySerializer),
+          },
+        url: serializePath(options.url, options.path, options.pathSerializer),
+      } as AxiosRequestConfig;
+      if (options.baseURL !== undefined) finalConfig.baseURL = options.baseURL;
+
       const response = await client.request(finalConfig);
       return { ...response, error: undefined };
     } catch (error) {
-      if (options.throwOnError) throw error;
-      const axiosError = error as AxiosError;
-      return {
-        ...axiosError,
+      if (options.throwOnError ?? currentConfig.throwOnError) throw error;
+      if (!axios.isAxiosError(error)) return { data: undefined, error };
+      // The error itself, so that it stays an `AxiosError` for the caller.
+      return Object.assign(error, {
         data: undefined,
-        error: axiosError.response?.data ?? axiosError,
-      };
+        error: error.response?.data ?? error,
+      });
     }
   };
 
@@ -541,8 +642,10 @@ export const createClient = (config: Config = {}): Client => {
   return {
     buildUrl: (options) =>
       buildUrl({
+        ...currentConfig,
         ...options,
-        baseURL: options.baseURL ?? currentConfig.baseURL,
+        baseURL:
+          options.baseURL ?? currentConfig.baseURL ?? instance.defaults.baseURL,
       }),
     connect: method("connect"),
     delete: method("delete"),

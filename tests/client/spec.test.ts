@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   afterAll,
   afterEach,
@@ -96,6 +97,126 @@ describe("loadSpec", () => {
   });
 });
 
+describe("discriminators over external members", () => {
+  const bundle = async (name: string, discriminator: string) => {
+    await write(
+      "pets.yaml",
+      [
+        "Cat:",
+        "  type: object",
+        "  properties:",
+        "    petType: { type: string }",
+        "Dog:",
+        "  type: object",
+        "  properties:",
+        "    petType: { type: string }",
+        "Fish:",
+        "  type: object",
+        "  properties:",
+        "    petType: { type: string, enum: [fish] }",
+        "Name:",
+        "  type: string",
+        "",
+      ].join("\n"),
+    );
+    const root = await write(
+      name,
+      [
+        "openapi: 3.1.0",
+        "components:",
+        "  schemas:",
+        "    Pet:",
+        "      oneOf:",
+        "        - $ref: ./pets.yaml#/Cat",
+        "        - $ref: ./pets.yaml#/Dog",
+        "        - $ref: ./pets.yaml#/Fish",
+        "        - $ref: ./pets.yaml#/Name",
+        "        - $ref: '#/components/schemas/Bird'",
+        discriminator,
+        "    Bird:",
+        "      type: object",
+        "",
+      ].join("\n"),
+    );
+    return (await bundleExternalRefs(await loadSpec(root))).components.schemas
+      .Pet.oneOf;
+  };
+
+  test("take the value from the name", async () => {
+    const [cat, dog, fish, name, bird] = await bundle(
+      "disc-implicit.yaml",
+      "      discriminator: { propertyName: petType }",
+    );
+    expect(cat.allOf[1].properties.petType.enum).toEqual(["Cat"]);
+    expect(cat.allOf[1].required).toEqual(["petType"]);
+    expect(dog.allOf[1].properties.petType.enum).toEqual(["Dog"]);
+    // Pinned already, not an object, and still a reference.
+    expect(fish.allOf).toBeUndefined();
+    expect(name.type).toBe("string");
+    expect(bird.$ref).toBe("#/components/schemas/Bird");
+  });
+
+  test("take the value from the mapping", async () => {
+    const [cat] = await bundle(
+      "disc-mapped.yaml",
+      [
+        "      discriminator:",
+        "        propertyName: petType",
+        "        mapping:",
+        "          kitty: ./pets.yaml#/Cat",
+      ].join("\n"),
+    );
+    expect(cat.allOf[1].properties.petType.enum).toEqual(["kitty"]);
+  });
+});
+
+describe("percent-encoded file names", () => {
+  test("are decoded, and a stray percent sign is left alone", async () => {
+    await write("models v1.yaml", "Thing:\n  type: string\n");
+    await write("100%.yaml", "Thing:\n  type: number\n");
+    const root = await write(
+      "encoded-root.yaml",
+      [
+        "openapi: 3.0.0",
+        "components:",
+        "  schemas:",
+        "    A:",
+        "      $ref: ./models%20v1.yaml#/Thing",
+        "    B:",
+        "      $ref: ./100%.yaml#/Thing",
+        "",
+      ].join("\n"),
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    expect(bundled.components.schemas.A).toEqual({ type: "string" });
+    expect(bundled.components.schemas.B).toEqual({ type: "number" });
+  });
+});
+
+describe("file URLs", () => {
+  test("work for the specification and for a $ref", async () => {
+    const target = await write("file-url-target.yaml", "type: string\n");
+    const root = await write(
+      "file-url-root.yaml",
+      `openapi: 3.0.0\ncomponents:\n  schemas:\n    A:\n      $ref: ${pathToFileURL(target).href}\n`,
+    );
+    const loaded = await loadSpec(pathToFileURL(root).href);
+    expect(loaded.location).toBe(root);
+    const bundled = await bundleExternalRefs(loaded);
+    expect(bundled.components.schemas.A).toEqual({ type: "string" });
+  });
+});
+
+describe("flow-style YAML", () => {
+  test("is read, even though it starts like JSON", async () => {
+    const yaml =
+      '{openapi: 3.0.3, info: {title: Test, version: "1"}, paths: {}}';
+    expect((await loadSpec(yaml)).doc.openapi).toBe("3.0.3");
+    const file = await write("flow.yaml", yaml);
+    expect((await loadSpec(file)).doc.info.title).toBe("Test");
+  });
+});
+
 describe("getByPointer", () => {
   const root = { a: { "b/c": { "d~e": 1 } }, list: [10, 20] };
 
@@ -109,6 +230,82 @@ describe("getByPointer", () => {
   test("returns undefined for missing or non-object paths", () => {
     expect(getByPointer(root, "#/missing/x")).toBeUndefined();
     expect(getByPointer(root, "#/list/0/x")).toBeUndefined();
+  });
+});
+
+describe("bundleExternalRefs: what a $ref means", () => {
+  test("data keywords are copied, even when they hold a $ref", async () => {
+    const dangling = { $ref: "./does-not-exist.yaml" };
+    const doc = {
+      components: {
+        schemas: {
+          Pet: {
+            type: "object",
+            example: dangling,
+            default: dangling,
+            "x-extra": dangling,
+            examples: [dangling],
+          },
+        },
+        examples: { one: { value: dangling } },
+      },
+    };
+    await expect(
+      bundleExternalRefs({ doc, location: "/nowhere/root.yaml" }),
+    ).resolves.toEqual(doc);
+  });
+
+  test("names that look like data keywords are still walked", async () => {
+    await write("named.yaml", "type: string\n");
+    const root = await write(
+      "named-root.yaml",
+      [
+        "openapi: 3.0.0",
+        "paths:",
+        "  /x:",
+        "    get:",
+        "      responses:",
+        "        default:",
+        "          $ref: ./named.yaml",
+        "components:",
+        "  schemas:",
+        "    Pet:",
+        "      type: object",
+        "      properties:",
+        "        example:",
+        "          $ref: ./named.yaml",
+        "        properties:",
+        "          type: object",
+        "          example:",
+        "            $ref: ./does-not-exist.yaml",
+        "",
+      ].join("\n"),
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    expect(bundled.paths["/x"].get.responses.default).toEqual({
+      type: "string",
+    });
+    const pet = bundled.components.schemas.Pet;
+    expect(pet.properties.example).toEqual({ type: "string" });
+    expect(pet.properties.properties.example.$ref).toBe(
+      "./does-not-exist.yaml",
+    );
+  });
+
+  test("a file pointing back into the root keeps the named type", async () => {
+    await write(
+      "backref.yaml",
+      "type: object\nproperties:\n  owner:\n    $ref: ./backref-root.yaml#/components/schemas/Owner\n",
+    );
+    const root = await write(
+      "backref-root.yaml",
+      "openapi: 3.0.0\ncomponents:\n  schemas:\n    Owner:\n      type: string\n    Pet:\n      $ref: ./backref.yaml\n",
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    expect(bundled.components.schemas.Pet.properties.owner).toEqual({
+      $ref: "#/components/schemas/Owner",
+    });
+    expect(Object.keys(bundled.components.schemas)).toEqual(["Owner", "Pet"]);
   });
 });
 

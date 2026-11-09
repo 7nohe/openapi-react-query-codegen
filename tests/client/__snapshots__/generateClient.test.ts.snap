@@ -28,7 +28,6 @@ export type Options<
  * List items
  */
 export const listItems = <ThrowOnError extends boolean = false>(options: Options<ListItemsData, ThrowOnError>): RequestResult<ListItemsResponses, ListItemsErrors, ThrowOnError> => (options.client ?? client).get<ListItemsResponses, ListItemsErrors, ThrowOnError>({
-  parseAs: "json",
   security: [{ scheme: "bearer", type: "http" }],
   querySerializer: { parameters: { "ids": { array: { style: "form", explode: false } }, "tags": { array: { style: "pipeDelimited", explode: false } }, "filter": { object: { style: "form", explode: true } } } },
   url: "/items",
@@ -36,7 +35,6 @@ export const listItems = <ThrowOnError extends boolean = false>(options: Options
 });
 
 export const createItem = <ThrowOnError extends boolean = false>(options: Options<CreateItemData, ThrowOnError>): RequestResult<CreateItemResponses, CreateItemErrors, ThrowOnError> => (options.client ?? client).post<CreateItemResponses, CreateItemErrors, ThrowOnError>({
-  parseAs: "json",
   security: [{ scheme: "bearer", type: "http" }],
   url: "/items",
   bodyType: "json",
@@ -51,7 +49,6 @@ export const createItem = <ThrowOnError extends boolean = false>(options: Option
  * Fetch one item
  */
 export const getItem = <ThrowOnError extends boolean = false>(options: Options<GetItemData, ThrowOnError>): RequestResult<GetItemResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetItemResponses, unknown, ThrowOnError>({
-  parseAs: "json",
   security: [{ scheme: "bearer", type: "http" }],
   url: "/items/{itemId}",
   ...options
@@ -80,18 +77,20 @@ export const uploadImage = <ThrowOnError extends boolean = false>(options: Optio
   security: [{ scheme: "bearer", type: "http" }],
   url: "/items/{itemId}/image",
   bodyType: "form-data",
-  ...options
+  ...options,
+  headers: {
+    "Content-Type": null,
+    ...options.headers
+  }
 });
 
 export const downloadImage = <ThrowOnError extends boolean = false>(options: Options<DownloadImageData, ThrowOnError>): RequestResult<DownloadImageResponses, unknown, ThrowOnError> => (options.client ?? client).get<DownloadImageResponses, unknown, ThrowOnError>({
-  parseAs: "blob",
   security: [{ scheme: "bearer", type: "http" }],
   url: "/items/{itemId}/image",
   ...options
 });
 
 export const getStatus = <ThrowOnError extends boolean = false>(options?: Options<GetStatusData, ThrowOnError>): RequestResult<GetStatusResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetStatusResponses, unknown, ThrowOnError>({
-  parseAs: "text",
   security: [{ in: "header", name: "X-API-Key", type: "apiKey" }, { scheme: "basic", type: "http" }],
   url: "/status",
   ...options
@@ -108,7 +107,6 @@ export const addNote = <ThrowOnError extends boolean = false>(options?: Options<
 });
 
 export const getEvents = <ThrowOnError extends boolean = false>(options?: Options<GetEventsData, ThrowOnError>): RequestResult<GetEventsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetEventsResponses, unknown, ThrowOnError>({
-  parseAs: "json",
   security: [{ scheme: "bearer", type: "http" }],
   url: "/events",
   ...options

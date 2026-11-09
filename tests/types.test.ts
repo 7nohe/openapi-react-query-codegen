@@ -3,7 +3,6 @@ import type {
   GeneratedFile,
   GenerationContext,
   OperationInfo,
-  OperationParameter,
 } from "../src/types.mjs";
 
 describe("types", () => {
@@ -14,11 +13,6 @@ describe("types", () => {
         capitalizedMethodName: "FindPets",
         httpMethod: "GET",
         jsDoc: "/** Find all pets */",
-        isDeprecated: false,
-        parameters: [
-          { name: "limit", typeName: "number", optional: true },
-          { name: "tags", typeName: "string[]", optional: true },
-        ],
         allParamsOptional: true,
         isPaginatable: false,
       };
@@ -26,8 +20,6 @@ describe("types", () => {
       expect(op.methodName).toBe("findPets");
       expect(op.capitalizedMethodName).toBe("FindPets");
       expect(op.httpMethod).toBe("GET");
-      expect(op.isDeprecated).toBe(false);
-      expect(op.parameters).toHaveLength(2);
       expect(op.allParamsOptional).toBe(true);
       expect(op.isPaginatable).toBe(false);
     });
@@ -37,8 +29,6 @@ describe("types", () => {
         methodName: "addPet",
         capitalizedMethodName: "AddPet",
         httpMethod: "POST",
-        isDeprecated: false,
-        parameters: [{ name: "body", typeName: "NewPet", optional: false }],
         allParamsOptional: false,
         isPaginatable: false,
       };
@@ -54,13 +44,11 @@ describe("types", () => {
         capitalizedMethodName: "OldEndpoint",
         httpMethod: "GET",
         jsDoc: "/** @deprecated Use newEndpoint instead */",
-        isDeprecated: true,
-        parameters: [],
         allParamsOptional: true,
         isPaginatable: false,
       };
 
-      expect(op.isDeprecated).toBe(true);
+      expect(op.jsDoc).toContain("@deprecated");
     });
 
     it("should define correct structure for paginatable operation", () => {
@@ -68,37 +56,11 @@ describe("types", () => {
         methodName: "listItems",
         capitalizedMethodName: "ListItems",
         httpMethod: "GET",
-        isDeprecated: false,
-        parameters: [{ name: "page", typeName: "number", optional: true }],
         allParamsOptional: true,
         isPaginatable: true,
       };
 
       expect(op.isPaginatable).toBe(true);
-    });
-  });
-
-  describe("OperationParameter", () => {
-    it("should define required parameter", () => {
-      const param: OperationParameter = {
-        name: "id",
-        typeName: "number",
-        optional: false,
-      };
-
-      expect(param.name).toBe("id");
-      expect(param.typeName).toBe("number");
-      expect(param.optional).toBe(false);
-    });
-
-    it("should define optional parameter", () => {
-      const param: OperationParameter = {
-        name: "limit",
-        typeName: "number",
-        optional: true,
-      };
-
-      expect(param.optional).toBe(true);
     });
   });
 
