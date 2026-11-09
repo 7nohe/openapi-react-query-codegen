@@ -117,7 +117,7 @@ importers:
         specifier: ^0.41.7
         version: 0.41.7(astro@7.3.8(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.34.1)(tsx@4.23.12)(yaml@2.8.3))(typescript@5.6.3)
       astro:
-        specifier: ^7.3.8
+        specifier: ~7.3.8
         version: 7.3.8(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.34.1)(tsx@4.23.12)(yaml@2.8.3)
       sharp:
         specifier: ^0.35.5
