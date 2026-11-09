@@ -101,7 +101,7 @@
       "body-parser": "1.20.9",
       "cross-spawn@6": "6.0.6",
       "cross-spawn@7": "7.0.6",
-      "devalue": "5.9.3",
+      "devalue": "5.9.4",
       "diff@4": "4.0.4",
       "diff@5": "5.2.2",
       "fast-xml-parser": "5.7.0",
@@ -120,7 +120,7 @@
       "on-headers": "1.1.0",
       "path-to-regexp": "0.1.13",
       "picomatch@2": "2.3.2",
-      "picomatch@4": "4.0.4",
+      "picomatch@4": "4.0.7",
       "postcss": "8.5.23",
       "prismjs": "1.30.0",
       "qs": "6.16.1",
@@ -129,10 +129,10 @@
       "tar-fs@2": "2.1.4",
       "tar-fs@3": "3.1.1",
       "tsx": "4.23.12",
-      "undici": "6.29.1",
+      "undici@6": "6.29.1",
       "uuid": "11.1.1",
       "yaml@1": "1.10.3",
-      "yaml@2": "2.8.3"
+      "yaml@2": "2.9.1"
     }
   }
 }
