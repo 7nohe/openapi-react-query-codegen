@@ -24,12 +24,18 @@ updates:
       # by hand, and the other @hey-api packages move with it. See the hey-api
       # version policy in docs/src/content/docs/contributing.md.
       - dependency-name: "@hey-api/*"
-      # The examples' mock server. 5.16.0 adds @scarf/scarf, a telemetry
-      # dependency with an install script; stay on 5.15.x until that is
-      # reviewed.
-      - dependency-name: "@stoplight/prism-cli"
-        versions:
-          - ">=5.16.0"
+      # The examples' mock server. 5.16.0 of its internal packages adds
+      # @scarf/scarf, a telemetry dependency with an install script. Every
+      # prism-cli release takes them with a caret range, so any prism-cli
+      # update resolves 5.16.0. Keep the locked 5.8.x until that is reviewed.
+      - dependency-name: "@stoplight/prism-*"
+      # Pinned through pnpm.overrides in the root package.json. Dependabot
+      # rewrites the override in the lockfile but not in package.json, which
+      # fails `pnpm install --frozen-lockfile`. Bump the override by hand.
+      - dependency-name: "axios"
+      - dependency-name: "cross-spawn"
+      - dependency-name: "form-data"
+      - dependency-name: "postcss"
     # Groups apply to version updates only. Security updates still arrive one
     # dependency per pull request.
     groups:
