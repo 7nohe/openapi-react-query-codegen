@@ -1,0 +1,95 @@
+name: user install
+
+# Installs the packed package the way a user does, outside this workspace, so
+# pnpm overrides and patches do not apply. Then it generates code from the
+# example spec, type-checks the output and audits the installed tree. The
+# weekly run catches changes in transitive dependencies between releases.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: user-install-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  user-install:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # only to check out the repository
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # `version` is omitted on purpose: the action then reads
+      # `packageManager` from package.json, which pins the exact pnpm version.
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.20.0
+          package-manager-cache: false
+
+      - name: Build and pack
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile --ignore-scripts --filter @7nohe/openapi-react-query-codegen
+          pnpm build
+          pnpm pack --pack-destination "$RUNNER_TEMP/package"
+
+      # `--before` applies the same 7-day minimum release age as the rest of
+      # the repository, so this job does not run code published in the last
+      # week. `--ignore-scripts` keeps install hooks from running at all.
+      - name: Install like a user
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          mkdir app
+          cp "$GITHUB_WORKSPACE/examples/petstore.yaml" app/
+          cd app
+          npm init -y > /dev/null
+          before=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          npm install --ignore-scripts --no-fund --no-audit --before "$before" \
+            "$RUNNER_TEMP"/package/*.tgz @tanstack/react-query@5 @types/react@19
+          npm ls --depth=0
+          npm ls --all js-yaml @hey-api/openapi-ts typescript ts-morph || true
+
+      - name: Generate and type-check
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          set -euo pipefail
+          npx --no-install openapi-rq -i ./petstore.yaml
+          cat > tsconfig.json <<'JSON'
+          {
+            "compilerOptions": {
+              "target": "ES2022",
+              "module": "ESNext",
+              "moduleResolution": "Bundler",
+              "jsx": "react-jsx",
+              "strict": true,
+              "noEmit": true,
+              "skipLibCheck": true,
+              "verbatimModuleSyntax": true
+            },
+            "include": ["openapi"]
+          }
+          JSON
+          npx --no-install tsc -p tsconfig.json
+
+      - name: Audit the installed tree
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          set -euo pipefail
+          npm audit --omit=dev --json > "$RUNNER_TEMP/audit.json" || true
+          node "$GITHUB_WORKSPACE/.github/scripts/check-consumer-audit.mjs" "$RUNNER_TEMP/audit.json"
