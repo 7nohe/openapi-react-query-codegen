@@ -10,8 +10,8 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.41.7",
-    "astro": "~7.3.8",
+    "@astrojs/starlight": "^0.42.8",
+    "astro": "~7.4.5",
     "sharp": "^0.35.5",
     "@astrojs/check": "^0.9.4",
     "typescript": "^5.6.3"
