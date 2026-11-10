@@ -12,19 +12,19 @@
     "test:generated": "tsc -p ./tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@hey-api/client-fetch": "^0.6.0",
-    "@tanstack/react-query": "^5.59.13",
-    "@tanstack/react-query-devtools": "^5.32.1",
+    "@hey-api/client-fetch": "^0.13.1",
+    "@tanstack/react-query": "^5.105.3",
+    "@tanstack/react-query-devtools": "^5.105.3",
     "next": "^16.4.4",
     "react": "^18",
     "react-dom": "^18"
   },
   "devDependencies": {
-    "@stoplight/prism-cli": "^5.5.2",
+    "@stoplight/prism-cli": "^5.16.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "npm-run-all2": "^9.0.2",
+    "npm-run-all2": "^9.0.4",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
