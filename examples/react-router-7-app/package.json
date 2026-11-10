@@ -11,7 +11,7 @@
     "preview": "react-router-serve ./build/server/index.js",
     "typegen": "react-router typegen",
     "typecheck": "pnpm typegen && tsc",
-    "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
+    "generate:api": "node ../../scripts/clean.mjs ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
     "test:generated": "pnpm typegen && tsc -p ./tsconfig.json --noEmit"
   },
   "dependencies": {

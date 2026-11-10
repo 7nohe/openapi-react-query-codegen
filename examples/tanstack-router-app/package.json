@@ -11,7 +11,7 @@
     "build": "vite build",
     "serve": "vite preview",
     "start": "vite",
-    "generate:api": "rimraf ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
+    "generate:api": "node ../../scripts/clean.mjs ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
     "test:generated": "tsc -p ./tsconfig.json --noEmit"
   },
   "devDependencies": {
