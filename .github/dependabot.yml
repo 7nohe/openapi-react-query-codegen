@@ -18,6 +18,10 @@ updates:
     # The root package is a published library: only move a range when the new
     # version falls outside it, so users are not forced onto newer dependencies.
     versioning-strategy: increase-if-necessary
+    # `ignore` has no version-updates-only setting, so these rules also stop
+    # security-update pull requests for the listed packages. Dependabot alerts
+    # still open for them: handle each alert by bumping the pin or override by
+    # hand.
     ignore:
       # @hey-api/openapi-ts is exact-pinned and patched through
       # pnpm.patchedDependencies, so each bump needs the type patches recreated
