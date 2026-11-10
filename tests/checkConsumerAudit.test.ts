@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  assertAuditReport,
   formatSummary,
   KNOWN,
   reviewAudit,
@@ -48,6 +49,23 @@ describe("check-consumer-audit", () => {
 
   test("reviewAudit handles a clean report", () => {
     expect(reviewAudit({})).toEqual([]);
+  });
+
+  test("assertAuditReport rejects output from a failed npm audit run", () => {
+    const counts = { info: 0, low: 0, moderate: 0, high: 0, critical: 0 };
+    expect(() =>
+      assertAuditReport({
+        vulnerabilities: {},
+        metadata: { vulnerabilities: counts },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertAuditReport({
+        error: { code: "ENOTFOUND", summary: "request to registry failed" },
+      }),
+    ).toThrow(/did not produce a report: .*ENOTFOUND/);
+    expect(() => assertAuditReport({})).toThrow(/did not produce a report/);
+    expect(() => assertAuditReport(null)).toThrow(/did not produce a report/);
   });
 
   test("every known advisory has a reason", () => {

@@ -51,6 +51,8 @@ jobs:
       # `--before` applies the same 7-day minimum release age as the rest of
       # the repository, so this job does not run code published in the last
       # week. `--ignore-scripts` keeps install hooks from running at all.
+      # The ranges float and there is no lockfile on purpose: a user's first
+      # install resolves the same way.
       - name: Install like a user
         working-directory: ${{ runner.temp }}
         run: |
@@ -91,5 +93,7 @@ jobs:
         working-directory: ${{ runner.temp }}/app
         run: |
           set -euo pipefail
+          # Non-zero also means advisories were found. The checker tells that
+          # apart from a failed run and exits 2 when there is no real report.
           npm audit --omit=dev --json > "$RUNNER_TEMP/audit.json" || true
           node "$GITHUB_WORKSPACE/.github/scripts/check-consumer-audit.mjs" "$RUNNER_TEMP/audit.json"

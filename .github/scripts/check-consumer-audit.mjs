@@ -32,6 +32,22 @@ export const KNOWN = new Map([
 const FAILING_SEVERITIES = new Set(["high", "critical"]);
 
 /**
+ * `npm audit` exits non-zero both when it finds advisories and when it cannot
+ * audit at all (registry or network errors). The workflow ignores the exit
+ * code, so tell the two apart here: a real report always carries the
+ * per-severity counts, and a failed run carries an `error` object instead.
+ * @param {unknown} report
+ */
+export function assertAuditReport(report) {
+  const counts = /** @type {any} */ (report)?.metadata?.vulnerabilities;
+  const error = /** @type {any} */ (report)?.error;
+  if (error || !counts || typeof counts !== "object") {
+    const detail = JSON.stringify(error ?? report).slice(0, 500);
+    throw new Error(`npm audit did not produce a report: ${detail}`);
+  }
+}
+
+/**
  * @param {{ vulnerabilities?: Record<string, { via: (string | Record<string, any>)[] }> }} report
  */
 export function reviewAudit(report) {
@@ -91,7 +107,15 @@ function main() {
     console.error("usage: check-consumer-audit.mjs <npm audit --json output>");
     process.exit(2);
   }
-  const advisories = reviewAudit(JSON.parse(readFileSync(reportPath, "utf8")));
+  let report;
+  try {
+    report = JSON.parse(readFileSync(reportPath, "utf8"));
+    assertAuditReport(report);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(2);
+  }
+  const advisories = reviewAudit(report);
   const summary = formatSummary(advisories);
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) {
