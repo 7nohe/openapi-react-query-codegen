@@ -4,43 +4,52 @@ version: 2
 # versions are usually found and pulled within days. Cooldown does not apply
 # to security updates, so the lockfile review workflow still checks their age.
 updates:
+  # One block for the whole pnpm workspace. Dependabot reads the workspace from
+  # the root, so this block also updates docs/ and examples/ and keeps the
+  # single root lockfile in step. A separate block for those directories would
+  # edit their package.json without the lockfile and fail
+  # `pnpm install --frozen-lockfile`.
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
     cooldown:
       default-days: 7
-    # This is a published library: only move a range when the new version
-    # falls outside it, so users are not forced onto newer dependencies.
+    # The root package is a published library: only move a range when the new
+    # version falls outside it, so users are not forced onto newer dependencies.
     versioning-strategy: increase-if-necessary
     ignore:
-      # Exact-pinned and patched through pnpm.patchedDependencies, so each
-      # bump needs the type patches recreated by hand. See the hey-api version
-      # policy in docs/src/content/docs/contributing.md.
-      - dependency-name: "@hey-api/openapi-ts"
-      - dependency-name: "@hey-api/shared"
+      # @hey-api/openapi-ts is exact-pinned and patched through
+      # pnpm.patchedDependencies, so each bump needs the type patches recreated
+      # by hand, and the other @hey-api packages move with it. See the hey-api
+      # version policy in docs/src/content/docs/contributing.md.
+      - dependency-name: "@hey-api/*"
+      # The examples' mock server. 5.16.0 adds @scarf/scarf, a telemetry
+      # dependency with an install script; stay on 5.15.x until that is
+      # reviewed.
+      - dependency-name: "@stoplight/prism-cli"
+        versions:
+          - ">=5.16.0"
+    # Groups apply to version updates only. Security updates still arrive one
+    # dependency per pull request.
     groups:
-      dev-tooling:
+      dev-dependencies:
         dependency-type: development
         update-types:
           - minor
           - patch
-
-  - package-ecosystem: npm
-    directories:
-      - "/docs"
-      - "/examples/*"
-    schedule:
-      interval: weekly
-    cooldown:
-      default-days: 7
-    groups:
-      examples-and-docs:
-        patterns:
-          - "*"
+      dependencies:
+        dependency-type: production
         update-types:
           - minor
           - patch
+      # Major updates usually need code changes, so they come as one pull
+      # request to work through by hand instead of one per package.
+      major:
+        patterns:
+          - "*"
+        update-types:
+          - major
 
   - package-ecosystem: github-actions
     directory: "/"
