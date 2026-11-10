@@ -33,6 +33,9 @@ function Pets() {
 
 See the [documentation](https://openapi-react-query-codegen.vercel.app) for CLI options, SSR recipes, and infinite query usage.
 
+> [!IMPORTANT]
+> The only package published by this project is the scoped **`@7nohe/openapi-react-query-codegen`**. The unscoped `openapi-react-query-codegen` and the copies under other scopes on npm are published by third parties, not by this project.
+
 ## How it compares
 
 |  | This library | @hey-api tanstack-query plugin | Orval | openapi-react-query |
