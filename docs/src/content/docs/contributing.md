@@ -50,7 +50,7 @@ pnpm --filter docs dev
 
 `@hey-api/openapi-ts` is **exact-pinned** because it is pre-1.0 and ships frequent breaking changes. This library's job is to absorb those changes so downstream users get a stable, SemVer-respecting API surface:
 
-1. Bump the pin (Renovate opens grouped PRs automatically).
+1. Bump the pin by hand. Dependabot ignores hey-api because every version needs its type patches recreated.
 2. Run the full snapshot suite (`pnpm test`) — snapshots are the breaking-change detector.
 3. Regenerate an example app and type-check it (see "Build example and validate generated code" above).
 4. Recreate the type patches if needed (see below).

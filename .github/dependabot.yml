@@ -1,0 +1,54 @@
+version: 2
+
+# Every block waits 7 days after a release before proposing it. Compromised
+# versions are usually found and pulled within days. Cooldown does not apply
+# to security updates, so the lockfile review workflow still checks their age.
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    # This is a published library: only move a range when the new version
+    # falls outside it, so users are not forced onto newer dependencies.
+    versioning-strategy: increase-if-necessary
+    ignore:
+      # Exact-pinned and patched through pnpm.patchedDependencies, so each
+      # bump needs the type patches recreated by hand. See the hey-api version
+      # policy in docs/src/content/docs/contributing.md.
+      - dependency-name: "@hey-api/openapi-ts"
+      - dependency-name: "@hey-api/shared"
+    groups:
+      dev-tooling:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directories:
+      - "/docs"
+      - "/examples/*"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      examples-and-docs:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
