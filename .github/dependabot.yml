@@ -1,0 +1,75 @@
+version: 2
+
+# Every block waits 7 days after a release before proposing it. Compromised
+# versions are usually found and pulled within days. Cooldown does not apply
+# to security updates, so the lockfile review workflow still checks their age.
+updates:
+  # One block for the whole pnpm workspace. Dependabot reads the workspace from
+  # the root, so this block also updates docs/ and examples/ and keeps the
+  # single root lockfile in step. A separate block for those directories would
+  # edit their package.json without the lockfile and fail
+  # `pnpm install --frozen-lockfile`.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    # The root package is a published library: only move a range when the new
+    # version falls outside it, so users are not forced onto newer dependencies.
+    versioning-strategy: increase-if-necessary
+    # `ignore` has no version-updates-only setting, so these rules also stop
+    # security-update pull requests for the listed packages. Dependabot alerts
+    # still open for them: handle each alert by bumping the pin or override by
+    # hand.
+    ignore:
+      # The examples' mock server. 5.16.0 of its internal packages adds
+      # @scarf/scarf, a telemetry dependency with an install script. Every
+      # prism-cli release takes them with a caret range, so any prism-cli
+      # update resolves 5.16.0. Keep the locked 5.8.x until that is reviewed.
+      - dependency-name: "@stoplight/prism-*"
+      # Pinned through pnpm.overrides in the root package.json. Dependabot
+      # rewrites the override in the lockfile but not in package.json, which
+      # fails `pnpm install --frozen-lockfile`. Bump the override by hand.
+      - dependency-name: "axios"
+      - dependency-name: "cross-spawn"
+      - dependency-name: "form-data"
+      - dependency-name: "postcss"
+      - dependency-name: "yaml"
+      # docs/ builds with `astro check`, which rejects TypeScript 7, so the
+      # Vercel preview of any pull request that bumps it fails. Revisit once
+      # Astro supports TypeScript 7.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
+    # Groups apply to version updates only. Security updates still arrive one
+    # dependency per pull request.
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      dependencies:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      # Major updates usually need code changes, so they come as one pull
+      # request to work through by hand instead of one per package.
+      major:
+        patterns:
+          - "*"
+        update-types:
+          - major
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
