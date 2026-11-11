@@ -554,8 +554,6 @@ const pickAxiosSettings = (config: Config): Record<string, unknown> => {
 
 export const createClient = (config: Config = {}): Client => {
   let currentConfig: Config = mergeConfigs(createConfig(), config);
-  // `baseURL`, headers and auth are applied per request from the current
-  // config, so the instance only carries axios' own settings (timeout, …).
   // The default export belongs to the whole application, so a client given it
   // makes an instance of its own, and its interceptors stay its own too.
   const given = currentConfig.axios;
@@ -567,9 +565,36 @@ export const createClient = (config: Config = {}): Client => {
           pickAxiosSettings(currentConfig) as CreateAxiosDefaults,
         );
 
+  // Every request gets `baseURL` and the headers from the current config. The
+  // instance's defaults follow the config as well, for a request made on
+  // `client.instance` itself.
+  let defaultHeaders: string[] = [];
+  const syncDefaults = (settings: Config) => {
+    Object.assign(instance.defaults, pickAxiosSettings(settings));
+    if (currentConfig.baseURL !== undefined) {
+      instance.defaults.baseURL = currentConfig.baseURL;
+    }
+    const defaults = instance.defaults.headers as Record<string, unknown>;
+    for (const key of defaultHeaders) delete defaults[key];
+    defaultHeaders = [];
+    for (const [key, value] of Object.entries(
+      mergeHeaders(currentConfig.headers),
+    )) {
+      if (HEADER_GROUPS.includes(key.toLowerCase())) {
+        defaults[key] = { ...(defaults[key] as object), ...(value as object) };
+      } else {
+        defaults[key] = value;
+        defaultHeaders.push(key);
+      }
+    }
+  };
+  // An instance the caller made keeps its defaults until `setConfig` is called.
+  if (instance !== given) syncDefaults({});
+
   const getConfig = (): Config => ({ ...currentConfig });
   const setConfig = (next: Config): Config => {
     currentConfig = mergeConfigs(currentConfig, next);
+    syncDefaults(next);
     return getConfig();
   };
 
@@ -599,6 +624,14 @@ export const createClient = (config: Config = {}): Client => {
         !hasContentType
       ) {
         headers["Content-Type"] = "application/json";
+      }
+
+      // A header this request removed must not come back from the defaults.
+      if (client === instance) {
+        const sent = Object.keys(headers).map((key) => key.toLowerCase());
+        for (const key of defaultHeaders) {
+          if (!sent.includes(key.toLowerCase())) headers[key] = null;
+        }
       }
 
       const axiosSettings = pickAxiosSettings(options);

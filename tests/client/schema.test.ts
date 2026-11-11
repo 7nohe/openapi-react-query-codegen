@@ -72,9 +72,24 @@ describe("renderSchema", () => {
 
   test("component refs use the generated name, falling back to toTypeName", () => {
     expect(render({ $ref: "#/components/schemas/my-odd" })).toBe("MyOdd");
+    expect(
+      renderSchema(
+        { $ref: "#/components/schemas/unnamed-one" },
+        {
+          doc: { components: { schemas: { "unnamed-one": {} } } },
+          names: new Map(),
+        },
+      ),
+    ).toBe("UnnamedOne");
+  });
+
+  test("a component ref to a schema that is not there is unknown", () => {
     expect(render({ $ref: "#/components/schemas/unknown-one" })).toBe(
-      "UnknownOne",
+      "unknown",
     );
+    // Keys are case-sensitive, and inherited ones are not schemas.
+    expect(render({ $ref: "#/components/schemas/pet" })).toBe("unknown");
+    expect(render({ $ref: "#/components/schemas/toString" })).toBe("unknown");
   });
 
   test("other refs are inlined and cycles collapse to unknown", () => {
@@ -1089,5 +1104,160 @@ describe("global types shadowed by a schema", () => {
       "globalThis.Blob | globalThis.File",
     );
     expect(render({ type: "string", format: "binary" })).toBe("Blob | File");
+  });
+});
+
+describe("OpenAPI 3.1 files", () => {
+  test("a media type that is not text is a file", () => {
+    for (const contentMediaType of [
+      "application/octet-stream",
+      "image/png",
+      "application/pdf",
+      "Application/Zip; q=1",
+      "*/*",
+    ]) {
+      expect(render({ type: "string", contentMediaType })).toBe("Blob | File");
+      expect(render({ contentMediaType })).toBe("Blob | File");
+    }
+    expect(
+      render({ type: ["string", "null"], contentMediaType: "image/png" }),
+    ).toBe("Blob | File | null");
+  });
+
+  test("text, and anything encoded into a string, stays a string", () => {
+    for (const contentMediaType of [
+      "text/plain",
+      "application/json",
+      "application/problem+json",
+      "application/xml",
+      "image/svg+xml",
+      "application/x-www-form-urlencoded",
+    ]) {
+      expect(render({ type: "string", contentMediaType })).toBe("string");
+      expect(render({ contentMediaType })).toBe("unknown");
+    }
+    expect(
+      render({
+        type: "string",
+        contentMediaType: "image/png",
+        contentEncoding: "base64",
+      }),
+    ).toBe("string");
+    expect(
+      render({ contentMediaType: "image/png", contentEncoding: "base64" }),
+    ).toBe("unknown");
+  });
+
+  test("the media type does not turn other types into files", () => {
+    expect(
+      render({ type: "object", contentMediaType: "application/pdf" }),
+    ).toBe("{\n  [key: string]: unknown;\n}");
+    expect(
+      render({
+        contentMediaType: "application/pdf",
+        properties: { a: { type: "string" } },
+      }),
+    ).toBe("{\n  a?: string;\n}");
+  });
+});
+
+describe("oneOf and anyOf next to allOf", () => {
+  const cat = { $ref: "#/components/schemas/Pet" };
+  const odd = { $ref: "#/components/schemas/my-odd" };
+
+  test("the union narrows the intersection", () => {
+    expect(render({ allOf: [cat], oneOf: [odd, { type: "number" }] })).toBe(
+      "Pet & (MyOdd | number)",
+    );
+    expect(render({ allOf: [cat], anyOf: [odd, { type: "number" }] })).toBe(
+      "Pet & (MyOdd | number)",
+    );
+  });
+
+  test("both unions and the schema's own properties are kept", () => {
+    expect(
+      render({
+        allOf: [cat],
+        oneOf: [odd, { type: "number" }],
+        anyOf: [{ type: "boolean" }, { type: "string" }],
+        properties: { a: { type: "string" } },
+      }),
+    ).toBe("Pet & (MyOdd | number) & (boolean | string) & {\n  a?: string;\n}");
+    expect(
+      render({
+        oneOf: [odd, { type: "number" }],
+        anyOf: [{ type: "boolean" }, { type: "string" }],
+      }),
+    ).toBe("(MyOdd | number) & (boolean | string)");
+  });
+
+  test("a single option needs no parentheses, and null is added once", () => {
+    expect(render({ allOf: [cat], oneOf: [odd], nullable: true })).toBe(
+      "Pet & MyOdd | null",
+    );
+  });
+
+  test("an empty list is no constraint", () => {
+    expect(render({ allOf: [cat], oneOf: [] })).toBe("Pet");
+    expect(render({ oneOf: [], anyOf: [odd] })).toBe("MyOdd");
+  });
+});
+
+describe("discriminator mappings to names with a dot", () => {
+  const zoo = {
+    components: {
+      schemas: {
+        "Zoo.Cat": {
+          type: "object",
+          properties: { kind: { type: "string" }, lives: { type: "integer" } },
+        },
+        "Zoo.Dog": {
+          type: "object",
+          properties: { kind: { type: "string" } },
+        },
+        "Zoo.Animal": {
+          oneOf: [
+            { $ref: "#/components/schemas/Zoo.Cat" },
+            { $ref: "#/components/schemas/Zoo.Dog" },
+          ],
+          discriminator: {
+            propertyName: "kind",
+            mapping: {
+              cat: "#/components/schemas/Zoo.Cat",
+              dog: "Zoo.Dog",
+            },
+          },
+        },
+      },
+    },
+  };
+  const zooCtx: SchemaCtx = {
+    doc: zoo,
+    names: new Map([
+      ["Zoo.Cat", "ZooCat"],
+      ["Zoo.Dog", "ZooDog"],
+      ["Zoo.Animal", "ZooAnimal"],
+    ]),
+  };
+
+  test("the union pins each member to its mapped value", () => {
+    expect(
+      renderComponentSchema(
+        zoo.components.schemas["Zoo.Animal"],
+        "Zoo.Animal",
+        zooCtx,
+      ),
+    ).toBe('({ kind: "cat" } & ZooCat) | ({ kind: "dog" } & ZooDog)');
+  });
+
+  test("without a mapping the value is the schema's key, dot included", () => {
+    const { mapping: _, ...discriminator } =
+      zoo.components.schemas["Zoo.Animal"].discriminator;
+    expect(
+      renderSchema(
+        { ...zoo.components.schemas["Zoo.Animal"], discriminator },
+        zooCtx,
+      ),
+    ).toBe('({ kind: "Zoo.Cat" } & ZooCat) | ({ kind: "Zoo.Dog" } & ZooDog)');
   });
 });

@@ -53,6 +53,11 @@ export interface GenerationContext {
   omitInitialPageParam: boolean;
   /** Package version for generated comment */
   version: string;
+  /**
+   * Extension of relative import specifiers: ".js" when the consuming project
+   * resolves modules the Node way (`node16` / `nodenext`), else none.
+   */
+  importExtension?: "" | ".js";
 }
 
 /**

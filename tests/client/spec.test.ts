@@ -138,35 +138,104 @@ describe("discriminators over external members", () => {
         "",
       ].join("\n"),
     );
-    return (await bundleExternalRefs(await loadSpec(root))).components.schemas
-      .Pet.oneOf;
+    return (await bundleExternalRefs(await loadSpec(root))).components.schemas;
   };
 
-  test("take the value from the name", async () => {
-    const [cat, dog, fish, name, bird] = await bundle(
+  test("the members become named schemas, which carry the value", async () => {
+    const schemas = await bundle(
       "disc-implicit.yaml",
       "      discriminator: { propertyName: petType }",
     );
-    expect(cat.allOf[1].properties.petType.enum).toEqual(["Cat"]);
-    expect(cat.allOf[1].required).toEqual(["petType"]);
-    expect(dog.allOf[1].properties.petType.enum).toEqual(["Dog"]);
-    // Pinned already, not an object, and still a reference.
-    expect(fish.allOf).toBeUndefined();
-    expect(name.type).toBe("string");
-    expect(bird.$ref).toBe("#/components/schemas/Bird");
+    expect(schemas.Pet.oneOf).toEqual(
+      ["Cat", "Dog", "Fish", "Name", "Bird"].map((name) => ({
+        $ref: `#/components/schemas/${name}`,
+      })),
+    );
+    expect(Object.keys(schemas)).toEqual([
+      "Pet",
+      "Bird",
+      "Cat",
+      "Dog",
+      "Fish",
+      "Name",
+    ]);
+    expect(schemas.Name).toEqual({ type: "string" });
   });
 
-  test("take the value from the mapping", async () => {
-    const [cat] = await bundle(
+  test("a mapping follows its target", async () => {
+    const schemas = await bundle(
       "disc-mapped.yaml",
       [
         "      discriminator:",
         "        propertyName: petType",
         "        mapping:",
         "          kitty: ./pets.yaml#/Cat",
+        "          bird: '#/components/schemas/Bird'",
+        "          byName: Dog",
+        "          gone: ./pets.yaml#/Nope",
       ].join("\n"),
     );
-    expect(cat.allOf[1].properties.petType.enum).toEqual(["kitty"]);
+    expect(schemas.Pet.discriminator.mapping).toEqual({
+      kitty: "#/components/schemas/Cat",
+      bird: "#/components/schemas/Bird",
+      byName: "Dog",
+      gone: "./pets.yaml#/Nope",
+    });
+  });
+
+  test("a mapping inside an external file, and a name with a dot", async () => {
+    await write(
+      "zoo.yaml",
+      [
+        "components:",
+        "  schemas:",
+        "    Animal:",
+        "      oneOf:",
+        "        - $ref: '#/components/schemas/Zoo.Cat'",
+        "        - $ref: '#/components/schemas/a~1b'",
+        "      discriminator:",
+        "        propertyName: kind",
+        "        mapping:",
+        "          cat: '#/components/schemas/Zoo.Cat'",
+        "          slash: a/b",
+        "    Zoo.Cat:",
+        "      type: object",
+        "    a/b:",
+        "      type: object",
+        "",
+      ].join("\n"),
+    );
+    const root = await write(
+      "zoo-root.yaml",
+      [
+        "openapi: 3.0.3",
+        "paths: {}",
+        "components:",
+        "  schemas:",
+        "    Holder:",
+        "      type: object",
+        "      properties:",
+        "        animal:",
+        "          $ref: ./zoo.yaml#/components/schemas/Animal",
+        "",
+      ].join("\n"),
+    );
+    const { schemas } = (await bundleExternalRefs(await loadSpec(root)))
+      .components;
+    expect(Object.keys(schemas)).toEqual([
+      "Holder",
+      "Animal",
+      "Zoo.Cat",
+      "a/b",
+    ]);
+    expect(schemas.Animal.oneOf).toEqual([
+      { $ref: "#/components/schemas/Zoo.Cat" },
+      { $ref: "#/components/schemas/a~1b" },
+    ]);
+    expect(schemas.Animal.discriminator.mapping).toEqual({
+      cat: "#/components/schemas/Zoo.Cat",
+      slash: "#/components/schemas/a~1b",
+    });
   });
 });
 
@@ -286,7 +355,10 @@ describe("bundleExternalRefs: what a $ref means", () => {
       type: "string",
     });
     const pet = bundled.components.schemas.Pet;
-    expect(pet.properties.example).toEqual({ type: "string" });
+    expect(pet.properties.example).toEqual({
+      $ref: "#/components/schemas/named",
+    });
+    expect(bundled.components.schemas.named).toEqual({ type: "string" });
     expect(pet.properties.properties.example.$ref).toBe(
       "./does-not-exist.yaml",
     );
@@ -316,7 +388,7 @@ describe("bundleExternalRefs", () => {
     expect(bundled).toEqual(doc);
   });
 
-  test("inlines external files, including their internal refs", async () => {
+  test("names external schemas, including their internal refs", async () => {
     await write(
       "schemas/pet.yaml",
       "type: object\nproperties:\n  owner:\n    $ref: '#/definitions/Owner'\ndefinitions:\n  Owner:\n    type: string\n",
@@ -328,12 +400,106 @@ describe("bundleExternalRefs", () => {
     const loaded = await loadSpec(root);
     const bundled = await bundleExternalRefs(loaded);
     expect(bundled.components.schemas.Pet.properties.owner).toEqual({
-      type: "string",
+      $ref: "#/components/schemas/Owner",
     });
     expect(bundled.components.schemas.Owner).toEqual({ type: "string" });
+    expect(Object.keys(bundled.components.schemas)).toEqual(["Pet", "Owner"]);
   });
 
-  test("hoists a recursive external reference into components.schemas", async () => {
+  test("a schema used many times is read and named once", async () => {
+    // Inlined, sixteen levels of two references each are 65536 copies.
+    for (let level = 1; level <= 16; level += 1) {
+      await write(
+        `deep/s${level}.yaml`,
+        level === 16
+          ? "type: object\nproperties:\n  v:\n    type: string\n"
+          : `type: object\nproperties:\n  a:\n    $ref: ./s${level + 1}.yaml\n  b:\n    $ref: ./s${level + 1}.yaml\n`,
+      );
+    }
+    const root = await write(
+      "deep/root.yaml",
+      [
+        "openapi: 3.0.3",
+        "paths:",
+        "  /x:",
+        "    get:",
+        "      responses:",
+        "        '200':",
+        "          description: ok",
+        "          content:",
+        "            application/json:",
+        "              schema:",
+        "                $ref: ./s1.yaml",
+        "",
+      ].join("\n"),
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    expect(
+      bundled.paths["/x"].get.responses["200"].content["application/json"]
+        .schema,
+    ).toEqual({ $ref: "#/components/schemas/s1" });
+    expect(Object.keys(bundled.components.schemas)).toEqual(
+      Array.from({ length: 16 }, (_, index) => `s${index + 1}`),
+    );
+    expect(bundled.components.schemas.s1.properties).toEqual({
+      a: { $ref: "#/components/schemas/s2" },
+      b: { $ref: "#/components/schemas/s2" },
+    });
+  });
+
+  test("parameters, responses and path items are inlined", async () => {
+    await write(
+      "parts/common.yaml",
+      [
+        "components:",
+        "  parameters:",
+        "    Id:",
+        "      name: id",
+        "      in: path",
+        "      required: true",
+        "      schema:",
+        "        $ref: '#/components/schemas/Id'",
+        "  responses:",
+        "    NotFound:",
+        "      description: gone",
+        "  schemas:",
+        "    Id:",
+        "      type: string",
+        "",
+      ].join("\n"),
+    );
+    await write(
+      "parts/item.yaml",
+      [
+        "get:",
+        "  parameters:",
+        "    - $ref: ./common.yaml#/components/parameters/Id",
+        "  responses:",
+        "    '404':",
+        "      $ref: ./common.yaml#/components/responses/NotFound",
+        "",
+      ].join("\n"),
+    );
+    const root = await write(
+      "parts/root.yaml",
+      "openapi: 3.0.3\npaths:\n  /items/{id}:\n    $ref: ./item.yaml\n",
+    );
+    const bundled = await bundleExternalRefs(await loadSpec(root));
+    expect(bundled.paths["/items/{id}"].get).toEqual({
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { $ref: "#/components/schemas/Id" },
+        },
+      ],
+      responses: { "404": { description: "gone" } },
+    });
+    expect(bundled.components.schemas).toEqual({ Id: { type: "string" } });
+  });
+
+  test("a recursive external schema refers to itself", async () => {
     await write(
       "tree.yaml",
       "type: object\nproperties:\n  child:\n    $ref: ./tree.yaml\n",
@@ -343,33 +509,34 @@ describe("bundleExternalRefs", () => {
       "openapi: 3.0.0\ncomponents:\n  schemas:\n    Wrapper:\n      $ref: ./tree.yaml\n",
     );
     const bundled = await bundleExternalRefs(await loadSpec(root));
-    const hoisted = Object.keys(bundled.components.schemas).filter(
-      (name) => name !== "Wrapper",
-    );
-    expect(hoisted).toHaveLength(1);
+    // The root schema that is only the reference gives the target its name.
+    expect(Object.keys(bundled.components.schemas)).toEqual(["Wrapper"]);
     expect(bundled.components.schemas.Wrapper.properties.child).toEqual({
-      $ref: `#/components/schemas/${hoisted[0]}`,
+      $ref: "#/components/schemas/Wrapper",
     });
-    expect(bundled.components.schemas[hoisted[0]].properties.child.$ref).toBe(
-      `#/components/schemas/${hoisted[0]}`,
-    );
   });
 
-  test("hoisting reuses an existing schema name when another is taken", async () => {
+  test("an external schema gets another name when its own is taken", async () => {
     await write(
       "a.yaml",
       "type: object\nproperties:\n  me:\n    $ref: ./a.yaml\n",
     );
     const root = await write(
       "taken.yaml",
-      "openapi: 3.0.0\ncomponents:\n  schemas:\n    a:\n      type: string\n    Holder:\n      $ref: ./a.yaml\n",
+      "openapi: 3.0.0\ncomponents:\n  schemas:\n    a:\n      type: string\n    Holder:\n      type: array\n      items:\n        $ref: ./a.yaml\n",
     );
     const bundled = await bundleExternalRefs(await loadSpec(root));
-    expect(Object.keys(bundled.components.schemas).sort()).toEqual([
-      "A",
-      "Holder",
+    expect(Object.keys(bundled.components.schemas)).toEqual([
       "a",
+      "Holder",
+      "a2",
     ]);
+    expect(bundled.components.schemas.Holder.items).toEqual({
+      $ref: "#/components/schemas/a2",
+    });
+    expect(bundled.components.schemas.a2.properties.me).toEqual({
+      $ref: "#/components/schemas/a2",
+    });
   });
 
   test("rejects external refs in inline content", async () => {
@@ -466,13 +633,18 @@ describe("keywords next to an external $ref", () => {
       ].join("\n"),
     );
     const bundled = await bundleExternalRefs(await loadSpec(root));
-    const child = bundled.components.schemas.Child;
-    expect(child.allOf[0].properties.a).toEqual({ type: "string" });
-    expect(child.allOf[1].properties.extra).toEqual({ type: "string" });
-    expect(child.allOf[1].required).toEqual(["extra"]);
+    expect(bundled.components.schemas.Child).toEqual({
+      $ref: "#/components/schemas/base",
+      description: "docs",
+      required: ["extra"],
+      properties: { extra: { type: "string" } },
+    });
+    expect(bundled.components.schemas.base.properties.a).toEqual({
+      type: "string",
+    });
   });
 
-  test("OpenAPI 3.0 ignores them", async () => {
+  test("OpenAPI 3.0 keeps them too, for the renderer to ignore", async () => {
     await write("sib30/base.yaml", "type: object\n");
     const root = await write(
       "sib30/root.yaml",
@@ -489,7 +661,11 @@ describe("keywords next to an external $ref", () => {
       ].join("\n"),
     );
     const bundled = await bundleExternalRefs(await loadSpec(root));
-    expect(bundled.components.schemas.Child).toEqual({ type: "object" });
+    expect(bundled.components.schemas.Child).toEqual({
+      $ref: "#/components/schemas/base",
+      properties: { extra: { type: "string" } },
+    });
+    expect(bundled.components.schemas.base).toEqual({ type: "object" });
   });
 
   test("a cyclic reference keeps them next to the hoisted $ref", async () => {

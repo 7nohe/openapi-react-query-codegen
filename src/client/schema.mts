@@ -31,6 +31,18 @@ export function componentSchemaKey(ref: string): string | undefined {
   return decodeURIComponent(rest).replaceAll("~1", "/").replaceAll("~0", "~");
 }
 
+/** Whether a discriminator mapping target, a `$ref` or a name, is the schema. */
+function isMappingTarget(target: string, key: string): boolean {
+  if (target === key || target === `${COMPONENT_SCHEMA_PREFIX}${key}`) {
+    return true;
+  }
+  try {
+    return componentSchemaKey(target) === key;
+  } catch {
+    return false;
+  }
+}
+
 /** Render a JSDoc block, or an empty string when there is nothing to say. */
 export function docComment(
   parts: { description?: string; deprecated?: boolean },
@@ -202,10 +214,7 @@ export function renderComponentSchema(
   const mapped = Object.entries(
     (discriminator.mapping ?? {}) as Record<string, string>,
   )
-    .filter(
-      ([, target]) =>
-        target === `${COMPONENT_SCHEMA_PREFIX}${key}` || target === key,
-    )
+    .filter(([, target]) => isMappingTarget(target, key))
     .map(([value]) => value);
   const named = mapped.length > 0 ? mapped : [key];
   const allowed = pinned
@@ -268,10 +277,29 @@ export function renderSchema(
     return union((schema.enum as unknown[]).map(literal));
   }
 
+  // A value has to match every keyword, so `oneOf` and `anyOf` narrow what
+  // `allOf` and the schema's own properties describe.
+  const unions = (["oneOf", "anyOf"] as const)
+    .map((key) => schema[key])
+    .filter((options) => Array.isArray(options) && options.length > 0)
+    .map((options: Json[]) =>
+      union(
+        options.map((member) =>
+          withDiscriminator(
+            member,
+            renderSchema(member, ctx, indent, seen),
+            schema.discriminator,
+            ctx,
+          ),
+        ),
+      ),
+    );
+
   if (Array.isArray(schema.allOf) && schema.allOf.length > 0) {
     const members = schema.allOf
       .filter((member: Json) => !isRequiredOnly(member))
       .map((member: Json) => renderSchema(member, ctx, indent, seen));
+    members.push(...unions);
     if (
       schema.properties ||
       schema.patternProperties ||
@@ -284,25 +312,12 @@ export function renderSchema(
     return addNull(intersection(members), schema);
   }
 
-  for (const key of ["oneOf", "anyOf"] as const) {
-    const options = schema[key];
-    if (Array.isArray(options) && options.length > 0) {
-      const rendered = union(
-        options.map((member: Json) =>
-          withDiscriminator(
-            member,
-            renderSchema(member, ctx, indent, seen),
-            schema.discriminator,
-            ctx,
-          ),
-        ),
-      );
-      const withOwn =
-        schema.properties || schema.additionalProperties
-          ? intersection([rendered, renderObject(schema, ctx, indent, seen)])
-          : rendered;
-      return addNull(withOwn, schema);
-    }
+  if (unions.length > 0) {
+    const members =
+      schema.properties || schema.additionalProperties
+        ? [...unions, renderObject(schema, ctx, indent, seen)]
+        : unions;
+    return addNull(intersection(members), schema);
   }
 
   if (Array.isArray(schema.type)) {
@@ -320,8 +335,8 @@ export function renderSchema(
   switch (schema.type) {
     case "string":
       type =
-        schema.format === "binary"
-          ? `${globalTypeRef("Blob", ctx)} | ${globalTypeRef("File", ctx)}`
+        schema.format === "binary" || hasBinaryContent(schema)
+          ? fileType(ctx)
           : "string";
       break;
     case "number":
@@ -348,11 +363,34 @@ export function renderSchema(
         type = renderObject(schema, ctx, indent, seen);
       } else if (schema.items || schema.prefixItems) {
         type = renderArray(schema, ctx, indent, seen);
+      } else if (hasBinaryContent(schema)) {
+        type = fileType(ctx);
       } else {
         type = "unknown";
       }
   }
   return addNull(type, schema);
+}
+
+function fileType(ctx: SchemaCtx): string {
+  return `${globalTypeRef("Blob", ctx)} | ${globalTypeRef("File", ctx)}`;
+}
+
+/** Media types whose content is text, which a string can hold as it is. */
+const TEXT_MEDIA_TYPE =
+  /^(text|multipart)\/|(json|xml|yaml|javascript|ecmascript|html|graphql|x-www-form-urlencoded)$/;
+
+/**
+ * Whether the schema is a file the way OpenAPI 3.1 writes one: a media type
+ * that is not text, and no `contentEncoding` making a string of it.
+ */
+function hasBinaryContent(schema: Json): boolean {
+  const mediaType = schema.contentMediaType;
+  return (
+    typeof mediaType === "string" &&
+    schema.contentEncoding === undefined &&
+    !TEXT_MEDIA_TYPE.test(mediaType.toLowerCase().split(";")[0].trim())
+  );
 }
 
 /** Keywords that give a schema a type of its own. */
@@ -476,6 +514,9 @@ function renderRef(
 ): string {
   const key = componentSchemaKey(ref);
   if (key !== undefined) {
+    // A reference to a schema that is not there has no type to name.
+    const schemas = ctx.doc.components?.schemas ?? {};
+    if (!Object.hasOwn(schemas, key) && !ctx.names.has(key)) return "unknown";
     const writable = ctx.writableNames?.get(key);
     if (ctx.mode === "write" && writable !== undefined) return writable;
     return ctx.names.get(key) ?? toTypeName(key);
@@ -541,7 +582,7 @@ function withDiscriminator(
   )
     .filter(
       ([, target]) =>
-        target === member.$ref || target === key || target.endsWith(`/${key}`),
+        isMappingTarget(target, key) || target.endsWith(`/${key}`),
     )
     .map(([value]) => value);
   // A member that pins the property keeps it, unless it inherits an enum of all

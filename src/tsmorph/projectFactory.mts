@@ -28,16 +28,27 @@ export function createGenerationProject(): Project {
 }
 
 /**
+ * A relative module specifier, with the extension the consuming project's
+ * module resolution asks for.
+ */
+export function relativeModule(
+  path: string,
+  ctx?: Pick<GenerationContext, "importExtension">,
+): string {
+  return `${path}${ctx?.importExtension ?? ""}`;
+}
+
+/**
  * Build import structure for the Options type.
  * sdk.gen re-exports Options extended with `client` and `meta`, which the
  * base client Options lacks; hooks must accept those properties.
  */
 export function buildClientImport(
-  _ctx: GenerationContext,
+  ctx: GenerationContext,
 ): ImportDeclarationStructure {
   return {
     kind: StructureKind.ImportDeclaration,
-    moduleSpecifier: "../requests/sdk.gen",
+    moduleSpecifier: relativeModule("../requests/sdk.gen", ctx),
     namedImports: [{ name: "Options", isTypeOnly: true }],
   };
 }
@@ -95,7 +106,7 @@ export function buildServiceImport(
 ): ImportDeclarationStructure {
   return {
     kind: StructureKind.ImportDeclaration,
-    moduleSpecifier: "../requests/sdk.gen",
+    moduleSpecifier: relativeModule("../requests/sdk.gen", ctx),
     namedImports: ctx.serviceNames.map((name) => ({ name })),
   };
 }
@@ -114,7 +125,7 @@ export function buildModelImport(
 
   return {
     kind: StructureKind.ImportDeclaration,
-    moduleSpecifier: "../requests/types.gen",
+    moduleSpecifier: relativeModule("../requests/types.gen", ctx),
     isTypeOnly: true,
     namedImports: ctx.modelNames.map((name) => ({ name })),
   };
@@ -134,10 +145,12 @@ export function buildAxiosErrorImport(): ImportDeclarationStructure {
 /**
  * Build import for Common namespace.
  */
-export function buildCommonImport(): ImportDeclarationStructure {
+export function buildCommonImport(
+  ctx?: Pick<GenerationContext, "importExtension">,
+): ImportDeclarationStructure {
   return {
     kind: StructureKind.ImportDeclaration,
-    moduleSpecifier: "./common",
+    moduleSpecifier: relativeModule("./common", ctx),
     namespaceImport: "Common",
   };
 }
@@ -172,7 +185,7 @@ export function buildCommonFileImports(
 export function buildHookFileImports(
   ctx: GenerationContext,
 ): ImportDeclarationStructure[] {
-  return [buildCommonImport(), ...buildCommonFileImports(ctx)];
+  return [buildCommonImport(ctx), ...buildCommonFileImports(ctx)];
 }
 
 /**
@@ -184,7 +197,7 @@ export function buildQueryOptionsFileImports(
   ctx: GenerationContext,
 ): ImportDeclarationStructure[] {
   const imports: ImportDeclarationStructure[] = [
-    buildCommonImport(),
+    buildCommonImport(ctx),
     buildQueryOptionsImport(),
     buildClientImport(ctx),
     buildServiceImport(ctx),

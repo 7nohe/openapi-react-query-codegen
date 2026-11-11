@@ -498,6 +498,106 @@ describe("parameters use the request-side types", () => {
   });
 });
 
+describe("shared request bodies and default responses", () => {
+  const json = (schema: unknown) => ({
+    content: { "application/json": { schema } },
+  });
+  const pet = { $ref: "#/components/schemas/Pet" };
+  const err = { $ref: "#/components/schemas/Err" };
+  const make = () =>
+    generateClient({
+      input: JSON.stringify({
+        openapi: "3.0.3",
+        components: {
+          schemas: {
+            Pet: {
+              type: "object",
+              required: ["id"],
+              properties: { id: { type: "string", readOnly: true } },
+            },
+            Err: { type: "object", properties: { code: { type: "number" } } },
+          },
+          requestBodies: {
+            // Takes the next free name: the schema and the operation keep theirs.
+            Pet: { description: "A pet to store", ...json(pet) },
+            SavePetData: json({ type: "string" }),
+            Upload: {
+              content: {
+                "application/xml": { schema: { type: "string" } },
+                "application/json": { schema: { type: "number" } },
+              },
+            },
+            Empty: { description: "Nothing" },
+            Alias: { $ref: "#/components/requestBodies/Upload" },
+            Lost: { $ref: "#/components/requestBodies/Nowhere" },
+          },
+        },
+        paths: {
+          "/pet": {
+            post: {
+              operationId: "savePet",
+              requestBody: { $ref: "#/components/requestBodies/Pet" },
+              responses: { default: { description: "d", ...json(pet) } },
+            },
+            get: {
+              operationId: "getPet",
+              responses: {
+                "200": { description: "ok", ...json(pet) },
+                default: { description: "d", ...json(err) },
+              },
+            },
+            delete: {
+              operationId: "dropPet",
+              responses: {
+                "404": { description: "nf", ...json(err) },
+                default: { description: "d" },
+              },
+            },
+          },
+        },
+      }),
+      client: "fetch",
+      importExtension: "",
+      pageParam: "page",
+    });
+
+  test("a request body is a named type, as it is sent", async () => {
+    const generated = await make();
+    const types = file(generated, "types.gen.ts");
+    expect(types).toContain(
+      "/**\n * A pet to store\n */\nexport type Pet2 = PetWritable;",
+    );
+    expect(types).toContain("export type SavePetData2 = string;");
+    expect(types).toContain("export type Upload = number;");
+    expect(types).toContain(
+      "/**\n * Nothing\n */\nexport type Empty = unknown;",
+    );
+    expect(types).toContain("export type Alias = number;");
+    expect(types).toContain("export type Lost = unknown;");
+    expect(types).toMatch(/type SavePetData = \{[^}]*body\?: PetWritable;/);
+    expect(generated.modelNames).toEqual(
+      expect.arrayContaining(["Pet2", "SavePetData2", "Upload", "Lost"]),
+    );
+  });
+
+  test("default is the data without a 2xx and an error with one", async () => {
+    const generated = await make();
+    const types = file(generated, "types.gen.ts");
+    expect(types).toMatch(/type SavePetResponses = \{[^}]*default: Pet;/);
+    expect(types).not.toContain("SavePetError");
+    expect(types).toMatch(/type GetPetErrors = \{[^}]*default: Err;/);
+    expect(types).toMatch(/type GetPetResponses = \{[^}]*200: Pet;\s+\}/);
+    expect(types).toMatch(/type DropPetErrors = \{[^}]*404: Err;\s+\}/);
+    expect(types).toMatch(/type DropPetResponses = \{[^}]*default: unknown;/);
+
+    const errorOf = (name: string) =>
+      generated.operations.find((op) => op.methodName === name)?.errorTypeName;
+    expect(errorOf("savePet")).toBeUndefined();
+    expect(errorOf("getPet")).toBe("GetPetError");
+    expect(errorOf("dropPet")).toBe("DropPetError");
+  });
+});
+
 describe("a next page property that is not an identifier", () => {
   test("is quoted in the type and in the access", () => {
     const expr = buildGetNextPageParamExpr({

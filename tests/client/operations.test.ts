@@ -332,10 +332,14 @@ describe("classifyResponses", () => {
     expect(errors.map((r) => r.status)).toEqual(["404", "5XX", "default"]);
   });
 
-  test("a lone default response counts as both", () => {
-    const { responses, errors } = make("default");
-    expect(responses).toHaveLength(1);
-    expect(errors).toHaveLength(1);
+  test("default is the data when no 2xx response is listed", () => {
+    expect(make("default")).toEqual({
+      responses: [{ status: "default" }],
+      errors: [],
+    });
+    const { responses, errors } = make("404", "default");
+    expect(responses.map((r) => r.status)).toEqual(["default"]);
+    expect(errors.map((r) => r.status)).toEqual(["404"]);
   });
 
   test("ignores informational and redirect statuses", () => {

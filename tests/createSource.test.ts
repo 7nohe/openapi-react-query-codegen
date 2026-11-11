@@ -180,3 +180,72 @@ describe("createSource - digit-leading operationId (#213)", () => {
     expect(diagnostics).toEqual([]);
   });
 });
+
+// The queries import the requests, so under Node's module resolution both
+// need the `.js` extension: a bare "./common" is TS2835 there.
+describe("createSource - NodeNext module resolution", () => {
+  const dir = outputPath("createSource-nodenext");
+
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test("relative imports carry .js and the output typechecks", async () => {
+    const generated = await generateTestClient("petstore.yaml", {
+      importExtension: ".js",
+    });
+    await writeGeneratedFiles(path.join(dir, "requests"), generated.files);
+    const source = createSource({
+      generated,
+      version: "1.0.0",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
+      omitInitialPageParam: false,
+      client: "fetch",
+      importExtension: ".js",
+    });
+
+    expect(source.find((s) => s.name === "index.ts")?.content).toBe(
+      '// generated with @7nohe/openapi-react-query-codegen@1.0.0 \n\nexport * from "./common.js";\nexport * from "./queries.js";\nexport * from "./queryOptions.js";\n',
+    );
+    for (const file of source) {
+      const relative = [...file.content.matchAll(/from "(\.[^"]*)"/g)];
+      expect(relative.map((match) => match[1])).toSatisfy(
+        (specifiers: string[]) =>
+          specifiers.every((specifier) => specifier.endsWith(".js")),
+      );
+    }
+
+    const queriesDir = path.join(dir, "queries");
+    await mkdir(queriesDir, { recursive: true });
+    await Promise.all(
+      source.map((file) =>
+        writeFile(path.join(queriesDir, file.name), file.content),
+      ),
+    );
+    await formatOutput(queriesDir);
+    // NodeNext treats .ts files as CommonJS unless the package says otherwise.
+    await writeFile(path.join(dir, "package.json"), '{"type":"module"}');
+
+    const program = ts.createProgram(
+      source.map((file) => path.join(queriesDir, file.name)),
+      {
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.NodeNext,
+        moduleResolution: ts.ModuleResolutionKind.NodeNext,
+        verbatimModuleSyntax: true,
+      },
+    );
+    const diagnostics = ts
+      .getPreEmitDiagnostics(program)
+      .map(
+        (d) =>
+          `${d.file?.fileName ?? ""}: ${ts.flattenDiagnosticMessageText(d.messageText, "\n")}`,
+      );
+    expect(diagnostics).toEqual([]);
+  });
+});

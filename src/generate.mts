@@ -35,11 +35,14 @@ export async function generate(options: LimitedUserConfig, version: string) {
   const formattedOptions = formatOptions(options);
   const client = resolveClientKind(formattedOptions.client);
 
+  // One answer for both directories: the queries import the requests.
+  const importExtension = detectImportExtension(process.cwd());
+
   const generated = await generateClient({
     input: formattedOptions.input,
     client,
     enums: formattedOptions.enums,
-    importExtension: detectImportExtension(process.cwd()),
+    importExtension,
     noOperationId: formattedOptions.noOperationId,
     pageParam: formattedOptions.pageParam,
   });
@@ -53,6 +56,7 @@ export async function generate(options: LimitedUserConfig, version: string) {
     nextPageParam: formattedOptions.nextPageParam,
     initialPageParam: formattedOptions.initialPageParam.toString(),
     omitInitialPageParam: formattedOptions.omitInitialPageParam ?? false,
+    importExtension,
   });
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);

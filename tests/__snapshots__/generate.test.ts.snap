@@ -13,13 +13,13 @@ import type {
   getNotDefined,
   Options,
   postNotDefined,
-} from "../requests/sdk.gen";
+} from "../requests/sdk.gen.js";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
   GetNotDefinedData,
-} from "../requests/types.gen";
+} from "../requests/types.gen.js";
 
 export type FindPetsDefaultResponse = Awaited<
   ReturnType<typeof findPets>
@@ -132,14 +132,14 @@ import {
   findPets,
   getNotDefined,
   type Options,
-} from "../requests/sdk.gen";
+} from "../requests/sdk.gen.js";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
   GetNotDefinedData,
-} from "../requests/types.gen";
-import * as Common from "./common";
+} from "../requests/types.gen.js";
+import * as Common from "./common.js";
 
 /**
  * Returns all pets from the system that the user has access to
@@ -230,9 +230,9 @@ export const ensureUseFindPaginatedPetsData = (
 exports[`generate > index.ts 1`] = `
 "// generated with @7nohe/openapi-react-query-codegen@1.0.0
 
-export * from "./common";
-export * from "./queries";
-export * from "./queryOptions";
+export * from "./common.js";
+export * from "./queries.js";
+export * from "./queryOptions.js";
 "
 `;
 
@@ -244,9 +244,9 @@ import {
   useInfiniteQuery,
   type UseInfiniteQueryOptions,
 } from "@tanstack/react-query";
-import { findPaginatedPets, type Options } from "../requests/sdk.gen";
-import type { FindPaginatedPetsData } from "../requests/types.gen";
-import * as Common from "./common";
+import { findPaginatedPets, type Options } from "../requests/sdk.gen.js";
+import type { FindPaginatedPetsData } from "../requests/types.gen.js";
+import * as Common from "./common.js";
 
 /**
  * Returns paginated pets from the system that the user has access to
@@ -313,14 +313,14 @@ import {
   findPets,
   getNotDefined,
   type Options,
-} from "../requests/sdk.gen";
+} from "../requests/sdk.gen.js";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
   GetNotDefinedData,
-} from "../requests/types.gen";
-import * as Common from "./common";
+} from "../requests/types.gen.js";
+import * as Common from "./common.js";
 
 /**
  * Returns all pets from the system that the user has access to
@@ -470,7 +470,7 @@ import {
   getNotDefined,
   type Options,
   postNotDefined,
-} from "../requests/sdk.gen";
+} from "../requests/sdk.gen.js";
 import type {
   AddPetData,
   AddPetError,
@@ -483,8 +483,8 @@ import type {
   FindPetsError,
   GetNotDefinedData,
   PostNotDefinedData,
-} from "../requests/types.gen";
-import * as Common from "./common";
+} from "../requests/types.gen.js";
+import * as Common from "./common.js";
 
 /**
  * Returns all pets from the system that the user has access to
@@ -669,14 +669,14 @@ import {
   findPets,
   getNotDefined,
   type Options,
-} from "../requests/sdk.gen";
+} from "../requests/sdk.gen.js";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
   FindPetsData,
   GetNotDefinedData,
-} from "../requests/types.gen";
-import * as Common from "./common";
+} from "../requests/types.gen.js";
+import * as Common from "./common.js";
 
 /**
  * Returns all pets from the system that the user has access to
@@ -793,7 +793,7 @@ import {
   findPets,
   getNotDefined,
   type Options,
-} from "../requests/sdk.gen";
+} from "../requests/sdk.gen.js";
 import type {
   FindPaginatedPetsData,
   FindPetByIdData,
@@ -801,8 +801,8 @@ import type {
   FindPetsData,
   FindPetsError,
   GetNotDefinedData,
-} from "../requests/types.gen";
-import * as Common from "./common";
+} from "../requests/types.gen.js";
+import * as Common from "./common.js";
 
 /**
  * Returns all pets from the system that the user has access to
@@ -958,9 +958,9 @@ exports[`generate - axios client with enums, noOperationId, schemaType > queries
 
 import { useMutation, type UseMutationOptions, useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { AxiosError } from "axios";
-import { deletePetsById, getNotDefined, getPaginatedPets, getPets, getPetsById, type Options, postNotDefined, postPets } from "../requests/sdk.gen";
-import type { DeletePetsByIdData, DeletePetsByIdError, GetNotDefinedData, GetPaginatedPetsData, GetPetsByIdData, GetPetsByIdError, GetPetsData, GetPetsError, PostNotDefinedData, PostPetsData, PostPetsError } from "../requests/types.gen";
-import * as Common from "./common";
+import { deletePetsById, getNotDefined, getPaginatedPets, getPets, getPetsById, type Options, postNotDefined, postPets } from "../requests/sdk.gen.js";
+import type { DeletePetsByIdData, DeletePetsByIdError, GetNotDefinedData, GetPaginatedPetsData, GetPetsByIdData, GetPetsByIdError, GetPetsData, GetPetsError, PostNotDefinedData, PostPetsData, PostPetsError } from "../requests/types.gen.js";
+import * as Common from "./common.js";
 
 /**
  * Returns all pets from the system that the user has access to

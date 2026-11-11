@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
-import { toTypeName, uniqueName } from "./naming.mjs";
+import { uniqueName } from "./naming.mjs";
 
 // biome-ignore lint/suspicious/noExplicitAny: an OpenAPI document is untyped JSON
 export type Json = any;
@@ -174,50 +174,30 @@ const NAME_MAP_KEYWORDS = new Set([
   "webhooks",
 ]);
 
+/** The name maps among them whose values are schemas. */
+const SCHEMA_MAP_KEYWORDS = new Set([
+  "$defs",
+  "definitions",
+  "dependentSchemas",
+  "patternProperties",
+  "properties",
+  "schemas",
+]);
+
 /**
- * The discriminator value of an inlined `oneOf`/`anyOf` member, as a schema to
- * intersect it with: once inlined, nothing else tells what it was called.
+ * What a node is, which decides how a `$ref` in it is bundled and whether its
+ * keys are keywords: a schema, a map of names to schemas, a map of names to
+ * anything else, or any other object.
  */
-function narrowInlinedMembers(node: Json, walked: Json): Json {
-  const property = node.discriminator?.propertyName;
-  if (typeof property !== "string") return walked;
-  for (const key of ["oneOf", "anyOf"]) {
-    if (!Array.isArray(node[key])) continue;
-    walked[key] = node[key].map((member: Json, index: number) => {
-      const inlined = walked[key][index];
-      const ref = member?.$ref;
-      const declared = inlined?.properties?.[property];
-      if (
-        typeof ref !== "string" ||
-        inlined?.$ref !== undefined ||
-        (inlined?.type !== undefined && inlined.type !== "object") ||
-        declared?.const !== undefined ||
-        Array.isArray(declared?.enum)
-      ) {
-        return inlined;
-      }
-      const mapped = Object.entries(node.discriminator.mapping ?? {})
-        .filter(([, target]) => target === ref)
-        .map(([value]) => value);
-      const name = ref
-        .split(/[#/]/)
-        .pop()
-        ?.replace(/\.[^.]+$/, "");
-      return {
-        allOf: [
-          inlined,
-          {
-            type: "object",
-            required: [property],
-            properties: {
-              [property]: { enum: mapped.length > 0 ? mapped : [name] },
-            },
-          },
-        ],
-      };
-    });
-  }
-  return walked;
+type Position = "schema" | "schemaMap" | "nameMap" | "other";
+
+function childPosition(position: Position, key: string): Position {
+  if (position === "schemaMap") return "schema";
+  if (position === "nameMap") return "other";
+  if (SCHEMA_MAP_KEYWORDS.has(key)) return "schemaMap";
+  if (position === "schema") return "schema";
+  if (key === "schema") return "schema";
+  return NAME_MAP_KEYWORDS.has(key) ? "nameMap" : "other";
 }
 
 function resolveLocation(base: string | undefined, target: string): string {
@@ -241,22 +221,66 @@ function decodeReference(reference: string): string {
   }
 }
 
+/** The file a `$ref` points into and the pointer inside it. */
+function locateRef(ref: string, nodeLocation: string | undefined) {
+  const hashIndex = ref.indexOf("#");
+  const filePart = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
+  const pointer = hashIndex === -1 ? "" : ref.slice(hashIndex);
+  const location = filePart
+    ? resolveLocation(nodeLocation, filePart)
+    : (nodeLocation as string);
+  return { location, pointer, key: `${location}${pointer}` };
+}
+
+/** What an external schema is called: its key, or else the name of its file. */
+function externalSchemaName(location: string, pointer: string): string {
+  const last = pointer.slice(pointer.lastIndexOf("/") + 1);
+  if (pointer.includes("/") && last) {
+    return decodeReference(last).replaceAll("~1", "/").replaceAll("~0", "~");
+  }
+  const file = path.basename(location.replace(/[?#].*$/, ""));
+  return file.replace(/\.[^.]+$/, "") || "Schema";
+}
+
+function componentSchemaRef(name: string): string {
+  const segment = name.replaceAll("~", "~0").replaceAll("/", "~1");
+  return `#/components/schemas/${encodeURIComponent(segment)}`;
+}
+
 /**
- * Inline every external `$ref` (relative files and URLs). Internal `$ref`s of
- * the root document stay untouched. A reference that would recurse forever is
- * hoisted into `components.schemas` and turned into an internal `$ref`.
+ * Bundle every external `$ref` (relative files and URLs) into the root
+ * document. Internal `$ref`s of the root document stay untouched.
+ *
+ * An external schema becomes a named entry of `components.schemas` and the
+ * reference an internal one, so that it is one type however often it is used,
+ * a recursive one included. Everything else (parameters, responses, path
+ * items) is inlined.
  */
 export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
   const { doc, location: rootLocation } = loaded;
-  // Promises, so that concurrent references to one file read it once.
   const cache = new Map<string, Promise<{ doc: Doc; location: string }>>();
   if (rootLocation) {
     cache.set(rootLocation, Promise.resolve({ doc, location: rootLocation }));
   }
+  /** The name in `components.schemas` of each external schema. */
   const hoisted = new Map<string, string>();
-  const hoistedSchemas: Record<string, Json> = {};
+  const hoistedSchemas = new Map<string, Json>();
+  /** Discriminator mappings, whose targets are rewritten once all are named. */
+  const mappings: { mapping: Json; location: string | undefined }[] = [];
 
-  const usedNames = new Set<string>(Object.keys(doc.components?.schemas ?? {}));
+  const rootSchemas: Record<string, Json> = doc.components?.schemas ?? {};
+  const usedNames = new Set<string>(Object.keys(rootSchemas));
+  // A root schema that is nothing but an external reference names its target,
+  // rather than being an alias of a second type with a made-up name.
+  for (const [name, schema] of Object.entries(rootSchemas)) {
+    const ref = schema?.$ref;
+    if (typeof ref !== "string" || ref.startsWith("#")) continue;
+    if (Object.keys(schema).length > 1) continue;
+    const target = locateRef(ref, rootLocation);
+    if (target.location !== rootLocation && !hoisted.has(target.key)) {
+      hoisted.set(target.key, name);
+    }
+  }
 
   function loadFile(location: string): Promise<{ doc: Doc; location: string }> {
     let file = cache.get(location);
@@ -267,89 +291,144 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
     return file;
   }
 
+  async function loadTarget(
+    target: { location: string; pointer: string },
+    ref: string,
+  ): Promise<{ node: Json; location: string }> {
+    const file = await loadFile(target.location);
+    const node = getByPointer(file.doc, target.pointer);
+    if (node === undefined) {
+      throw new Error(`Unresolvable $ref: ${ref}`);
+    }
+    return { node, location: file.location };
+  }
+
+  /** Make the target a named schema of the root, once, and refer to it. */
+  async function hoist(
+    target: { location: string; pointer: string; key: string },
+    ref: string,
+    stack: ReadonlySet<string>,
+  ): Promise<string> {
+    let name = hoisted.get(target.key);
+    if (name === undefined) {
+      name = uniqueName(
+        externalSchemaName(target.location, target.pointer),
+        usedNames,
+      );
+      hoisted.set(target.key, name);
+    }
+    if (!hoistedSchemas.has(name)) {
+      // Taken before the target is read, so that the schemas come out in the
+      // order they are first used and a recursive one refers to itself.
+      hoistedSchemas.set(name, {});
+      const { node, location } = await loadTarget(target, ref);
+      hoistedSchemas.set(
+        name,
+        await walk(node, location, new Set(stack).add(target.key), "schema"),
+      );
+    }
+    return componentSchemaRef(name);
+  }
+
+  // One node after the other, so that the names given to hoisted schemas do
+  // not depend on which file happens to be read first.
   async function walk(
     node: Json,
     nodeLocation: string | undefined,
     stack: ReadonlySet<string>,
-    inNameMap = false,
+    position: Position,
   ): Promise<Json> {
     if (Array.isArray(node)) {
-      return Promise.all(node.map((item) => walk(item, nodeLocation, stack)));
+      const itemPosition = childPosition(position, "");
+      const items: Json[] = [];
+      for (const item of node) {
+        items.push(await walk(item, nodeLocation, stack, itemPosition));
+      }
+      return items;
     }
     if (node === null || typeof node !== "object") return node;
 
     const ref = node.$ref;
     const isExternalFile = nodeLocation !== rootLocation;
     if (typeof ref === "string" && (!ref.startsWith("#") || isExternalFile)) {
-      const hashIndex = ref.indexOf("#");
-      const filePart = hashIndex === -1 ? ref : ref.slice(0, hashIndex);
-      const pointer = hashIndex === -1 ? "" : ref.slice(hashIndex);
-      const targetLocation = filePart
-        ? resolveLocation(nodeLocation, filePart)
-        : (nodeLocation as string);
-      const key = `${targetLocation}${pointer}`;
-      const siblings = refSiblingSchema(doc, node);
-      const walkedSiblings =
-        siblings && (await walk(siblings, nodeLocation, stack));
+      const target = locateRef(ref, nodeLocation);
+      const isBackReference =
+        target.location === rootLocation && target.pointer !== "";
 
-      // A file pointing back into the root keeps the root's named type.
-      if (targetLocation === rootLocation && pointer) {
-        return { ...walkedSiblings, $ref: pointer };
+      // A file pointing back into the root keeps the root's named type, and an
+      // external schema gets one. What sits next to the reference stays there,
+      // as it does next to an internal one.
+      if (isBackReference || position === "schema" || stack.has(target.key)) {
+        const { $ref: _ref, ...rest } = node;
+        const siblings =
+          Object.keys(rest).length > 0
+            ? await walk(rest, nodeLocation, stack, position)
+            : undefined;
+        return {
+          ...siblings,
+          $ref: isBackReference
+            ? target.pointer
+            : await hoist(target, ref, stack),
+        };
       }
 
-      if (stack.has(key)) {
-        let name = hoisted.get(key);
-        if (!name) {
-          const base = path.basename(targetLocation).replace(/\.[^.]+$/, "");
-          const last = pointer.split("/").pop() ?? "";
-          name = uniqueName(toTypeName(last || base), usedNames);
-          hoisted.set(key, name);
-          const file = await loadFile(targetLocation);
-          const target = getByPointer(file.doc, pointer);
-          hoistedSchemas[name] = await walk(
-            target,
-            file.location,
-            new Set(stack).add(key),
-          );
-        }
-        return { ...walkedSiblings, $ref: `#/components/schemas/${name}` };
-      }
-
-      const file = await loadFile(targetLocation);
-      const target = getByPointer(file.doc, pointer);
-      if (target === undefined) {
-        throw new Error(`Unresolvable $ref: ${ref}`);
-      }
-      const inlined = await walk(
-        target,
-        file.location,
-        new Set(stack).add(key),
+      const loadedTarget = await loadTarget(target, ref);
+      return walk(
+        loadedTarget.node,
+        loadedTarget.location,
+        new Set(stack).add(target.key),
+        position,
       );
-      return walkedSiblings ? { allOf: [inlined, walkedSiblings] } : inlined;
     }
 
+    const isNameMap = position === "schemaMap" || position === "nameMap";
     const result: Record<string, Json> = {};
     for (const [key, value] of Object.entries(node)) {
       const isData =
-        !inNameMap && (DATA_KEYWORDS.has(key) || key.startsWith("x-"));
+        !isNameMap && (DATA_KEYWORDS.has(key) || key.startsWith("x-"));
       result[key] = isData
         ? value
-        : await walk(
-            value,
-            nodeLocation,
-            stack,
-            !inNameMap && NAME_MAP_KEYWORDS.has(key),
-          );
+        : await walk(value, nodeLocation, stack, childPosition(position, key));
     }
-    return narrowInlinedMembers(node, result);
+    const mapping = result.discriminator?.mapping;
+    if (!isNameMap && mapping !== null && typeof mapping === "object") {
+      mappings.push({ mapping, location: nodeLocation });
+    }
+    return result;
   }
 
-  const bundled = (await walk(doc, rootLocation, new Set())) as Doc;
-  if (hoisted.size > 0) {
+  const bundled = (await walk(doc, rootLocation, new Set(), "other")) as Doc;
+
+  // A mapping names its targets the way a `$ref` does, or by schema name.
+  for (const { mapping, location } of mappings) {
+    for (const [value, target] of Object.entries(mapping)) {
+      if (typeof target !== "string") continue;
+      if (target.startsWith("#") && location === rootLocation) continue;
+      let name: string | undefined;
+      try {
+        const located = locateRef(target, location);
+        if (located.location === rootLocation && located.pointer !== "") {
+          mapping[value] = located.pointer;
+          continue;
+        }
+        name =
+          hoisted.get(located.key) ??
+          hoisted.get(`${location}${componentSchemaRef(target)}`) ??
+          hoisted.get(`${location}#/components/schemas/${target}`);
+      } catch {
+        // Not a reference that can be resolved, so a schema name.
+      }
+      if (name !== undefined && hoistedSchemas.has(name)) {
+        mapping[value] = componentSchemaRef(name);
+      }
+    }
+  }
+
+  if (hoistedSchemas.size > 0) {
     bundled.components ??= {};
     bundled.components.schemas = {
       ...bundled.components.schemas,
-      ...hoistedSchemas,
+      ...Object.fromEntries(hoistedSchemas),
     };
   }
   return bundled;

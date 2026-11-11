@@ -40,6 +40,7 @@ import {
   buildHookFileImports,
   buildQueryOptionsFileImports,
   createGenerationProject,
+  relativeModule,
 } from "./projectFactory.mjs";
 
 type Statement = TypeAliasDeclarationStructure | VariableStatementStructure;
@@ -110,9 +111,17 @@ function createFile(
 }
 
 /**
- * The constant content of index.ts, which needs no ts-morph project.
+ * The content of index.ts, which needs no ts-morph project.
  */
-const INDEX_FILE = `export * from "./common";\nexport * from "./queries";\nexport * from "./queryOptions";\n`;
+function indexFile(ctx: GenerationContext): string {
+  return [
+    OpenApiRqFiles.common,
+    OpenApiRqFiles.queries,
+    OpenApiRqFiles.queryOptions,
+  ]
+    .map((name) => `export * from "${relativeModule(`./${name}`, ctx)}";\n`)
+    .join("");
+}
 
 function commonStatements(
   queries: OperationInfo[],
@@ -231,7 +240,7 @@ export function generateAllFiles(
   return [
     {
       name: `${OpenApiRqFiles.index}.ts`,
-      content: addHeaderComment(INDEX_FILE, ctx.version),
+      content: addHeaderComment(indexFile(ctx), ctx.version),
     },
     ...files.map(([name, imports, statements]) => ({
       name: `${name}.ts`,

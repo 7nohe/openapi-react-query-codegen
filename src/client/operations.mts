@@ -162,7 +162,8 @@ export function mediaKind(mediaType: string): BodyKind {
   return "binary";
 }
 
-function pickContent(
+/** The media type a body is typed from: JSON when offered, else the first. */
+export function pickContent(
   content: Record<string, Json> | undefined,
 ): { mediaType: string; media: Json } | undefined {
   if (!content) return undefined;
@@ -389,6 +390,22 @@ export function buildWritableNames(
   return writable;
 }
 
+/**
+ * Type names for `components.requestBodies`. They are claimed after every
+ * other name, so a schema or an operation never gives its name up to one.
+ */
+export function buildRequestBodyNames(
+  doc: Doc,
+  taken: Iterable<string>,
+): Map<string, string> {
+  const used = new Set<string>([...RESERVED_TYPE_NAMES, ...taken]);
+  const names = new Map<string, string>();
+  for (const key of Object.keys(doc.components?.requestBodies ?? {})) {
+    names.set(key, uniqueName(toTypeName(key), used));
+  }
+  return names;
+}
+
 /** Map every component schema key to its generated type name. */
 export function buildSchemaNames(doc: Doc): Map<string, string> {
   const names = new Map<string, string>();
@@ -417,10 +434,9 @@ export function classifyResponses(operation: OperationIR): {
   const fallback = operation.responses.find(
     (response) => response.status === "default",
   );
-  if (fallback) {
-    errors.push(fallback);
-    if (responses.length === 0) responses.push(fallback);
-  }
+  // `default` stands for whatever is not listed: the data when no 2xx is, and
+  // an error otherwise.
+  if (fallback) (responses.length === 0 ? responses : errors).push(fallback);
   return { responses, errors };
 }
 

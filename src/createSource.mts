@@ -13,6 +13,7 @@ export const createSource = ({
   nextPageParam,
   initialPageParam,
   omitInitialPageParam,
+  importExtension = "",
 }: {
   generated: Pick<
     GeneratedClient,
@@ -24,6 +25,8 @@ export const createSource = ({
   nextPageParam: string;
   initialPageParam: string;
   omitInitialPageParam: boolean;
+  /** Extension of the relative imports; see `detectImportExtension`. */
+  importExtension?: "" | ".js";
 }): GeneratedFile[] => {
   const ctx: GenerationContext = {
     client,
@@ -34,6 +37,7 @@ export const createSource = ({
     initialPageParam,
     omitInitialPageParam,
     version,
+    importExtension,
   };
   return generateAllFiles(generated.operations, ctx);
 };

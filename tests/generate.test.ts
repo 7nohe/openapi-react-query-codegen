@@ -1,5 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
@@ -150,6 +157,19 @@ describe("generate - import extension follows the caller's tsconfig", () => {
   const readGenerated = async (outputDir: string, fileName: string) =>
     readFile(path.join(outputDir, "requests", fileName), "utf-8");
 
+  /** Every relative module specifier in the generated queries directory. */
+  const queriesSpecifiers = async (outputDir: string) => {
+    const dir = path.join(outputDir, "queries");
+    const specifiers = new Set<string>();
+    for (const name of await readdir(dir)) {
+      const content = await readFile(path.join(dir, name), "utf-8");
+      for (const match of content.matchAll(/from "(\.[^"]*)"/g)) {
+        specifiers.add(match[1]);
+      }
+    }
+    return [...specifiers].sort();
+  };
+
   const runInFixture = async (moduleResolution: string) => {
     const fixtureDir = await mkdtemp(
       path.join(tmpdir(), "openapi-rq-generate-"),
@@ -190,6 +210,13 @@ describe("generate - import extension follows the caller's tsconfig", () => {
       expect(shim).toBe(
         '// This file is auto-generated for backward compatibility\nexport * from "./client.gen";\nexport * from "./sdk.gen";\n',
       );
+      expect(await queriesSpecifiers(outputDir)).toEqual([
+        "../requests/sdk.gen",
+        "../requests/types.gen",
+        "./common",
+        "./queries",
+        "./queryOptions",
+      ]);
     } finally {
       await rm(fixtureDir, { recursive: true, force: true });
     }
@@ -204,6 +231,14 @@ describe("generate - import extension follows the caller's tsconfig", () => {
       expect(shim).toBe(
         '// This file is auto-generated for backward compatibility\nexport * from "./client.gen.js";\nexport * from "./sdk.gen.js";\n',
       );
+      // The queries import the requests, so they follow the same rule.
+      expect(await queriesSpecifiers(outputDir)).toEqual([
+        "../requests/sdk.gen.js",
+        "../requests/types.gen.js",
+        "./common.js",
+        "./queries.js",
+        "./queryOptions.js",
+      ]);
     } finally {
       await rm(fixtureDir, { recursive: true, force: true });
     }

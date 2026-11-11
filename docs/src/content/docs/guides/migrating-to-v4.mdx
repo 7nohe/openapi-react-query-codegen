@@ -38,6 +38,8 @@ v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this
 
 Anything that imported from `openapi/requests/client` or `openapi/requests/core` needs to import from `openapi/requests/runtime.gen` instead (for example the `Config` and `Options` types).
 
+When your `tsconfig.json` resolves modules the Node way (`node16` or `nodenext`), relative imports in both `openapi/requests` and `openapi/queries` end with `.js`.
+
 ### The HTTP runtimes
 
 The runtimes are small, dependency-free TypeScript files generated into your project (`axios` aside). They cover what the hooks and typical applications use:
@@ -59,7 +61,7 @@ Not carried over from the Hey API clients: server-sent events, `responseStyle`, 
 
 ### Specification support
 
-OpenAPI 3.0 and 3.1 are supported, including external `$ref`s to files and URLs. Swagger/OpenAPI 2.0 documents are rejected with an explicit error — convert them to OpenAPI 3 first.
+OpenAPI 3.0 and 3.1 are supported, including external `$ref`s to files and URLs. A schema in another file is exported under its own name, as in v3. Swagger/OpenAPI 2.0 documents are rejected with an explicit error — convert them to OpenAPI 3 first.
 
 ### Naming
 
@@ -75,15 +77,20 @@ OpenAPI 3.0 and 3.1 are supported, including external `$ref`s to files and URLs.
 
 A property that an `allOf` requires is now required in the generated type, wherever it is declared. v3 left it optional when the `required` list and the declaration were in different members, as in `allOf: [{ $ref: Base }, { required: [id] }]`, so code that reads it gets a narrower type and code that builds such an object has to set it.
 
+A `oneOf` or `anyOf` next to an `allOf` is now part of the type (`Base & (A | B)`). v3 dropped the union and emitted `Base`.
+
+In OpenAPI 3.1, a string with a `contentMediaType` is a file (`Blob | File`) for every media type that is not text (JSON, XML, `text/*`, form-urlencoded), unless it also has a `contentEncoding` such as `base64`, which makes it a `string`. v3 knew a fixed list of media types, so `image/png` was a `string`, and it ignored `contentEncoding` for `application/octet-stream`.
+
 ### Types that are no longer generated
 
 v3 emitted a few helper types that no hook uses. They are gone in v4; if your code imports one, declare it yourself from the schema:
 
 - types for `components.parameters` (for example `Page` for a `Page` parameter) and for webhooks (`Webhooks`, `…WebhookRequest`)
-- anonymous helper names such as `Pet2` or `UserArray` for inline schemas
 - `*Writable` aliases of schemas that have no `readOnly`/`writeOnly` property. A real request-side variant (`PetWritable`, without the `readOnly` properties) is still generated, and the type of a `readOnly` property is now `readonly` in response types.
 
-Two typing differences to be aware of: a fixed-length array (`minItems` equal to `maxItems`) is a tuple, as before, and when `prefixItems` is followed by `items` the remaining elements are typed as `...Array<T>` rather than one extra tuple member. `oneOf`/`anyOf` members with a `discriminator` are narrowed by the discriminator value unless the member already pins the property to literals. In OpenAPI 3.1, keywords next to a `$ref` (`properties`, `required`, …) now apply together with the reference, while OpenAPI 3.0 keeps ignoring them as the specification says. A `type` on its own next to a `$ref` is not applied, as in v3.
+Types for `components.requestBodies` are still generated (`Pet2` and `UserArray` for the Petstore). Two details differ: an operation's `body` refers to the schema itself rather than to the request body's type, and when a request body shares its name with a schema or an operation's type, the request body is the one that gets the number.
+
+Two typing differences to be aware of: a fixed-length array (`minItems` equal to `maxItems`) is a tuple, as before, and when `prefixItems` is followed by `items` the remaining elements are typed as `...Array<T>` rather than one extra tuple member. `oneOf`/`anyOf` members with a `discriminator` are narrowed by the discriminator value unless the member already pins the property to literals; without a `mapping`, the value is the schema's name as written in the specification (`Zoo.Cat`, where v3 wrote `Zoo_Cat`). In OpenAPI 3.1, keywords next to a `$ref` (`properties`, `required`, …) now apply together with the reference, while OpenAPI 3.0 keeps ignoring them as the specification says. A `type` on its own next to a `$ref` is not applied, as in v3.
 
 ### Performance
 

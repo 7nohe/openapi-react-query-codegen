@@ -535,6 +535,44 @@ describe("axios runtime: path parameter styles", () => {
     expect(sent.headers["x-tenant"]).toBe("acme");
   });
 
+  test("the instance defaults follow the config", async () => {
+    const client = createClient({ baseURL: "https://x.test" });
+    expect(client.instance.defaults.baseURL).toBe("https://x.test");
+    client.setConfig({
+      baseURL,
+      headers: { "X-Tenant": "acme", "X-Old": "1", common: { "X-All": "a" } },
+      timeout: 1234,
+    });
+    client.setConfig({ headers: { "X-Old": null } });
+    expect(client.instance.defaults.baseURL).toBe(baseURL);
+    expect(client.instance.defaults.timeout).toBe(1234);
+    expect(client.instance.defaults.headers["X-Old"]).toBeUndefined();
+    expect(client.instance.defaults.headers.common.Accept).toBeDefined();
+
+    const direct = (await client.instance.get("/echo")).data as Echo;
+    expect(direct.headers["x-tenant"]).toBe("acme");
+    expect(direct.headers["x-all"]).toBe("a");
+    expect(direct.headers["x-old"]).toBeUndefined();
+
+    // A request can still take a configured header away.
+    const sent = echo(
+      await client.get({ url: "/echo", headers: { "x-tenant": null } }),
+    );
+    expect(sent.headers["x-tenant"]).toBeUndefined();
+    expect(sent.headers["x-all"]).toBe("a");
+  });
+
+  test("an instance of the caller's keeps its defaults until setConfig", () => {
+    const instance = axios.create({ baseURL: "https://mine.test" });
+    const client = createClient({
+      axios: instance,
+      baseURL: "https://x.test",
+    } as never);
+    expect(instance.defaults.baseURL).toBe("https://mine.test");
+    client.setConfig({ baseURL: "https://y.test" });
+    expect(instance.defaults.baseURL).toBe("https://y.test");
+  });
+
   test("request interceptors can read meta", async () => {
     const instance = axios.create({ baseURL });
     let seen: unknown;

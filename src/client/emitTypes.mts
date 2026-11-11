@@ -1,9 +1,12 @@
 import { type ClientKind, HEADER } from "./emitSdk.mjs";
 import { propertyKey, toEnumMemberName, uniqueName } from "./naming.mjs";
 import {
+  buildRequestBodyNames,
   classifyResponses,
+  deref,
   type OperationIR,
   type ParameterIR,
+  pickContent,
   type ResponseIR,
 } from "./operations.mjs";
 import {
@@ -251,6 +254,29 @@ export function emitTypes(
     if (name === undefined) continue;
     head.push(
       emitComponentSchema(schemas[key], key, name, writeCtx, undefined),
+    );
+    exported.push(name);
+  }
+
+  // A shared request body is a type of its own, as the schemas are.
+  const bodyNames = buildRequestBodyNames(doc, [
+    ...exported,
+    ...operations.flatMap((operation) => [
+      operation.functionName,
+      ...Object.values(operation.typeNames),
+    ]),
+  ]);
+  for (const [key, name] of bodyNames) {
+    let body: Json;
+    try {
+      body = deref(doc, doc.components.requestBodies[key]);
+    } catch {
+      // Nothing uses it, or `collectOperations` would have thrown already.
+    }
+    const schema = pickContent(body?.content)?.media?.schema;
+    const comment = docComment({ description: body?.description });
+    head.push(
+      `${comment}export type ${name} = ${schema ? renderSchema(schema, writeCtx) : "unknown"};`,
     );
     exported.push(name);
   }
