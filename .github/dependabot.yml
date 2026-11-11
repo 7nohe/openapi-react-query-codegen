@@ -36,12 +36,12 @@ updates:
       - dependency-name: "form-data"
       - dependency-name: "postcss"
       - dependency-name: "yaml"
-      # docs/ builds with `astro check`, which rejects TypeScript 7, so the
-      # Vercel preview of any pull request that bumps it fails. Revisit once
-      # Astro supports TypeScript 7.
+      # The workspace mixes TypeScript 5 (docs/, examples/) and 6 (the root
+      # library, which ts-morph 28 needs). Dependabot updates them as one
+      # dependency and has rewritten the root's `^6.0.3` down to `^5.9.3`
+      # (#254). docs/ builds with `astro check`, which rejects TypeScript 7.
+      # Bump TypeScript by hand in each package.
       - dependency-name: "typescript"
-        update-types:
-          - "version-update:semver-major"
     # Groups apply to version updates only. Security updates still arrive one
     # dependency per pull request.
     groups:
