@@ -40,6 +40,12 @@ updates:
       - dependency-name: "cross-spawn"
       - dependency-name: "form-data"
       - dependency-name: "postcss"
+      # docs/ builds with `astro check`, which rejects TypeScript 7, so the
+      # Vercel preview of any pull request that bumps it fails. Revisit once
+      # Astro supports TypeScript 7.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
     # Groups apply to version updates only. Security updates still arrive one
     # dependency per pull request.
     groups:
