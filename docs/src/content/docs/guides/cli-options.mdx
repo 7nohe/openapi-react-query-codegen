@@ -76,8 +76,12 @@ The available options are:
 ### --useDateType
 
 Use `Date` instead of `string` for `date` and `date-time` model properties.
-Generated SDK transformers also convert matching response values into `Date`
-objects at runtime. The default value is `false`.
+The generated `transformers.gen.ts` also converts matching values of successful
+responses into `Date` objects at runtime. The default value is `false`.
+
+Error responses are not converted. In a `oneOf` or `anyOf`, dates are converted
+when the members can be told apart, by their shape or by a `discriminator`;
+otherwise they stay strings and the generator prints where.
 
 ### --debug
 
@@ -87,15 +91,15 @@ Run in debug mode? The default value is `false`.
 
 ### --noSchemas
 
-Disable generating JSON schemas. The default value is `false`.
+Disable generating JSON schemas (`openapi/requests/schemas.gen.ts`). The default value is `false`.
 
 ### --schemaType \<value\>
 
 Type of JSON schema. Only applies when `--noSchemas` is not set. The default value is `json`.
 The available options are:
 
-- `json`
-- `form`
+- `json`: the schemas as the specification writes them
+- `form`: without `title`, `description` and the `x-enum-*` names, for use in form libraries
 
 ## CI and Automation Options
 

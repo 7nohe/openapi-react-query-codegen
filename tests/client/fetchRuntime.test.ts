@@ -910,6 +910,56 @@ describe("fetch runtime: responses", () => {
   });
 });
 
+describe("fetch runtime: responseTransformer", () => {
+  test("turns the data of a successful response into what it returns", async () => {
+    const client = make();
+    const seen: unknown[] = [];
+    const result = await client.get({
+      url: "/a",
+      responseTransformer: async (data) => {
+        seen.push(data);
+        return { path: (data as { path: string }).path.toUpperCase() };
+      },
+    });
+    expect(seen).toHaveLength(1);
+    expect(result.data).toEqual({ path: "/A" });
+    expect(
+      (await client.get({ url: "/text", responseTransformer: () => 1 })).data,
+    ).toBe(1);
+  });
+
+  test("the one of a call replaces the one of the client", async () => {
+    const client = make({ responseTransformer: () => "client" });
+    expect((await client.get({ url: "/a" })).data).toBe("client");
+    expect(
+      (await client.get({ url: "/a", responseTransformer: () => "call" })).data,
+    ).toBe("call");
+  });
+
+  test("is not called for an error, and its own failure is one", async () => {
+    const client = make();
+    let calls = 0;
+    const failed = await client.get({
+      url: "/err-json",
+      responseTransformer: () => {
+        calls += 1;
+      },
+    });
+    expect(calls).toBe(0);
+    expect(failed.error).toEqual({ code: 500 });
+    const broken = new Error("broken");
+    await expect(
+      client.get({
+        url: "/a",
+        throwOnError: true,
+        responseTransformer: () => {
+          throw broken;
+        },
+      }),
+    ).rejects.toBe(broken);
+  });
+});
+
 describe("fetch runtime: interceptors", () => {
   test("request and response interceptors run in order and can be ejected", async () => {
     const client = make();

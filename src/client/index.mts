@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { GeneratedFile, OperationInfo } from "../types.mjs";
+import { emitSchemas, type SchemasMode } from "./emitSchemas.mjs";
 import {
   type ClientKind,
   emitClientFile,
@@ -9,6 +10,7 @@ import {
   emitServicesShim,
   optionsAreOptional,
 } from "./emitSdk.mjs";
+import { emitTransformers } from "./emitTransformers.mjs";
 import { type EnumsMode, emitTypes, getBaseUrl } from "./emitTypes.mjs";
 import { capitalizeFirst } from "./naming.mjs";
 import {
@@ -21,6 +23,7 @@ import {
 import { renderSchema, type SchemaCtx } from "./schema.mjs";
 import { bundleExternalRefs, type Doc, loadSpec } from "./spec.mjs";
 
+export type { SchemasMode } from "./emitSchemas.mjs";
 export type { ClientKind } from "./emitSdk.mjs";
 export type { EnumsMode } from "./emitTypes.mjs";
 export { SpecError } from "./spec.mjs";
@@ -37,6 +40,16 @@ export interface ClientGenOptions {
   noOperationId?: boolean;
   /** Query parameter used for pagination. */
   pageParam: string;
+  /**
+   * Generate `schemas.gen.ts` with the component schemas as constants. `form`
+   * leaves out descriptions and titles. Off when `false` or not set.
+   */
+  schemas?: SchemasMode | false;
+  /**
+   * Type `date` and `date-time` strings as `Date`, and turn them into `Date`
+   * objects in successful responses.
+   */
+  useDateType?: boolean;
 }
 
 export interface GeneratedClient {
@@ -46,6 +59,8 @@ export interface GeneratedClient {
   modelNames: string[];
   /** Function names exported from `sdk.gen.ts`. */
   serviceNames: string[];
+  /** What the generator could not do as asked, to tell the user. */
+  warnings: string[];
 }
 
 const RUNTIME_FILES: Record<ClientKind, string> = {
@@ -115,7 +130,12 @@ export async function generateClient(
 
   const names = buildSchemaNames(doc);
   const writableNames = buildWritableNames(doc, names);
-  const ctx: SchemaCtx = { doc, names, writableNames };
+  const ctx: SchemaCtx = {
+    doc,
+    names,
+    writableNames,
+    dates: options.useDateType === true,
+  };
   const operations = collectOperations(doc, {
     useOperationId: !options.noOperationId,
     reservedTypeNames: [...names.values(), ...writableNames.values()],
@@ -127,11 +147,27 @@ export async function generateClient(
     clientKind: options.client,
   });
 
+  const transformers = options.useDateType
+    ? emitTransformers(operations, ctx)
+    : undefined;
+  const warnings: string[] = [];
+  if (transformers && transformers.skipped.length > 0) {
+    warnings.push(
+      `--useDateType: the dates in these schemas stay strings in responses, because nothing tells the members of the union apart:\n${transformers.skipped
+        .map((where) => `  - ${where}`)
+        .join("\n")}`,
+    );
+  }
+
   const files: GeneratedFile[] = [
     { name: "types.gen.ts", content: types.content },
     {
       name: "sdk.gen.ts",
-      content: emitSdk(doc, operations, { kind: options.client, ext }),
+      content: emitSdk(doc, operations, {
+        kind: options.client,
+        ext,
+        transformers: transformers?.byOperation,
+      }),
     },
     {
       name: "client.gen.ts",
@@ -145,6 +181,15 @@ export async function generateClient(
     { name: "index.ts", content: emitIndexFile(ext) },
     { name: "services.gen.ts", content: emitServicesShim(ext) },
   ];
+  if (transformers?.content !== undefined) {
+    files.push({ name: "transformers.gen.ts", content: transformers.content });
+  }
+  const schemas = options.schemas
+    ? emitSchemas(ctx, options.schemas)
+    : undefined;
+  if (schemas !== undefined) {
+    files.push({ name: "schemas.gen.ts", content: schemas });
+  }
 
   const emittedTypes = new Set(types.exportedNames);
   return {
@@ -154,6 +199,7 @@ export async function generateClient(
     ),
     modelNames: types.exportedNames,
     serviceNames: operations.map((operation) => operation.functionName),
+    warnings,
   };
 }
 

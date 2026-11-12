@@ -259,6 +259,34 @@ describe("axios runtime: errors", () => {
   });
 });
 
+describe("axios runtime: responseTransformer", () => {
+  test("turns the data of a successful response into what it returns", async () => {
+    const client = make();
+    const result = await client.get({
+      url: "/a",
+      responseTransformer: async (data) => ({
+        path: (data as Echo).path.toUpperCase(),
+      }),
+    });
+    expect(result.data).toEqual({ path: "/A" });
+    expect(result.status).toBe(200);
+    // Not an axios setting, so axios is not handed it.
+    expect(result.config).not.toHaveProperty("responseTransformer");
+  });
+
+  test("is not called for an error", async () => {
+    let calls = 0;
+    const result = await make().get({
+      url: "/err-json",
+      responseTransformer: () => {
+        calls += 1;
+      },
+    });
+    expect(calls).toBe(0);
+    expect(result.error).toEqual({ code: 500 });
+  });
+});
+
 describe("axios runtime: security", () => {
   const headersFor = async (
     config: Record<string, unknown>,

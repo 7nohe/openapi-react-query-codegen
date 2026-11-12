@@ -331,6 +331,7 @@ describe("generated client compiles", () => {
     client: "fetch" | "axios",
     compilerOptions: ts.CompilerOptions,
     importExtension: "" | ".js",
+    overrides: Partial<Parameters<typeof generateClient>[0]> = {},
   ) => {
     const out = path.join(dir, name);
     const generated = await generateClient({
@@ -339,6 +340,7 @@ describe("generated client compiles", () => {
       importExtension,
       pageParam: "page",
       enums: "typescript",
+      ...overrides,
     });
     await writeGeneratedFiles(out, generated.files);
     // NodeNext treats .ts files as CommonJS unless the package says otherwise.
@@ -398,6 +400,36 @@ describe("generated client compiles", () => {
     test(`axios / bundler: ${input}`, async () => {
       expect(
         await compile(`a-b-${input}`, inputPath(input), "axios", bundler, ""),
+      ).toEqual([]);
+    });
+  }
+
+  // The optional files: `transformers.gen.ts` must not leave anything unused,
+  // and `schemas.gen.ts` has to hold whatever a schema is named.
+  const optional = { useDateType: true, schemas: "json" } as const;
+  for (const input of ["dates.yaml", "features.yaml", "hostile-names.yaml"]) {
+    test(`fetch / NodeNext with dates and schemas: ${input}`, async () => {
+      expect(
+        await compile(
+          `o-f-n-${input}`,
+          inputPath(input),
+          "fetch",
+          { ...nodenext, noUnusedLocals: true, noUnusedParameters: true },
+          ".js",
+          optional,
+        ),
+      ).toEqual([]);
+    });
+    test(`axios / bundler with dates and schemas: ${input}`, async () => {
+      expect(
+        await compile(
+          `o-a-b-${input}`,
+          inputPath(input),
+          "axios",
+          { ...bundler, noUnusedLocals: true, noUnusedParameters: true },
+          "",
+          optional,
+        ),
       ).toEqual([]);
     });
   }

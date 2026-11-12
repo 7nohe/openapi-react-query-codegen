@@ -16,8 +16,7 @@ v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this
 
 2. If you pass `-c @hey-api/client-fetch` or `-c @hey-api/client-axios`, both still work. Prefer the new spellings `-c fetch` and `-c axios`.
 3. Delete the stale `client/` and `core/` folders from `openapi/requests` (the easiest way is to remove the whole `openapi` folder before regenerating).
-4. If you used `--useDateType`, `--noSchemas` or `--schemaType`, see [removed options](#removed-options).
-5. Everything else is compatible — you are done.
+4. Everything else is compatible — you are done.
 
 ## What stays the same
 
@@ -25,6 +24,7 @@ v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this
 - `client` is still exported from `openapi/requests/client.gen` (and from the `services.gen` compatibility shim) with `setConfig()` and `interceptors`.
 - SDK functions keep the `{ data, error, request, response }` result and throw the error when `throwOnError` is set. The hooks always set it, so failed requests reject (as in v3).
 - `--format`, `--lint`, `--enums`, `--noOperationId`, `--pageParam`, `--nextPageParam`, `--initialPageParam` and `--omitInitialPageParam` behave as before.
+- `--useDateType`, `--noSchemas` and `--schemaType` are still there. See [dates and JSON schemas](#dates-and-json-schemas) for the details that differ.
 
 ## What changed
 
@@ -34,7 +34,8 @@ v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this
 | --- | --- |
 | `client/`, `core/` (Hey API runtime) | `runtime.gen.ts` (one file) |
 | `client.gen.ts`, `sdk.gen.ts`, `types.gen.ts`, `services.gen.ts`, `index.ts` | same names |
-| `schemas.gen.ts` (JSON schemas) | not generated |
+| `schemas.gen.ts` (JSON schemas) | same name |
+| `transformers.gen.ts` (with `--useDateType`) | same name |
 
 Anything that imported from `openapi/requests/client` or `openapi/requests/core` needs to import from `openapi/requests/runtime.gen` instead (for example the `Config` and `Options` types).
 
@@ -49,6 +50,7 @@ The runtimes are small, dependency-free TypeScript files generated into your pro
 - `auth` for operations with `security` (bearer, basic and API keys in header, query or cookie), including schemes an operation requires together
 - `querySerializer`, `pathSerializer` and `bodySerializer`, with OpenAPI `style`/`explode` honoured per query and path parameter
 - JSON, `multipart/form-data`, `application/x-www-form-urlencoded`, text and binary request bodies; JSON, text, blob, form data and stream responses via `parseAs`
+- `responseTransformer`, called with the data of a successful response
 - With `parseAs: "auto"`, the default, XML responses are read as text instead of a `Blob`, and a response without a `Content-Type` as text instead of a stream
 
 Three behaviours differ from v3, each to follow the specification:
@@ -57,7 +59,7 @@ Three behaviours differ from v3, each to follow the specification:
 - Path parameters with `style: label` or `style: matrix`, or an exploded object, are serialized as declared. v3 ignored both settings.
 - With `-c axios`, a JSON request body that is a string is always sent as a JSON string. v3 sent a string that happened to parse as JSON, such as `"true"`, as that JSON value.
 
-Not carried over from the Hey API clients: server-sent events, `responseStyle`, `requestValidator`/`responseValidator`/`responseTransformer`, the helpers exported from `openapi/requests/client` and `openapi/requests/core` (`mergeHeaders`, `jsonBodySerializer`, `formDataBodySerializer`, `urlSearchParamsBodySerializer`, `buildClientParams`, `serializeQueryKeyValue`), and the `runtimeConfigPath` option. If you relied on them, keep calling those parts of your API through your own code.
+Not carried over from the Hey API clients: server-sent events, `responseStyle`, `requestValidator`/`responseValidator`, the helpers exported from `openapi/requests/client` and `openapi/requests/core` (`mergeHeaders`, `jsonBodySerializer`, `formDataBodySerializer`, `urlSearchParamsBodySerializer`, `buildClientParams`, `serializeQueryKeyValue`), and the `runtimeConfigPath` option. If you relied on them, keep calling those parts of your API through your own code.
 
 ### Specification support
 
@@ -96,14 +98,23 @@ Two typing differences to be aware of: a fixed-length array (`minItems` equal to
 
 Large specifications generate much faster, mostly because the hook files now import only the models they use: the 4 MB OpenAI specification (388 operations) takes about 5 seconds instead of about 30.
 
-## Removed options
+## Dates and JSON schemas
 
-These options were thin pass-throughs to Hey API plugins and are not implemented in v4. Passing them now fails with an "unknown option" error rather than being ignored.
+`--useDateType`, `--noSchemas` and `--schemaType` work as in v3, without the Hey API plugins they used to hand over to.
 
-| Option | What to do |
-| --- | --- |
-| `--useDateType` | Date-typed properties and the response transformer are not generated. `date`/`date-time` values stay `string`. Convert at the edge of your application or in an interceptor. |
-| `--noSchemas`, `--schemaType` | JSON schema objects (`schemas.gen.ts`) are no longer generated, so there is nothing to switch off. |
+### `--useDateType`
+
+`date` and `date-time` strings are typed `Date`, in responses and in what you send, and `transformers.gen.ts` turns them into `Date` objects in successful responses. Three details differ from v3:
+
+- A `oneOf`/`anyOf` is converted wherever its members can be told apart: by their shape (a date next to `null`, a number, an object or an array), or by a `discriminator`. v3 converted a union only when it was a single schema next to `null`.
+- When two members of a union are both objects, or both arrays, and no `discriminator` tells them apart, their dates stay strings, as in v3. The generator prints each such place.
+- The transformer runs on every successful response, not only on the ones read as JSON. A value that is not what the schema describes is passed on as it came.
+
+As in v3, error responses are not converted: an error body keeps its date strings although its type says `Date`.
+
+### `schemas.gen.ts`
+
+The constants have the names v3 gave them (`PetSchema`, `my_schemaSchema`, `PetWritableSchema`) and hold the schemas as the specification writes them. One detail differs: a schema that is only a `$ref` to another one (`Alias: { $ref: "#/components/schemas/Pet" }`) stays a reference where other schemas point at it. v3 rewrote those references to the target.
 
 ## Dependency changes
 

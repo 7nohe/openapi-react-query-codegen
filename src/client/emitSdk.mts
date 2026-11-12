@@ -151,6 +151,7 @@ function emitOperation(
   operation: OperationIR,
   doc: Doc,
   kind: ClientKind,
+  transformer: string | undefined,
 ): { code: string; usedTypes: string[] } {
   const names = operation.typeNames;
   const { responses, errors } = classifyResponses(operation);
@@ -165,6 +166,7 @@ function emitOperation(
   const access = optional ? "options?" : "options";
 
   const lines: string[] = [];
+  if (transformer) lines.push(`responseTransformer: ${transformer}`);
   // Axios has to know before the response arrives. The fetch runtime follows
   // the response's own Content-Type, or what the client is configured to do.
   const parseAs = kind === "axios" ? parseAsFor(operation) : undefined;
@@ -231,12 +233,22 @@ function emitOperation(
 export function emitSdk(
   doc: Doc,
   operations: OperationIR[],
-  options: { kind: ClientKind; ext: string },
+  options: {
+    kind: ClientKind;
+    ext: string;
+    /** SDK function name → response transformer from `transformers.gen.ts`. */
+    transformers?: ReadonlyMap<string, string>;
+  },
 ): string {
   const used = new Set<string>();
   const blocks: string[] = [];
   for (const operation of operations) {
-    const { code, usedTypes } = emitOperation(operation, doc, options.kind);
+    const { code, usedTypes } = emitOperation(
+      operation,
+      doc,
+      options.kind,
+      options.transformers?.get(operation.functionName),
+    );
     for (const type of usedTypes) used.add(type);
     blocks.push(code);
   }
@@ -245,6 +257,12 @@ export function emitSdk(
     `import { client } from "./client.gen${options.ext}";`,
     `import type { Client, Options as Options2, RequestResult, TDataShape } from "./runtime.gen${options.ext}";`,
   ];
+  const transformers = [...(options.transformers?.values() ?? [])].sort();
+  if (transformers.length > 0) {
+    imports.push(
+      `import { ${transformers.join(", ")} } from "./transformers.gen${options.ext}";`,
+    );
+  }
   if (typeImports) {
     imports.push(
       `import type { ${typeImports} } from "./types.gen${options.ext}";`,

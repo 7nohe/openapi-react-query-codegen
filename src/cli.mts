@@ -22,7 +22,10 @@ export type LimitedUserConfig = {
   lint?: "biome" | "eslint";
   noOperationId?: boolean;
   enums?: "javascript" | "typescript" | false;
+  useDateType?: boolean;
   debug?: boolean;
+  noSchemas?: boolean;
+  schemaType?: "form" | "json";
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string | number;

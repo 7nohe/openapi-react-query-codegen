@@ -92,6 +92,11 @@ export interface Config<T extends ClientOptions = ClientOptions>
     | QuerySerializerOptions
     | ((query: Record<string, unknown>) => string);
   /**
+   * Called with the body of a successful response; what it returns becomes
+   * `data`. `--useDateType` sets it to turn date strings into `Date` objects.
+   */
+  responseTransformer?: (data: unknown) => unknown;
+  /**
    * Ways to authenticate. Each one that has a token for every scheme it lists
    * is applied, as an API that takes either of two schemes may only look at one
    * of them. An array lists schemes needed together.
@@ -735,8 +740,11 @@ export const createClient = (config: Config = {}): Client => {
         if (fn) response = await fn(response, req, options);
       }
       if (response.ok) {
+        const data = await parseBody(response, options.parseAs ?? "auto");
         return {
-          data: await parseBody(response, options.parseAs ?? "auto"),
+          data: options.responseTransformer
+            ? await options.responseTransformer(data)
+            : data,
           request: req,
           response,
         };

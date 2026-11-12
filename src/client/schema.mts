@@ -21,6 +21,8 @@ export interface SchemaCtx {
   mode?: "read" | "write";
   /** Component schema key → name of its request-side (`write`) variant. */
   writableNames?: Map<string, string>;
+  /** Type `date` and `date-time` strings as `Date` (`--useDateType`). */
+  dates?: boolean;
 }
 
 /** Name of the type generated for `#/components/schemas/<key>`, if any. */
@@ -337,7 +339,9 @@ export function renderSchema(
       type =
         schema.format === "binary" || hasBinaryContent(schema)
           ? fileType(ctx)
-          : "string";
+          : ctx.dates && isDateString(schema)
+            ? globalTypeRef("Date", ctx)
+            : "string";
       break;
     case "number":
     case "integer":
@@ -370,6 +374,14 @@ export function renderSchema(
       }
   }
   return addNull(type, schema);
+}
+
+/** Whether a string schema holds a date, which `--useDateType` makes a `Date`. */
+export function isDateString(schema: Json): boolean {
+  return (
+    (schema.format === "date" || schema.format === "date-time") &&
+    !hasBinaryContent(schema)
+  );
 }
 
 function fileType(ctx: SchemaCtx): string {
@@ -553,28 +565,26 @@ function pinnedValues(
 }
 
 /**
- * Intersect a `oneOf`/`anyOf` member with its discriminator value so the
- * union narrows on the discriminator property. Members that already pin the
- * property to other literals are left alone: adding a second literal (from an
- * implicit mapping by schema name) could only make them unreachable.
+ * What tells a `oneOf`/`anyOf` member apart: the values its discriminator
+ * property may take (`allowed`), and the literals the member pins the property
+ * to itself, if it does.
  */
-function withDiscriminator(
+function discriminatorChoice(
   member: Json,
-  rendered: string,
   discriminator: Json,
   ctx: SchemaCtx,
-): string {
+): { allowed: string[]; pinned?: unknown[] } | undefined {
   const property = discriminator?.propertyName;
   if (typeof property !== "string" || typeof member?.$ref !== "string") {
-    return rendered;
+    return undefined;
   }
   const key = componentSchemaKey(member.$ref);
-  if (key === undefined) return rendered;
+  if (key === undefined) return undefined;
   // Only object members can carry the property (an array or a primitive
   // intersected with `{ kind: … }` would be unusable).
   const target = ctx.doc.components?.schemas?.[key];
   if (typeof target?.type === "string" && target.type !== "object") {
-    return rendered;
+    return undefined;
   }
 
   const values = Object.entries(
@@ -592,9 +602,42 @@ function withDiscriminator(
   const allowed = pinned
     ? named.filter((value) => pinned.includes(value))
     : named;
-  if (allowed.length === 0 || pinned?.length === 1) return rendered;
-  const literals = allowed.map((value) => JSON.stringify(value));
-  return `({ ${propertyKey(property)}: ${literals.join(" | ")} } & ${rendered})`;
+  return { allowed, pinned };
+}
+
+/**
+ * Intersect a `oneOf`/`anyOf` member with its discriminator value so the
+ * union narrows on the discriminator property. Members that already pin the
+ * property to other literals are left alone: adding a second literal (from an
+ * implicit mapping by schema name) could only make them unreachable.
+ */
+function withDiscriminator(
+  member: Json,
+  rendered: string,
+  discriminator: Json,
+  ctx: SchemaCtx,
+): string {
+  const choice = discriminatorChoice(member, discriminator, ctx);
+  if (!choice || choice.allowed.length === 0 || choice.pinned?.length === 1) {
+    return rendered;
+  }
+  const literals = choice.allowed.map((value) => JSON.stringify(value));
+  return `({ ${propertyKey(discriminator.propertyName)}: ${literals.join(" | ")} } & ${rendered})`;
+}
+
+/**
+ * The values of the discriminator property that a value of `member` has, or
+ * undefined when nothing tells the member apart.
+ */
+export function discriminatorValues(
+  member: Json,
+  discriminator: Json,
+  ctx: SchemaCtx,
+): unknown[] | undefined {
+  const choice = discriminatorChoice(member, discriminator, ctx);
+  if (!choice) return undefined;
+  if (choice.pinned?.length === 1) return choice.pinned;
+  return choice.allowed.length > 0 ? choice.allowed : undefined;
 }
 
 function renderArray(
@@ -627,7 +670,7 @@ function renderArray(
 }
 
 /** A flag on a property, next to its `$ref` or on what the `$ref` points to. */
-function hasFlag(
+export function hasFlag(
   doc: Doc,
   property: Json,
   flag: "readOnly" | "writeOnly",

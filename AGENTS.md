@@ -41,7 +41,9 @@ Add a script and run it whenever the spec changes:
 | `--format <biome\|prettier>` | none | formats `queries/` only |
 | `--lint <biome\|eslint>` | none | lints/fixes `queries/` only |
 | `--enums <javascript\|typescript>` | none | emit enum objects |
+| `--useDateType` | off | `Date` for `date`/`date-time`, converted in successful responses |
 | `--noOperationId` | off | derive names from paths instead of `operationId` |
+| `--noSchemas` / `--schemaType <json\|form>` | schemas on, `json` | JSON schema export (`requests/schemas.gen.ts`) |
 | `--pageParam <name>` | `page` | query param that turns a GET into an infinite query |
 | `--nextPageParam <path>` | `nextPage` | response field holding the next page (dot path allowed, e.g. `meta.next`) |
 | `--initialPageParam <value>` / `--omitInitialPageParam` | `1` | first page value, or send none |
@@ -68,7 +70,9 @@ Pass the **same flags** every time (keep them in the package.json script). Diffe
     ├── runtime.gen.ts    # the fetch or axios runtime the client runs on
     ├── sdk.gen.ts        # one function per operation
     ├── services.gen.ts   # compatibility shim: re-exports client.gen + sdk.gen
-    └── types.gen.ts      # request/response types
+    ├── types.gen.ts      # request/response types
+    ├── schemas.gen.ts    # component schemas as constants (unless --noSchemas)
+    └── transformers.gen.ts # date conversion (only with --useDateType)
 ```
 
 Never edit generated files; change the spec or the flags and regenerate. Whether to commit the output is the project's choice. If it is committed, add the `--check` step below to CI.
@@ -189,7 +193,7 @@ import { check, generate } from "@7nohe/openapi-react-query-codegen";
 - Pull requests: include summary of changes, affected areas (e.g., codegen output, docs, examples), and test commands run. Link issues when applicable. Add before/after notes or sample generated snippets if behavior changes.
 
 ### Architecture: IR Boundary
-- `src/client/` is the client generator. It reads the OpenAPI document and writes `requests/` (`types.gen.ts`, `sdk.gen.ts`, `client.gen.ts`, `runtime.gen.ts`). It also returns the normalized operations (`OperationInfo` in `src/types.mts`) for the hook generators, so nothing re-parses the generated SDK.
+- `src/client/` is the client generator. It reads the OpenAPI document and writes `requests/` (`types.gen.ts`, `sdk.gen.ts`, `client.gen.ts`, `runtime.gen.ts`, and on request `schemas.gen.ts` and `transformers.gen.ts`). It also returns the normalized operations (`OperationInfo` in `src/types.mts`) for the hook generators, so nothing re-parses the generated SDK.
 - `src/generate.mts` is the only place that turns the client generator's failures into the error codes of `--json` (`mapClientError`).
 - Generation-side modules (`src/tsmorph/build*.mts`, `generateFiles.mts`) consume only `OperationInfo` and `GenerationContext`. Do not teach them about the OpenAPI document or the runtime's internals; extend the IR instead.
 - The generated hooks rely on a small SDK contract: `Options<XData, ThrowOnError>` exported from `sdk.gen`, calls returning `{ data }` and rejecting when `throwOnError` is set, and the `XData` / `XError` type names. Keep it in sync with `src/client/emitSdk.mts` and the runtimes in `src/client/runtime/`.

@@ -90,7 +90,18 @@ export function buildProgram(
         "Generate JavaScript objects from enum definitions?",
       ).choices(["javascript", "typescript"]),
     )
+    .option(
+      "--useDateType",
+      "Use Date for date/date-time model properties and convert response values to Date objects",
+    )
     .option("--debug", "Run in debug mode?")
+    .option("--noSchemas", "Disable generating JSON schemas")
+    .addOption(
+      new Option(
+        "--schemaType <value>",
+        "Type of JSON schema [Default: 'json']",
+      ).choices(["form", "json"]),
+    )
     .option(
       "--pageParam <value>",
       "Name of the query parameter used for pagination",

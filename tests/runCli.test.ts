@@ -70,6 +70,33 @@ describe("runCli", () => {
     );
   });
 
+  test("passes the date and schema options on", async () => {
+    const cli = setup();
+    expect(
+      await cli.run(
+        "-i",
+        "spec.yaml",
+        "--useDateType",
+        "--noSchemas",
+        "--schemaType",
+        "form",
+      ),
+    ).toBe(0);
+    expect(cli.dependencies.generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        useDateType: true,
+        noSchemas: true,
+        schemaType: "form",
+      }),
+      "9.9.9",
+      { silent: false },
+    );
+
+    const invalid = setup();
+    expect(await invalid.run("-i", "spec.yaml", "--schemaType", "xml")).toBe(2);
+    expect(invalid.dependencies.generate).not.toHaveBeenCalled();
+  });
+
   describe("argument errors", () => {
     test("exit 2 with commander's message in text mode", async () => {
       const cli = setup();

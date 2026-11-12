@@ -34,7 +34,7 @@ export function resolveClientKind(
 
 export type GenerateRuntimeOptions = {
   /**
-   * Keep the generator from writing to stderr. Used by `--json` (stderr must
+   * Keep the generator's warnings off stderr. Used by `--json` (stderr must
    * carry only our JSON) and by `--check`.
    */
   silent?: boolean;
@@ -85,7 +85,11 @@ export function mapClientError(error: unknown, input: unknown): CodegenError {
   );
 }
 
-async function runGenerate(options: LimitedUserConfig, version: string) {
+async function runGenerate(
+  options: LimitedUserConfig,
+  version: string,
+  runtime: GenerateRuntimeOptions,
+) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
   const client = resolveClientKind(formattedOptions.client);
@@ -102,9 +106,16 @@ async function runGenerate(options: LimitedUserConfig, version: string) {
       importExtension,
       noOperationId: formattedOptions.noOperationId,
       pageParam: formattedOptions.pageParam,
+      schemas: formattedOptions.noSchemas
+        ? false
+        : (formattedOptions.schemaType ?? "json"),
+      useDateType: formattedOptions.useDateType,
     });
   } catch (error) {
     throw mapClientError(error, formattedOptions.input);
+  }
+  if (!runtime.silent) {
+    for (const warning of generated.warnings) console.warn(warning);
   }
   await writeGeneratedFiles(openApiOutputPath, generated.files);
 
@@ -135,11 +146,10 @@ async function runGenerate(options: LimitedUserConfig, version: string) {
 export async function generate(
   options: LimitedUserConfig,
   version: string,
-  // The generator writes nothing to stderr yet, so there is nothing to silence.
-  _runtime: GenerateRuntimeOptions = {},
+  runtime: GenerateRuntimeOptions = {},
 ) {
   try {
-    await runGenerate(options, version);
+    await runGenerate(options, version, runtime);
   } catch (error) {
     throw toCodegenError(error);
   }

@@ -9,7 +9,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
 import { findNearestTsConfigPath, generate } from "../src/generate.mjs";
 
@@ -107,6 +107,91 @@ describe("generate - axios client with enums, noOperationId, schemaType", () => 
 
   test("queries.ts", () => {
     expect(readAxiosOutput("queries.ts")).toMatchSnapshot();
+  });
+});
+
+describe("generate - optional request files", () => {
+  const outputDir = "outputs-generate-optional";
+  const requests = (name: string, fileName: string) =>
+    path.join(__dirname, outputDir, name, "requests", fileName);
+  const run = (name: string, options: Partial<LimitedUserConfig>) =>
+    generate(
+      {
+        input: path.join(__dirname, "inputs", "dates.yaml"),
+        output: path.join("tests", outputDir, name),
+        pageParam: "page",
+        nextPageParam: "nextPage",
+        initialPageParam: "1",
+        ...options,
+      },
+      "1.0.0",
+    );
+
+  afterAll(async () => {
+    await rm(path.join(__dirname, outputDir), { recursive: true, force: true });
+  });
+
+  test("JSON schemas by default, and no transformers", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await run("default", {});
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+    const schemas = await readFile(
+      requests("default", "schemas.gen.ts"),
+      "utf-8",
+    );
+    expect(schemas).toContain("export const EventSchema = {");
+    expect(existsSync(requests("default", "transformers.gen.ts"))).toBe(false);
+  });
+
+  test("--schemaType form leaves the documentation out", async () => {
+    await run("form", {
+      input: path.join(__dirname, "inputs", "features.yaml"),
+      schemaType: "form",
+    });
+    await run("json", {
+      input: path.join(__dirname, "inputs", "features.yaml"),
+      schemaType: "json",
+    });
+    expect(
+      await readFile(requests("json", "schemas.gen.ts"), "utf-8"),
+    ).toContain('description: "A stored item"');
+    expect(
+      await readFile(requests("form", "schemas.gen.ts"), "utf-8"),
+    ).not.toContain("description:");
+  });
+
+  test("--noSchemas and --useDateType", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await run("dates", { noSchemas: true, useDateType: true });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(
+      "--useDateType: the dates in these schemas stay strings",
+    );
+    warn.mockRestore();
+    // `--json` and `--check` keep stderr to themselves.
+    const silenced = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await generate(
+      {
+        input: path.join(__dirname, "inputs", "dates.yaml"),
+        output: path.join("tests", outputDir, "silent"),
+        useDateType: true,
+        pageParam: "page",
+        nextPageParam: "nextPage",
+        initialPageParam: "1",
+      },
+      "1.0.0",
+      { silent: true },
+    );
+    expect(silenced).not.toHaveBeenCalled();
+    silenced.mockRestore();
+    expect(existsSync(requests("dates", "schemas.gen.ts"))).toBe(false);
+    expect(
+      await readFile(requests("dates", "transformers.gen.ts"), "utf-8"),
+    ).toContain("export const listEventsResponseTransformer");
+    expect(await readFile(requests("dates", "sdk.gen.ts"), "utf-8")).toContain(
+      "responseTransformer: listEventsResponseTransformer",
+    );
   });
 });
 
