@@ -123,6 +123,8 @@ openapi-rq -i ./openapi.yaml -o ./src/openapi --check
 
 Generates into a temporary sibling directory (`.openapi-rq-check-*`, removed afterwards), compares it with `<output>/requests` and `<output>/queries`, and writes nothing. Each file is `added` (would be created), `modified` or `removed` (no longer generated).
 
+The `queries/` headers include the package version, so after upgrading this package `--check` fails until you regenerate. Upgrade and regenerate in the same change.
+
 ### Exit codes and `--json`
 
 | Exit code | Meaning |
@@ -154,7 +156,7 @@ Branch on `code`, not on `message`. Codes are stable; messages may change.
 import { check, generate } from "@7nohe/openapi-react-query-codegen";
 ```
 
-`generate(options, version)` and `check(options, version)` take the same options as the CLI flags. `check` resolves to `{ upToDate, files }`. Errors are `CodegenError` instances with `code` and `details`.
+`generate(options, version)` and `check(options, version)` take the same options as the CLI flags. `version` is written into the header of every `queries/` file, so `check` only matches output generated with the same string: pass the installed package version when the output came from the CLI. `check` resolves to `{ upToDate, files }`. Errors are `CodegenError` instances with `code` and `details`.
 
 ## Working on this repository
 
