@@ -175,7 +175,11 @@ async function runCheck(
         diffDirectories({
           expectedRoot: path.join(scratchOutput, subdirectory),
           actualRoot: path.join(options.output, subdirectory),
-          displayRoot: path.join(options.output, subdirectory),
+          // Reported paths are cwd-relative even for an absolute output.
+          displayRoot: path.relative(
+            process.cwd(),
+            path.resolve(options.output, subdirectory),
+          ),
         }),
       ),
     );

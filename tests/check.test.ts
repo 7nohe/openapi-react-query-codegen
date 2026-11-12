@@ -115,6 +115,18 @@ describe("check", () => {
     expect(scratchLeftovers(__dirname)).toEqual([]);
   });
 
+  test("reports cwd-relative paths for an absolute output path", async () => {
+    // Relies on the drift created by the previous test.
+    const relative = await check({ ...options }, "1.0.0");
+    const absolute = await check(
+      { ...options, output: path.resolve(output) },
+      "1.0.0",
+    );
+
+    expect(absolute.files.length).toBeGreaterThan(0);
+    expect(absolute.files).toEqual(relative.files);
+  });
+
   test("cleans up and reports a typed error when generation fails", async () => {
     const before = crashLogs();
     await expect(
