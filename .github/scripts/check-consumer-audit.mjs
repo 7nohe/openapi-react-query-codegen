@@ -12,18 +12,6 @@ import { pathToFileURL } from "node:url";
 /** @type {Map<string, string>} advisory ID -> why it is accepted for now */
 export const KNOWN = new Map([
   [
-    "GHSA-52cp-r559-cp3m",
-    "js-yaml 4.2.0 is pinned by @hey-api/json-schema-ref-parser; removed by the v4 client generator",
-  ],
-  [
-    "GHSA-5p4m-2wfm-xmqj",
-    "js-yaml 4.2.0 is pinned by @hey-api/json-schema-ref-parser; removed by the v4 client generator",
-  ],
-  [
-    "GHSA-2883-xcg3-v3hh",
-    "js-yaml 4.2.0 is pinned by @hey-api/json-schema-ref-parser; removed by the v4 client generator",
-  ],
-  [
     "GHSA-g3hv-75wg-m249",
     "minimatch comes through the ts-morph peer; no fixed 9.x or 10.x release",
   ],

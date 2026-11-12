@@ -67,7 +67,7 @@ jobs:
           npm install --ignore-scripts --no-fund --no-audit --before "$before" \
             "$RUNNER_TEMP"/package/*.tgz @tanstack/react-query@5 @types/react@19 typescript
           npm ls --depth=0
-          npm ls --all js-yaml @hey-api/openapi-ts typescript ts-morph || true
+          npm ls --all typescript ts-morph minimatch || true
 
       - name: Generate and type-check
         working-directory: ${{ runner.temp }}/app
