@@ -1,5 +1,5 @@
 import { readdirSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterAll, describe, expect, test } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
@@ -166,6 +166,29 @@ describe("generate errors", () => {
         { silent: true },
       ),
     ).rejects.toMatchObject({ code: ErrorCodes.inputNotFound });
+  });
+
+  test("a failure after client generation is still a CodegenError", async () => {
+    // `queries` is a regular file, so writing the hooks fails with ENOTDIR.
+    const output = path.join("tests", "outputs-errors");
+    await mkdir(output, { recursive: true });
+    await writeFile(path.join(output, "queries"), "");
+
+    const error = await generate(
+      {
+        ...baseOptions,
+        input: path.join(__dirname, "inputs", "petstore.yaml"),
+        output,
+      },
+      "1.0.0",
+      { silent: true },
+    ).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(CodegenError);
+    expect(error).toMatchObject({
+      code: ErrorCodes.generationFailed,
+      cause: { code: "ENOTDIR" },
+    });
   });
 
   test("an unparsable input is INPUT_PARSE_ERROR and silent mode writes no crash log", async () => {

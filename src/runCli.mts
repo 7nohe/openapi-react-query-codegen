@@ -114,7 +114,7 @@ export function buildProgram(
     )
     .option(
       "--check",
-      "Do not write anything; exit 1 and list the files that differ if the existing output is out of date",
+      "Do not update the output; exit 1 and list the files that differ if the existing output is out of date",
     )
     .option(
       "--json",

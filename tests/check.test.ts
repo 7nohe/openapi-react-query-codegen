@@ -11,9 +11,15 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { check, diffDirectories, outOfDateError } from "../src/check.mjs";
+import {
+  check,
+  createScratchOutput,
+  diffDirectories,
+  outOfDateError,
+  scratchPrefix,
+} from "../src/check.mjs";
 import type { LimitedUserConfig } from "../src/cli.mts";
-import { ErrorCodes } from "../src/errors.mjs";
+import { CodegenError, ErrorCodes } from "../src/errors.mjs";
 import { generate } from "../src/generate.mjs";
 
 const outputDir = "outputs-check";
@@ -44,7 +50,7 @@ async function snapshotTree(root: string) {
 }
 
 const scratchLeftovers = (dir: string) =>
-  readdirSync(dir).filter((name) => name.startsWith(".openapi-rq-check-"));
+  readdirSync(dir).filter((name) => name.startsWith(scratchPrefix));
 
 const crashLogs = () =>
   readdirSync(process.cwd()).filter((name) =>
@@ -68,6 +74,21 @@ describe("check", () => {
     expect(result).toEqual({ upToDate: true, files: [] });
     expect(await snapshotTree(output)).toEqual(before);
     expect(scratchLeftovers(__dirname)).toEqual([]);
+    expect(scratchLeftovers(path.join(output, "queries"))).toEqual([]);
+  });
+
+  test("ignores a scratch directory left behind by an interrupted run", async () => {
+    const leftover = path.join(output, "queries", `${scratchPrefix}stale`);
+    await mkdir(leftover, { recursive: true });
+    await writeFile(path.join(leftover, "queries.ts"), "// stale\n");
+    try {
+      expect(await check({ ...options }, "1.0.0")).toEqual({
+        upToDate: true,
+        files: [],
+      });
+    } finally {
+      await rm(leftover, { recursive: true, force: true });
+    }
   });
 
   test("works with an absolute output path", async () => {
@@ -127,6 +148,118 @@ describe("check", () => {
     ).toBe(true);
     expect(existsSync(path.join("tests", "missing-parent"))).toBe(false);
     expect(scratchLeftovers(tmpdir())).toEqual([]);
+  });
+});
+
+describe("check with formatter config anchored to the output path", () => {
+  // biome.json has an override for exactly `tests/outputs-check-anchored/**`
+  // that switches to single quotes. The scratch generation has to be
+  // formatted by the same override, or every file would differ.
+  const anchoredDir = "outputs-check-anchored";
+  const anchoredOptions: LimitedUserConfig = {
+    ...options,
+    output: path.join("tests", anchoredDir),
+    lint: undefined,
+  };
+
+  beforeAll(async () => {
+    await generate({ ...anchoredOptions }, "1.0.0");
+  }, 60000);
+
+  afterAll(async () => {
+    await rm(path.join(__dirname, anchoredDir), {
+      recursive: true,
+      force: true,
+    });
+  });
+
+  test("applies the same path-specific override to the scratch output", async () => {
+    const queries = await readFile(
+      path.join(anchoredOptions.output, "queries", "queries.ts"),
+      "utf-8",
+    );
+    expect(queries).toContain("from '@tanstack/react-query'");
+
+    expect(await check({ ...anchoredOptions }, "1.0.0")).toEqual({
+      upToDate: true,
+      files: [],
+    });
+  });
+});
+
+describe("createScratchOutput", () => {
+  let root: string;
+
+  beforeAll(async () => {
+    root = path.join("tests", "outputs-check-scratch");
+    await mkdir(path.join(root, "with-queries", "queries"), {
+      recursive: true,
+    });
+    await mkdir(path.join(root, "without-queries"), { recursive: true });
+  });
+
+  afterAll(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  test("nests inside the existing queries directory and repeats the output path", async () => {
+    const output = path.join(root, "with-queries");
+    const { scratchRoot, scratchOutput } = await createScratchOutput(output);
+    try {
+      expect(path.dirname(scratchRoot)).toBe(path.resolve(output, "queries"));
+      expect(scratchOutput).toBe(path.join(scratchRoot, output));
+    } finally {
+      await rm(scratchRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("goes next to the output when there is no queries directory yet", async () => {
+    const output = path.join(root, "without-queries");
+    const { scratchRoot, scratchOutput } = await createScratchOutput(output);
+    try {
+      expect(path.dirname(scratchRoot)).toBe(path.resolve(root));
+      expect(scratchOutput).toBe(path.join(scratchRoot, output));
+    } finally {
+      await rm(scratchRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("keeps only the directory name for an output outside cwd", async () => {
+    const outside = await mkdtemp(path.join(tmpdir(), "openapi-rq-outside-"));
+    try {
+      const { scratchRoot, scratchOutput } = await createScratchOutput(
+        path.join(outside, "openapi"),
+      );
+      expect(path.dirname(scratchRoot)).toBe(outside);
+      expect(scratchOutput).toBe(path.join(scratchRoot, "openapi"));
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("check errors", () => {
+  const blocker = path.join("tests", "outputs-check-blocker");
+
+  beforeAll(async () => {
+    await writeFile(blocker, "");
+  });
+
+  afterAll(async () => {
+    await rm(blocker, { force: true });
+  });
+
+  test("rejects with CodegenError when the scratch directory cannot be created", async () => {
+    const error = await check(
+      { ...options, output: path.join(blocker, "openapi") },
+      "1.0.0",
+    ).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(CodegenError);
+    expect(error).toMatchObject({
+      code: ErrorCodes.generationFailed,
+      cause: { code: "ENOTDIR" },
+    });
   });
 });
 

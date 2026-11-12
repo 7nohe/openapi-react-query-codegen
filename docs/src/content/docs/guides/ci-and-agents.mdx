@@ -24,10 +24,12 @@ Use exactly the same options as your normal codegen script. Different options pr
 
 `--check`:
 
-- generates into a temporary directory next to the output directory (`.openapi-rq-check-*`), so `--format` and `--lint` pick up the same configuration files and ignore rules as a normal run, and deletes it afterwards
+- generates into a temporary directory inside `<output>/queries` (`.openapi-rq-check-*`) and deletes it afterwards. `--format` and `--lint` run on that copy with the same configuration files, and overrides or ignore rules that target the output directory by path (`src/openapi/**`, a folder named `openapi`) apply to it as well
 - compares only the directories the generator owns: `<output>/requests` and `<output>/queries`
-- never writes to the output directory
+- never changes an existing file in the output directory
 - exits with `0` when everything matches, and with `1` when files differ
+
+A formatter or linter rule that names an exact file or depth from the project root, such as `src/openapi/queries/*.ts`, does not reach the temporary copy and makes `--check` report drift. Write it as `src/openapi/queries/**` instead.
 
 Every file in `queries/` starts with a header that includes the package version. After upgrading `@7nohe/openapi-react-query-codegen`, `--check` fails until you regenerate, so regenerate in the same change as the upgrade.
 

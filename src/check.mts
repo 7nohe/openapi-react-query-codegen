@@ -1,10 +1,10 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
-import { CodegenError, ErrorCodes } from "./errors.mjs";
+import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
 import { generate } from "./generate.mjs";
 
 export type FileChangeStatus = "added" | "modified" | "removed";
@@ -28,16 +28,36 @@ export type CheckResult = {
 /** The generator owns exactly these subdirectories of the output path. */
 const checkedSubdirectories = [requestsOutputPath, queriesOutputPath];
 
+/** Name prefix of the throwaway directory `check` generates into. */
+export const scratchPrefix = ".openapi-rq-check-";
+
+function isDirectory(target: string) {
+  try {
+    return statSync(target).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 async function listFiles(root: string): Promise<string[]> {
   if (!existsSync(root)) {
     return [];
   }
   const entries = await readdir(root, { recursive: true, withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isFile())
-    .map((entry) =>
-      path.relative(root, path.join(entry.parentPath, entry.name)),
-    );
+  return (
+    entries
+      .filter((entry) => entry.isFile())
+      .map((entry) =>
+        path.relative(root, path.join(entry.parentPath, entry.name)),
+      )
+      // The scratch directory lives inside the existing `queries/`.
+      .filter(
+        (file) =>
+          !file
+            .split(path.sep)
+            .some((segment) => segment.startsWith(scratchPrefix)),
+      )
+  );
 }
 
 // Code-unit order, not localeCompare, so the listing is identical everywhere.
@@ -96,30 +116,50 @@ export async function diffDirectories({
 }
 
 /**
- * Pick where the throwaway generation goes. It sits next to the real output
- * and keeps the output's directory name, so formatters and linters run with
- * `--format`/`--lint` resolve the same config files and ignore rules as they
- * do for the real output. Falls back to the OS temp dir when the parent does
- * not exist yet (nothing generated so far, everything will be `added`).
+ * Pick where the throwaway generation goes.
+ *
+ * `--format`/`--lint` run on the scratch `queries/` files, and formatter and
+ * linter configuration is matched by path (overrides, ignore rules). So the
+ * scratch directory is created inside the existing `<output>/queries`, and
+ * the output's own path is repeated underneath it:
+ *
+ *   src/openapi/queries/.openapi-rq-check-XXXX/src/openapi/queries/*.ts
+ *
+ * A rule for `src/openapi/**` or `src/openapi/queries/**` matches through the
+ * leading part, a rule for a folder named `openapi` or for
+ * `**\/openapi/queries/*.ts` through the trailing part. Only a rule anchored
+ * at the project root that also pins the depth or file name (for example
+ * `src/openapi/queries/*.ts`) does not carry over.
+ *
+ * When there is no `queries/` yet every query file is reported as `added`
+ * whatever its content, so the scratch directory goes next to the output, or
+ * into the OS temp dir when the parent does not exist either.
  */
-async function createScratchOutput(output: string) {
+export async function createScratchOutput(output: string) {
   const resolvedOutput = path.resolve(output);
+  const existingQueries = path.join(resolvedOutput, queriesOutputPath);
   const parent = path.dirname(resolvedOutput);
-  const scratchParent = existsSync(parent) ? parent : tmpdir();
-  const scratchRoot = await mkdtemp(
-    path.join(scratchParent, ".openapi-rq-check-"),
-  );
+  const scratchParent = isDirectory(existingQueries)
+    ? existingQueries
+    : existsSync(parent)
+      ? parent
+      : tmpdir();
+  const scratchRoot = await mkdtemp(path.join(scratchParent, scratchPrefix));
+  const relativeOutput = path.relative(process.cwd(), resolvedOutput);
+  const insideCwd =
+    relativeOutput !== "" &&
+    !relativeOutput.startsWith("..") &&
+    !path.isAbsolute(relativeOutput);
   return {
     scratchRoot,
-    scratchOutput: path.join(scratchRoot, path.basename(resolvedOutput)),
+    scratchOutput: path.join(
+      scratchRoot,
+      insideCwd ? relativeOutput : path.basename(resolvedOutput),
+    ),
   };
 }
 
-/**
- * Generate into a temporary location and compare it with the existing
- * output under `options.output`. Never modifies the existing output.
- */
-export async function check(
+async function runCheck(
   options: LimitedUserConfig,
   version: string,
 ): Promise<CheckResult> {
@@ -143,6 +183,22 @@ export async function check(
     return { upToDate: files.length === 0, files };
   } finally {
     await rm(scratchRoot, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Generate into a temporary location and compare it with the existing
+ * output under `options.output`. Never modifies the existing files.
+ * Rejects only with {@link CodegenError}.
+ */
+export async function check(
+  options: LimitedUserConfig,
+  version: string,
+): Promise<CheckResult> {
+  try {
+    return await runCheck(options, version);
+  } catch (error) {
+    throw toCodegenError(error);
   }
 }
 

@@ -9,7 +9,7 @@ import {
   formatOptions,
 } from "./common.mjs";
 import { createSource } from "./createSource.mjs";
-import { CodegenError, ErrorCodes } from "./errors.mjs";
+import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
 import { formatOutput, processOutput } from "./format.mjs";
 import { print } from "./print.mjs";
 
@@ -93,10 +93,10 @@ export function mapClientError(error: unknown, input: unknown): CodegenError {
   );
 }
 
-export async function generate(
+async function runGenerate(
   options: LimitedUserConfig,
   version: string,
-  runtime: GenerateRuntimeOptions = {},
+  runtime: GenerateRuntimeOptions,
 ) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
@@ -214,6 +214,22 @@ export async function generate(
     format: formattedOptions.format,
     lint: formattedOptions.lint,
   });
+}
+
+/**
+ * Generate the client and the React Query hooks into `options.output`.
+ * Rejects only with {@link CodegenError}, so callers can branch on `code`.
+ */
+export async function generate(
+  options: LimitedUserConfig,
+  version: string,
+  runtime: GenerateRuntimeOptions = {},
+) {
+  try {
+    await runGenerate(options, version, runtime);
+  } catch (error) {
+    throw toCodegenError(error);
+  }
 }
 
 // Public library surface for the agent-facing features. `check` imports

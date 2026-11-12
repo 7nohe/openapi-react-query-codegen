@@ -47,7 +47,7 @@ Add a script and run it whenever the spec changes:
 | `--pageParam <name>` | `page` | query param that turns a GET into an infinite query |
 | `--nextPageParam <path>` | `nextPage` | response field holding the next page (dot path allowed, e.g. `meta.next`) |
 | `--initialPageParam <value>` / `--omitInitialPageParam` | `1` | first page value, or send none |
-| `--check` | off | write nothing; exit 1 if the output is out of date (see below) |
+| `--check` | off | do not update the output; exit 1 if it is out of date (see below) |
 | `--json` | off | errors as one JSON line on stderr (see below) |
 
 Pass the **same flags** every time (keep them in the package.json script). Different flags produce different output, so `--check` with other flags reports drift.
@@ -121,7 +121,7 @@ Wrap the app in TanStack Query's `QueryClientProvider` as usual.
 openapi-rq -i ./openapi.yaml -o ./src/openapi --check
 ```
 
-Generates into a temporary sibling directory (`.openapi-rq-check-*`, removed afterwards), compares it with `<output>/requests` and `<output>/queries`, and writes nothing. Each file is `added` (would be created), `modified` or `removed` (no longer generated).
+Generates into a temporary directory (`.openapi-rq-check-*` inside `<output>/queries`, removed afterwards), compares it with `<output>/requests` and `<output>/queries`, and changes no existing file. `--format`/`--lint` rules that target the output directory by path also apply to the temporary copy; a rule that names an exact file or depth from the project root (`src/openapi/queries/*.ts`) does not, so write such rules as `src/openapi/queries/**`. Each file is `added` (would be created), `modified` or `removed` (no longer generated).
 
 The `queries/` headers include the package version, so after upgrading this package `--check` fails until you regenerate. Upgrade and regenerate in the same change.
 
