@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { resolve } from "node:path";
 import { Project } from "ts-morph";
 import { buildGenerationContext, parseOperations } from "./parseOperations.mjs";
 import { generateAllFiles } from "./tsmorph/index.mjs";
@@ -31,7 +31,7 @@ export const createSource = async ({
     skipAddingFilesFromTsConfig: true,
   });
 
-  const sourceFiles = join(process.cwd(), outputPath);
+  const sourceFiles = resolve(process.cwd(), outputPath);
   project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
 
   // Parse operations from the service file
