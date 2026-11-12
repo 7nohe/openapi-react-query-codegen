@@ -98,3 +98,23 @@ The available options are:
 
 - `json`
 - `form`
+
+## CI and Automation Options
+
+See [CI and Coding Agents](/guides/ci-and-agents/) for details and examples.
+
+### --check
+
+Generate into a temporary directory and compare the result with the existing output instead of writing it. Exits with `1` and lists the files that differ (`added`, `modified` or `removed`) when the output is out of date, and with `0` when it is up to date. Nothing in the output directory is changed.
+
+### --json
+
+Print errors to stderr as a single line of JSON (`{ "code", "message", "details" }`) instead of human-readable text. The logs of `@hey-api/openapi-ts` are silenced in this mode.
+
+## Exit Codes
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | Success, or `--check` found no differences |
+| `1` | `--check` found differences |
+| `2` | Error (invalid options, unreadable or invalid input, generation failure) |
