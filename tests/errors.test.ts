@@ -187,7 +187,8 @@ describe("generate errors", () => {
     expect(error).toBeInstanceOf(CodegenError);
     expect(error).toMatchObject({
       code: ErrorCodes.generationFailed,
-      cause: { code: "ENOTDIR" },
+      // ENOTDIR on POSIX, ENOENT on Windows.
+      cause: { code: expect.stringMatching(/^E(NOTDIR|NOENT)$/) },
     });
   });
 

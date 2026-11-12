@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import {
   appendFile,
+  chmod,
   mkdir,
   mkdtemp,
   readdir,
@@ -270,7 +271,8 @@ describe("check errors", () => {
     expect(error).toBeInstanceOf(CodegenError);
     expect(error).toMatchObject({
       code: ErrorCodes.generationFailed,
-      cause: { code: "ENOTDIR" },
+      // ENOTDIR on POSIX, ENOENT on Windows.
+      cause: { code: expect.stringMatching(/^E(NOTDIR|NOENT)$/) },
     });
   });
 });
@@ -302,6 +304,29 @@ describe("diffDirectories", () => {
       { path: "out/queries/nested/new.ts", status: "added" },
       { path: "out/queries/nested/old.ts", status: "removed" },
     ]);
+  });
+
+  test("never reads inside a scratch directory", async () => {
+    // Unreadable stands in for "removed by another check while we walk":
+    // listing it would throw (where the platform enforces permissions).
+    const scratch = path.join(root, "actual", `${scratchPrefix}other`);
+    await mkdir(scratch);
+    await writeFile(path.join(scratch, "queries.ts"), "other");
+    await chmod(scratch, 0o000);
+    try {
+      const changes = await diffDirectories({
+        expectedRoot: path.join(root, "expected"),
+        actualRoot: path.join(root, "actual"),
+        displayRoot: "out",
+      });
+      expect(changes).toEqual([
+        { path: "out/nested/new.ts", status: "added" },
+        { path: "out/nested/old.ts", status: "removed" },
+      ]);
+    } finally {
+      await chmod(scratch, 0o755);
+      await rm(scratch, { recursive: true, force: true });
+    }
   });
 
   test("treats a missing directory as empty", async () => {

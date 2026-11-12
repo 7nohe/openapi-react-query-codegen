@@ -43,21 +43,28 @@ async function listFiles(root: string): Promise<string[]> {
   if (!existsSync(root)) {
     return [];
   }
-  const entries = await readdir(root, { recursive: true, withFileTypes: true });
-  return (
-    entries
-      .filter((entry) => entry.isFile())
-      .map((entry) =>
-        path.relative(root, path.join(entry.parentPath, entry.name)),
-      )
-      // The scratch directory lives inside the existing `queries/`.
-      .filter(
-        (file) =>
-          !file
-            .split(path.sep)
-            .some((segment) => segment.startsWith(scratchPrefix)),
-      )
-  );
+  const files: string[] = [];
+  const walk = async (relativeDirectory: string) => {
+    const entries = await readdir(path.join(root, relativeDirectory), {
+      withFileTypes: true,
+    });
+    for (const entry of entries) {
+      // Scratch directories live inside the existing `queries/`. Skip them
+      // before descending: one that belongs to another check running at the
+      // same time can disappear while it is being read.
+      if (entry.name.startsWith(scratchPrefix)) {
+        continue;
+      }
+      const relative = path.join(relativeDirectory, entry.name);
+      if (entry.isDirectory()) {
+        await walk(relative);
+      } else if (entry.isFile()) {
+        files.push(relative);
+      }
+    }
+  };
+  await walk("");
+  return files;
 }
 
 // Code-unit order, not localeCompare, so the listing is identical everywhere.
