@@ -1,0 +1,35 @@
+# OpenAPI React Query Codegen
+
+> `@7nohe/openapi-react-query-codegen` is a CLI (`openapi-rq`) that generates TanStack Query v5 (React Query) hooks from an OpenAPI 3.0/3.1 specification. It generates a TypeScript HTTP client (fetch or axios) in `<output>/requests/`, then generates typed `useQuery`, `useSuspenseQuery`, `useInfiniteQuery` and `useMutation` hooks, `queryOptions` factories, `prefetchQuery` / `ensureQueryData` helpers and query key functions in `<output>/queries/`.
+
+Key facts for agents:
+
+- Install: `npm install -D @7nohe/openapi-react-query-codegen` and `npm install @tanstack/react-query`. Only the scoped package belongs to this project.
+- Run: `openapi-rq -i ./openapi.yaml -o ./src/openapi`. Keep the flags in a package.json script and always pass the same ones.
+- Do not edit generated files. Change the spec or the flags and regenerate.
+- `--check` changes no existing file and exits 1 when the committed output is out of date, which makes it a CI drift check.
+- `--json` prints failures as one line of JSON on stderr: `{"code","message","details"}`. Exit codes: 0 ok, 1 out of date, 2 error.
+- The npm package ships an `AGENTS.md` with the full flag table, the generated layout, naming conventions and error codes.
+
+## Docs
+
+- [Introduction](https://openapi-react-query-codegen.vercel.app/guides/introduction/): install, first run, generated layout, client setup
+- [Usage](https://openapi-react-query-codegen.vercel.app/guides/usage/): using the generated query, suspense, mutation, infinite, prefetch and ensureQueryData exports
+- [CLI Options](https://openapi-react-query-codegen.vercel.app/guides/cli-options/): every flag with defaults
+- [CI and Coding Agents](https://openapi-react-query-codegen.vercel.app/guides/ci-and-agents/): `--check`, `--json`, exit codes, error codes, AGENTS.md
+- [AGENTS.md](https://github.com/7nohe/openapi-react-query-codegen/blob/main/AGENTS.md): agent guide, also at `node_modules/@7nohe/openapi-react-query-codegen/AGENTS.md`
+
+## Examples
+
+- [Vite + React](https://openapi-react-query-codegen.vercel.app/examples/vite-react/)
+- [Next.js](https://openapi-react-query-codegen.vercel.app/examples/nextjs/)
+- [TanStack Router](https://openapi-react-query-codegen.vercel.app/examples/tanstack-router/)
+- [React Router 7](https://openapi-react-query-codegen.vercel.app/examples/react-router-7/)
+
+## Optional
+
+- [Migrating to v3](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v3/)
+- [Migrating to v4](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v4/)
+- [Migrating from openapi-react-query](https://openapi-react-query-codegen.vercel.app/guides/migrating-from-openapi-react-query/)
+- [Contributing](https://openapi-react-query-codegen.vercel.app/contributing/)
+- [Source code](https://github.com/7nohe/openapi-react-query-codegen)

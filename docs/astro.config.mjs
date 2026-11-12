@@ -35,6 +35,7 @@ export default defineConfig({
             { slug: "guides/introduction" },
             { slug: "guides/usage" },
             { slug: "guides/cli-options" },
+            { slug: "guides/ci-and-agents" },
             { slug: "guides/migrating-to-v3" },
             { slug: "guides/migrating-to-v4" },
             { slug: "guides/migrating-from-openapi-react-query" },

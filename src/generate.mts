@@ -4,6 +4,7 @@ import {
   detectImportExtension,
   findNearestTsConfigPath,
   generateClient,
+  SpecError,
   writeGeneratedFiles,
 } from "./client/index.mjs";
 import {
@@ -12,6 +13,7 @@ import {
   formatOptions,
 } from "./common.mjs";
 import { createSource } from "./createSource.mjs";
+import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
 import { formatOutput, processOutput } from "./format.mjs";
 import { print } from "./print.mjs";
 
@@ -30,7 +32,60 @@ export function resolveClientKind(
   }
 }
 
-export async function generate(options: LimitedUserConfig, version: string) {
+export type GenerateRuntimeOptions = {
+  /**
+   * Keep the generator from writing to stderr. Used by `--json` (stderr must
+   * carry only our JSON) and by `--check`.
+   */
+  silent?: boolean;
+};
+
+/** Keep inline spec content out of error details; it can be huge. */
+function describeInput(input: unknown): string {
+  if (typeof input === "string" && !input.includes("\n")) {
+    return input;
+  }
+  return "(inline specification)";
+}
+
+/**
+ * Translate a failure of the client generator into our stable error codes.
+ * This is the only place that knows how `src/client/` reports them.
+ */
+export function mapClientError(error: unknown, input: unknown): CodegenError {
+  if (error instanceof CodegenError) {
+    return error;
+  }
+  const inputDescription = describeInput(input);
+  const reason = error instanceof Error ? error.message : String(error);
+  if (error instanceof SpecError) {
+    return error.reason === "not-found"
+      ? new CodegenError(
+          ErrorCodes.inputNotFound,
+          `OpenAPI input could not be read: ${inputDescription}`,
+          { input: inputDescription, reason },
+          { cause: error },
+        )
+      : new CodegenError(
+          ErrorCodes.inputParseError,
+          `OpenAPI input could not be parsed: ${inputDescription}`,
+          { input: inputDescription, reason },
+          { cause: error },
+        );
+  }
+  return new CodegenError(
+    ErrorCodes.clientGenerationFailed,
+    `The client could not be generated: ${reason}`,
+    {
+      input: inputDescription,
+      reason,
+      name: error instanceof Error ? error.name : "Error",
+    },
+    { cause: error },
+  );
+}
+
+async function runGenerate(options: LimitedUserConfig, version: string) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
   const client = resolveClientKind(formattedOptions.client);
@@ -38,14 +93,19 @@ export async function generate(options: LimitedUserConfig, version: string) {
   // One answer for both directories: the queries import the requests.
   const importExtension = detectImportExtension(process.cwd());
 
-  const generated = await generateClient({
-    input: formattedOptions.input,
-    client,
-    enums: formattedOptions.enums,
-    importExtension,
-    noOperationId: formattedOptions.noOperationId,
-    pageParam: formattedOptions.pageParam,
-  });
+  let generated: Awaited<ReturnType<typeof generateClient>>;
+  try {
+    generated = await generateClient({
+      input: formattedOptions.input,
+      client,
+      enums: formattedOptions.enums,
+      importExtension,
+      noOperationId: formattedOptions.noOperationId,
+      pageParam: formattedOptions.pageParam,
+    });
+  } catch (error) {
+    throw mapClientError(error, formattedOptions.input);
+  }
   await writeGeneratedFiles(openApiOutputPath, generated.files);
 
   const source = createSource({
@@ -67,3 +127,36 @@ export async function generate(options: LimitedUserConfig, version: string) {
     lint: formattedOptions.lint,
   });
 }
+
+/**
+ * Generate the client and the React Query hooks into `options.output`.
+ * Rejects only with {@link CodegenError}, so callers can branch on `code`.
+ */
+export async function generate(
+  options: LimitedUserConfig,
+  version: string,
+  // The generator writes nothing to stderr yet, so there is nothing to silence.
+  _runtime: GenerateRuntimeOptions = {},
+) {
+  try {
+    await runGenerate(options, version);
+  } catch (error) {
+    throw toCodegenError(error);
+  }
+}
+
+// Public library surface for the agent-facing features. `check` imports
+// `generate` from this module; the cycle is safe because both are hoisted
+// function declarations.
+export {
+  type CheckResult,
+  check,
+  type FileChange,
+  type FileChangeStatus,
+} from "./check.mjs";
+export {
+  CodegenError,
+  type ErrorCode,
+  ErrorCodes,
+  ExitCodes,
+} from "./errors.mjs";

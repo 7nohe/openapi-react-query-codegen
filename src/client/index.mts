@@ -23,6 +23,7 @@ import { bundleExternalRefs, type Doc, loadSpec } from "./spec.mjs";
 
 export type { ClientKind } from "./emitSdk.mjs";
 export type { EnumsMode } from "./emitTypes.mjs";
+export { SpecError } from "./spec.mjs";
 export { detectImportExtension, findNearestTsConfigPath } from "./tsconfig.mjs";
 
 export interface ClientGenOptions {

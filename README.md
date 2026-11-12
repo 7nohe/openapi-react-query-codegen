@@ -13,6 +13,7 @@
 - **SSR helpers**: `prefetchQuery`, `prefetchInfiniteQuery`, and `ensureQueryData` functions per operation — ready for Next.js App Router hydration
 - **Hierarchical query keys** with exported key constants and functions: invalidate one exact query, all infinite pages of an operation, or every cache entry of an operation with a single prefix
 - **Pure TypeScript client** (types, SDK functions and a small fetch or axios runtime) generated from the same OpenAPI 3.0/3.1 document — no separate client generator to install
+- **CI- and agent-friendly**: `--check` fails CI when committed output is out of date, `--json` prints errors as machine-readable JSON, and the package ships an [`AGENTS.md`](./AGENTS.md) for coding agents
 
 ## Quick start
 

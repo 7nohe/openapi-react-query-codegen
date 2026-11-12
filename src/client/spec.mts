@@ -11,6 +11,25 @@ export type Doc = Record<string, Json>;
 
 const URL_RE = /^https?:\/\//i;
 
+/**
+ * A specification that could not be loaded: because it, or a document it
+ * refers to, could not be read (`not-found`), or because what was read is not
+ * a JSON or YAML object (`parse`).
+ */
+export class SpecError extends Error {
+  readonly reason: "not-found" | "parse";
+
+  constructor(
+    reason: "not-found" | "parse",
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message, options);
+    this.name = "SpecError";
+    this.reason = reason;
+  }
+}
+
 /** JSON when it is, which is much faster to parse than YAML. */
 function parseJsonOrYaml(text: string): unknown {
   if (text.startsWith("{")) {
@@ -29,12 +48,15 @@ function parseText(text: string, source: string): Doc {
   try {
     parsed = parseJsonOrYaml(trimmed);
   } catch (error) {
-    throw new Error(
+    throw new SpecError(
+      "parse",
       `Failed to parse the OpenAPI specification (${source}): ${(error as Error).message}`,
+      { cause: error },
     );
   }
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error(
+    throw new SpecError(
+      "parse",
       `The OpenAPI specification (${source}) must be a JSON/YAML object.`,
     );
   }
@@ -49,16 +71,28 @@ function parseText(text: string, source: string): Doc {
 async function readLocation(
   location: string,
 ): Promise<{ text: string; location: string }> {
+  const unreadable = (verb: string, cause: unknown) =>
+    new SpecError(
+      "not-found",
+      `Failed to ${verb} ${location}: ${(cause as Error).message}`,
+      { cause },
+    );
   if (URL_RE.test(location)) {
-    const response = await fetch(location);
+    const response = await fetch(location).catch((cause: unknown) => {
+      throw unreadable("fetch", cause);
+    });
     if (!response.ok) {
-      throw new Error(
+      throw new SpecError(
+        "not-found",
         `Failed to fetch ${location}: ${response.status} ${response.statusText}`,
       );
     }
     return { text: await response.text(), location: response.url || location };
   }
-  return { text: await readFile(location, "utf-8"), location };
+  const text = await readFile(location, "utf-8").catch((cause: unknown) => {
+    throw unreadable("read", cause);
+  });
+  return { text, location };
 }
 
 async function loadDocument(
@@ -85,7 +119,10 @@ export async function loadSpec(input: string): Promise<LoadedSpec> {
     return loadDocument(path.resolve(input));
   }
   if (!looksInline) {
-    throw new Error(`OpenAPI specification not found: ${input}`);
+    throw new SpecError(
+      "not-found",
+      `OpenAPI specification not found: ${input}`,
+    );
   }
   return { doc: parseText(input, "inline content"), location: undefined };
 }
