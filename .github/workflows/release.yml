@@ -134,7 +134,7 @@ jobs:
             }
             if (manifest.gypfile) errors.push("gypfile is set");
             for (const file of files) {
-              if (!/^package\/(package\.json|README\.md|LICENSE|dist\/.+)$/.test(file)) {
+              if (!/^package\/(package\.json|README\.md|LICENSE|AGENTS\.md|dist\/.+)$/.test(file)) {
                 errors.push("unexpected file: " + file);
               }
               if (/(^|\/)binding\.gyp$|\.node$/i.test(file)) errors.push("native build file: " + file);
