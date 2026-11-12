@@ -9,6 +9,7 @@ import {
   formatOptions,
 } from "./common.mjs";
 import { createSource } from "./createSource.mjs";
+import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
 import { formatOutput, processOutput } from "./format.mjs";
 import { print } from "./print.mjs";
 
@@ -33,7 +34,70 @@ export function findNearestTsConfigPath(startDir: string): string | undefined {
   }
 }
 
-export async function generate(options: LimitedUserConfig, version: string) {
+export type GenerateRuntimeOptions = {
+  /**
+   * Silence @hey-api/openapi-ts logs and stop it from writing crash-report
+   * files into cwd. Used by `--json` (stderr must carry only our JSON) and
+   * by `--check` (which must leave nothing behind).
+   */
+  silent?: boolean;
+};
+
+/** Keep inline spec content out of error details; it can be huge. */
+function describeInput(input: unknown): string {
+  if (typeof input === "string" && !input.includes("\n")) {
+    return input;
+  }
+  return "(inline specification)";
+}
+
+/**
+ * Translate @hey-api/openapi-ts failures into our stable error codes.
+ * hey-api's error classes live in a transitive dependency, so they are
+ * matched by name rather than imported. This is the only place that knows
+ * about them (see the IR boundary notes in AGENTS.md).
+ */
+export function mapClientError(error: unknown, input: unknown): CodegenError {
+  if (error instanceof CodegenError) {
+    return error;
+  }
+  const inputDescription = describeInput(input);
+  const err = error as {
+    name?: string;
+    message?: string;
+    originalError?: { error?: { code?: string; message?: string } };
+  } | null;
+  const original = err?.originalError?.error;
+  const reason = original?.message ?? err?.message ?? String(error);
+  if (err?.name === "InputError") {
+    return new CodegenError(
+      ErrorCodes.inputNotFound,
+      `OpenAPI input could not be read: ${inputDescription}`,
+      { input: inputDescription, reason },
+      { cause: error },
+    );
+  }
+  if (err?.name === "JobError" && original?.code === "EPARSER") {
+    return new CodegenError(
+      ErrorCodes.inputParseError,
+      `OpenAPI input could not be parsed: ${inputDescription}`,
+      { input: inputDescription, reason },
+      { cause: error },
+    );
+  }
+  return new CodegenError(
+    ErrorCodes.clientGenerationFailed,
+    `@hey-api/openapi-ts failed to generate the client: ${reason}`,
+    { input: inputDescription, reason, name: err?.name ?? "Error" },
+    { cause: error },
+  );
+}
+
+async function runGenerate(
+  options: LimitedUserConfig,
+  version: string,
+  runtime: GenerateRuntimeOptions,
+) {
   const openApiOutputPath = buildRequestsOutputPath(options.output);
   const formattedOptions = formatOptions(options);
 
@@ -99,8 +163,26 @@ export async function generate(options: LimitedUserConfig, version: string) {
       tsConfigPath: findNearestTsConfigPath(process.cwd()) ?? null,
     },
     plugins,
+    ...(runtime.silent
+      ? { logs: { level: "silent" as const, file: false } }
+      : {}),
   };
-  await createClient(config);
+  let contexts: ReadonlyArray<unknown>;
+  try {
+    contexts = await createClient(config);
+  } catch (error) {
+    throw mapClientError(error, formattedOptions.input);
+  }
+  // openapi-ts swallows input errors (file not found, HTTP failure), logs
+  // them and resolves with no contexts instead of throwing.
+  if (contexts.length === 0) {
+    const inputDescription = describeInput(formattedOptions.input);
+    throw new CodegenError(
+      ErrorCodes.inputNotFound,
+      `OpenAPI input could not be read (file not found or request failed): ${inputDescription}`,
+      { input: inputDescription },
+    );
+  }
 
   // Generate backward-compatible services.gen.ts shim
   // client.gen.ts has the `client` instance; sdk.gen.ts has SDK functions.
@@ -133,3 +215,35 @@ export async function generate(options: LimitedUserConfig, version: string) {
     lint: formattedOptions.lint,
   });
 }
+
+/**
+ * Generate the client and the React Query hooks into `options.output`.
+ * Rejects only with {@link CodegenError}, so callers can branch on `code`.
+ */
+export async function generate(
+  options: LimitedUserConfig,
+  version: string,
+  runtime: GenerateRuntimeOptions = {},
+) {
+  try {
+    await runGenerate(options, version, runtime);
+  } catch (error) {
+    throw toCodegenError(error);
+  }
+}
+
+// Public library surface for the agent-facing features. `check` imports
+// `generate` from this module; the cycle is safe because both are hoisted
+// function declarations.
+export {
+  type CheckResult,
+  check,
+  type FileChange,
+  type FileChangeStatus,
+} from "./check.mjs";
+export {
+  CodegenError,
+  type ErrorCode,
+  ErrorCodes,
+  ExitCodes,
+} from "./errors.mjs";

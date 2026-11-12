@@ -36,7 +36,8 @@
   "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
   "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
   "files": [
-    "dist"
+    "dist",
+    "AGENTS.md"
   ],
   "keywords": [
     "codegen",

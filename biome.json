@@ -42,6 +42,14 @@
       }
     },
     {
+      "includes": ["tests/outputs-check-anchored/**"],
+      "javascript": {
+        "formatter": {
+          "quoteStyle": "single"
+        }
+      }
+    },
+    {
       "includes": ["examples/**"],
       "linter": {
         "rules": {
