@@ -843,17 +843,221 @@ describe("detectImportExtension", () => {
     await mkdir(sub, { recursive: true });
     await writeFile(path.join(sub, "tsconfig.json"), "{ not json");
     expect(detectImportExtension(sub)).toBe("");
+    await writeFile(path.join(sub, "tsconfig.json"), "null");
+    expect(detectImportExtension(sub)).toBe("");
   });
 
-  test("a TypeScript build without the host API yields no extension", async () => {
-    const sub = path.join(dir, "no-host");
+  test("reads a tsconfig with comments, trailing commas and a BOM", async () => {
+    const sub = path.join(dir, "jsonc");
     await mkdir(sub, { recursive: true });
     await writeFile(
       path.join(sub, "tsconfig.json"),
-      JSON.stringify({ compilerOptions: { moduleResolution: "nodenext" } }),
+      `\uFEFF{
+  // "moduleResolution": "bundler",
+  "compilerOptions": {
+    /* "module": "esnext", */
+    "paths": { "a//b": ["/* not a comment */", "x,]"], },
+    "module": "NodeNext", // the value is not case-sensitive
+  },
+}
+/* unfinished`,
     );
-    // TypeScript 7's native build has no `ts.sys` host object.
-    expect(detectImportExtension(sub, null)).toBe("");
+    expect(detectImportExtension(sub)).toBe(".js");
+  });
+
+  // The generator must not need the `typescript` package to read a tsconfig,
+  // so that it runs next to TypeScript 7, which has no API for it. These
+  // cases hold what TypeScript itself makes of each config.
+  describe("agrees with TypeScript", () => {
+    const write = async (file: string, config: unknown) => {
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(
+        file,
+        typeof config === "string" ? config : JSON.stringify(config),
+      );
+    };
+
+    /** What TypeScript resolves, turned into the same answer. */
+    const viaTypeScript = (sub: string): "" | ".js" => {
+      const configPath = path.join(sub, "tsconfig.json");
+      const read = ts.readConfigFile(configPath, ts.sys.readFile);
+      const { options } = ts.parseJsonConfigFileContent(
+        read.config,
+        ts.sys,
+        sub,
+      );
+      const resolution =
+        options.moduleResolution ??
+        (options.module !== undefined &&
+        options.module >= ts.ModuleKind.Node16 &&
+        options.module <= ts.ModuleKind.NodeNext
+          ? ts.ModuleResolutionKind.NodeNext
+          : undefined);
+      return resolution === ts.ModuleResolutionKind.Node16 ||
+        resolution === ts.ModuleResolutionKind.NodeNext
+        ? ".js"
+        : "";
+    };
+
+    const cases: Array<[string, Record<string, unknown>, "" | ".js"]> = [
+      ["no options", { "tsconfig.json": {} }, ""],
+      [
+        "a parent in the same folder",
+        {
+          "tsconfig.json": { extends: "./base.json" },
+          "base.json": { compilerOptions: { module: "nodenext" } },
+        },
+        ".js",
+      ],
+      [
+        "a parent named without its extension",
+        {
+          "tsconfig.json": { extends: "./configs/base" },
+          "configs/base.json": {
+            compilerOptions: { moduleResolution: "node16" },
+          },
+        },
+        ".js",
+      ],
+      [
+        "its own options over the parent's",
+        {
+          "tsconfig.json": {
+            extends: "./base.json",
+            compilerOptions: { moduleResolution: "bundler" },
+          },
+          "base.json": { compilerOptions: { moduleResolution: "nodenext" } },
+        },
+        "",
+      ],
+      [
+        "the resolution of the parent over its own module",
+        {
+          "tsconfig.json": {
+            extends: "./base.json",
+            compilerOptions: { module: "nodenext" },
+          },
+          "base.json": { compilerOptions: { moduleResolution: "bundler" } },
+        },
+        "",
+      ],
+      [
+        "a chain of parents",
+        {
+          "tsconfig.json": { extends: "./a.json" },
+          "a.json": { extends: "./b.json", compilerOptions: { strict: true } },
+          "b.json": { compilerOptions: { module: "node18" } },
+        },
+        ".js",
+      ],
+      [
+        "several parents, the later one first",
+        {
+          "tsconfig.json": { extends: ["./a.json", "./b.json"] },
+          "a.json": { compilerOptions: { moduleResolution: "nodenext" } },
+          "b.json": { compilerOptions: { moduleResolution: "bundler" } },
+        },
+        "",
+      ],
+      [
+        "a grandparent reached twice",
+        {
+          "tsconfig.json": { extends: ["./a.json", "./b.json"] },
+          "a.json": {
+            extends: "./root.json",
+            compilerOptions: { moduleResolution: "bundler" },
+          },
+          "b.json": { extends: "./root.json" },
+          "root.json": { compilerOptions: { moduleResolution: "nodenext" } },
+        },
+        ".js",
+      ],
+      [
+        "a parent from a package",
+        {
+          "tsconfig.json": { extends: "@scope/base/tsconfig.json" },
+          "node_modules/@scope/base/package.json": { name: "@scope/base" },
+          "node_modules/@scope/base/tsconfig.json": {
+            compilerOptions: { module: "node20" },
+          },
+        },
+        ".js",
+      ],
+      [
+        "a package named on its own",
+        {
+          "tsconfig.json": { extends: "plain-base" },
+          "node_modules/plain-base/package.json": { name: "plain-base" },
+          "node_modules/plain-base/tsconfig.json": {
+            compilerOptions: { moduleResolution: "nodenext" },
+          },
+        },
+        ".js",
+      ],
+      [
+        "a file of a package named without its extension",
+        {
+          "tsconfig.json": { extends: "plain-base/strict" },
+          "node_modules/plain-base/package.json": { name: "plain-base" },
+          "node_modules/plain-base/strict.json": {
+            compilerOptions: { moduleResolution: "node16" },
+          },
+        },
+        ".js",
+      ],
+      [
+        "a parent that is not there",
+        {
+          "tsconfig.json": {
+            extends: ["./missing.json", "no-such-package", 1],
+            compilerOptions: { module: "nodenext" },
+          },
+        },
+        ".js",
+      ],
+      [
+        "a parent that cannot be parsed",
+        {
+          "tsconfig.json": {
+            extends: "./broken.json",
+            compilerOptions: { module: "nodenext" },
+          },
+          "broken.json": "{ not json",
+        },
+        ".js",
+      ],
+      [
+        "parents that extend each other",
+        {
+          "tsconfig.json": { extends: "./a.json" },
+          "a.json": {
+            extends: "./tsconfig.json",
+            compilerOptions: { module: "nodenext" },
+          },
+        },
+        ".js",
+      ],
+      [
+        "values of another type",
+        {
+          "tsconfig.json": {
+            compilerOptions: { module: 199, moduleResolution: null },
+          },
+        },
+        "",
+      ],
+    ];
+
+    test.each(cases)("%s", async (name, files, expected) => {
+      const sub = path.join(dir, "ts", name.replaceAll(" ", "-"));
+      for (const [file, config] of Object.entries(files)) {
+        await write(path.join(sub, file), config);
+      }
+      expect(detectImportExtension(sub)).toBe(expected);
+      // TypeScript reports an error for a parent it cannot load and for a
+      // circle, and then goes on without it, as the generator does.
+      expect(viaTypeScript(sub)).toBe(expected);
+    });
   });
 
   test("a missing tsconfig yields no extension", async () => {

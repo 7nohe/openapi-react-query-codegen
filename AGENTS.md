@@ -21,7 +21,7 @@ npm install -D @7nohe/openapi-react-query-codegen
 npm install @tanstack/react-query
 ```
 
-`commander`, `ts-morph` and `typescript` are peer dependencies. If your package manager does not install peers automatically, add them as devDependencies. For `--client axios`, also add `axios`. Nothing else is needed at runtime; the client code is generated into `requests/`.
+`commander` and `ts-morph` are peer dependencies. If your package manager does not install peers automatically, add them as devDependencies. The generated code compiles with TypeScript 5, 6 and 7; the generator itself does not need the `typescript` package. For `--client axios`, also add `axios`. Nothing else is needed at runtime; the client code is generated into `requests/`.
 
 Only the scoped `@7nohe/openapi-react-query-codegen` package belongs to this project. The unscoped `openapi-react-query-codegen` on npm is someone else's.
 

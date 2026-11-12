@@ -120,4 +120,5 @@ The constants have the names v3 gave them (`PetSchema`, `my_schemaSchema`, `PetW
 
 - `@hey-api/openapi-ts` is no longer a dependency, so its (FSL) license no longer applies to your install.
 - `yaml` (exact-pinned, no dependencies of its own) was added to parse YAML specifications.
-- Peer dependencies are unchanged. `axios` is needed in your project only with `-c axios`.
+- `typescript` is no longer a peer dependency, so the TypeScript version of your project cannot conflict with this package, and TypeScript 7 works. The generator reads your `tsconfig.json` itself (comments, trailing commas and `extends` included) to decide whether relative imports need `.js`, instead of using the TypeScript compiler API, which version 7 does not have. The generated code compiles with TypeScript 5.x, 6.x and 7.x.
+- The other peer dependencies are unchanged. `axios` is needed in your project only with `-c axios`.

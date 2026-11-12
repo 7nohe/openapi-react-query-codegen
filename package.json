@@ -71,8 +71,7 @@
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
     "commander": "12.x || 13.x || 14.x || 15.x",
-    "ts-morph": "28.x",
-    "typescript": "5.x || 6.x"
+    "ts-morph": "28.x"
   },
   "packageManager": "pnpm@9.6.0",
   "engines": {
