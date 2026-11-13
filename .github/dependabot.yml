@@ -37,7 +37,7 @@ updates:
       - dependency-name: "postcss"
       - dependency-name: "yaml"
       # The workspace mixes TypeScript 5 (docs/, examples/) and 6 (the root
-      # library, which ts-morph 28 needs). Dependabot updates them as one
+      # library). Dependabot updates them as one
       # dependency and has rewritten the root's `^6.0.3` down to `^5.9.3`
       # (#254). docs/ builds with `astro check`, which rejects TypeScript 7.
       # Bump TypeScript by hand in each package.

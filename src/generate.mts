@@ -14,7 +14,7 @@ import {
 } from "./common.mjs";
 import { createSource } from "./createSource.mjs";
 import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
-import { formatOutput, processOutput } from "./format.mjs";
+import { processOutput } from "./format.mjs";
 import { print } from "./print.mjs";
 
 export { findNearestTsConfigPath };
@@ -131,7 +131,6 @@ async function runGenerate(
   });
   await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);
-  await formatOutput(queriesOutputPath);
   await processOutput({
     output: queriesOutputPath,
     format: formattedOptions.format,

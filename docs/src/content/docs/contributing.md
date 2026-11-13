@@ -48,7 +48,7 @@ pnpm --filter docs dev
 
 ## Architecture: the client generator and the IR boundary
 
-`src/client/` turns the OpenAPI document into the `requests/` directory (`types.gen.ts`, `sdk.gen.ts`, `client.gen.ts`, `runtime.gen.ts`, and on request `schemas.gen.ts` and `transformers.gen.ts`) and returns the normalized operations (`OperationInfo` in `src/types.mts`) to the hook generators in `src/tsmorph/`. The hook generators consume only that intermediate representation and `GenerationContext`; they never read the generated SDK or the OpenAPI document. Please flag any change that makes them do so.
+`src/client/` turns the OpenAPI document into the `requests/` directory (`types.gen.ts`, `sdk.gen.ts`, `client.gen.ts`, `runtime.gen.ts`, and on request `schemas.gen.ts` and `transformers.gen.ts`) and returns the normalized operations (`OperationInfo` in `src/types.mts`) to the hook generators in `src/hooks/`. The hook generators consume only that intermediate representation and `GenerationContext`; they never read the generated SDK or the OpenAPI document. Please flag any change that makes them do so.
 
 The generated hooks rely on a small SDK contract that `src/client/emitSdk.mts` and the runtimes in `src/client/runtime/` must keep:
 

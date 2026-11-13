@@ -1,11 +1,7 @@
-import {
-  StructureKind,
-  VariableDeclarationKind,
-  type VariableStatementStructure,
-} from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
 import { SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
 import { getDataTypeName, getErrorType } from "./operationNames.mjs";
+import type { ConstStatement } from "./statement.mjs";
 
 /**
  * Build useMutation hook.
@@ -22,7 +18,7 @@ import { getDataTypeName, getErrorType } from "./operationNames.mjs";
 export function buildUseMutationHook(
   op: OperationInfo,
   ctx: GenerationContext,
-): VariableStatementStructure {
+): ConstStatement {
   const hookName = `use${op.capitalizedMethodName}`;
   const errorType = getErrorType(op, ctx);
   const dataTypeDefault = `Common.${op.capitalizedMethodName}MutationResult`;
@@ -34,16 +30,10 @@ export function buildUseMutationHook(
   const body = `useMutation<TData, TError, ${optionsType}, TContext>({ mutationKey: Common.Use${op.capitalizedMethodName}KeyFn(mutationKey), mutationFn: ${mutationFn}, ...options })`;
 
   return {
-    kind: StructureKind.VariableStatement,
-    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
-    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: hookName,
-        initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, ${optionsType}, TContext>, "mutationKey" | "mutationFn">) => ${body}`,
-      },
-    ],
+    kind: "const",
+    // The operation's JSDoc (description and @deprecated), as on the SDK function
+    jsDoc: op.jsDoc,
+    name: hookName,
+    initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, ${optionsType}, TContext>, "mutationKey" | "mutationFn">) => ${body}`,
   };
 }

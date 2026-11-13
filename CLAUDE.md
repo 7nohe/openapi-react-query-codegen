@@ -40,7 +40,7 @@ npm run preview:tanstack-router
    - Calls `generateClient()` (`src/client/index.mts`) to build the client in `openapi/requests/` and the normalized operations
    - Calls `createSource()` to generate React Query hooks in `openapi/queries/`
 3. **Client Generator** (`src/client/`): `spec.mts` loads/bundles the document, `operations.mts` normalizes operations, `schema.mts` renders types, `emitTypes.mts` / `emitSdk.mts` write the files, and `runtime/*.runtime.ts` are the fetch/axios runtimes copied into the output
-4. **Hook Generators** (`src/tsmorph/`): `generateFiles.mts` routes operations by HTTP method (GET → queries, suspense, infinite, prefetch, ensure; POST/PUT/PATCH/DELETE → mutations) to the `build*.mts` builders
+4. **Hook Generators** (`src/hooks/`): `generateFiles.mts` routes operations by HTTP method (GET → queries, suspense, infinite, prefetch, ensure; POST/PUT/PATCH/DELETE → mutations) to the `build*.mts` builders, which return statements as strings; `statement.mts` and `imports.mts` print them and the imports each file needs
 5. **Print** (`src/print.mts`): Writes generated TypeScript to files
 
 ### Generated Output Structure
@@ -56,8 +56,7 @@ The tool generates files in `openapi/queries/`:
 
 ### Key Dependencies
 
-- **ts-morph**: building and formatting the hook source files
-- **typescript**: reading the caller's tsconfig and compiling generated output in tests
+- **typescript** (dev only): building this package and compiling generated output in tests
 - **yaml**: parsing YAML specifications
 
 ## Testing

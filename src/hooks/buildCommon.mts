@@ -1,22 +1,14 @@
-import {
-  StructureKind,
-  type TypeAliasDeclarationStructure,
-  VariableDeclarationKind,
-  type VariableStatementStructure,
-} from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
 import { getDataTypeName } from "./operationNames.mjs";
+import type { ConstStatement, TypeStatement } from "./statement.mjs";
 
 /**
  * Build the default response type alias.
  * Example: export type FindPetsDefaultResponse = Awaited<ReturnType<typeof findPets>>["data"];
  */
-export function buildDefaultResponseType(
-  op: OperationInfo,
-): TypeAliasDeclarationStructure {
+export function buildDefaultResponseType(op: OperationInfo): TypeStatement {
   return {
-    kind: StructureKind.TypeAlias,
-    isExported: true,
+    kind: "type",
     name: `${op.capitalizedMethodName}DefaultResponse`,
     type: `Awaited<ReturnType<typeof ${op.methodName}>>["data"]`,
   };
@@ -26,12 +18,9 @@ export function buildDefaultResponseType(
  * Build the query result type alias.
  * Example: export type FindPetsQueryResult<TData = FindPetsDefaultResponse, TError = unknown> = UseQueryResult<TData, TError>;
  */
-export function buildQueryResultType(
-  op: OperationInfo,
-): TypeAliasDeclarationStructure {
+export function buildQueryResultType(op: OperationInfo): TypeStatement {
   return {
-    kind: StructureKind.TypeAlias,
-    isExported: true,
+    kind: "type",
     name: `${op.capitalizedMethodName}QueryResult`,
     typeParameters: [
       { name: "TData", default: `${op.capitalizedMethodName}DefaultResponse` },
@@ -45,12 +34,9 @@ export function buildQueryResultType(
  * Build the mutation result type alias.
  * Example: export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
  */
-export function buildMutationResultType(
-  op: OperationInfo,
-): TypeAliasDeclarationStructure {
+export function buildMutationResultType(op: OperationInfo): TypeStatement {
   return {
-    kind: StructureKind.TypeAlias,
-    isExported: true,
+    kind: "type",
     name: `${op.capitalizedMethodName}MutationResult`,
     type: `Awaited<ReturnType<typeof ${op.methodName}>>`,
   };
@@ -60,19 +46,11 @@ export function buildMutationResultType(
  * Build query key constant.
  * Example: export const useFindPetsKey = "FindPets";
  */
-export function buildQueryKeyConst(
-  op: OperationInfo,
-): VariableStatementStructure {
+export function buildQueryKeyConst(op: OperationInfo): ConstStatement {
   return {
-    kind: StructureKind.VariableStatement,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: `use${op.capitalizedMethodName}Key`,
-        initializer: `"${op.capitalizedMethodName}"`,
-      },
-    ],
+    kind: "const",
+    name: `use${op.capitalizedMethodName}Key`,
+    initializer: `"${op.capitalizedMethodName}"`,
   };
 }
 
@@ -80,19 +58,11 @@ export function buildQueryKeyConst(
  * Build mutation key constant.
  * Example: export const useAddPetKey = "AddPet";
  */
-export function buildMutationKeyConst(
-  op: OperationInfo,
-): VariableStatementStructure {
+export function buildMutationKeyConst(op: OperationInfo): ConstStatement {
   return {
-    kind: StructureKind.VariableStatement,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: `use${op.capitalizedMethodName}Key`,
-        initializer: `"${op.capitalizedMethodName}"`,
-      },
-    ],
+    kind: "const",
+    name: `use${op.capitalizedMethodName}Key`,
+    initializer: `"${op.capitalizedMethodName}"`,
   };
 }
 
@@ -101,7 +71,7 @@ export function buildMutationKeyConst(
  * Example: export const UseFindPetsKeyFn = (clientOptions: Options<FindPetsData, true> = {}, queryKey?: Array<unknown>) =>
  *   [useFindPetsKey, ...(queryKey ?? [clientOptions])];
  */
-export function buildQueryKeyFn(op: OperationInfo): VariableStatementStructure {
+export function buildQueryKeyFn(op: OperationInfo): ConstStatement {
   const dataTypeName = getDataTypeName(op);
 
   const params: string[] = [];
@@ -112,15 +82,9 @@ export function buildQueryKeyFn(op: OperationInfo): VariableStatementStructure {
   const fallbackArray = "[clientOptions]";
 
   return {
-    kind: StructureKind.VariableStatement,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: `Use${op.capitalizedMethodName}KeyFn`,
-        initializer: `(${params.join(", ")}) => [use${op.capitalizedMethodName}Key, ...(queryKey ?? ${fallbackArray})]`,
-      },
-    ],
+    kind: "const",
+    name: `Use${op.capitalizedMethodName}KeyFn`,
+    initializer: `(${params.join(", ")}) => [use${op.capitalizedMethodName}Key, ...(queryKey ?? ${fallbackArray})]`,
   };
 }
 
@@ -129,19 +93,11 @@ export function buildQueryKeyFn(op: OperationInfo): VariableStatementStructure {
  * Example: export const UseAddPetKeyFn = (mutationKey?: Array<unknown>) =>
  *   [useAddPetKey, ...(mutationKey ?? [])];
  */
-export function buildMutationKeyFn(
-  op: OperationInfo,
-): VariableStatementStructure {
+export function buildMutationKeyFn(op: OperationInfo): ConstStatement {
   return {
-    kind: StructureKind.VariableStatement,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: `Use${op.capitalizedMethodName}KeyFn`,
-        initializer: `(mutationKey?: Array<unknown>) => [use${op.capitalizedMethodName}Key, ...(mutationKey ?? [])]`,
-      },
-    ],
+    kind: "const",
+    name: `Use${op.capitalizedMethodName}KeyFn`,
+    initializer: `(mutationKey?: Array<unknown>) => [use${op.capitalizedMethodName}Key, ...(mutationKey ?? [])]`,
   };
 }
 
@@ -156,13 +112,12 @@ export function buildMutationKeyFn(
 export function buildInfiniteClientOptionsType(
   op: OperationInfo,
   ctx: GenerationContext,
-): TypeAliasDeclarationStructure {
+): TypeStatement {
   const dataTypeName = getDataTypeName(op);
   const type = `Omit<Options<${dataTypeName}, true>, "query"> & { query?: Omit<NonNullable<${dataTypeName}["query"]>, "${ctx.pageParam}"> }`;
 
   return {
-    kind: StructureKind.TypeAlias,
-    isExported: true,
+    kind: "type",
     name: `${op.capitalizedMethodName}InfiniteClientOptions`,
     type,
   };
@@ -176,19 +131,11 @@ export function buildInfiniteClientOptionsType(
  * segment keeps cached InfiniteData from colliding with plain query data (#140).
  * Example: export const useFindPaginatedPetsInfiniteKey = [useFindPaginatedPetsKey, "infinite"] as const;
  */
-export function buildInfiniteQueryKeyConst(
-  op: OperationInfo,
-): VariableStatementStructure {
+export function buildInfiniteQueryKeyConst(op: OperationInfo): ConstStatement {
   return {
-    kind: StructureKind.VariableStatement,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: `use${op.capitalizedMethodName}InfiniteKey`,
-        initializer: `[use${op.capitalizedMethodName}Key, "infinite"] as const`,
-      },
-    ],
+    kind: "const",
+    name: `use${op.capitalizedMethodName}InfiniteKey`,
+    initializer: `[use${op.capitalizedMethodName}Key, "infinite"] as const`,
   };
 }
 
@@ -200,9 +147,7 @@ export function buildInfiniteQueryKeyConst(
  * Example: export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) =>
  *   [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
  */
-export function buildInfiniteQueryKeyFn(
-  op: OperationInfo,
-): VariableStatementStructure {
+export function buildInfiniteQueryKeyFn(op: OperationInfo): ConstStatement {
   const defaultValue = op.allParamsOptional ? " = {}" : "";
   const params = [
     `clientOptions: ${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`,
@@ -210,14 +155,8 @@ export function buildInfiniteQueryKeyFn(
   ];
 
   return {
-    kind: StructureKind.VariableStatement,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: `Use${op.capitalizedMethodName}InfiniteKeyFn`,
-        initializer: `(${params.join(", ")}) => [...use${op.capitalizedMethodName}InfiniteKey, ...(queryKey ?? [clientOptions])]`,
-      },
-    ],
+    kind: "const",
+    name: `Use${op.capitalizedMethodName}InfiniteKeyFn`,
+    initializer: `(${params.join(", ")}) => [...use${op.capitalizedMethodName}InfiniteKey, ...(queryKey ?? [clientOptions])]`,
   };
 }

@@ -7,7 +7,6 @@ import {
   writeGeneratedFiles,
 } from "../src/client/index.mjs";
 import { createSource } from "../src/createSource.mjs";
-import { formatOutput } from "../src/format.mjs";
 import { generateTestClient, outputPath } from "./utils";
 
 const fileName = "createSource";
@@ -154,15 +153,13 @@ describe("createSource - digit-leading operationId (#213)", () => {
         writeFile(path.join(queriesDir, file.name), file.content),
       ),
     );
-    // The real pipeline organizes imports after printing (generate.mts),
-    // which dedupes the Options import shared by the client and service
-    // import declarations — compile what users actually get.
-    await formatOutput(queriesDir);
 
     const program = ts.createProgram(
       source.map((file) => path.join(queriesDir, file.name)),
       {
         strict: true,
+        // An import the file does not use is an error here.
+        noUnusedLocals: true,
         noEmit: true,
         skipLibCheck: true,
         esModuleInterop: true,
@@ -224,7 +221,6 @@ describe("createSource - NodeNext module resolution", () => {
         writeFile(path.join(queriesDir, file.name), file.content),
       ),
     );
-    await formatOutput(queriesDir);
     // NodeNext treats .ts files as CommonJS unless the package says otherwise.
     await writeFile(path.join(dir, "package.json"), '{"type":"module"}');
 
@@ -232,6 +228,8 @@ describe("createSource - NodeNext module resolution", () => {
       source.map((file) => path.join(queriesDir, file.name)),
       {
         strict: true,
+        // An import the file does not use is an error here.
+        noUnusedLocals: true,
         noEmit: true,
         skipLibCheck: true,
         target: ts.ScriptTarget.ES2022,

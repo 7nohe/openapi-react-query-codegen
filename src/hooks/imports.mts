@@ -1,31 +1,14 @@
-import {
-  type ImportDeclarationStructure,
-  IndentationText,
-  NewLineKind,
-  Project,
-  QuoteKind,
-  StructureKind,
-} from "ts-morph";
 import type { GenerationContext } from "../types.mjs";
 
-/**
- * Create a shared ts-morph Project for code generation.
- * Uses consistent formatting settings to match existing output.
- */
-export function createGenerationProject(): Project {
-  return new Project({
-    useInMemoryFileSystem: true,
-    compilerOptions: {
-      strict: true,
-    },
-    manipulationSettings: {
-      indentationText: IndentationText.TwoSpaces,
-      newLineKind: NewLineKind.LineFeed,
-      quoteKind: QuoteKind.Double,
-      useTrailingCommas: true,
-    },
-  });
-}
+/** One import declaration of a generated file, before unused names are dropped. */
+export type ImportDeclaration = {
+  moduleSpecifier: string;
+  /** `import type { … }` */
+  isTypeOnly?: boolean;
+  /** `import * as Name` */
+  namespaceImport?: string;
+  namedImports?: Array<{ name: string; isTypeOnly?: boolean }>;
+};
 
 /**
  * A relative module specifier, with the extension the consuming project's
@@ -43,11 +26,8 @@ export function relativeModule(
  * sdk.gen re-exports Options extended with `client` and `meta`, which the
  * base client Options lacks; hooks must accept those properties.
  */
-export function buildClientImport(
-  ctx: GenerationContext,
-): ImportDeclarationStructure {
+export function buildClientImport(ctx: GenerationContext): ImportDeclaration {
   return {
-    kind: StructureKind.ImportDeclaration,
     moduleSpecifier: relativeModule("../requests/sdk.gen", ctx),
     namedImports: [{ name: "Options", isTypeOnly: true }],
   };
@@ -56,9 +36,8 @@ export function buildClientImport(
 /**
  * Build import structure for TanStack Query.
  */
-export function buildQueryImport(): ImportDeclarationStructure {
+export function buildQueryImport(): ImportDeclaration {
   return {
-    kind: StructureKind.ImportDeclaration,
     moduleSpecifier: "@tanstack/react-query",
     namedImports: [
       { name: "QueryClient", isTypeOnly: true },
@@ -86,9 +65,8 @@ export function buildQueryImport(): ImportDeclarationStructure {
 /**
  * Build import structure for the queryOptions/infiniteQueryOptions helpers.
  */
-export function buildQueryOptionsImport(): ImportDeclarationStructure {
+export function buildQueryOptionsImport(): ImportDeclaration {
   return {
-    kind: StructureKind.ImportDeclaration,
     moduleSpecifier: "@tanstack/react-query",
     namedImports: [
       { name: "queryOptions" },
@@ -101,11 +79,8 @@ export function buildQueryOptionsImport(): ImportDeclarationStructure {
 /**
  * Build import structure for services.
  */
-export function buildServiceImport(
-  ctx: GenerationContext,
-): ImportDeclarationStructure {
+export function buildServiceImport(ctx: GenerationContext): ImportDeclaration {
   return {
-    kind: StructureKind.ImportDeclaration,
     moduleSpecifier: relativeModule("../requests/sdk.gen", ctx),
     namedImports: ctx.serviceNames.map((name) => ({ name })),
   };
@@ -118,13 +93,12 @@ export function buildServiceImport(
  */
 export function buildModelImport(
   ctx: GenerationContext,
-): ImportDeclarationStructure | null {
+): ImportDeclaration | null {
   if (ctx.modelNames.length === 0) {
     return null;
   }
 
   return {
-    kind: StructureKind.ImportDeclaration,
     moduleSpecifier: relativeModule("../requests/types.gen", ctx),
     isTypeOnly: true,
     namedImports: ctx.modelNames.map((name) => ({ name })),
@@ -134,9 +108,8 @@ export function buildModelImport(
 /**
  * Build import structure for axios error type.
  */
-export function buildAxiosErrorImport(): ImportDeclarationStructure {
+export function buildAxiosErrorImport(): ImportDeclaration {
   return {
-    kind: StructureKind.ImportDeclaration,
     moduleSpecifier: "axios",
     namedImports: [{ name: "AxiosError" }],
   };
@@ -147,9 +120,8 @@ export function buildAxiosErrorImport(): ImportDeclarationStructure {
  */
 export function buildCommonImport(
   ctx?: Pick<GenerationContext, "importExtension">,
-): ImportDeclarationStructure {
+): ImportDeclaration {
   return {
-    kind: StructureKind.ImportDeclaration,
     moduleSpecifier: relativeModule("./common", ctx),
     namespaceImport: "Common",
   };
@@ -160,8 +132,8 @@ export function buildCommonImport(
  */
 export function buildCommonFileImports(
   ctx: GenerationContext,
-): ImportDeclarationStructure[] {
-  const imports: ImportDeclarationStructure[] = [
+): ImportDeclaration[] {
+  const imports: ImportDeclaration[] = [
     buildClientImport(ctx),
     buildQueryImport(),
     buildServiceImport(ctx),
@@ -184,7 +156,7 @@ export function buildCommonFileImports(
  */
 export function buildHookFileImports(
   ctx: GenerationContext,
-): ImportDeclarationStructure[] {
+): ImportDeclaration[] {
   return [buildCommonImport(ctx), ...buildCommonFileImports(ctx)];
 }
 
@@ -195,8 +167,8 @@ export function buildHookFileImports(
  */
 export function buildQueryOptionsFileImports(
   ctx: GenerationContext,
-): ImportDeclarationStructure[] {
-  const imports: ImportDeclarationStructure[] = [
+): ImportDeclaration[] {
+  const imports: ImportDeclaration[] = [
     buildCommonImport(ctx),
     buildQueryOptionsImport(),
     buildClientImport(ctx),
@@ -209,4 +181,84 @@ export function buildQueryOptionsFileImports(
   }
 
   return imports;
+}
+
+function compareCaseInsensitive(a: string, b: string): number {
+  const lowerA = a.toLowerCase();
+  const lowerB = b.toLowerCase();
+  return lowerA < lowerB ? -1 : lowerA > lowerB ? 1 : 0;
+}
+
+function isRelative(moduleSpecifier: string): boolean {
+  return moduleSpecifier.startsWith(".");
+}
+
+type NamedImport = NonNullable<ImportDeclaration["namedImports"]>[number];
+
+function printImport(
+  declaration: ImportDeclaration,
+  names: NamedImport[],
+): string {
+  const from = `from "${declaration.moduleSpecifier}";\n`;
+  if (declaration.namespaceImport) {
+    return `import * as ${declaration.namespaceImport} ${from}`;
+  }
+  const list = names
+    .sort((a, b) => compareCaseInsensitive(a.name, b.name))
+    .map(({ name, isTypeOnly }) => (isTypeOnly ? `type ${name}` : name))
+    .join(", ");
+  return `import ${declaration.isTypeOnly ? "type " : ""}{ ${list} } ${from}`;
+}
+
+/**
+ * Print the import block of a generated file: only the names in `used`, one
+ * declaration per module and kind, packages before relative modules, and both
+ * the modules and the names within a declaration in alphabetical order
+ * regardless of case. A declaration left without names is dropped.
+ */
+export function printImports(
+  declarations: ImportDeclaration[],
+  used: ReadonlySet<string>,
+): string {
+  const merged = new Map<
+    string,
+    { declaration: ImportDeclaration; names: Map<string, NamedImport> }
+  >();
+  for (const declaration of declarations) {
+    const key = [
+      declaration.moduleSpecifier,
+      declaration.namespaceImport ?? "",
+      declaration.isTypeOnly ? "type" : "",
+    ].join("|");
+    let target = merged.get(key);
+    if (!target) {
+      target = { declaration, names: new Map() };
+      merged.set(key, target);
+    }
+    for (const named of declaration.namedImports ?? []) {
+      if (used.has(named.name)) {
+        target.names.set(named.name, named);
+      }
+    }
+  }
+
+  return [...merged.values()]
+    .filter(({ declaration, names }) =>
+      declaration.namespaceImport
+        ? used.has(declaration.namespaceImport)
+        : names.size > 0,
+    )
+    .sort(
+      (a, b) =>
+        Number(isRelative(a.declaration.moduleSpecifier)) -
+          Number(isRelative(b.declaration.moduleSpecifier)) ||
+        compareCaseInsensitive(
+          a.declaration.moduleSpecifier,
+          b.declaration.moduleSpecifier,
+        ),
+    )
+    .map(({ declaration, names }) =>
+      printImport(declaration, [...names.values()]),
+    )
+    .join("");
 }

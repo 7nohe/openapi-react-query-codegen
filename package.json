@@ -63,15 +63,13 @@
     "axios": "1.20.0",
     "commander": "^15.0.0",
     "lefthook": "^2.1.10",
-    "ts-morph": "^28.0.0",
     "typescript": "^6.0.3",
     "vite": "^7.3.7",
     "vitest": "^4.1.12"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
-    "commander": "12.x || 13.x || 14.x || 15.x",
-    "ts-morph": "28.x"
+    "commander": "12.x || 13.x || 14.x || 15.x"
   },
   "packageManager": "pnpm@9.6.0",
   "engines": {

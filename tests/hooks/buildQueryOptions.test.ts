@@ -1,9 +1,8 @@
-import { StructureKind, VariableDeclarationKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
   buildInfiniteQueryOptionsFn,
   buildQueryOptionsFn,
-} from "../../src/tsmorph/buildQueryOptions.mjs";
+} from "../../src/hooks/buildQueryOptions.mjs";
 import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 
 const mockOperation: OperationInfo = {
@@ -56,12 +55,10 @@ describe("buildQueryOptions", () => {
     it("should build a queryOptions factory", () => {
       const result = buildQueryOptionsFn(mockOperation);
 
-      expect(result.kind).toBe(StructureKind.VariableStatement);
-      expect(result.isExported).toBe(true);
-      expect(result.declarationKind).toBe(VariableDeclarationKind.Const);
-      expect(result.declarations[0].name).toBe("findPetsOptions");
+      expect(result.kind).toBe("const");
+      expect(result.name).toBe("findPetsOptions");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain(
         "clientOptions: Options<FindPetsData, true> = {}",
       );
@@ -75,7 +72,7 @@ describe("buildQueryOptions", () => {
 
     it("should not add a default value when the operation has required params", () => {
       const result = buildQueryOptionsFn(mockRequiredParamsOperation);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<FindPetByIdData, true>,",
@@ -85,14 +82,14 @@ describe("buildQueryOptions", () => {
       );
     });
 
-    it("should copy the operation JSDoc as leading trivia", () => {
+    it("should copy the operation JSDoc", () => {
       const op: OperationInfo = {
         ...mockOperation,
         jsDoc: "/**\n * Returns all pets\n */",
       };
       const result = buildQueryOptionsFn(op);
 
-      expect(result.leadingTrivia).toBe("/**\n * Returns all pets\n */\n");
+      expect(result.jsDoc).toBe("/**\n * Returns all pets\n */");
     });
   });
 
@@ -109,11 +106,9 @@ describe("buildQueryOptions", () => {
         mockContext,
       );
 
-      expect(result?.declarations[0].name).toBe(
-        "findPaginatedPetsInfiniteOptions",
-      );
+      expect(result?.name).toBe("findPaginatedPetsInfiniteOptions");
 
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
       expect(initializer).toContain(
         "clientOptions: Common.FindPaginatedPetsInfiniteClientOptions = {}",
       );
@@ -133,7 +128,7 @@ describe("buildQueryOptions", () => {
         mockPaginatableOperation,
         mockContext,
       );
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       expect(initializer).toContain(
         'options?: Partial<Pick<UseInfiniteQueryOptions<NonNullable<Common.FindPaginatedPetsDefaultResponse>>, "initialPageParam" | "getNextPageParam">>',
@@ -147,7 +142,7 @@ describe("buildQueryOptions", () => {
         mockPaginatableOperation,
         mockContext,
       );
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       expect(initializer).toContain("initialPageParam: 1,");
       expect(initializer).not.toContain('initialPageParam: "1"');
@@ -159,7 +154,7 @@ describe("buildQueryOptions", () => {
         initialPageParam: "cursor-start",
       };
       const result = buildInfiniteQueryOptionsFn(mockPaginatableOperation, ctx);
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       expect(initializer).toContain('initialPageParam: "cursor-start",');
     });
@@ -169,7 +164,7 @@ describe("buildQueryOptions", () => {
         mockStringPaginatableOperation,
         mockContext,
       );
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       expect(initializer).toContain("page: pageParam as Cursor");
       expect(initializer).toContain('initialPageParam: "1"');
@@ -185,7 +180,7 @@ describe("buildQueryOptions", () => {
         nextPageParam: "meta.next",
       };
       const result = buildInfiniteQueryOptionsFn(mockPaginatableOperation, ctx);
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       expect(initializer).toContain("offset: pageParam");
       expect(initializer).toContain(

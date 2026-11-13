@@ -1,5 +1,5 @@
 import type { ClientKind, GeneratedClient } from "./client/index.mjs";
-import { generateAllFiles } from "./tsmorph/index.mjs";
+import { generateAllFiles } from "./hooks/index.mjs";
 import type { GeneratedFile, GenerationContext } from "./types.mjs";
 
 /**

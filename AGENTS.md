@@ -21,7 +21,7 @@ npm install -D @7nohe/openapi-react-query-codegen
 npm install @tanstack/react-query
 ```
 
-`commander` and `ts-morph` are peer dependencies. If your package manager does not install peers automatically, add them as devDependencies. The generated code compiles with TypeScript 5, 6 and 7; the generator itself does not need the `typescript` package. For `--client axios`, also add `axios`. Nothing else is needed at runtime; the client code is generated into `requests/`.
+`commander` is a peer dependency. If your package manager does not install peers automatically, add it as a devDependency. The generated code compiles with TypeScript 5, 6 and 7; the generator itself does not need the `typescript` package. For `--client axios`, also add `axios`. Nothing else is needed at runtime; the client code is generated into `requests/`.
 
 Only the scoped `@7nohe/openapi-react-query-codegen` package belongs to this project. The unscoped `openapi-react-query-codegen` on npm is someone else's.
 
@@ -189,13 +189,13 @@ import { check, generate } from "@7nohe/openapi-react-query-codegen";
 - After generator changes, run tests and consider regenerating example outputs to manually diff.
 
 ### Commit & Pull Request Guidelines
-- Commits: clear, descriptive messages (e.g., `fix: align imports for generated queries`, `chore: update ts-morph config`). Avoid bundling unrelated changes.
+- Commits: clear, descriptive messages (e.g., `fix: align imports for generated queries`, `chore: update biome config`). Avoid bundling unrelated changes.
 - Pull requests: include summary of changes, affected areas (e.g., codegen output, docs, examples), and test commands run. Link issues when applicable. Add before/after notes or sample generated snippets if behavior changes.
 
 ### Architecture: IR Boundary
 - `src/client/` is the client generator. It reads the OpenAPI document and writes `requests/` (`types.gen.ts`, `sdk.gen.ts`, `client.gen.ts`, `runtime.gen.ts`, and on request `schemas.gen.ts` and `transformers.gen.ts`). It also returns the normalized operations (`OperationInfo` in `src/types.mts`) for the hook generators, so nothing re-parses the generated SDK.
 - `src/generate.mts` is the only place that turns the client generator's failures into the error codes of `--json` (`mapClientError`).
-- Generation-side modules (`src/tsmorph/build*.mts`, `generateFiles.mts`) consume only `OperationInfo` and `GenerationContext`. Do not teach them about the OpenAPI document or the runtime's internals; extend the IR instead.
+- Generation-side modules (`src/hooks/build*.mts`, `generateFiles.mts`) consume only `OperationInfo` and `GenerationContext`. Do not teach them about the OpenAPI document or the runtime's internals; extend the IR instead.
 - The generated hooks rely on a small SDK contract: `Options<XData, ThrowOnError>` exported from `sdk.gen`, calls returning `{ data }` and rejecting when `throwOnError` is set, and the `XData` / `XError` type names. Keep it in sync with `src/client/emitSdk.mts` and the runtimes in `src/client/runtime/`.
 - The runtimes (`src/client/runtime/*.runtime.ts`) are plain TypeScript that is copied verbatim into users' projects. Keep them dependency-free (axios aside), strict-mode clean, and free of syntax that needs a newer TypeScript than the generated code supports. `scripts/copy-runtime.mjs` ships them next to the compiled generator.
 
@@ -203,5 +203,5 @@ import { check, generate } from "@7nohe/openapi-react-query-codegen";
 - Runtime dependencies are deliberately few (`cross-spawn`, `yaml`). Adding one needs a reason; the generator replaced `@hey-api/openapi-ts` to cut the supply-chain surface.
 
 ### Agent-Specific Notes
-- Use AST-aware paths (ts-morph/TypeScript factory) when editing generators to keep output structurally valid.
+- The generators build source text as strings. After changing one, run the tests that compile the generated output (`tests/createSource.test.ts`, `tests/client/`) to confirm it is still valid TypeScript.
 - Respect ignore patterns in `biome.json` and avoid checking in `dist/` or example-generated artifacts unless explicitly intended.

@@ -1,8 +1,3 @@
-import {
-  StructureKind,
-  VariableDeclarationKind,
-  type VariableStatementStructure,
-} from "ts-morph";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
 import {
   buildClientOptionsParam,
@@ -13,6 +8,7 @@ import {
   getPageType,
   QUERY_SDK_CALL_ARGS,
 } from "./buildQueryHooks.mjs";
+import type { ConstStatement } from "./statement.mjs";
 
 /**
  * Build a queryOptions factory for a GET operation.
@@ -26,9 +22,7 @@ import {
  *     queryFn: () => findPets({ ...clientOptions, throwOnError: true }).then(response => response.data),
  *   });
  */
-export function buildQueryOptionsFn(
-  op: OperationInfo,
-): VariableStatementStructure {
+export function buildQueryOptionsFn(op: OperationInfo): ConstStatement {
   const fnName = `${op.methodName}Options`;
   const clientOptionsParam = buildClientOptionsParam(op);
 
@@ -36,17 +30,11 @@ export function buildQueryOptionsFn(
   const body = `queryOptions({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn} })`;
 
   return {
-    kind: StructureKind.VariableStatement,
-    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
-    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: fnName,
-        initializer: `(${clientOptionsParam}, queryKey?: Array<unknown>) => ${body}`,
-      },
-    ],
+    kind: "const",
+    // The operation's JSDoc (description and @deprecated), as on the SDK function
+    jsDoc: op.jsDoc,
+    name: fnName,
+    initializer: `(${clientOptionsParam}, queryKey?: Array<unknown>) => ${body}`,
   };
 }
 
@@ -66,7 +54,7 @@ export function buildQueryOptionsFn(
 export function buildInfiniteQueryOptionsFn(
   op: OperationInfo,
   ctx: GenerationContext,
-): VariableStatementStructure | null {
+): ConstStatement | null {
   if (!op.isPaginatable) {
     return null;
   }
@@ -84,16 +72,10 @@ export function buildInfiniteQueryOptionsFn(
   const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return {
-    kind: StructureKind.VariableStatement,
-    // Copy the operation's JSDoc (description and @deprecated) from the SDK function
-    leadingTrivia: op.jsDoc ? `${op.jsDoc}\n` : undefined,
-    isExported: true,
-    declarationKind: VariableDeclarationKind.Const,
-    declarations: [
-      {
-        name: fnName,
-        initializer: `(${buildInfiniteClientOptionsParam(op)}, queryKey?: Array<unknown>, ${optionsParam}) => ${body}`,
-      },
-    ],
+    kind: "const",
+    // The operation's JSDoc (description and @deprecated), as on the SDK function
+    jsDoc: op.jsDoc,
+    name: fnName,
+    initializer: `(${buildInfiniteClientOptionsParam(op)}, queryKey?: Array<unknown>, ${optionsParam}) => ${body}`,
   };
 }

@@ -1,4 +1,3 @@
-import { StructureKind, VariableDeclarationKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
   buildEnsureQueryDataFn,
@@ -11,7 +10,7 @@ import {
   buildUseSuspenseInfiniteQueryHook,
   buildUseSuspenseQueryHook,
   formatInitialPageParam,
-} from "../../src/tsmorph/buildQueryHooks.mjs";
+} from "../../src/hooks/buildQueryHooks.mjs";
 import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 
 const mockOperation: OperationInfo = {
@@ -129,12 +128,10 @@ describe("buildQueryHooks", () => {
     it("should build useQuery hook with fetch client", () => {
       const result = buildUseQueryHook(mockOperation, mockFetchContext);
 
-      expect(result.kind).toBe(StructureKind.VariableStatement);
-      expect(result.isExported).toBe(true);
-      expect(result.declarationKind).toBe(VariableDeclarationKind.Const);
-      expect(result.declarations[0].name).toBe("useFindPets");
+      expect(result.kind).toBe("const");
+      expect(result.name).toBe("useFindPets");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("TData = Common.FindPetsDefaultResponse");
       expect(initializer).toContain("TError = FindPetsError");
       expect(initializer).toContain("useQuery<TData, TError>");
@@ -150,14 +147,14 @@ describe("buildQueryHooks", () => {
 
     it("should build useQuery hook with axios client and AxiosError", () => {
       const result = buildUseQueryHook(mockOperation, mockAxiosContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("TError = AxiosError<FindPetsError>");
     });
 
     it("should include default value for optional params", () => {
       const result = buildUseQueryHook(mockOperation, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<FindPetsData, true> = {}",
@@ -169,7 +166,7 @@ describe("buildQueryHooks", () => {
         mockRequiredParamsOperation,
         mockFetchContext,
       );
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<FindPetByIdData, true>",
@@ -182,7 +179,7 @@ describe("buildQueryHooks", () => {
         mockNoDataTypeOperation,
         mockFetchContext,
       );
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
@@ -198,7 +195,7 @@ describe("buildQueryHooks", () => {
         modelNames: [...mockFetchContext.modelNames, "NumericLeadError"],
       };
       const result = buildUseQueryHook(mockDigitLeadingOperation, ctx);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<NumericLeadData, true> = {}",
@@ -211,9 +208,9 @@ describe("buildQueryHooks", () => {
     it("should build useSuspenseQuery hook", () => {
       const result = buildUseSuspenseQueryHook(mockOperation, mockFetchContext);
 
-      expect(result.declarations[0].name).toBe("useFindPetsSuspense");
+      expect(result.name).toBe("useFindPetsSuspense");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain(
         "TData = NonNullable<Common.FindPetsDefaultResponse>",
       );
@@ -223,7 +220,7 @@ describe("buildQueryHooks", () => {
 
     it("should use NonNullable wrapper for data type", () => {
       const result = buildUseSuspenseQueryHook(mockOperation, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "NonNullable<Common.FindPetsDefaultResponse>",
@@ -235,7 +232,7 @@ describe("buildQueryHooks", () => {
         mockNoDataTypeOperation,
         mockFetchContext,
       );
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
@@ -260,9 +257,9 @@ describe("buildQueryHooks", () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.declarations[0].name).toBe("useFindPaginatedPetsInfinite");
+      expect(result?.name).toBe("useFindPaginatedPetsInfinite");
 
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
       expect(initializer).toContain(
         "InfiniteData<Common.FindPaginatedPetsDefaultResponse>",
       );
@@ -279,7 +276,7 @@ describe("buildQueryHooks", () => {
       );
 
       expect(result).not.toBeNull();
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
       expect(initializer).toContain("as Options<NumericLeadData, true>");
     });
 
@@ -288,7 +285,7 @@ describe("buildQueryHooks", () => {
         mockPaginatableOperation,
         mockFetchContext,
       );
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       // The options type must not require initialPageParam/getNextPageParam
       // (#156) while still allowing callers to override them (#146)
@@ -307,7 +304,7 @@ describe("buildQueryHooks", () => {
         mockPaginatableOperation,
         mockFetchContext,
       );
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       // TQueryFnData is one page, so getNextPageParam receives a page rather
       // than the aggregated InfiniteData
@@ -329,7 +326,7 @@ describe("buildQueryHooks", () => {
         mockPaginatableOperation,
         mockFetchContext,
       );
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       expect(initializer).toContain("page: pageParam as number");
       expect(initializer).toContain("({ pageParam, signal }) =>");
@@ -341,7 +338,7 @@ describe("buildQueryHooks", () => {
         mockStringPaginatableOperation,
         mockFetchContext,
       );
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       expect(initializer).toContain("page: pageParam as Cursor");
       expect(initializer).toContain('initialPageParam: "1"');
@@ -355,9 +352,9 @@ describe("buildQueryHooks", () => {
     it("should build prefetch function", () => {
       const result = buildPrefetchFn(mockOperation);
 
-      expect(result.declarations[0].name).toBe("prefetchUseFindPets");
+      expect(result.name).toBe("prefetchUseFindPets");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("queryClient: QueryClient");
       expect(initializer).toContain(
         "clientOptions: Options<FindPetsData, true>",
@@ -373,14 +370,14 @@ describe("buildQueryHooks", () => {
 
     it("should include default value for optional params", () => {
       const result = buildPrefetchFn(mockOperation);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("= {}");
     });
 
     it("should not include default value for required params", () => {
       const result = buildPrefetchFn(mockRequiredParamsOperation);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<FindPetByIdData, true>",
@@ -392,7 +389,7 @@ describe("buildQueryHooks", () => {
 
     it("should accept fetch query options (#157)", () => {
       const result = buildPrefetchFn(mockOperation);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         'options?: Omit<FetchQueryOptions<Common.FindPetsDefaultResponse>, "queryKey" | "queryFn">',
@@ -402,7 +399,7 @@ describe("buildQueryHooks", () => {
 
     it("should fall back to unknown when the SDK signature exposes no Data type", () => {
       const result = buildPrefetchFn(mockNoDataTypeOperation);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
@@ -417,9 +414,9 @@ describe("buildQueryHooks", () => {
     it("should build ensureQueryData function", () => {
       const result = buildEnsureQueryDataFn(mockOperation);
 
-      expect(result.declarations[0].name).toBe("ensureUseFindPetsData");
+      expect(result.name).toBe("ensureUseFindPetsData");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("queryClient: QueryClient");
       expect(initializer).toContain("queryClient.ensureQueryData");
       expect(initializer).toContain("Common.UseFindPetsKeyFn(clientOptions)");
@@ -429,8 +426,8 @@ describe("buildQueryHooks", () => {
       const prefetchResult = buildPrefetchFn(mockOperation);
       const ensureResult = buildEnsureQueryDataFn(mockOperation);
 
-      const prefetchInit = prefetchResult.declarations[0].initializer as string;
-      const ensureInit = ensureResult.declarations[0].initializer as string;
+      const prefetchInit = prefetchResult.initializer as string;
+      const ensureInit = ensureResult.initializer as string;
 
       expect(prefetchInit).toContain("prefetchQuery");
       expect(ensureInit).toContain("ensureQueryData");
@@ -439,7 +436,7 @@ describe("buildQueryHooks", () => {
 
     it("should fall back to unknown when the SDK signature exposes no Data type", () => {
       const result = buildEnsureQueryDataFn(mockNoDataTypeOperation);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<unknown, true> = {}",
@@ -451,7 +448,7 @@ describe("buildQueryHooks", () => {
 
     it("should accept ensure query data options (#157)", () => {
       const result = buildEnsureQueryDataFn(mockOperation);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         'options?: Omit<EnsureQueryDataOptions<Common.FindPetsDefaultResponse>, "queryKey" | "queryFn">',
@@ -477,11 +474,9 @@ describe("buildQueryHooks", () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.declarations[0].name).toBe(
-        "prefetchUseFindPaginatedPetsInfinite",
-      );
+      expect(result?.name).toBe("prefetchUseFindPaginatedPetsInfinite");
 
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
       expect(initializer).toContain("queryClient.prefetchInfiniteQuery");
       expect(initializer).toContain(
         "Common.UseFindPaginatedPetsInfiniteKeyFn(clientOptions)",
@@ -501,7 +496,7 @@ describe("buildQueryHooks", () => {
         mockFetchContext,
       );
 
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
 
       // ...options is spread after the defaults, so the type must not forbid
       // what the runtime honours
@@ -534,11 +529,9 @@ describe("buildQueryHooks", () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.declarations[0].name).toBe(
-        "useFindPaginatedPetsSuspenseInfinite",
-      );
+      expect(result?.name).toBe("useFindPaginatedPetsSuspenseInfinite");
 
-      const initializer = result?.declarations[0].initializer as string;
+      const initializer = result?.initializer as string;
       expect(initializer).toContain("useSuspenseInfiniteQuery");
       expect(initializer).toContain(
         "InfiniteData<NonNullable<Common.FindPaginatedPetsDefaultResponse>>",

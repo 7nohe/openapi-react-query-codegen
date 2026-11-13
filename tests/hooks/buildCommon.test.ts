@@ -1,4 +1,3 @@
-import { StructureKind, VariableDeclarationKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
   buildDefaultResponseType,
@@ -11,7 +10,7 @@ import {
   buildQueryKeyConst,
   buildQueryKeyFn,
   buildQueryResultType,
-} from "../../src/tsmorph/buildCommon.mjs";
+} from "../../src/hooks/buildCommon.mjs";
 import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 
 const mockOperation: OperationInfo = {
@@ -56,8 +55,7 @@ describe("buildCommon", () => {
     it("should build default response type alias", () => {
       const result = buildDefaultResponseType(mockOperation);
 
-      expect(result.kind).toBe(StructureKind.TypeAlias);
-      expect(result.isExported).toBe(true);
+      expect(result.kind).toBe("type");
       expect(result.name).toBe("FindPetsDefaultResponse");
       expect(result.type).toBe('Awaited<ReturnType<typeof findPets>>["data"]');
     });
@@ -79,8 +77,7 @@ describe("buildCommon", () => {
     it("should build query result type alias", () => {
       const result = buildQueryResultType(mockOperation);
 
-      expect(result.kind).toBe(StructureKind.TypeAlias);
-      expect(result.isExported).toBe(true);
+      expect(result.kind).toBe("type");
       expect(result.name).toBe("FindPetsQueryResult");
       expect(result.type).toBe("UseQueryResult<TData, TError>");
       expect(result.typeParameters).toHaveLength(2);
@@ -99,8 +96,7 @@ describe("buildCommon", () => {
     it("should build mutation result type alias", () => {
       const result = buildMutationResultType(mockMutationOperation);
 
-      expect(result.kind).toBe(StructureKind.TypeAlias);
-      expect(result.isExported).toBe(true);
+      expect(result.kind).toBe("type");
       expect(result.name).toBe("AddPetMutationResult");
       expect(result.type).toBe("Awaited<ReturnType<typeof addPet>>");
     });
@@ -110,12 +106,9 @@ describe("buildCommon", () => {
     it("should build query key constant", () => {
       const result = buildQueryKeyConst(mockOperation);
 
-      expect(result.kind).toBe(StructureKind.VariableStatement);
-      expect(result.isExported).toBe(true);
-      expect(result.declarationKind).toBe(VariableDeclarationKind.Const);
-      expect(result.declarations).toHaveLength(1);
-      expect(result.declarations[0].name).toBe("useFindPetsKey");
-      expect(result.declarations[0].initializer).toBe('"FindPets"');
+      expect(result.kind).toBe("const");
+      expect(result.name).toBe("useFindPetsKey");
+      expect(result.initializer).toBe('"FindPets"');
     });
   });
 
@@ -123,11 +116,9 @@ describe("buildCommon", () => {
     it("should build mutation key constant", () => {
       const result = buildMutationKeyConst(mockMutationOperation);
 
-      expect(result.kind).toBe(StructureKind.VariableStatement);
-      expect(result.isExported).toBe(true);
-      expect(result.declarationKind).toBe(VariableDeclarationKind.Const);
-      expect(result.declarations[0].name).toBe("useAddPetKey");
-      expect(result.declarations[0].initializer).toBe('"AddPet"');
+      expect(result.kind).toBe("const");
+      expect(result.name).toBe("useAddPetKey");
+      expect(result.initializer).toBe('"AddPet"');
     });
   });
 
@@ -135,11 +126,10 @@ describe("buildCommon", () => {
     it("should build query key function with parameters", () => {
       const result = buildQueryKeyFn(mockOperation);
 
-      expect(result.kind).toBe(StructureKind.VariableStatement);
-      expect(result.isExported).toBe(true);
-      expect(result.declarations[0].name).toBe("UseFindPetsKeyFn");
+      expect(result.kind).toBe("const");
+      expect(result.name).toBe("UseFindPetsKeyFn");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain(
         "clientOptions: Options<FindPetsData, true>",
       );
@@ -159,7 +149,7 @@ describe("buildCommon", () => {
       };
 
       const result = buildQueryKeyFn(op);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<GetPetByIdData, true>",
@@ -176,7 +166,7 @@ describe("buildCommon", () => {
       };
 
       const result = buildQueryKeyFn(op);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("Options<unknown, true>");
     });
@@ -190,7 +180,7 @@ describe("buildCommon", () => {
       };
 
       const result = buildQueryKeyFn(op);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         "clientOptions: Options<NumericLeadData, true>",
@@ -202,11 +192,10 @@ describe("buildCommon", () => {
     it("should build mutation key function", () => {
       const result = buildMutationKeyFn(mockMutationOperation);
 
-      expect(result.kind).toBe(StructureKind.VariableStatement);
-      expect(result.isExported).toBe(true);
-      expect(result.declarations[0].name).toBe("UseAddPetKeyFn");
+      expect(result.kind).toBe("const");
+      expect(result.name).toBe("UseAddPetKeyFn");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("mutationKey?: Array<unknown>");
       expect(initializer).toContain("[useAddPetKey,");
       expect(initializer).toContain("mutationKey ?? []");
@@ -218,8 +207,6 @@ describe("buildCommon", () => {
         mockPaginatableOperation,
         mockContext,
       );
-
-      expect(result.isExported).toBe(true);
       expect(result.name).toBe("FindPaginatedPetsInfiniteClientOptions");
       expect(result.type).toBe(
         'Omit<Options<FindPaginatedPetsData, true>, "query"> & { query?: Omit<NonNullable<FindPaginatedPetsData["query"]>, "page"> }',
@@ -231,10 +218,8 @@ describe("buildCommon", () => {
     it("should build a hierarchical key sharing the plain key prefix", () => {
       const result = buildInfiniteQueryKeyConst(mockPaginatableOperation);
 
-      expect(result.declarations[0].name).toBe(
-        "useFindPaginatedPetsInfiniteKey",
-      );
-      expect(result.declarations[0].initializer).toBe(
+      expect(result.name).toBe("useFindPaginatedPetsInfiniteKey");
+      expect(result.initializer).toBe(
         '[useFindPaginatedPetsKey, "infinite"] as const',
       );
     });
@@ -244,10 +229,8 @@ describe("buildCommon", () => {
     it("should build a key fn typed with the infinite client options", () => {
       const result = buildInfiniteQueryKeyFn(mockPaginatableOperation);
 
-      expect(result.declarations[0].name).toBe(
-        "UseFindPaginatedPetsInfiniteKeyFn",
-      );
-      expect(result.declarations[0].initializer).toBe(
+      expect(result.name).toBe("UseFindPaginatedPetsInfiniteKeyFn");
+      expect(result.initializer).toBe(
         "(clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])]",
       );
     });
@@ -258,7 +241,7 @@ describe("buildCommon", () => {
         allParamsOptional: false,
       });
 
-      expect(result.declarations[0].initializer).toBe(
+      expect(result.initializer).toBe(
         "(clientOptions: FindPaginatedPetsInfiniteClientOptions, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])]",
       );
     });

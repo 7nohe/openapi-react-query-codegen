@@ -1,8 +1,3 @@
-import type {
-  ImportDeclarationStructure,
-  TypeAliasDeclarationStructure,
-  VariableStatementStructure,
-} from "ts-morph";
 import { OpenApiRqFiles } from "../constants.mjs";
 import type {
   GeneratedFile,
@@ -39,11 +34,17 @@ import {
   buildCommonFileImports,
   buildHookFileImports,
   buildQueryOptionsFileImports,
-  createGenerationProject,
+  type ImportDeclaration,
+  printImports,
   relativeModule,
-} from "./projectFactory.mjs";
-
-type Statement = TypeAliasDeclarationStructure | VariableStatementStructure;
+} from "./imports.mjs";
+import {
+  type ConstStatement,
+  printStatements,
+  referencedNames,
+  type Statement,
+  statementCode,
+} from "./statement.mjs";
 
 /**
  * Build one variable statement per operation, skipping the ones the builder
@@ -53,9 +54,9 @@ type Statement = TypeAliasDeclarationStructure | VariableStatementStructure;
  */
 function collectStatements(
   operations: OperationInfo[],
-  build: (op: OperationInfo) => VariableStatementStructure | null,
-): VariableStatementStructure[] {
-  const statements: VariableStatementStructure[] = [];
+  build: (op: OperationInfo) => ConstStatement | null,
+): ConstStatement[] {
+  const statements: ConstStatement[] = [];
   for (const op of operations) {
     const statement = build(op);
     if (statement) {
@@ -66,52 +67,31 @@ function collectStatements(
 }
 
 /**
- * ts-morph separates statements of different kinds with a blank line when
- * they are added one at a time but not when they are added as a batch, so
- * restore the separator where the kind changes.
- */
-function separateKinds(statements: Statement[]): Statement[] {
-  return statements.map((statement, index) =>
-    index > 0 && statements[index - 1].kind !== statement.kind
-      ? { ...statement, leadingTrivia: `\n${statement.leadingTrivia ?? ""}` }
-      : statement,
-  );
-}
-
-const IDENTIFIER_RE = /[\p{ID_Start}_$][\p{ID_Continue}$]*/gu;
-
-/**
- * Create a generated file. Statements go in as one batch so ts-morph reparses
- * the file once, and only the model and service names the body actually
- * mentions are imported: importing thousands of unused names forced every
- * edit to rescan a huge import list and made the later import organising pass
- * slow on large specifications.
+ * The content of a generated file: the imports its statements need, then the
+ * statements. Only the services of the operations the file covers and the
+ * models its code mentions are imported.
  */
 function createFile(
-  name: string,
   ctx: GenerationContext,
-  buildImports: (ctx: GenerationContext) => ImportDeclarationStructure[],
+  buildImports: (ctx: GenerationContext) => ImportDeclaration[],
+  operations: OperationInfo[],
   statements: Statement[],
 ): string {
-  const project = createGenerationProject();
-  const sourceFile = project.createSourceFile(`${name}.ts`, undefined, {
-    overwrite: true,
+  if (statements.length === 0) {
+    // Nothing to export. The bare import keeps the file a module.
+    return `import "${relativeModule("../requests/sdk.gen", ctx)}";\n`;
+  }
+  const used = referencedNames(statements.map(statementCode).join("\n"));
+  const imports = buildImports({
+    ...ctx,
+    modelNames: ctx.modelNames.filter((model) => used.has(model)),
+    serviceNames: operations.map((op) => op.methodName),
   });
-  sourceFile.addStatements(statements);
-  const used = new Set(sourceFile.getFullText().match(IDENTIFIER_RE));
-  sourceFile.insertImportDeclarations(
-    0,
-    buildImports({
-      ...ctx,
-      modelNames: ctx.modelNames.filter((model) => used.has(model)),
-      serviceNames: ctx.serviceNames.filter((service) => used.has(service)),
-    }),
-  );
-  return sourceFile.getFullText();
+  return `${printImports(imports, used)}\n${printStatements(statements)}`;
 }
 
 /**
- * The content of index.ts, which needs no ts-morph project.
+ * The content of index.ts.
  */
 function indexFile(ctx: GenerationContext): string {
   return [
@@ -152,7 +132,7 @@ function commonStatements(
       buildMutationKeyFn(op),
     );
   }
-  return separateKinds(statements);
+  return statements;
 }
 
 /**
@@ -164,7 +144,7 @@ function addHeaderComment(content: string, version: string): string {
 }
 
 /**
- * Generate all files using ts-morph.
+ * Generate the React Query files for the operations of a specification.
  */
 export function generateAllFiles(
   operations: OperationInfo[],
@@ -175,21 +155,27 @@ export function generateAllFiles(
     ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
   );
 
+  const paginated = queries.filter((op) => op.isPaginatable);
+  const all = [...queries, ...mutations];
+
   const files: Array<
     [
       name: string,
-      imports: (ctx: GenerationContext) => ImportDeclarationStructure[],
+      imports: (ctx: GenerationContext) => ImportDeclaration[],
+      operations: OperationInfo[],
       statements: Statement[],
     ]
   > = [
     [
       OpenApiRqFiles.common,
       buildCommonFileImports,
+      all,
       commonStatements(queries, mutations, ctx),
     ],
     [
       OpenApiRqFiles.queries,
       buildHookFileImports,
+      all,
       [
         ...queries.map((op) => buildUseQueryHook(op, ctx)),
         ...mutations.map((op) => buildUseMutationHook(op, ctx)),
@@ -198,6 +184,7 @@ export function generateAllFiles(
     [
       OpenApiRqFiles.queryOptions,
       buildQueryOptionsFileImports,
+      queries,
       [
         ...queries.map((op) => buildQueryOptionsFn(op)),
         ...collectStatements(queries, (op) =>
@@ -208,6 +195,7 @@ export function generateAllFiles(
     [
       OpenApiRqFiles.suspense,
       buildHookFileImports,
+      queries,
       [
         ...queries.map((op) => buildUseSuspenseQueryHook(op, ctx)),
         ...collectStatements(queries, (op) =>
@@ -218,11 +206,13 @@ export function generateAllFiles(
     [
       OpenApiRqFiles.infiniteQueries,
       buildHookFileImports,
+      paginated,
       collectStatements(queries, (op) => buildUseInfiniteQueryHook(op, ctx)),
     ],
     [
       OpenApiRqFiles.prefetch,
       buildHookFileImports,
+      queries,
       [
         ...queries.map((op) => buildPrefetchFn(op)),
         ...collectStatements(queries, (op) =>
@@ -233,6 +223,7 @@ export function generateAllFiles(
     [
       OpenApiRqFiles.ensureQueryData,
       buildHookFileImports,
+      queries,
       queries.map((op) => buildEnsureQueryDataFn(op)),
     ],
   ];
@@ -242,10 +233,10 @@ export function generateAllFiles(
       name: `${OpenApiRqFiles.index}.ts`,
       content: addHeaderComment(indexFile(ctx), ctx.version),
     },
-    ...files.map(([name, imports, statements]) => ({
+    ...files.map(([name, imports, operations, statements]) => ({
       name: `${name}.ts`,
       content: addHeaderComment(
-        createFile(name, ctx, imports, statements),
+        createFile(ctx, imports, operations, statements),
         ctx.version,
       ),
     })),

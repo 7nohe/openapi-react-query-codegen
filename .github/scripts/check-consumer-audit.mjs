@@ -10,12 +10,7 @@ import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 /** @type {Map<string, string>} advisory ID -> why it is accepted for now */
-export const KNOWN = new Map([
-  [
-    "GHSA-g3hv-75wg-m249",
-    "minimatch comes through the ts-morph peer; no fixed 9.x or 10.x release",
-  ],
-]);
+export const KNOWN = new Map();
 
 const FAILING_SEVERITIES = new Set(["high", "critical"]);
 
@@ -37,8 +32,9 @@ export function assertAuditReport(report) {
 
 /**
  * @param {{ vulnerabilities?: Record<string, { via: (string | Record<string, any>)[] }> }} report
+ * @param {Map<string, string>} [known]
  */
-export function reviewAudit(report) {
+export function reviewAudit(report, known = KNOWN) {
   /** @type {Map<string, { id: string, name: string, severity: string, title: string, range: string, known: boolean, failing: boolean }>} */
   const advisories = new Map();
   for (const entry of Object.values(report.vulnerabilities ?? {})) {
@@ -46,23 +42,26 @@ export function reviewAudit(report) {
       if (typeof via !== "object" || !via.url) continue;
       const id = String(via.url).split("/").pop();
       if (!id || advisories.has(id)) continue;
-      const known = KNOWN.has(id);
+      const isKnown = known.has(id);
       advisories.set(id, {
         id,
         name: via.name,
         severity: via.severity,
         title: via.title,
         range: via.range,
-        known,
-        failing: FAILING_SEVERITIES.has(via.severity) && !known,
+        known: isKnown,
+        failing: FAILING_SEVERITIES.has(via.severity) && !isKnown,
       });
     }
   }
   return [...advisories.values()];
 }
 
-/** @param {ReturnType<typeof reviewAudit>} advisories */
-export function formatSummary(advisories) {
+/**
+ * @param {ReturnType<typeof reviewAudit>} advisories
+ * @param {Map<string, string>} [known]
+ */
+export function formatSummary(advisories, known = KNOWN) {
   const failing = advisories.filter((a) => a.failing);
   const lines = [
     "## User install audit",
@@ -79,7 +78,7 @@ export function formatSummary(advisories) {
       const status = a.failing
         ? "❌ new"
         : a.known
-          ? `known: ${KNOWN.get(a.id)}`
+          ? `known: ${known.get(a.id)}`
           : "below high";
       lines.push(
         `| [${a.id}](https://github.com/advisories/${a.id}) | \`${a.name}\` ${a.range} | ${a.severity} | ${status} |`,

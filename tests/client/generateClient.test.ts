@@ -9,7 +9,7 @@ import {
   writeGeneratedFiles,
 } from "../../src/client/index.mts";
 import { generate } from "../../src/generate.mjs";
-import { buildGetNextPageParamExpr } from "../../src/tsmorph/buildQueryHooks.mjs";
+import { buildGetNextPageParamExpr } from "../../src/hooks/buildQueryHooks.mjs";
 import { generateTestClient, inputPath } from "../utils";
 
 const file = (

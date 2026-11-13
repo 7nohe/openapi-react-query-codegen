@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getDataTypeName,
   getErrorType,
-} from "../../src/tsmorph/operationNames.mts";
+} from "../../src/hooks/operationNames.mts";
 import type { GenerationContext, OperationInfo } from "../../src/types.mts";
 
 const op = (overrides: Partial<OperationInfo> = {}): OperationInfo => ({

@@ -1,4 +1,3 @@
-import { StructureKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
 import {
   buildAxiosErrorImport,
@@ -10,8 +9,8 @@ import {
   buildQueryImport,
   buildQueryOptionsFileImports,
   buildServiceImport,
-  createGenerationProject,
-} from "../../src/tsmorph/projectFactory.mjs";
+  printImports,
+} from "../../src/hooks/imports.mjs";
 import type { GenerationContext } from "../../src/types.mjs";
 
 const mockFetchContext: GenerationContext = {
@@ -34,40 +33,10 @@ const mockEmptyModelsContext: GenerationContext = {
   modelNames: [],
 };
 
-describe("projectFactory", () => {
-  describe("createGenerationProject", () => {
-    it("should create a ts-morph project", () => {
-      const project = createGenerationProject();
-
-      expect(project).toBeDefined();
-      expect(project.getSourceFiles()).toHaveLength(0);
-    });
-
-    it("should use in-memory file system", () => {
-      const project = createGenerationProject();
-      const sourceFile = project.createSourceFile("test.ts", "const x = 1;");
-
-      expect(sourceFile.getFullText()).toContain("const x = 1;");
-    });
-
-    it("should use double quotes", () => {
-      const project = createGenerationProject();
-      const sourceFile = project.createSourceFile("test.ts", "");
-      sourceFile.addImportDeclaration({
-        moduleSpecifier: "test-module",
-        namedImports: ["Test"],
-      });
-
-      const text = sourceFile.getFullText();
-      expect(text).toContain('"test-module"');
-    });
-  });
-
+describe("imports", () => {
   describe("buildClientImport", () => {
     it("should build import for fetch client", () => {
       const result = buildClientImport(mockFetchContext);
-
-      expect(result.kind).toBe(StructureKind.ImportDeclaration);
       // Options comes from sdk.gen (extended with client/meta properties)
       expect(result.moduleSpecifier).toBe("../requests/sdk.gen");
       expect(result.namedImports).toEqual([
@@ -86,8 +55,6 @@ describe("projectFactory", () => {
   describe("buildQueryImport", () => {
     it("should build import for TanStack Query", () => {
       const result = buildQueryImport();
-
-      expect(result.kind).toBe(StructureKind.ImportDeclaration);
       expect(result.moduleSpecifier).toBe("@tanstack/react-query");
       expect(result.namedImports).toContainEqual({
         name: "QueryClient",
@@ -124,8 +91,6 @@ describe("projectFactory", () => {
   describe("buildServiceImport", () => {
     it("should build import for services", () => {
       const result = buildServiceImport(mockFetchContext);
-
-      expect(result.kind).toBe(StructureKind.ImportDeclaration);
       // In v0.73+, the file is renamed from services.gen to sdk.gen
       expect(result.moduleSpecifier).toBe("../requests/sdk.gen");
       expect(result.namedImports).toContainEqual({ name: "findPets" });
@@ -139,7 +104,6 @@ describe("projectFactory", () => {
       const result = buildModelImport(mockFetchContext);
 
       expect(result).not.toBeNull();
-      expect(result?.kind).toBe(StructureKind.ImportDeclaration);
       expect(result?.moduleSpecifier).toBe("../requests/types.gen");
       // Models are pure types; a type-only declaration keeps generated
       // code compatible with `verbatimModuleSyntax`.
@@ -159,8 +123,6 @@ describe("projectFactory", () => {
   describe("buildAxiosErrorImport", () => {
     it("should build import for AxiosError", () => {
       const result = buildAxiosErrorImport();
-
-      expect(result.kind).toBe(StructureKind.ImportDeclaration);
       expect(result.moduleSpecifier).toBe("axios");
       expect(result.namedImports).toContainEqual({ name: "AxiosError" });
     });
@@ -169,8 +131,6 @@ describe("projectFactory", () => {
   describe("buildCommonImport", () => {
     it("should build namespace import for Common", () => {
       const result = buildCommonImport();
-
-      expect(result.kind).toBe(StructureKind.ImportDeclaration);
       expect(result.moduleSpecifier).toBe("./common");
       expect(result.namespaceImport).toBe("Common");
     });
@@ -263,6 +223,81 @@ describe("projectFactory", () => {
       expect(
         result.some((i) => i.moduleSpecifier === "../requests/types.gen"),
       ).toBe(false);
+    });
+  });
+
+  describe("printImports", () => {
+    const used = (...names: string[]) => new Set(names);
+
+    it("should keep only the names in use", () => {
+      expect(
+        printImports([buildQueryImport()], used("useQuery", "UseQueryOptions")),
+      ).toBe(
+        'import { useQuery, type UseQueryOptions } from "@tanstack/react-query";\n',
+      );
+    });
+
+    it("should drop a declaration left without names", () => {
+      expect(printImports([buildQueryImport()], used("findPets"))).toBe("");
+      expect(printImports([buildCommonImport()], used("findPets"))).toBe("");
+    });
+
+    it("should merge the declarations of one module", () => {
+      expect(
+        printImports(
+          [
+            buildClientImport(mockFetchContext),
+            buildServiceImport(mockFetchContext),
+          ],
+          used("Options", "findPets", "deletePet"),
+        ),
+      ).toBe(
+        'import { deletePet, findPets, type Options } from "../requests/sdk.gen";\n',
+      );
+    });
+
+    it("should sort names regardless of case and of the type modifier", () => {
+      expect(
+        printImports(
+          [
+            {
+              moduleSpecifier: "m",
+              namedImports: [
+                { name: "b" },
+                { name: "C", isTypeOnly: true },
+                { name: "A" },
+                { name: "a2" },
+              ],
+            },
+          ],
+          used("A", "a2", "b", "C"),
+        ),
+      ).toBe('import { A, a2, b, type C } from "m";\n');
+    });
+
+    it("should put packages before relative modules, each in order", () => {
+      expect(
+        printImports(
+          buildHookFileImports(mockAxiosContext),
+          used(
+            "Common",
+            "Options",
+            "useQuery",
+            "findPets",
+            "Pet",
+            "AxiosError",
+          ),
+        ),
+      ).toBe(
+        [
+          'import { useQuery } from "@tanstack/react-query";',
+          'import { AxiosError } from "axios";',
+          'import { findPets, type Options } from "../requests/sdk.gen";',
+          'import type { Pet } from "../requests/types.gen";',
+          'import * as Common from "./common";',
+          "",
+        ].join("\n"),
+      );
     });
   });
 });

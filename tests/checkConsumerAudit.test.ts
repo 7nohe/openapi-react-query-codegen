@@ -16,13 +16,18 @@ const advisory = (id: string, name: string, severity: string) => ({
   range: "<9.9.9",
 });
 
+// The real list is empty at the moment, so the tests bring their own.
+const known = new Map([
+  ["GHSA-g3hv-75wg-m249", "minimatch comes through a peer dependency"],
+]);
+
 const report = {
   vulnerabilities: {
     minimatch: {
       via: [advisory("GHSA-g3hv-75wg-m249", "minimatch", "high")],
     },
     // Parent entries repeat the chain as plain strings and must be skipped.
-    "ts-morph": { via: ["minimatch"] },
+    glob: { via: ["minimatch"] },
     "left-pad": { via: [advisory("GHSA-aaaa-bbbb-cccc", "left-pad", "high")] },
     "is-odd": {
       via: [
@@ -35,12 +40,20 @@ const report = {
 
 describe("check-consumer-audit", () => {
   test("reviewAudit fails only unknown high or critical advisories", () => {
-    const results = reviewAudit(report);
+    const results = reviewAudit(report, known);
     expect(results.map((r) => [r.id, r.known, r.failing])).toEqual([
       ["GHSA-g3hv-75wg-m249", true, false],
       ["GHSA-aaaa-bbbb-cccc", false, true],
       ["GHSA-dddd-eeee-ffff", false, false],
     ]);
+  });
+
+  test("reviewAudit accepts nothing unless it is listed", () => {
+    expect(
+      reviewAudit(report)
+        .filter((r) => r.failing)
+        .map((r) => r.id),
+    ).toEqual(["GHSA-g3hv-75wg-m249", "GHSA-aaaa-bbbb-cccc"]);
   });
 
   test("reviewAudit handles a clean report", () => {
@@ -72,14 +85,14 @@ describe("check-consumer-audit", () => {
   });
 
   test("formatSummary marks new, known and lower-severity advisories", () => {
-    const summary = formatSummary(reviewAudit(report));
+    const summary = formatSummary(reviewAudit(report, known), known);
     expect(summary).toContain(
       "3 advisories in the dependency tree users install, 1 failing.",
     );
     expect(summary).toContain("| high | ❌ new |");
     expect(summary).toContain("| moderate | below high |");
     expect(summary).toContain(
-      "known: minimatch comes through the ts-morph peer",
+      "known: minimatch comes through a peer dependency",
     );
   });
 });

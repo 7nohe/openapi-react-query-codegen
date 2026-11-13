@@ -41,6 +41,8 @@ describe("names that collide with what generated code uses", () => {
         files.map((file) => path.join(dir, client, file)),
         {
           strict: true,
+          // An import a hook file does not use is an error here.
+          noUnusedLocals: true,
           noEmit: true,
           skipLibCheck: true,
           lib: ["lib.es2022.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],

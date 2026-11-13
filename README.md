@@ -61,7 +61,7 @@ The client generator is part of this package, so the generated `requests/` direc
 
 - Node.js 24+
 - `@tanstack/react-query` 5.x (peer dependency)
-- `ts-morph` 28.x, `commander` 12–15 (peer dependencies)
+- `commander` 12–15 (peer dependency)
 - TypeScript 5.x, 6.x or 7.x to compile the generated code. It is not a peer dependency: the generator does not use the `typescript` package.
 
 ## License

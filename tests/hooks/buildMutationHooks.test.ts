@@ -1,6 +1,5 @@
-import { StructureKind, VariableDeclarationKind } from "ts-morph";
 import { describe, expect, it } from "vitest";
-import { buildUseMutationHook } from "../../src/tsmorph/buildMutationHooks.mjs";
+import { buildUseMutationHook } from "../../src/hooks/buildMutationHooks.mjs";
 import type { GenerationContext, OperationInfo } from "../../src/types.mjs";
 
 const mockPostOperation: OperationInfo = {
@@ -67,12 +66,10 @@ describe("buildMutationHooks", () => {
     it("should build useMutation hook for POST operation", () => {
       const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
 
-      expect(result.kind).toBe(StructureKind.VariableStatement);
-      expect(result.isExported).toBe(true);
-      expect(result.declarationKind).toBe(VariableDeclarationKind.Const);
-      expect(result.declarations[0].name).toBe("useAddPet");
+      expect(result.kind).toBe("const");
+      expect(result.name).toBe("useAddPet");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("TData = Common.AddPetMutationResult");
       expect(initializer).toContain("TError = AddPetError");
       expect(initializer).toContain("TContext = unknown");
@@ -87,7 +84,7 @@ describe("buildMutationHooks", () => {
 
     it("should default to the complete SDK response so headers stay available", () => {
       const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("TData = Common.AddPetMutationResult");
       expect(initializer).not.toContain('AddPetMutationResult["data"]');
@@ -96,7 +93,7 @@ describe("buildMutationHooks", () => {
 
     it("should accept an AbortSignal through mutation client options", () => {
       const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("Options<AddPetData, true>");
       expect(initializer).toContain("...clientOptions");
@@ -108,9 +105,9 @@ describe("buildMutationHooks", () => {
         mockFetchContext,
       );
 
-      expect(result.declarations[0].name).toBe("useDeletePet");
+      expect(result.name).toBe("useDeletePet");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("Common.DeletePetMutationResult");
       expect(initializer).toContain(
         "deletePet({ ...clientOptions, throwOnError: true })",
@@ -120,9 +117,9 @@ describe("buildMutationHooks", () => {
     it("should build useMutation hook for PUT operation", () => {
       const result = buildUseMutationHook(mockPutOperation, mockFetchContext);
 
-      expect(result.declarations[0].name).toBe("useUpdatePet");
+      expect(result.name).toBe("useUpdatePet");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("Common.UpdatePetMutationResult");
       expect(initializer).toContain(
         "updatePet({ ...clientOptions, throwOnError: true })",
@@ -132,9 +129,9 @@ describe("buildMutationHooks", () => {
     it("should build useMutation hook for PATCH operation", () => {
       const result = buildUseMutationHook(mockPatchOperation, mockFetchContext);
 
-      expect(result.declarations[0].name).toBe("usePatchPet");
+      expect(result.name).toBe("usePatchPet");
 
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
       expect(initializer).toContain("Common.PatchPetMutationResult");
       expect(initializer).toContain(
         "patchPet({ ...clientOptions, throwOnError: true })",
@@ -143,21 +140,21 @@ describe("buildMutationHooks", () => {
 
     it("should use AxiosError for axios client", () => {
       const result = buildUseMutationHook(mockPostOperation, mockAxiosContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("TError = AxiosError<AddPetError>");
     });
 
     it("should include mutationKey parameter", () => {
       const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("mutationKey?: TQueryKey");
     });
 
     it("should include options parameter with Omit type", () => {
       const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain(
         'Omit<UseMutationOptions<TData, TError, Options<AddPetData, true>, TContext>, "mutationKey" | "mutationFn">',
@@ -173,7 +170,7 @@ describe("buildMutationHooks", () => {
       };
 
       const result = buildUseMutationHook(opWithoutData, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("Options<unknown, true>");
     });
@@ -192,7 +189,7 @@ describe("buildMutationHooks", () => {
       };
 
       const result = buildUseMutationHook(op, ctx);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("Options<CreateThingData, true>");
       expect(initializer).toContain("TError = CreateThingError");
@@ -200,7 +197,7 @@ describe("buildMutationHooks", () => {
 
     it("should spread options at the end", () => {
       const result = buildUseMutationHook(mockPostOperation, mockFetchContext);
-      const initializer = result.declarations[0].initializer as string;
+      const initializer = result.initializer as string;
 
       expect(initializer).toContain("...options })");
     });
