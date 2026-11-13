@@ -480,6 +480,70 @@ describe("request-side variants", () => {
   });
 });
 
+describe("readOnly behind a reference into another schema", () => {
+  test("the schema that inlines it gets a request-side type", async () => {
+    const pet = { $ref: "#/components/schemas/Pet" };
+    const generated = await generateClient({
+      input: JSON.stringify({
+        openapi: "3.0.3",
+        components: {
+          schemas: {
+            Holder: {
+              type: "object",
+              properties: {
+                owner: {
+                  type: "object",
+                  required: ["id", "name"],
+                  properties: {
+                    id: { type: "integer", readOnly: true },
+                    name: { type: "string" },
+                  },
+                },
+              },
+            },
+            Pet: {
+              type: "object",
+              required: ["owner"],
+              properties: {
+                owner: { $ref: "#/components/schemas/Holder/properties/owner" },
+              },
+            },
+          },
+        },
+        paths: {
+          "/pet": {
+            post: {
+              operationId: "addPet",
+              requestBody: {
+                required: true,
+                content: { "application/json": { schema: pet } },
+              },
+              responses: {
+                "200": {
+                  description: "ok",
+                  content: { "application/json": { schema: pet } },
+                },
+              },
+            },
+          },
+        },
+      }),
+      client: "fetch",
+      importExtension: "",
+      pageParam: "page",
+    });
+    const types = file(generated, "types.gen.ts");
+    expect(types).toMatch(
+      /export type Pet = \{\s+owner: \{\s+readonly id: number;\s+name: string;\s+\};\s+\};/,
+    );
+    expect(types).toMatch(
+      /export type PetWritable = \{\s+owner: \{\s+name: string;\s+\};\s+\};/,
+    );
+    expect(types).toMatch(/type AddPetData = \{\s+body: PetWritable;/);
+    expect(types).toMatch(/200: Pet;/);
+  });
+});
+
 describe("parameters use the request-side types", () => {
   test("a writeOnly property of a parameter stays", async () => {
     const generated = await generateClient({

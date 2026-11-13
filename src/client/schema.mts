@@ -894,13 +894,20 @@ function renderObject(
 function scanReadWriteOnly(
   doc: Doc,
   schema: Json,
-  found: { direct: boolean; refs: Set<string> },
+  found: { direct: boolean; refs: Set<string>; inlined: Set<string> },
   depth = 0,
 ): void {
   if (!schema || typeof schema !== "object" || depth > 64) return;
   if (typeof schema.$ref === "string") {
     const key = componentSchemaKey(schema.$ref);
-    if (key !== undefined) found.refs.add(key);
+    if (key !== undefined) {
+      found.refs.add(key);
+    } else if (!found.inlined.has(schema.$ref)) {
+      // Any other reference has no type of its own: `renderRef` writes what
+      // it points to in place, so that is part of this schema.
+      found.inlined.add(schema.$ref);
+      scanReadWriteOnly(doc, getByPointer(doc, schema.$ref), found, depth + 1);
+    }
   }
   for (const value of Object.values(
     (schema.properties ?? {}) as Record<string, Json>,
@@ -928,15 +935,19 @@ function scanReadWriteOnly(
 
 /**
  * Component schemas that need a separate request-side type: the ones with a
- * `readOnly`/`writeOnly` property, directly or through the schemas they
- * reference.
+ * `readOnly`/`writeOnly` property, directly, in what they inline, or through
+ * the schemas they reference.
  */
 export function findReadWriteOnlyKeys(doc: Doc): Set<string> {
   const schemas = (doc.components?.schemas ?? {}) as Record<string, Json>;
   const direct = new Set<string>();
   const references = new Map<string, Set<string>>();
   for (const [key, schema] of Object.entries(schemas)) {
-    const found = { direct: false, refs: new Set<string>() };
+    const found = {
+      direct: false,
+      refs: new Set<string>(),
+      inlined: new Set<string>(),
+    };
     scanReadWriteOnly(doc, schema, found);
     if (found.direct) direct.add(key);
     references.set(key, found.refs);

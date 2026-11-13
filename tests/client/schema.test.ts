@@ -763,6 +763,57 @@ describe("findReadWriteOnlyKeys", () => {
     ]);
     expect(findReadWriteOnlyKeys({}).size).toBe(0);
   });
+
+  test("follows a reference into a schema, which the types inline", () => {
+    const holder = {
+      type: "object",
+      properties: {
+        owner: {
+          type: "object",
+          properties: { id: { type: "integer", readOnly: true } },
+        },
+        named: { $ref: "#/components/schemas/Direct" },
+        plain: { type: "string" },
+      },
+    };
+    const inner = (name: string) => ({
+      $ref: `#/components/schemas/Holder/properties/${name}`,
+    });
+    const keys = findReadWriteOnlyKeys({
+      components: {
+        schemas: {
+          Direct: {
+            type: "object",
+            properties: { id: { readOnly: true, type: "string" } },
+          },
+          Holder: holder,
+          // The inlined schema has the property itself.
+          Pet: { type: "object", properties: { owner: inner("owner") } },
+          // It refers to a schema that has it.
+          Named: { type: "array", items: inner("named") },
+          // Through another reference of the same sort.
+          Chain: {
+            allOf: [{ $ref: "#/components/schemas/Pet/properties/owner" }],
+          },
+          Plain: { type: "object", properties: { a: inner("plain") } },
+          Dangling: { type: "object", properties: { a: inner("nope") } },
+          Loop: {
+            type: "object",
+            properties: {
+              self: { $ref: "#/components/schemas/Loop/properties/self" },
+            },
+          },
+        },
+      },
+    });
+    expect([...keys].sort()).toEqual([
+      "Chain",
+      "Direct",
+      "Holder",
+      "Named",
+      "Pet",
+    ]);
+  });
 });
 
 describe("discriminated unions", () => {
