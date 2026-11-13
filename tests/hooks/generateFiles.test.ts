@@ -99,4 +99,27 @@ describe("generateAllFiles", () => {
       'export * from "./common.js";',
     );
   });
+
+  // A page parameter or a next-page path may be spelled like a schema.
+  it("should not import a model for the key of a pagination property", () => {
+    const paginated = generateAllFiles([{ ...query, isPaginatable: true }], {
+      ...ctx,
+      modelNames: [...ctx.modelNames, "Page", "Meta", "NextPage"],
+      pageParam: "Page",
+      nextPageParam: "Meta.NextPage",
+    });
+    for (const name of [
+      "queryOptions.ts",
+      "suspense.ts",
+      "infiniteQueries.ts",
+      "prefetch.ts",
+    ]) {
+      const content = paginated.find((file) => file.name === name)?.content;
+      expect(content).toContain("Page: pageParam as number");
+      expect(content).toContain("{ Meta: { NextPage: number } }");
+      expect(
+        importsOf(paginated, name)?.find((line) => line.includes("types.gen")),
+      ).toMatch(/^import type \{ FindPetsData(, FindPetsError)? \} from/);
+    }
+  });
 });

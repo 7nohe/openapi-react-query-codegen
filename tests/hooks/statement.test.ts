@@ -113,6 +113,21 @@ describe("referencedNames", () => {
     expect(names).toEqual(new Set(["Common", "a", "response"]));
   });
 
+  it("should skip the key of a property and the name of a parameter", () => {
+    const names = referencedNames(
+      "(options?: A, page: B) => f({ ...options, Page: page as C, Meta: { NextPage: D } } as { Meta?: { NextPage: E } })",
+    );
+    expect(names).toEqual(
+      new Set(["A", "B", "f", "options", "page", "as", "C", "D", "E"]),
+    );
+  });
+
+  it("should keep what a conditional expression or a shorthand mentions", () => {
+    expect(referencedNames("f(a ? B : C, { D }, [E, F])")).toEqual(
+      new Set(["f", "a", "B", "C", "D", "E", "F"]),
+    );
+  });
+
   it("should keep the name after a spread", () => {
     expect(referencedNames("{ ...options, ...Common.x }")).toEqual(
       new Set(["options", "Common"]),

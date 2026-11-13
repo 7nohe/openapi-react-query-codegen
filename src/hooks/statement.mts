@@ -49,21 +49,35 @@ export function printStatements(statements: Statement[]): string {
   return text;
 }
 
+// A string literal, a spread, a member access, an identifier, or any other
+// character. The last one only matters as what comes before an identifier.
 const TOKEN =
-  /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`|\.\.\.|\.\s*[\p{ID_Start}_$][\p{ID_Continue}$]*|[\p{ID_Start}_$][\p{ID_Continue}$]*/gu;
+  /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`|\.\.\.|\.\s*[\p{ID_Start}_$][\p{ID_Continue}$]*|[\p{ID_Start}_$][\p{ID_Continue}$]*|\S/gu;
 const IDENTIFIER_START = /^[\p{ID_Start}_$]/u;
+/** What follows the key of a property or the name of a parameter. */
+const KEY_END = /\s*\??:/y;
 
 /**
- * The identifiers a piece of generated code mentions. What stands in a string
- * literal or after the dot of a member access is not a reference to anything a
- * file could import, so it is left out.
+ * The identifiers a piece of generated code refers to. Three places hold a
+ * name without referring to anything a file could import, and are left out:
+ * a string literal, the name after the dot of a member access, and the key of
+ * a property or the name of a parameter (`{ page: 1 }`, `(options?: T)`).
  */
 export function referencedNames(code: string): Set<string> {
   const names = new Set<string>();
-  for (const [token] of code.matchAll(TOKEN)) {
+  let previous = "";
+  for (const match of code.matchAll(TOKEN)) {
+    const [token] = match;
     if (IDENTIFIER_START.test(token)) {
-      names.add(token);
+      KEY_END.lastIndex = match.index + token.length;
+      const isKey =
+        (previous === "{" || previous === "," || previous === "(") &&
+        KEY_END.test(code);
+      if (!isKey) {
+        names.add(token);
+      }
     }
+    previous = token;
   }
   return names;
 }
