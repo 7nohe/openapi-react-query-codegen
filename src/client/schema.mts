@@ -257,6 +257,125 @@ export function renderComponentSchema(
   return renderSchema({ ...schema, allOf: [...members, tag] }, ctx);
 }
 
+/**
+ * Whether a schema that is composed of others (`allOf`, `oneOf`, `anyOf`) also
+ * describes an object itself, which its members are then intersected with.
+ */
+export function hasObjectKeywords(schema: Json): boolean {
+  return Boolean(
+    schema.properties ||
+      schema.patternProperties ||
+      schema.additionalProperties,
+  );
+}
+
+/** What a schema without a `type` is taken for, going by its keywords. */
+function impliedType(schema: Json): "object" | "array" | undefined {
+  if (
+    schema.properties ||
+    schema.patternProperties ||
+    schema.additionalProperties !== undefined
+  ) {
+    return "object";
+  }
+  return schema.items || schema.prefixItems ? "array" : undefined;
+}
+
+/**
+ * A kind of value, as far as generated code tells values apart. `other` is a
+ * `type` this generator does not know, which is none of the rest.
+ */
+export type SchemaKind =
+  | "string"
+  | "number"
+  | "boolean"
+  | "null"
+  | "array"
+  | "object"
+  | "other";
+
+const ALL_KINDS: readonly SchemaKind[] = [
+  "string",
+  "number",
+  "boolean",
+  "null",
+  "array",
+  "object",
+  "other",
+];
+
+function kindOfType(type: unknown): SchemaKind {
+  if (type === "integer") return "number";
+  return ALL_KINDS.find((kind) => kind === type) ?? "other";
+}
+
+function kindOfValue(value: unknown): SchemaKind {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  const type = typeof value;
+  return type === "string" ||
+    type === "number" ||
+    type === "boolean" ||
+    type === "object"
+    ? type
+    : "other";
+}
+
+/**
+ * The kinds of value a schema allows: every kind when nothing narrows it, and
+ * none for `false`. This is the one reading of `type`, `enum`, `const`, the
+ * keywords that imply a type and the compositions; whatever asks what a schema
+ * can hold (how a parameter is serialized, what a page parameter starts at,
+ * how the members of a union are told apart) goes by it.
+ *
+ * `nullable` adds nothing: no caller tells a value from its absence by it.
+ */
+export function schemaKinds(
+  doc: Doc,
+  schema: Json,
+  depth = 0,
+): Set<SchemaKind> {
+  if (schema === false) return new Set();
+  if (!schema || typeof schema !== "object" || depth > 16) {
+    return new Set(ALL_KINDS);
+  }
+  if (typeof schema.$ref === "string") {
+    return schemaKinds(doc, getByPointer(doc, schema.$ref), depth + 1);
+  }
+  if (schema.const !== undefined) return new Set([kindOfValue(schema.const)]);
+  if (Array.isArray(schema.enum)) {
+    return new Set((schema.enum as unknown[]).map(kindOfValue));
+  }
+
+  let kinds: Set<SchemaKind>;
+  if (Array.isArray(schema.type)) {
+    kinds = new Set((schema.type as unknown[]).map(kindOfType));
+  } else if (typeof schema.type === "string") {
+    kinds = new Set([kindOfType(schema.type)]);
+  } else {
+    const implied = impliedType(schema);
+    kinds = new Set(implied ? [implied] : ALL_KINDS);
+  }
+
+  const narrow = (other: Set<SchemaKind>) => {
+    kinds = new Set([...kinds].filter((kind) => other.has(kind)));
+  };
+  for (const member of Array.isArray(schema.allOf) ? schema.allOf : []) {
+    narrow(schemaKinds(doc, member, depth + 1));
+  }
+  for (const key of ["oneOf", "anyOf"] as const) {
+    if (!Array.isArray(schema[key]) || schema[key].length === 0) continue;
+    narrow(
+      new Set(
+        (schema[key] as Json[]).flatMap((member) => [
+          ...schemaKinds(doc, member, depth + 1),
+        ]),
+      ),
+    );
+  }
+  return kinds;
+}
+
 /** Render the TypeScript type for an OpenAPI schema object. */
 export function renderSchema(
   schema: Json,
@@ -319,11 +438,7 @@ export function renderSchema(
       .filter((member: Json) => !isRequiredOnly(member))
       .map((member: Json) => renderSchema(member, ctx, indent, seen));
     members.push(...unions);
-    if (
-      schema.properties ||
-      schema.patternProperties ||
-      schema.additionalProperties
-    ) {
+    if (hasObjectKeywords(schema)) {
       members.push(renderObject(schema, ctx, indent, seen));
     }
     const required = renderInheritedRequired(schema, ctx, indent, seen);
@@ -332,10 +447,9 @@ export function renderSchema(
   }
 
   if (unions.length > 0) {
-    const members =
-      schema.properties || schema.additionalProperties
-        ? [...unions, renderObject(schema, ctx, indent, seen)]
-        : unions;
+    const members = hasObjectKeywords(schema)
+      ? [...unions, renderObject(schema, ctx, indent, seen)]
+      : unions;
     return addNull(intersection(members), schema);
   }
 
@@ -376,13 +490,9 @@ export function renderSchema(
       type = renderObject(schema, ctx, indent, seen);
       break;
     default:
-      if (
-        schema.properties ||
-        schema.patternProperties ||
-        schema.additionalProperties !== undefined
-      ) {
+      if (impliedType(schema) === "object") {
         type = renderObject(schema, ctx, indent, seen);
-      } else if (schema.items || schema.prefixItems) {
+      } else if (impliedType(schema) === "array") {
         type = renderArray(schema, ctx, indent, seen);
       } else if (hasBinaryContent(schema)) {
         type = fileType(ctx);

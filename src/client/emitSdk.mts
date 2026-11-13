@@ -6,8 +6,8 @@ import {
   type ParameterIR,
   type SecurityIR,
 } from "./operations.mjs";
-import { docComment } from "./schema.mjs";
-import { baseMediaType, type Doc, type Json, resolveRef } from "./spec.mjs";
+import { docComment, schemaKinds } from "./schema.mjs";
+import { baseMediaType, type Doc, type Json } from "./spec.mjs";
 
 export type ClientKind = "fetch" | "axios";
 
@@ -22,25 +22,26 @@ function q(value: string): string {
   return JSON.stringify(value);
 }
 
-function schemaType(doc: Doc, schema: Json): string | undefined {
-  const resolved = resolveRef(doc, schema);
-  if (!resolved || typeof resolved !== "object") return undefined;
-  if (Array.isArray(resolved.type)) {
-    const types: string[] = resolved.type.filter(
-      (item: string) => item !== "null",
-    );
-    // Alternatives of different shapes have no one type to go by.
-    return types.length > 1 && !types.every((item) => PRIMITIVE_TYPES.has(item))
-      ? undefined
-      : types[0];
-  }
-  if (resolved.type) return resolved.type;
-  if (resolved.properties) return "object";
-  if (resolved.items) return "array";
-  return undefined;
+/**
+ * What a parameter's value is, for the serializer: a primitive, an array or an
+ * object. Undefined when the schema allows more than one of them, or does not
+ * say.
+ */
+function parameterShape(
+  doc: Doc,
+  schema: Json,
+): "primitive" | "array" | "object" | undefined {
+  const kinds = schemaKinds(doc, schema);
+  kinds.delete("null");
+  if (kinds.has("other")) return undefined;
+  const shapes = new Set(
+    [...kinds].map((kind) =>
+      kind === "array" || kind === "object" ? kind : "primitive",
+    ),
+  );
+  const [only] = shapes;
+  return shapes.size === 1 ? only : undefined;
 }
-
-const PRIMITIVE_TYPES = new Set(["boolean", "integer", "number", "string"]);
 
 /**
  * Query parameters the runtime defaults would serialize differently from the
@@ -56,8 +57,8 @@ function querySerializerEntries(doc: Doc, parameters: ParameterIR[]): string[] {
       entries.push(`${q(parameter.name)}: { json: true }`);
       continue;
     }
-    const type = schemaType(doc, parameter.schema);
-    if (type !== undefined && PRIMITIVE_TYPES.has(type)) continue;
+    const type = parameterShape(doc, parameter.schema);
+    if (type === "primitive") continue;
     const style = parameter.style ?? "form";
     const explode = parameter.explode ?? style === "form";
     if (style === "deepObject") continue;
@@ -92,8 +93,8 @@ function pathSerializerEntries(doc: Doc, parameters: ParameterIR[]): string[] {
     const explode = parameter.explode ?? false;
     if (style === "simple") {
       // `explode` only changes how an object is written.
-      const type = schemaType(doc, parameter.schema);
-      if (!explode || type === "array" || PRIMITIVE_TYPES.has(type ?? "")) {
+      const type = parameterShape(doc, parameter.schema);
+      if (!explode || type === "array" || type === "primitive") {
         continue;
       }
     }

@@ -7,6 +7,7 @@ import {
   renderSchema,
   type SchemaCtx,
   schemaDescription,
+  schemaKinds,
 } from "../../src/client/schema.mts";
 
 const doc = {
@@ -477,6 +478,81 @@ describe("patternProperties", () => {
         additionalProperties: true,
       }),
     ).toBe("{\n  [key: string]: unknown;\n}");
+  });
+});
+
+describe("patternProperties next to a composition", () => {
+  const pattern = { "^at_": { type: "string", format: "date-time" } };
+  const member = { type: "object", properties: { a: { type: "string" } } };
+  const index = "{\n  [key: string]: string;\n}";
+
+  test.each(["allOf", "anyOf", "oneOf"])(
+    "%s keeps the index signature",
+    (key) => {
+      expect(
+        render({
+          [key]: [member],
+          patternProperties: pattern,
+          additionalProperties: false,
+        }),
+      ).toBe(`{\n  a?: string;\n} & ${index}`);
+    },
+  );
+});
+
+describe("schemaKinds", () => {
+  const kindsDoc = {
+    components: {
+      schemas: {
+        Id: { type: "integer" },
+        Loop: { $ref: "#/components/schemas/Loop" },
+      },
+    },
+  };
+  const kinds = (schema: unknown) => [...schemaKinds(kindsDoc, schema)].sort();
+  const all = [
+    "array",
+    "boolean",
+    "null",
+    "number",
+    "object",
+    "other",
+    "string",
+  ];
+
+  test.each([
+    [{ type: "string" }, ["string"]],
+    [{ type: "integer" }, ["number"]],
+    [{ type: ["string", "null"] }, ["null", "string"]],
+    [{ type: "file" }, ["other"]],
+    [{ $ref: "#/components/schemas/Id" }, ["number"]],
+    [{ enum: ["a", 1, null, true, [], {}] }, all.filter((k) => k !== "other")],
+    [{ const: "a" }, ["string"]],
+    // What a schema without `type` implies by its keywords.
+    [{ properties: {} }, ["object"]],
+    [{ patternProperties: {} }, ["object"]],
+    [{ additionalProperties: false }, ["object"]],
+    [{ items: {} }, ["array"]],
+    [{ prefixItems: [] }, ["array"]],
+    // A composition narrows what the schema says itself.
+    [{ allOf: [{ type: "integer" }] }, ["number"]],
+    [{ allOf: [{ type: "integer" }, { minimum: 1 }] }, ["number"]],
+    [
+      { type: "string", anyOf: [{ maxLength: 1 }, { pattern: "a" }] },
+      ["string"],
+    ],
+    [{ anyOf: [{ type: "string" }, { type: "array" }] }, ["array", "string"]],
+    [{ oneOf: [{ type: "object" }, { type: "null" }] }, ["null", "object"]],
+    [{ allOf: [{ type: "string" }, { type: "object" }] }, []],
+    // Nothing is known.
+    [{}, all],
+    [true, all],
+    [undefined, all],
+    [{ $ref: "#/components/schemas/Loop" }, all],
+    [{ $ref: "#/components/schemas/Nope" }, all],
+    [false, []],
+  ])("%j", (schema, expected) => {
+    expect(kinds(schema)).toEqual(expected);
   });
 });
 

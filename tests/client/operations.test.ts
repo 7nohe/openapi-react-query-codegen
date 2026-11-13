@@ -410,6 +410,10 @@ describe("schemaPrimitiveKind of composed schemas", () => {
     [{ anyOf: [{ type: "string" }, { type: "number" }] }, "other"],
     [{ anyOf: [{ type: "null" }] }, "other"],
     [{ allOf: [{ type: "string" }] }, "string"],
+    // The members narrow each other, and what the schema says itself.
+    [{ allOf: [{ type: "integer" }, { minimum: 1 }] }, "number"],
+    [{ type: "string", anyOf: [{ maxLength: 1 }, { pattern: "a" }] }, "string"],
+    [{ anyOf: [{ type: "string" }, { enum: [null] }] }, "string"],
   ])("%j is %s", (schema, kind) => {
     expect(schemaPrimitiveKind(doc, schema)).toBe(kind);
   });

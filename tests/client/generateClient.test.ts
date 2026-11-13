@@ -1087,6 +1087,7 @@ describe("serialization and parsing the SDK asks for", () => {
         components: {
           schemas: {
             Obj: { type: "object", properties: { r: { type: "string" } } },
+            Id: { type: "integer" },
           },
           securitySchemes: {
             a: { type: "apiKey", in: "header", name: "X-A" },
@@ -1313,6 +1314,45 @@ describe("serialization and parsing the SDK asks for", () => {
         "querySerializer",
       );
     }
+  });
+
+  test("a primitive behind a composition or an enum needs no override", async () => {
+    for (const schema of [
+      { allOf: [{ type: "integer" }] },
+      { allOf: [{ $ref: "#/components/schemas/Id" }], description: "an id" },
+      { anyOf: [{ type: "integer" }, { type: "string" }] },
+      { oneOf: [{ type: "string" }, { type: "boolean" }], nullable: true },
+      { enum: ["a", "b"] },
+    ]) {
+      const sdk = await operation("fetch", query({ schema }));
+      expect(sdk, JSON.stringify(schema)).not.toContain("querySerializer");
+      const path = await operation(
+        "fetch",
+        {
+          parameters: [
+            { name: "id", in: "path", required: true, explode: true, schema },
+          ],
+          responses: { "204": { description: "none" } },
+        },
+        "/x/{id}",
+      );
+      expect(path, JSON.stringify(schema)).not.toContain("pathSerializer");
+    }
+  });
+
+  test("an array or an object behind a composition gets its own setting", async () => {
+    expect(
+      await operation(
+        "fetch",
+        query({ schema: { allOf: [list] }, explode: false }),
+      ),
+    ).toContain('"p": { array: { style: "form", explode: false } } }');
+    expect(
+      await operation(
+        "fetch",
+        query({ schema: { allOf: [obj, { required: ["r"] }] } }),
+      ),
+    ).toContain('"p": { object: { style: "form", explode: true } } }');
   });
 
   test("a schema that can hold either shape gets both settings", async () => {
