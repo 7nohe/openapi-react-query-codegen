@@ -334,6 +334,26 @@ describe("axios runtime: security", () => {
       { security: [{ in: "cookie", name: "sid", type: "apiKey" }] },
     );
     expect(cookies.headers.cookie).toBe("a=1; sid=k");
+    // The caller's header keeps its cookies however its name is written.
+    for (const name of ["cookie", "COOKIE"]) {
+      const sid = { in: "cookie", name: "sid", type: "apiKey" };
+      expect(
+        (
+          await headersFor(
+            { auth: "k", headers: { [name]: "a=1" } },
+            { security: [sid] },
+          )
+        ).headers.cookie,
+      ).toBe("a=1; sid=k");
+      expect(
+        (
+          await headersFor(
+            { auth: "k" },
+            { security: [sid], headers: { [name]: "a=1" } },
+          )
+        ).headers.cookie,
+      ).toBe("a=1; sid=k");
+    }
     expect(
       (
         await headersFor(
