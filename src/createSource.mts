@@ -1,5 +1,5 @@
 import type { ClientKind, GeneratedClient } from "./client/index.mjs";
-import { generateAllFiles } from "./hooks/index.mjs";
+import { generateAllFiles } from "./hooks/generateFiles.mjs";
 import type { GeneratedFile, GenerationContext } from "./types.mjs";
 
 /**
@@ -15,10 +15,7 @@ export const createSource = ({
   omitInitialPageParam,
   importExtension = "",
 }: {
-  generated: Pick<
-    GeneratedClient,
-    "operations" | "modelNames" | "serviceNames"
-  >;
+  generated: Pick<GeneratedClient, "operations">;
   client: ClientKind;
   version: string;
   pageParam: string;
@@ -30,8 +27,6 @@ export const createSource = ({
 }): GeneratedFile[] => {
   const ctx: GenerationContext = {
     client,
-    modelNames: generated.modelNames,
-    serviceNames: generated.serviceNames,
     pageParam,
     nextPageParam,
     initialPageParam,

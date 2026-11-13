@@ -1,17 +1,6 @@
-import type { PathLike } from "node:fs";
-import { stat } from "node:fs/promises";
 import path from "node:path";
 import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
-
-export async function exists(f: PathLike) {
-  try {
-    await stat(f);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Safely parse a value into a number. Checks for NaN and Infinity.

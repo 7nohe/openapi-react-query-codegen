@@ -3,6 +3,7 @@ import {
   type ClientKind,
   detectImportExtension,
   findNearestTsConfigPath,
+  type GeneratedClient,
   generateClient,
   SpecError,
   writeGeneratedFiles,
@@ -15,7 +16,6 @@ import {
 import { createSource } from "./createSource.mjs";
 import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
 import { processOutput } from "./format.mjs";
-import { print } from "./print.mjs";
 
 export { findNearestTsConfigPath };
 
@@ -97,7 +97,7 @@ async function runGenerate(
   // One answer for both directories: the queries import the requests.
   const importExtension = detectImportExtension(process.cwd());
 
-  let generated: Awaited<ReturnType<typeof generateClient>>;
+  let generated: GeneratedClient;
   try {
     generated = await generateClient({
       input: formattedOptions.input,
@@ -129,8 +129,8 @@ async function runGenerate(
     omitInitialPageParam: formattedOptions.omitInitialPageParam ?? false,
     importExtension,
   });
-  await print(source, formattedOptions);
   const queriesOutputPath = buildQueriesOutputPath(options.output);
+  await writeGeneratedFiles(queriesOutputPath, source);
   await processOutput({
     output: queriesOutputPath,
     format: formattedOptions.format,

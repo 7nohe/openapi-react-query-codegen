@@ -1,9 +1,9 @@
 /**
- * Normalized operation information extracted from the OpenAPI service.
- * This is a pure JSON-serializable structure that can be consumed by generators.
+ * What the hook generators know about an operation. The client generator
+ * (`src/client/`) fills it in; it is plain JSON-serializable data.
  */
 export interface OperationInfo {
-  /** Method/function name as defined in service (e.g., "findPets") */
+  /** Name of the operation's function in `sdk.gen.ts` (e.g., "findPets") */
   methodName: string;
   /** Capitalized method name (e.g., "FindPets") */
   capitalizedMethodName: string;
@@ -26,6 +26,8 @@ export interface OperationInfo {
   isPaginatable: boolean;
   /** Type of the configured page query parameter */
   pageParamType?: string;
+  /** Models `pageParamType` names, which the hooks have to import */
+  pageParamModels?: string[];
   /** Resolved primitive kind of the configured page query parameter */
   pageParamTypeKind?: PageParamTypeKind;
 }
@@ -39,10 +41,6 @@ export type PageParamTypeKind = "string" | "number" | "other";
 export interface GenerationContext {
   /** Client type: "fetch" or "axios" */
   client: "fetch" | "axios";
-  /** Model type names exported from the models file */
-  modelNames: string[];
-  /** Service function names exported from the service file */
-  serviceNames: string[];
   /** Page param name for infinite queries (e.g., "page") */
   pageParam: string;
   /** Next page param name for infinite queries (e.g., "nextPage") */

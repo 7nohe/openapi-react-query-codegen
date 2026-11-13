@@ -1,4 +1,4 @@
-import { type ClientKind, HEADER } from "./emitSdk.mjs";
+import { baseUrlKey, type ClientKind, HEADER } from "./emitSdk.mjs";
 import { propertyKey, toEnumMemberName, uniqueName } from "./naming.mjs";
 import {
   buildRequestBodyNames,
@@ -223,21 +223,20 @@ function emitComponentSchema(
 }
 
 export function emitTypes(
-  doc: Doc,
   operations: OperationIR[],
   ctx: SchemaCtx,
-  options: { enums?: EnumsMode; clientKind: ClientKind },
+  options: { enums?: EnumsMode; clientKind: ClientKind; baseUrl?: string },
 ): EmittedTypes {
+  const { doc } = ctx;
   const readCtx: SchemaCtx = { ...ctx, mode: "read" };
   const writeCtx: SchemaCtx = { ...ctx, mode: "write" };
 
   const head: string[] = [];
   const exported: string[] = ["ClientOptions"];
 
-  const baseUrl = getBaseUrl(doc);
-  const baseUrlKey = options.clientKind === "axios" ? "baseURL" : "baseUrl";
+  const { baseUrl } = options;
   head.push(
-    `export type ClientOptions = {\n  ${baseUrlKey}: ${
+    `export type ClientOptions = {\n  ${baseUrlKey(options.clientKind)}: ${
       baseUrl ? `${JSON.stringify(baseUrl)} | (string & {})` : "string"
     };\n};`,
   );

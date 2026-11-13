@@ -71,13 +71,6 @@ const mockDigitLeadingOperation: OperationInfo = {
 
 const mockFetchContext: GenerationContext = {
   client: "fetch",
-  modelNames: [
-    "Pet",
-    "FindPetsError",
-    "FindPaginatedPetsError",
-    "FindPetByIdError",
-  ],
-  serviceNames: ["findPets", "findPaginatedPets", "findPetById"],
   pageParam: "page",
   nextPageParam: "nextPage",
   initialPageParam: "1",
@@ -190,11 +183,10 @@ describe("buildQueryHooks", () => {
     });
 
     it("should use the signature Data type for digit-leading operationIds (#213)", () => {
-      const ctx: GenerationContext = {
-        ...mockFetchContext,
-        modelNames: [...mockFetchContext.modelNames, "NumericLeadError"],
-      };
-      const result = buildUseQueryHook(mockDigitLeadingOperation, ctx);
+      const result = buildUseQueryHook(
+        mockDigitLeadingOperation,
+        mockFetchContext,
+      );
       const initializer = result.initializer as string;
 
       expect(initializer).toContain(
@@ -244,12 +236,6 @@ describe("buildQueryHooks", () => {
   });
 
   describe("buildUseInfiniteQueryHook", () => {
-    it("should return null for non-paginatable operation", () => {
-      const result = buildUseInfiniteQueryHook(mockOperation, mockFetchContext);
-
-      expect(result).toBeNull();
-    });
-
     it("should build useInfiniteQuery hook for paginatable operation", () => {
       const result = buildUseInfiniteQueryHook(
         mockPaginatableOperation,
@@ -458,15 +444,6 @@ describe("buildQueryHooks", () => {
   });
 
   describe("buildPrefetchInfiniteQueryFn", () => {
-    it("should return null for non-paginatable operation", () => {
-      const result = buildPrefetchInfiniteQueryFn(
-        mockOperation,
-        mockFetchContext,
-      );
-
-      expect(result).toBeNull();
-    });
-
     it("should build prefetchInfiniteQuery function (#155)", () => {
       const result = buildPrefetchInfiniteQueryFn(
         mockPaginatableOperation,
@@ -513,15 +490,6 @@ describe("buildQueryHooks", () => {
   });
 
   describe("buildUseSuspenseInfiniteQueryHook", () => {
-    it("should return null for non-paginatable operation", () => {
-      const result = buildUseSuspenseInfiniteQueryHook(
-        mockOperation,
-        mockFetchContext,
-      );
-
-      expect(result).toBeNull();
-    });
-
     it("should build useSuspenseInfiniteQuery hook", () => {
       const result = buildUseSuspenseInfiniteQueryHook(
         mockPaginatableOperation,

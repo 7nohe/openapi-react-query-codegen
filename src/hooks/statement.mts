@@ -1,5 +1,13 @@
+/** What a statement's code needs imported from the generated client. */
+type References = {
+  /** The SDK function the code calls or takes the type of. */
+  service?: string;
+  /** The types from `types.gen` the code names. */
+  models?: string[];
+};
+
 /** An exported `const` of a generated file. */
-export type ConstStatement = {
+export type ConstStatement = References & {
   kind: "const";
   name: string;
   /** The expression after `=`. */
@@ -9,7 +17,7 @@ export type ConstStatement = {
 };
 
 /** An exported type alias of a generated file. */
-export type TypeStatement = {
+export type TypeStatement = References & {
   kind: "type";
   name: string;
   typeParameters?: Array<{ name: string; default: string }>;
@@ -49,32 +57,36 @@ export function printStatements(statements: Statement[]): string {
   return text;
 }
 
-// A string literal, a spread, a member access, an identifier, or any other
-// character. The last one only matters as what comes before an identifier.
+// A comment, a string literal, a spread, a member access, an identifier (the
+// one group), or any other character. The last only matters as what precedes
+// an identifier.
 const TOKEN =
-  /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`|\.\.\.|\.\s*[\p{ID_Start}_$][\p{ID_Continue}$]*|[\p{ID_Start}_$][\p{ID_Continue}$]*|\S/gu;
-const IDENTIFIER_START = /^[\p{ID_Start}_$]/u;
-/** What follows the key of a property or the name of a parameter. */
+  /\/\*[\s\S]*?\*\/|\/\/[^\n]*|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`|\.\.\.|\.\s*[\p{ID_Start}_$][\p{ID_Continue}$]*|([\p{ID_Start}_$][\p{ID_Continue}$]*)|\S/gu;
+/** What precedes the key of a property or the name of a parameter. */
+const KEY_START = new Set(["{", ",", "(", ";"]);
+/** What follows one. */
 const KEY_END = /\s*\??:/y;
 
 /**
- * The identifiers a piece of generated code refers to. Three places hold a
- * name without referring to anything a file could import, and are left out:
- * a string literal, the name after the dot of a member access, and the key of
- * a property or the name of a parameter (`{ page: 1 }`, `(options?: T)`).
+ * The identifiers a piece of generated code mentions. Some places hold a name
+ * without referring to anything a file could import, and are left out: a
+ * comment, a string literal, the name after the dot of a member access, and
+ * the key of a property or the name of a parameter (`{ page: 1 }`,
+ * `(options?: T)`).
  */
 export function referencedNames(code: string): Set<string> {
   const names = new Set<string>();
   let previous = "";
   for (const match of code.matchAll(TOKEN)) {
-    const [token] = match;
-    if (IDENTIFIER_START.test(token)) {
+    const [token, identifier] = match;
+    if (token.startsWith("/*") || token.startsWith("//")) {
+      continue;
+    }
+    if (identifier !== undefined) {
       KEY_END.lastIndex = match.index + token.length;
-      const isKey =
-        (previous === "{" || previous === "," || previous === "(") &&
-        KEY_END.test(code);
+      const isKey = KEY_START.has(previous) && KEY_END.test(code);
       if (!isKey) {
-        names.add(token);
+        names.add(identifier);
       }
     }
     previous = token;

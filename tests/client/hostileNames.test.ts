@@ -92,7 +92,13 @@ describe("what the awkward names become", () => {
       ]),
     );
     expect(generated.serviceNames).toEqual(
-      expect.arrayContaining(["client_", "options_", "useQuery_", "_1Abc2"]),
+      expect.arrayContaining([
+        "client_",
+        "options_",
+        "useQuery_",
+        "undefined_",
+        "_1Abc2",
+      ]),
     );
     expect(types?.content).toContain(
       "upload?: globalThis.Blob | globalThis.File",

@@ -103,6 +103,35 @@ paths:
   /p: { get: { operationId: useSuspenseInfiniteQuery, responses: { "200": { description: ok } } } }
   /q: { get: { operationId: initialPageParam, responses: { "200": { description: ok } } } }
   /r: { get: { operationId: signal, responses: { "200": { description: ok } } } }
+  /u: { get: { operationId: undefined, responses: { "200": { description: ok } } } }
+  # The page parameter's type is written into the hooks as it is: its keys and
+  # its comments spell schema names, and only `Cursor` is referred to.
+  /v:
+    get:
+      operationId: pagedByObject
+      parameters:
+        - name: page
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              Size:
+                type: integer
+                description: The Page size, see Token and QueryClient.
+              Cursor:
+                $ref: "#/components/schemas/Cursor"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nextPage:
+                    type: object
   /s:
     post:
       operationId: t
@@ -145,6 +174,10 @@ components:
     QueryClient: { type: object, properties: { a: { type: string } } }
     InfiniteData: { type: object, properties: { a: { type: string } } }
     UseQueryOptions: { type: object, properties: { a: { type: string } } }
+    Cursor: { type: string }
+    Page: { type: object, properties: { a: { type: string } } }
+    Size: { type: object, properties: { a: { type: string } } }
+    Token: { type: object, properties: { a: { type: string } } }
     TData: { type: object, properties: { a: { type: string } } }
     TError: { type: object, properties: { a: { type: string } } }
     TQueryKey: { type: object, properties: { a: { type: string } } }

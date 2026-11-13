@@ -7,7 +7,12 @@ import {
   isDateString,
   type SchemaCtx,
 } from "./schema.mjs";
-import { getByPointer, type Json, refSiblingSchema } from "./spec.mjs";
+import {
+  COMPONENT_SCHEMA_PREFIX,
+  getByPointer,
+  type Json,
+  refSiblingSchema,
+} from "./spec.mjs";
 
 /**
  * The shapes a JSON value can have that a transformer looks at. A date is a
@@ -653,6 +658,11 @@ function emitPlan(
   }
 }
 
+/** A map with the same keys and every value passed through `change`. */
+function mapValues<K, V>(map: Map<K, V>, change: (value: V) => V): Map<K, V> {
+  return new Map([...map].map(([key, value]) => [key, change(value)]));
+}
+
 function lowerFirst(name: string): string {
   return name.charAt(0).toLowerCase() + name.slice(1);
 }
@@ -670,7 +680,7 @@ export function emitTransformers(
   let components = new Map<string, Plan | undefined>(
     Object.entries(schemas).map(([key, schema]) => [
       key,
-      buildPlan(schema, ctx, `#/components/schemas/${key}`),
+      buildPlan(schema, ctx, `${COMPONENT_SCHEMA_PREFIX}${key}`),
     ]),
   );
   let responses = new Map<string, Plan | undefined>();
@@ -689,8 +699,8 @@ export function emitTransformers(
   const prune = () => {
     const live = liveKeys(components);
     const keep = (plan: Plan | undefined) => dropDead(plan, live);
-    components = new Map([...components].map(([k, plan]) => [k, keep(plan)]));
-    responses = new Map([...responses].map(([k, plan]) => [k, keep(plan)]));
+    components = mapValues(components, keep);
+    responses = mapValues(responses, keep);
   };
 
   prune();
@@ -698,8 +708,8 @@ export function emitTransformers(
   const skipped = new Set<string>();
   const resolve = (plan: Plan | undefined) =>
     resolveUnions(plan, byKey, skipped);
-  components = new Map([...components].map(([k, plan]) => [k, resolve(plan)]));
-  responses = new Map([...responses].map(([k, plan]) => [k, resolve(plan)]));
+  components = mapValues(components, resolve);
+  responses = mapValues(responses, resolve);
   // Dropping an ambiguous union can leave a component with nothing to do.
   prune();
 

@@ -7,7 +7,7 @@ import {
   type SecurityIR,
 } from "./operations.mjs";
 import { docComment } from "./schema.mjs";
-import { type Doc, type Json, resolveRef } from "./spec.mjs";
+import { baseMediaType, type Doc, type Json, resolveRef } from "./spec.mjs";
 
 export type ClientKind = "fetch" | "axios";
 
@@ -124,7 +124,7 @@ function parseKind(mediaType: string): string {
   if (kind === "json" || kind === "text") return kind;
   if (kind === "form-data") return "formData";
   // Readable documents, the same as the runtime when it detects the type.
-  const type = mediaType.toLowerCase().split(";")[0].trim();
+  const type = baseMediaType(mediaType);
   return type === "application/xml" || type.endsWith("+xml") ? "text" : "blob";
 }
 
@@ -280,14 +280,18 @@ ${docComment({ description: "You can pass arbitrary values through the `meta` ob
   return `${HEADER}\n${imports.join("\n")}\n\n${optionsType}\n\n${blocks.join("\n\n")}\n`;
 }
 
+/** The option that holds the base URL, spelled the way each client does. */
+export function baseUrlKey(kind: ClientKind): string {
+  return kind === "axios" ? "baseURL" : "baseUrl";
+}
+
 export function emitClientFile(options: {
   kind: ClientKind;
   ext: string;
   baseUrl?: string;
 }): string {
-  const baseUrlKey = options.kind === "axios" ? "baseURL" : "baseUrl";
   const config = options.baseUrl
-    ? `{ ${baseUrlKey}: ${q(options.baseUrl)} }`
+    ? `{ ${baseUrlKey(options.kind)}: ${q(options.baseUrl)} }`
     : "";
   return `${HEADER}
 import {

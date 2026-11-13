@@ -1,3 +1,4 @@
+import type { PageParamTypeKind } from "../types.mjs";
 import {
   nameFromPath,
   toFunctionName,
@@ -5,7 +6,13 @@ import {
   uniqueName,
 } from "./naming.mjs";
 import { docComment, findReadWriteOnlyKeys } from "./schema.mjs";
-import { type Doc, getByPointer, type Json, resolveRef } from "./spec.mjs";
+import {
+  baseMediaType,
+  type Doc,
+  getByPointer,
+  type Json,
+  resolveRef,
+} from "./spec.mjs";
 
 /**
  * Type names a schema or an operation type cannot take: `ClientOptions` and
@@ -159,7 +166,7 @@ export function deref(doc: Doc, node: Json, depth = 0): Json {
 }
 
 export function mediaKind(mediaType: string): BodyKind {
-  const type = mediaType.toLowerCase().split(";")[0].trim();
+  const type = baseMediaType(mediaType);
   if (type === "application/json" || type.endsWith("+json")) return "json";
   if (type === "multipart/form-data") return "form-data";
   if (type === "application/x-www-form-urlencoded") return "urlencoded";
@@ -446,10 +453,7 @@ export function classifyResponses(operation: OperationIR): {
 }
 
 /** Resolve a schema (following `$ref` chains) down to its leading primitive. */
-export function schemaPrimitiveKind(
-  doc: Doc,
-  node: Json,
-): "string" | "number" | "other" {
+export function schemaPrimitiveKind(doc: Doc, node: Json): PageParamTypeKind {
   const schema = resolveRef(doc, node);
   if (!schema || typeof schema !== "object") return "other";
   const alternatives: Json[] | undefined =

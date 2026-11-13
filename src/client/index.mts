@@ -99,6 +99,13 @@ function toOperationInfo(
             parameter.in === "query" && parameter.name === pageParam,
         )
       : undefined;
+  const pageParamModels = new Set<string>();
+  const pageParamType = pageParameter
+    ? renderSchema(pageParameter.schema, {
+        ...ctx,
+        onRef: (name) => pageParamModels.add(name),
+      })
+    : undefined;
 
   return {
     methodName: operation.functionName,
@@ -111,9 +118,8 @@ function toOperationInfo(
     jsDoc: operation.jsDoc,
     allParamsOptional: optionsAreOptional(operation),
     isPaginatable: pageParameter !== undefined,
-    pageParamType: pageParameter
-      ? renderSchema(pageParameter.schema, ctx)
-      : undefined,
+    pageParamType,
+    pageParamModels: pageParameter ? [...pageParamModels] : undefined,
     pageParamTypeKind: pageParameter
       ? schemaPrimitiveKind(ctx.doc, pageParameter.schema)
       : undefined,
@@ -142,9 +148,11 @@ export async function generateClient(
   });
 
   const ext = options.importExtension;
-  const types = emitTypes(doc, operations, ctx, {
+  const baseUrl = getBaseUrl(doc);
+  const types = emitTypes(operations, ctx, {
     enums: options.enums,
     clientKind: options.client,
+    baseUrl,
   });
 
   const transformers = options.useDateType
@@ -174,7 +182,7 @@ export async function generateClient(
       content: emitClientFile({
         kind: options.client,
         ext,
-        baseUrl: getBaseUrl(doc),
+        baseUrl,
       }),
     },
     { name: "runtime.gen.ts", content: await readRuntime(options.client) },

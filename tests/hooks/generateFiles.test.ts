@@ -25,14 +25,6 @@ const mutation: OperationInfo = {
 
 const ctx: GenerationContext = {
   client: "fetch",
-  modelNames: [
-    "Pet",
-    "NewPet",
-    "FindPetsData",
-    "FindPetsError",
-    "ResponseData",
-  ],
-  serviceNames: ["findPets", "response"],
   pageParam: "page",
   nextPageParam: "nextPage",
   initialPageParam: "1",
@@ -68,13 +60,15 @@ describe("generateAllFiles", () => {
     ]);
   });
 
-  it("should not import a model for a name in a JSDoc", () => {
-    for (const file of files) {
-      const models = importsOf([file], file.name)?.find((line) =>
-        line.includes("types.gen"),
-      );
-      expect(models ?? "").not.toMatch(/\b(Pet|NewPet)\b/);
-    }
+  it("should import only the models a statement declares", () => {
+    // ensureQueryData.ts names the Data type but not the Error type.
+    expect(importsOf(files, "ensureQueryData.ts")).toContain(
+      'import type { FindPetsData } from "../requests/types.gen";',
+    );
+    // common.ts names the Data type of a query (in its key function) only.
+    expect(importsOf(files, "common.ts")).toContain(
+      'import type { FindPetsData } from "../requests/types.gen";',
+    );
   });
 
   it("should leave a file with nothing to export as a bare import", () => {
@@ -100,26 +94,36 @@ describe("generateAllFiles", () => {
     );
   });
 
-  // A page parameter or a next-page path may be spelled like a schema.
-  it("should not import a model for the key of a pagination property", () => {
-    const paginated = generateAllFiles([{ ...query, isPaginatable: true }], {
-      ...ctx,
-      modelNames: [...ctx.modelNames, "Page", "Meta", "NextPage"],
-      pageParam: "Page",
-      nextPageParam: "Meta.NextPage",
-    });
-    for (const name of [
-      "queryOptions.ts",
-      "suspense.ts",
-      "infiniteQueries.ts",
-      "prefetch.ts",
+  // The page parameter's type is text from the specification: its keys and
+  // its comments can spell anything, and only what it refers to is imported.
+  it("should import the models of the page type, not what its text spells", () => {
+    const paginated = generateAllFiles(
+      [
+        {
+          ...query,
+          isPaginatable: true,
+          pageParamType:
+            "{\n  /**\n   * A Page token, see QueryClient.\n   */\n  Size?: number;\n  Cursor?: Cursor;\n}",
+          pageParamModels: ["Cursor"],
+        },
+      ],
+      { ...ctx, pageParam: "Page", nextPageParam: "Meta.NextPage" },
+    );
+    for (const [name, models] of [
+      ["queryOptions.ts", "Cursor, FindPetsData"],
+      ["suspense.ts", "Cursor, FindPetsData, FindPetsError"],
+      ["infiniteQueries.ts", "Cursor, FindPetsData, FindPetsError"],
+      ["prefetch.ts", "Cursor, FindPetsData"],
     ]) {
       const content = paginated.find((file) => file.name === name)?.content;
-      expect(content).toContain("Page: pageParam as number");
-      expect(content).toContain("{ Meta: { NextPage: number } }");
-      expect(
-        importsOf(paginated, name)?.find((line) => line.includes("types.gen")),
-      ).toMatch(/^import type \{ FindPetsData(, FindPetsError)? \} from/);
+      expect(content).toContain("Page: pageParam as {");
+      expect(importsOf(paginated, name)).toContain(
+        `import type { ${models} } from "../requests/types.gen";`,
+      );
     }
+    // Nothing in the paginated code calls for `QueryClient` except prefetch.
+    expect(importsOf(paginated, "infiniteQueries.ts")?.[0]).toBe(
+      'import { type InfiniteData, useInfiniteQuery, type UseInfiniteQueryOptions } from "@tanstack/react-query";',
+    );
   });
 });

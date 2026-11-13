@@ -9,10 +9,9 @@ import {
   buildInfiniteClientOptionsType,
   buildInfiniteQueryKeyConst,
   buildInfiniteQueryKeyFn,
-  buildMutationKeyConst,
+  buildKeyConst,
   buildMutationKeyFn,
   buildMutationResultType,
-  buildQueryKeyConst,
   buildQueryKeyFn,
   buildQueryResultType,
 } from "./buildCommon.mjs";
@@ -30,64 +29,36 @@ import {
   buildInfiniteQueryOptionsFn,
   buildQueryOptionsFn,
 } from "./buildQueryOptions.mjs";
+import { buildFileImports, printImports, relativeModule } from "./imports.mjs";
 import {
-  buildCommonFileImports,
-  buildHookFileImports,
-  buildQueryOptionsFileImports,
-  type ImportDeclaration,
-  printImports,
-  relativeModule,
-} from "./imports.mjs";
-import {
-  type ConstStatement,
   printStatements,
   referencedNames,
   type Statement,
   statementCode,
 } from "./statement.mjs";
 
-/**
- * Build one variable statement per operation, skipping the ones the builder
- * declines. A builder returns null when the operation is out of its scope —
- * every infinite-query builder returns null for non-paginatable operations,
- * which is how the paginatable subset gets selected.
- */
-function collectStatements(
-  operations: OperationInfo[],
-  build: (op: OperationInfo) => ConstStatement | null,
-): ConstStatement[] {
-  const statements: ConstStatement[] = [];
-  for (const op of operations) {
-    const statement = build(op);
-    if (statement) {
-      statements.push(statement);
-    }
-  }
-  return statements;
+/** The distinct values of a list, in order of first appearance. */
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 /**
  * The content of a generated file: the imports its statements need, then the
- * statements. Only the services of the operations the file covers and the
- * models its code mentions are imported.
+ * statements.
  */
-function createFile(
-  ctx: GenerationContext,
-  buildImports: (ctx: GenerationContext) => ImportDeclaration[],
-  operations: OperationInfo[],
-  statements: Statement[],
-): string {
+function createFile(ctx: GenerationContext, statements: Statement[]): string {
   if (statements.length === 0) {
     // Nothing to export. The bare import keeps the file a module.
     return `import "${relativeModule("../requests/sdk.gen", ctx)}";\n`;
   }
-  const used = referencedNames(statements.map(statementCode).join("\n"));
-  const imports = buildImports({
-    ...ctx,
-    modelNames: ctx.modelNames.filter((model) => used.has(model)),
-    serviceNames: operations.map((op) => op.methodName),
+  const imports = buildFileImports(ctx, {
+    services: unique(
+      statements.flatMap((statement) => statement.service ?? []),
+    ),
+    models: unique(statements.flatMap((statement) => statement.models ?? [])),
+    mentioned: referencedNames(statements.map(statementCode).join("\n")),
   });
-  return `${printImports(imports, used)}\n${printStatements(statements)}`;
+  return `${printImports(imports)}\n${printStatements(statements)}`;
 }
 
 /**
@@ -105,6 +76,7 @@ function indexFile(ctx: GenerationContext): string {
 
 function commonStatements(
   queries: OperationInfo[],
+  paginated: OperationInfo[],
   mutations: OperationInfo[],
   ctx: GenerationContext,
 ): Statement[] {
@@ -113,12 +85,12 @@ function commonStatements(
     statements.push(
       buildDefaultResponseType(op),
       buildQueryResultType(op),
-      buildQueryKeyConst(op),
+      buildKeyConst(op),
       buildQueryKeyFn(op),
     );
   }
   // Dedicated infinite query types and keys for paginatable operations
-  for (const op of queries.filter((query) => query.isPaginatable)) {
+  for (const op of paginated) {
     statements.push(
       buildInfiniteClientOptionsType(op, ctx),
       buildInfiniteQueryKeyConst(op),
@@ -128,7 +100,7 @@ function commonStatements(
   for (const op of mutations) {
     statements.push(
       buildMutationResultType(op),
-      buildMutationKeyConst(op),
+      buildKeyConst(op),
       buildMutationKeyFn(op),
     );
   }
@@ -156,26 +128,14 @@ export function generateAllFiles(
   );
 
   const paginated = queries.filter((op) => op.isPaginatable);
-  const all = [...queries, ...mutations];
 
-  const files: Array<
-    [
-      name: string,
-      imports: (ctx: GenerationContext) => ImportDeclaration[],
-      operations: OperationInfo[],
-      statements: Statement[],
-    ]
-  > = [
+  const files: Array<[name: string, statements: Statement[]]> = [
     [
       OpenApiRqFiles.common,
-      buildCommonFileImports,
-      all,
-      commonStatements(queries, mutations, ctx),
+      commonStatements(queries, paginated, mutations, ctx),
     ],
     [
       OpenApiRqFiles.queries,
-      buildHookFileImports,
-      all,
       [
         ...queries.map((op) => buildUseQueryHook(op, ctx)),
         ...mutations.map((op) => buildUseMutationHook(op, ctx)),
@@ -183,47 +143,31 @@ export function generateAllFiles(
     ],
     [
       OpenApiRqFiles.queryOptions,
-      buildQueryOptionsFileImports,
-      queries,
       [
         ...queries.map((op) => buildQueryOptionsFn(op)),
-        ...collectStatements(queries, (op) =>
-          buildInfiniteQueryOptionsFn(op, ctx),
-        ),
+        ...paginated.map((op) => buildInfiniteQueryOptionsFn(op, ctx)),
       ],
     ],
     [
       OpenApiRqFiles.suspense,
-      buildHookFileImports,
-      queries,
       [
         ...queries.map((op) => buildUseSuspenseQueryHook(op, ctx)),
-        ...collectStatements(queries, (op) =>
-          buildUseSuspenseInfiniteQueryHook(op, ctx),
-        ),
+        ...paginated.map((op) => buildUseSuspenseInfiniteQueryHook(op, ctx)),
       ],
     ],
     [
       OpenApiRqFiles.infiniteQueries,
-      buildHookFileImports,
-      paginated,
-      collectStatements(queries, (op) => buildUseInfiniteQueryHook(op, ctx)),
+      paginated.map((op) => buildUseInfiniteQueryHook(op, ctx)),
     ],
     [
       OpenApiRqFiles.prefetch,
-      buildHookFileImports,
-      queries,
       [
         ...queries.map((op) => buildPrefetchFn(op)),
-        ...collectStatements(queries, (op) =>
-          buildPrefetchInfiniteQueryFn(op, ctx),
-        ),
+        ...paginated.map((op) => buildPrefetchInfiniteQueryFn(op, ctx)),
       ],
     ],
     [
       OpenApiRqFiles.ensureQueryData,
-      buildHookFileImports,
-      queries,
       queries.map((op) => buildEnsureQueryDataFn(op)),
     ],
   ];
@@ -233,12 +177,9 @@ export function generateAllFiles(
       name: `${OpenApiRqFiles.index}.ts`,
       content: addHeaderComment(indexFile(ctx), ctx.version),
     },
-    ...files.map(([name, imports, operations, statements]) => ({
+    ...files.map(([name, statements]) => ({
       name: `${name}.ts`,
-      content: addHeaderComment(
-        createFile(ctx, imports, operations, statements),
-        ctx.version,
-      ),
+      content: addHeaderComment(createFile(ctx, statements), ctx.version),
     })),
   ];
 }

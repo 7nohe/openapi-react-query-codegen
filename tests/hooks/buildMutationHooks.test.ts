@@ -41,15 +41,6 @@ const mockPatchOperation: OperationInfo = {
 
 const mockFetchContext: GenerationContext = {
   client: "fetch",
-  modelNames: [
-    "Pet",
-    "NewPet",
-    "AddPetError",
-    "DeletePetError",
-    "UpdatePetError",
-    "PatchPetError",
-  ],
-  serviceNames: ["addPet", "deletePet", "updatePet", "patchPet"],
   pageParam: "page",
   nextPageParam: "nextPage",
   initialPageParam: "1",
@@ -183,12 +174,7 @@ describe("buildMutationHooks", () => {
         dataTypeName: "CreateThingData",
         errorTypeName: "CreateThingError",
       };
-      const ctx: GenerationContext = {
-        ...mockFetchContext,
-        modelNames: [...mockFetchContext.modelNames, "CreateThingError"],
-      };
-
-      const result = buildUseMutationHook(op, ctx);
+      const result = buildUseMutationHook(op, mockFetchContext);
       const initializer = result.initializer as string;
 
       expect(initializer).toContain("Options<CreateThingData, true>");

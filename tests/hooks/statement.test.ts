@@ -106,6 +106,13 @@ describe("referencedNames", () => {
     expect(names).toEqual(new Set(["Omit", "A", "const", "k"]));
   });
 
+  it("should skip what stands in a comment", () => {
+    const names = referencedNames(
+      "a as {\n  /**\n   * A Page, see QueryClient.\n   */\n  size?: B; // not C\n  next: D;\n}",
+    );
+    expect(names).toEqual(new Set(["a", "as", "B", "D"]));
+  });
+
   it("should skip the name after the dot of a member access", () => {
     const names = referencedNames(
       "Common.UseFindPetsKeyFn(a).then(response => response.data)?.next",

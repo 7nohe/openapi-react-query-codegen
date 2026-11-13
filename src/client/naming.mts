@@ -78,6 +78,7 @@ const RESERVED_FUNCTION_NAMES = new Set([
   "queryKey",
   "queryOptions",
   "signal",
+  "undefined",
   "useInfiniteQuery",
   "useMutation",
   "useQuery",

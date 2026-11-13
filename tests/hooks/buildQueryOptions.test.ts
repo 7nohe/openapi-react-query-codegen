@@ -42,8 +42,6 @@ const mockRequiredParamsOperation: OperationInfo = {
 
 const mockContext: GenerationContext = {
   client: "fetch",
-  modelNames: ["Pet"],
-  serviceNames: ["findPets", "findPaginatedPets", "findPetById"],
   pageParam: "page",
   nextPageParam: "nextPage",
   initialPageParam: "1",
@@ -94,12 +92,6 @@ describe("buildQueryOptions", () => {
   });
 
   describe("buildInfiniteQueryOptionsFn", () => {
-    it("should return null for non-paginatable operations", () => {
-      expect(buildInfiniteQueryOptionsFn(mockOperation, mockContext)).toBe(
-        null,
-      );
-    });
-
     it("should build an infiniteQueryOptions factory with the dedicated infinite key", () => {
       const result = buildInfiniteQueryOptionsFn(
         mockPaginatableOperation,

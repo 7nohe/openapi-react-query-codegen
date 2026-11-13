@@ -1,6 +1,12 @@
 import { isValidIdentifier, propertyKey } from "../client/naming.mjs";
 import type { GenerationContext, OperationInfo } from "../types.mjs";
-import { getDataTypeName, getErrorType } from "./operationNames.mjs";
+import {
+  dataModels,
+  errorModels,
+  getDataTypeName,
+  getErrorType,
+  operationConst,
+} from "./operationNames.mjs";
 import type { ConstStatement } from "./statement.mjs";
 
 /**
@@ -46,6 +52,14 @@ export function buildInfiniteClientOptionsParam(op: OperationInfo): string {
  */
 export function getPageType(op: OperationInfo): string {
   return `NonNullable<Common.${op.capitalizedMethodName}DefaultResponse>`;
+}
+
+/**
+ * The models a paginated query names: the Data type in `buildPagedQueryFn`,
+ * and whatever the page parameter's type refers to.
+ */
+export function pagedModels(op: OperationInfo): string[] {
+  return [...dataModels(op), ...(op.pageParamModels ?? [])];
 }
 
 /**
@@ -183,13 +197,12 @@ export function buildUseQueryHook(
 
   const body = `useQuery<TData, TError>({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: hookName,
-    initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => ${body}`,
-  };
+  return operationConst(
+    op,
+    hookName,
+    `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => ${body}`,
+    [...dataModels(op), ...errorModels(op)],
+  );
 }
 
 /**
@@ -208,13 +221,12 @@ export function buildUseSuspenseQueryHook(
 
   const body = `useSuspenseQuery<TData, TError>({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: hookName,
-    initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => ${body}`,
-  };
+  return operationConst(
+    op,
+    hookName,
+    `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${clientOptionsParam}, queryKey?: TQueryKey, options?: Omit<UseSuspenseQueryOptions<TData, TError>, "queryKey" | "queryFn">) => ${body}`,
+    [...dataModels(op), ...errorModels(op)],
+  );
 }
 
 /**
@@ -227,11 +239,7 @@ function buildInfiniteHook(
   op: OperationInfo,
   ctx: GenerationContext,
   suspense: boolean,
-): ConstStatement | null {
-  if (!op.isPaginatable) {
-    return null;
-  }
-
+): ConstStatement {
   const hookCall = suspense ? "useSuspenseInfiniteQuery" : "useInfiniteQuery";
   const optionsTypeName = suspense
     ? "UseSuspenseInfiniteQueryOptions"
@@ -251,13 +259,12 @@ function buildInfiniteHook(
 
   const body = `${hookCall}({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: hookName,
-    initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${buildInfiniteClientOptionsParam(op)}, queryKey?: TQueryKey, options?: ${buildOverridableInfiniteOptionsType(optionsTypeName, getPageType(op))}) => ${body}`,
-  };
+  return operationConst(
+    op,
+    hookName,
+    `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[]>(${buildInfiniteClientOptionsParam(op)}, queryKey?: TQueryKey, options?: ${buildOverridableInfiniteOptionsType(optionsTypeName, getPageType(op))}) => ${body}`,
+    [...pagedModels(op), ...errorModels(op)],
+  );
 }
 
 /**
@@ -266,7 +273,7 @@ function buildInfiniteHook(
 export function buildUseInfiniteQueryHook(
   op: OperationInfo,
   ctx: GenerationContext,
-): ConstStatement | null {
+): ConstStatement {
   return buildInfiniteHook(op, ctx, false);
 }
 
@@ -276,7 +283,7 @@ export function buildUseInfiniteQueryHook(
 export function buildUseSuspenseInfiniteQueryHook(
   op: OperationInfo,
   ctx: GenerationContext,
-): ConstStatement | null {
+): ConstStatement {
   return buildInfiniteHook(op, ctx, true);
 }
 
@@ -298,13 +305,12 @@ export function buildPrefetchFn(op: OperationInfo): ConstStatement {
   const optionsParam = `options?: Omit<FetchQueryOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn">`;
   const body = `queryClient.prefetchQuery({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions), queryFn: ${queryFn}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: fnName,
-    initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
-  };
+  return operationConst(
+    op,
+    fnName,
+    `(queryClient: QueryClient, ${buildClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
+    dataModels(op),
+  );
 }
 
 /**
@@ -322,11 +328,7 @@ export function buildPrefetchFn(op: OperationInfo): ConstStatement {
 export function buildPrefetchInfiniteQueryFn(
   op: OperationInfo,
   ctx: GenerationContext,
-): ConstStatement | null {
-  if (!op.isPaginatable) {
-    return null;
-  }
-
+): ConstStatement {
   const fnName = `prefetchUse${op.capitalizedMethodName}Infinite`;
 
   const queryFn = buildPagedQueryFn(op, ctx);
@@ -343,13 +345,12 @@ export function buildPrefetchInfiniteQueryFn(
   const optionsParam = `options?: Omit<${instantiated}, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & ${overrides}`;
   const body = `queryClient.prefetchInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: fnName,
-    initializer: `(queryClient: QueryClient, ${buildInfiniteClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
-  };
+  return operationConst(
+    op,
+    fnName,
+    `(queryClient: QueryClient, ${buildInfiniteClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
+    pagedModels(op),
+  );
 }
 
 /**
@@ -370,11 +371,10 @@ export function buildEnsureQueryDataFn(op: OperationInfo): ConstStatement {
   const optionsParam = `options?: Omit<EnsureQueryDataOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn">`;
   const body = `queryClient.ensureQueryData({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions), queryFn: ${queryFn}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: fnName,
-    initializer: `(queryClient: QueryClient, ${buildClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
-  };
+  return operationConst(
+    op,
+    fnName,
+    `(queryClient: QueryClient, ${buildClientOptionsParam(op)}, ${optionsParam}) => ${body}`,
+    dataModels(op),
+  );
 }

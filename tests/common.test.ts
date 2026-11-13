@@ -3,7 +3,6 @@ import type { LimitedUserConfig } from "../src/cli.mts";
 import {
   buildQueriesOutputPath,
   buildRequestsOutputPath,
-  exists,
   formatOptions,
   safeParseNumber,
 } from "../src/common.mts";
@@ -157,18 +156,6 @@ describe("common", () => {
     const formatted = formatOptions(options);
 
     expect(formatted.debug).toStrictEqual(false);
-  });
-
-  test("exists - file exists", async () => {
-    const f = "tests/common.test.ts";
-    const result = await exists(f);
-    expect(result).toBe(true);
-  });
-
-  test("exists - file does not exist", async () => {
-    const f = "tests/nonexistent.test.ts";
-    const result = await exists(f);
-    expect(result).toBe(false);
   });
 
   test("buildRequestsOutputPath", async () => {

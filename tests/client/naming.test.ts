@@ -117,6 +117,7 @@ describe("naming", () => {
 
   test("toFunctionName falls back and avoids reserved words", () => {
     expect(toFunctionName("delete")).toBe("delete_");
+    expect(toFunctionName("undefined")).toBe("undefined_");
     expect(toFunctionName("***")).toBe("operation");
     expect(toFunctionName("addPet")).toBe("addPet");
   });

@@ -1,5 +1,6 @@
 import type { GenerationContext, OperationInfo } from "../types.mjs";
-import { getDataTypeName } from "./operationNames.mjs";
+import { buildClientOptionsParam } from "./buildQueryHooks.mjs";
+import { dataModels, getDataTypeName } from "./operationNames.mjs";
 import type { ConstStatement, TypeStatement } from "./statement.mjs";
 
 /**
@@ -11,6 +12,7 @@ export function buildDefaultResponseType(op: OperationInfo): TypeStatement {
     kind: "type",
     name: `${op.capitalizedMethodName}DefaultResponse`,
     type: `Awaited<ReturnType<typeof ${op.methodName}>>["data"]`,
+    service: op.methodName,
   };
 }
 
@@ -39,26 +41,15 @@ export function buildMutationResultType(op: OperationInfo): TypeStatement {
     kind: "type",
     name: `${op.capitalizedMethodName}MutationResult`,
     type: `Awaited<ReturnType<typeof ${op.methodName}>>`,
+    service: op.methodName,
   };
 }
 
 /**
- * Build query key constant.
+ * Build the key constant of a query or a mutation.
  * Example: export const useFindPetsKey = "FindPets";
  */
-export function buildQueryKeyConst(op: OperationInfo): ConstStatement {
-  return {
-    kind: "const",
-    name: `use${op.capitalizedMethodName}Key`,
-    initializer: `"${op.capitalizedMethodName}"`,
-  };
-}
-
-/**
- * Build mutation key constant.
- * Example: export const useAddPetKey = "AddPet";
- */
-export function buildMutationKeyConst(op: OperationInfo): ConstStatement {
+export function buildKeyConst(op: OperationInfo): ConstStatement {
   return {
     kind: "const",
     name: `use${op.capitalizedMethodName}Key`,
@@ -72,19 +63,11 @@ export function buildMutationKeyConst(op: OperationInfo): ConstStatement {
  *   [useFindPetsKey, ...(queryKey ?? [clientOptions])];
  */
 export function buildQueryKeyFn(op: OperationInfo): ConstStatement {
-  const dataTypeName = getDataTypeName(op);
-
-  const params: string[] = [];
-  const defaultValue = op.allParamsOptional ? " = {}" : "";
-  params.push(`clientOptions: Options<${dataTypeName}, true>${defaultValue}`);
-  params.push("queryKey?: Array<unknown>");
-
-  const fallbackArray = "[clientOptions]";
-
   return {
     kind: "const",
     name: `Use${op.capitalizedMethodName}KeyFn`,
-    initializer: `(${params.join(", ")}) => [use${op.capitalizedMethodName}Key, ...(queryKey ?? ${fallbackArray})]`,
+    initializer: `(${buildClientOptionsParam(op)}, queryKey?: Array<unknown>) => [use${op.capitalizedMethodName}Key, ...(queryKey ?? [clientOptions])]`,
+    models: dataModels(op),
   };
 }
 
@@ -120,6 +103,7 @@ export function buildInfiniteClientOptionsType(
     kind: "type",
     name: `${op.capitalizedMethodName}InfiniteClientOptions`,
     type,
+    models: dataModels(op),
   };
 }
 

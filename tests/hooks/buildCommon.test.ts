@@ -4,10 +4,9 @@ import {
   buildInfiniteClientOptionsType,
   buildInfiniteQueryKeyConst,
   buildInfiniteQueryKeyFn,
-  buildMutationKeyConst,
+  buildKeyConst,
   buildMutationKeyFn,
   buildMutationResultType,
-  buildQueryKeyConst,
   buildQueryKeyFn,
   buildQueryResultType,
 } from "../../src/hooks/buildCommon.mjs";
@@ -42,8 +41,6 @@ const mockPaginatableOperation: OperationInfo = {
 
 const mockContext: GenerationContext = {
   client: "fetch",
-  modelNames: ["Pet", "NewPet"],
-  serviceNames: ["findPets", "addPet"],
   pageParam: "page",
   nextPageParam: "nextPage",
   initialPageParam: "1",
@@ -102,21 +99,18 @@ describe("buildCommon", () => {
     });
   });
 
-  describe("buildQueryKeyConst", () => {
-    it("should build query key constant", () => {
-      const result = buildQueryKeyConst(mockOperation);
+  describe("buildKeyConst", () => {
+    it("should build the key constant of a query", () => {
+      const result = buildKeyConst(mockOperation);
 
       expect(result.kind).toBe("const");
       expect(result.name).toBe("useFindPetsKey");
       expect(result.initializer).toBe('"FindPets"');
     });
-  });
 
-  describe("buildMutationKeyConst", () => {
-    it("should build mutation key constant", () => {
-      const result = buildMutationKeyConst(mockMutationOperation);
+    it("should build the key constant of a mutation", () => {
+      const result = buildKeyConst(mockMutationOperation);
 
-      expect(result.kind).toBe("const");
       expect(result.name).toBe("useAddPetKey");
       expect(result.initializer).toBe('"AddPet"');
     });

@@ -1,7 +1,7 @@
 import { HEADER } from "./emitSdk.mjs";
 import { propertyKey, uniqueName } from "./naming.mjs";
 import { componentSchemaKey, hasFlag, type SchemaCtx } from "./schema.mjs";
-import type { Json } from "./spec.mjs";
+import { COMPONENT_SCHEMA_PREFIX, type Json } from "./spec.mjs";
 
 /** `form` leaves out what only documents a schema, for use in form libraries. */
 export type SchemasMode = "json" | "form";
@@ -48,7 +48,7 @@ function project(schema: Json, ctx: SchemaCtx, variant: Variant): Json {
       const renamed = key === undefined ? undefined : variant.renamed.get(key);
       entries.push([
         keyword,
-        renamed === undefined ? value : `#/components/schemas/${renamed}`,
+        renamed === undefined ? value : `${COMPONENT_SCHEMA_PREFIX}${renamed}`,
       ]);
     } else if (SCHEMA_KEYWORDS.includes(keyword)) {
       entries.push([keyword, project(value, ctx, variant)]);
@@ -81,16 +81,18 @@ function project(schema: Json, ctx: SchemaCtx, variant: Variant): Json {
       entries.push([keyword, value]);
     }
   }
-  return Object.fromEntries(
-    entries.flatMap(([keyword, value]): Array<[string, Json]> => {
-      if (keyword !== "required" || removed.size === 0) {
-        return [[keyword, value]];
-      }
-      if (!Array.isArray(value)) return [[keyword, value]];
-      const required = value.filter((name: string) => !removed.has(name));
-      return required.length > 0 ? [[keyword, required]] : [];
-    }),
-  );
+  const projected = Object.fromEntries(entries);
+  if (removed.size > 0 && Array.isArray(projected.required)) {
+    const required = projected.required.filter(
+      (name: string) => !removed.has(name),
+    );
+    if (required.length > 0) {
+      projected.required = required;
+    } else {
+      delete projected.required;
+    }
+  }
+  return projected;
 }
 
 function literal(value: Json, indent = ""): string {

@@ -1,13 +1,14 @@
 import { propertyKey, toTypeName } from "./naming.mjs";
 import {
+  baseMediaType,
+  COMPONENT_SCHEMA_PREFIX,
   type Doc,
+  decodePointerSegment,
   getByPointer,
   type Json,
   refSiblingSchema,
   resolveRef,
 } from "./spec.mjs";
-
-const COMPONENT_SCHEMA_PREFIX = "#/components/schemas/";
 
 export interface SchemaCtx {
   doc: Doc;
@@ -23,6 +24,8 @@ export interface SchemaCtx {
   writableNames?: Map<string, string>;
   /** Type `date` and `date-time` strings as `Date` (`--useDateType`). */
   dates?: boolean;
+  /** Called with the name of every component type the rendered type refers to. */
+  onRef?: (typeName: string) => void;
 }
 
 /** Name of the type generated for `#/components/schemas/<key>`, if any. */
@@ -30,7 +33,7 @@ export function componentSchemaKey(ref: string): string | undefined {
   if (!ref.startsWith(COMPONENT_SCHEMA_PREFIX)) return undefined;
   const rest = ref.slice(COMPONENT_SCHEMA_PREFIX.length);
   if (rest.includes("/")) return undefined;
-  return decodeURIComponent(rest).replaceAll("~1", "/").replaceAll("~0", "~");
+  return decodePointerSegment(rest);
 }
 
 /** Whether a discriminator mapping target, a `$ref` or a name, is the schema. */
@@ -43,6 +46,26 @@ function isMappingTarget(target: string, key: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * The discriminator values that stand for the schema `key`: the mapping
+ * entries whose target it is, or else its own name. Where the schema pins the
+ * property to literals of its own, only those remain.
+ */
+function valuesNaming(
+  discriminator: Json,
+  key: string,
+  pinned: unknown[] | undefined,
+  isTarget: (target: string) => boolean,
+): string[] {
+  const mapped = Object.entries(
+    (discriminator.mapping ?? {}) as Record<string, string>,
+  )
+    .filter(([, target]) => isTarget(target))
+    .map(([value]) => value);
+  const named = mapped.length > 0 ? mapped : [key];
+  return pinned ? named.filter((value) => pinned.includes(value)) : named;
 }
 
 /** Render a JSDoc block, or an empty string when there is nothing to say. */
@@ -213,15 +236,9 @@ export function renderComponentSchema(
 
   const property: string = discriminator.propertyName;
   const pinned = pinnedValues(schema, property, ctx);
-  const mapped = Object.entries(
-    (discriminator.mapping ?? {}) as Record<string, string>,
-  )
-    .filter(([, target]) => isMappingTarget(target, key))
-    .map(([value]) => value);
-  const named = mapped.length > 0 ? mapped : [key];
-  const allowed = pinned
-    ? named.filter((value) => pinned.includes(value))
-    : named;
+  const allowed = valuesNaming(discriminator, key, pinned, (target) =>
+    isMappingTarget(target, key),
+  );
   if (allowed.length === 0 || pinned?.length === 1)
     return renderSchema(schema, ctx);
 
@@ -401,7 +418,7 @@ function hasBinaryContent(schema: Json): boolean {
   return (
     typeof mediaType === "string" &&
     schema.contentEncoding === undefined &&
-    !TEXT_MEDIA_TYPE.test(mediaType.toLowerCase().split(";")[0].trim())
+    !TEXT_MEDIA_TYPE.test(baseMediaType(mediaType))
   );
 }
 
@@ -530,8 +547,12 @@ function renderRef(
     const schemas = ctx.doc.components?.schemas ?? {};
     if (!Object.hasOwn(schemas, key) && !ctx.names.has(key)) return "unknown";
     const writable = ctx.writableNames?.get(key);
-    if (ctx.mode === "write" && writable !== undefined) return writable;
-    return ctx.names.get(key) ?? toTypeName(key);
+    const name =
+      ctx.mode === "write" && writable !== undefined
+        ? writable
+        : (ctx.names.get(key) ?? toTypeName(key));
+    ctx.onRef?.(name);
+    return name;
   }
   if (seen.has(ref)) return "unknown";
   return renderSchema(
@@ -587,21 +608,15 @@ function discriminatorChoice(
     return undefined;
   }
 
-  const values = Object.entries(
-    (discriminator.mapping ?? {}) as Record<string, string>,
-  )
-    .filter(
-      ([, target]) =>
-        isMappingTarget(target, key) || target.endsWith(`/${key}`),
-    )
-    .map(([value]) => value);
   // A member that pins the property keeps it, unless it inherits an enum of all
   // the subtypes, which the discriminator then narrows down.
   const pinned = pinnedValues(member, property, ctx);
-  const named = values.length > 0 ? values : [key];
-  const allowed = pinned
-    ? named.filter((value) => pinned.includes(value))
-    : named;
+  const allowed = valuesNaming(
+    discriminator,
+    key,
+    pinned,
+    (target) => isMappingTarget(target, key) || target.endsWith(`/${key}`),
+  );
   return { allowed, pinned };
 }
 

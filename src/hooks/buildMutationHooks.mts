@@ -1,6 +1,12 @@
 import type { GenerationContext, OperationInfo } from "../types.mjs";
 import { SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
-import { getDataTypeName, getErrorType } from "./operationNames.mjs";
+import {
+  dataModels,
+  errorModels,
+  getDataTypeName,
+  getErrorType,
+  operationConst,
+} from "./operationNames.mjs";
 import type { ConstStatement } from "./statement.mjs";
 
 /**
@@ -29,11 +35,10 @@ export function buildUseMutationHook(
 
   const body = `useMutation<TData, TError, ${optionsType}, TContext>({ mutationKey: Common.Use${op.capitalizedMethodName}KeyFn(mutationKey), mutationFn: ${mutationFn}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: hookName,
-    initializer: `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, ${optionsType}, TContext>, "mutationKey" | "mutationFn">) => ${body}`,
-  };
+  return operationConst(
+    op,
+    hookName,
+    `<TData = ${dataTypeDefault}, TError = ${errorType}, TQueryKey extends Array<unknown> = unknown[], TContext = unknown>(mutationKey?: TQueryKey, options?: Omit<UseMutationOptions<TData, TError, ${optionsType}, TContext>, "mutationKey" | "mutationFn">) => ${body}`,
+    [...dataModels(op), ...errorModels(op)],
+  );
 }

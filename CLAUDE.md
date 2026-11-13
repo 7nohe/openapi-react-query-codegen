@@ -41,7 +41,7 @@ npm run preview:tanstack-router
    - Calls `createSource()` to generate React Query hooks in `openapi/queries/`
 3. **Client Generator** (`src/client/`): `spec.mts` loads/bundles the document, `operations.mts` normalizes operations, `schema.mts` renders types, `emitTypes.mts` / `emitSdk.mts` write the files, and `runtime/*.runtime.ts` are the fetch/axios runtimes copied into the output
 4. **Hook Generators** (`src/hooks/`): `generateFiles.mts` routes operations by HTTP method (GET → queries, suspense, infinite, prefetch, ensure; POST/PUT/PATCH/DELETE → mutations) to the `build*.mts` builders, which return statements as strings; `statement.mts` and `imports.mts` print them and the imports each file needs
-5. **Print** (`src/print.mts`): Writes generated TypeScript to files
+5. **Write**: `writeGeneratedFiles()` (`src/client/index.mts`) writes both directories
 
 ### Generated Output Structure
 

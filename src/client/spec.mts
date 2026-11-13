@@ -127,15 +127,28 @@ export async function loadSpec(input: string): Promise<LoadedSpec> {
   return { doc: parseText(input, "inline content"), location: undefined };
 }
 
+/** A media type without its parameters, in lower case. */
+export function baseMediaType(mediaType: string): string {
+  return mediaType.toLowerCase().split(";")[0].trim();
+}
+
+/** Where the component schemas are, as the start of a `$ref`. */
+export const COMPONENT_SCHEMA_PREFIX = "#/components/schemas/";
+
+/** One segment of a JSON pointer in a `$ref`, as the key it stands for. */
+export function decodePointerSegment(segment: string): string {
+  return decodeURIComponent(segment)
+    .replaceAll("~1", "/")
+    .replaceAll("~0", "~");
+}
+
 /** Resolve a JSON pointer such as `#/components/schemas/Pet`. */
 export function getByPointer(root: Json, pointer: string): Json {
   const clean = pointer.startsWith("#") ? pointer.slice(1) : pointer;
   if (clean === "" || clean === "/") return root;
   let current = root;
   for (const rawSegment of clean.replace(/^\//, "").split("/")) {
-    const segment = decodeURIComponent(rawSegment)
-      .replaceAll("~1", "/")
-      .replaceAll("~0", "~");
+    const segment = decodePointerSegment(rawSegment);
     if (current === null || typeof current !== "object") return undefined;
     current = current[segment];
   }
@@ -281,7 +294,7 @@ function externalSchemaName(location: string, pointer: string): string {
 
 function componentSchemaRef(name: string): string {
   const segment = name.replaceAll("~", "~0").replaceAll("/", "~1");
-  return `#/components/schemas/${encodeURIComponent(segment)}`;
+  return `${COMPONENT_SCHEMA_PREFIX}${encodeURIComponent(segment)}`;
 }
 
 /**
@@ -451,7 +464,7 @@ export async function bundleExternalRefs(loaded: LoadedSpec): Promise<Doc> {
         name =
           hoisted.get(located.key) ??
           hoisted.get(`${location}${componentSchemaRef(target)}`) ??
-          hoisted.get(`${location}#/components/schemas/${target}`);
+          hoisted.get(`${location}${COMPONENT_SCHEMA_PREFIX}${target}`);
       } catch {
         // Not a reference that can be resolved, so a schema name.
       }

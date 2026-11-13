@@ -6,8 +6,10 @@ import {
   buildPagedQueryFn,
   formatInitialPageParam,
   getPageType,
+  pagedModels,
   QUERY_SDK_CALL_ARGS,
 } from "./buildQueryHooks.mjs";
+import { dataModels, operationConst } from "./operationNames.mjs";
 import type { ConstStatement } from "./statement.mjs";
 
 /**
@@ -29,13 +31,12 @@ export function buildQueryOptionsFn(op: OperationInfo): ConstStatement {
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data)`;
   const body = `queryOptions({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn} })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: fnName,
-    initializer: `(${clientOptionsParam}, queryKey?: Array<unknown>) => ${body}`,
-  };
+  return operationConst(
+    op,
+    fnName,
+    `(${clientOptionsParam}, queryKey?: Array<unknown>) => ${body}`,
+    dataModels(op),
+  );
 }
 
 /**
@@ -54,11 +55,7 @@ export function buildQueryOptionsFn(op: OperationInfo): ConstStatement {
 export function buildInfiniteQueryOptionsFn(
   op: OperationInfo,
   ctx: GenerationContext,
-): ConstStatement | null {
-  if (!op.isPaginatable) {
-    return null;
-  }
-
+): ConstStatement {
   const fnName = `${op.methodName}InfiniteOptions`;
 
   const queryFn = buildPagedQueryFn(op, ctx);
@@ -71,11 +68,10 @@ export function buildInfiniteQueryOptionsFn(
 
   const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
-  return {
-    kind: "const",
-    // The operation's JSDoc (description and @deprecated), as on the SDK function
-    jsDoc: op.jsDoc,
-    name: fnName,
-    initializer: `(${buildInfiniteClientOptionsParam(op)}, queryKey?: Array<unknown>, ${optionsParam}) => ${body}`,
-  };
+  return operationConst(
+    op,
+    fnName,
+    `(${buildInfiniteClientOptionsParam(op)}, queryKey?: Array<unknown>, ${optionsParam}) => ${body}`,
+    pagedModels(op),
+  );
 }

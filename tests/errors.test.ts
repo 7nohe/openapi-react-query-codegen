@@ -158,7 +158,8 @@ describe("generate errors", () => {
   });
 
   test("a failure after client generation is still a CodegenError", async () => {
-    // `queries` is a regular file, so writing the hooks fails with ENOTDIR.
+    // `queries` is a regular file, so the directory for the hooks cannot be
+    // created.
     const output = path.join("tests", "outputs-errors");
     await mkdir(output, { recursive: true });
     await writeFile(path.join(output, "queries"), "");
@@ -176,8 +177,7 @@ describe("generate errors", () => {
     expect(error).toBeInstanceOf(CodegenError);
     expect(error).toMatchObject({
       code: ErrorCodes.generationFailed,
-      // ENOTDIR on POSIX, ENOENT on Windows.
-      cause: { code: expect.stringMatching(/^E(NOTDIR|NOENT)$/) },
+      cause: { code: "EEXIST" },
     });
   });
 
