@@ -1,4 +1,4 @@
-import type { GenerationContext, OperationInfo } from "../types.mjs";
+import type { GenerationContext } from "../types.mjs";
 import {
   buildClientOptionsParam,
   buildGetNextPageParamExpr,
@@ -9,6 +9,7 @@ import {
   pagedModels,
   QUERY_SDK_CALL_ARGS,
 } from "./buildQueryHooks.mjs";
+import { type HookOperation, hookNames } from "./hookNames.mjs";
 import { dataModels, operationConst } from "./operationNames.mjs";
 import type { ConstStatement } from "./statement.mjs";
 
@@ -24,12 +25,12 @@ import type { ConstStatement } from "./statement.mjs";
  *     queryFn: () => findPets({ ...clientOptions, throwOnError: true }).then(response => response.data),
  *   });
  */
-export function buildQueryOptionsFn(op: OperationInfo): ConstStatement {
-  const fnName = `${op.methodName}Options`;
+export function buildQueryOptionsFn(op: HookOperation): ConstStatement {
+  const fnName = hookNames(op).options;
   const clientOptionsParam = buildClientOptionsParam(op);
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data)`;
-  const body = `queryOptions({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn} })`;
+  const body = `queryOptions({ queryKey: Common.${hookNames(op).keyFn}(clientOptions, queryKey), queryFn: ${queryFn} })`;
 
   return operationConst(
     op,
@@ -53,10 +54,10 @@ export function buildQueryOptionsFn(op: OperationInfo): ConstStatement {
  *   });
  */
 export function buildInfiniteQueryOptionsFn(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): ConstStatement {
-  const fnName = `${op.methodName}InfiniteOptions`;
+  const fnName = hookNames(op).infiniteOptions;
 
   const queryFn = buildPagedQueryFn(op, ctx);
   const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
@@ -66,7 +67,7 @@ export function buildInfiniteQueryOptionsFn(
   // (select, placeholderData, ...) would make that inference ambiguous (#203).
   const optionsParam = `options?: Partial<Pick<UseInfiniteQueryOptions<${getPageType(op)}>, "initialPageParam" | "getNextPageParam">>`;
 
-  const body = `infiniteQueryOptions({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
+  const body = `infiniteQueryOptions({ queryKey: Common.${hookNames(op).infiniteKeyFn}(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return operationConst(
     op,

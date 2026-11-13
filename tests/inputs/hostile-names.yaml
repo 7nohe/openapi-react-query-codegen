@@ -154,6 +154,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TError"
+  # Names the hooks derive from one operation, which another operation or an
+  # import of the hook files already has.
+  /w/a: { get: { operationId: getUser, responses: { "200": { description: ok } } } }
+  /w/b: { get: { operationId: getUserOptions, responses: { "200": { description: ok } } } }
+  /w/c:
+    get:
+      operationId: findPets
+      parameters:
+        - { name: page, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindPetsQueryResult"
+  /w/d: { get: { operationId: useFindPets, responses: { "200": { description: ok } } } }
+  /w/e: { get: { operationId: findPetsInfinite, responses: { "200": { description: ok } } } }
+  /w/f: { get: { operationId: findPetsSuspense, responses: { "200": { description: ok } } } }
+  /w/g: { get: { operationId: getApi, responses: { "200": { description: ok } } } }
+  /w/h: { get: { operationId: getApiKey, responses: { "200": { description: ok } } } }
+  /w/i: { get: { operationId: query, responses: { "200": { description: ok } } } }
+  /w/j: { post: { operationId: mutation, responses: { "200": { description: ok } } } }
+  /w/k: { get: { operationId: infiniteQuery, responses: { "200": { description: ok } } } }
+  /w/l:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPetsDefaultResponse"
+  # With `--useDateType`, both responses get a transformer.
+  /w/m:
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPetsDefaultResponse"
+  /w/n:
+    get:
+      operationId: getPetResponseTransformer
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPetsDefaultResponse"
 components:
   schemas:
     Array: { type: array, items: { type: string } }
@@ -184,3 +239,7 @@ components:
     TContext: { type: object, properties: { a: { type: string } } }
     AxiosError: { type: object, properties: { a: { type: string } } }
     1abc: { type: object, properties: { a: { type: string } } }
+    # Named like the types `common.ts` declares for `listPets` and `findPets`,
+    # which does not import them: both keep their names.
+    ListPetsDefaultResponse: { type: object, properties: { bornAt: { type: string, format: date-time } } }
+    FindPetsQueryResult: { type: object, properties: { nextPage: { type: integer } } }

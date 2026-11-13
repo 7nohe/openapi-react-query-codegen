@@ -93,6 +93,8 @@ Names come from the operation ID (or from the path with `--noOperationId`). For 
 | `useFindPetsKey`, `UseFindPetsKeyFn(clientOptions?)` | `common.ts` | `invalidateQueries` with the same key the hook uses |
 | `useAddPet(mutationKey?, options?)` | `queries.ts` | `useMutation`; `mutate({ body, path, query })` |
 
+A name in this table that is already taken where it would be declared gets a number, and the name from the spec stays as it is: with the operations `getUser` and `getUserOptions`, the factory of `getUser` is `getUserOptions2` (`getUserOptions` is the SDK function), and with `getApi` and `getApiKey`, `useGetApiKey` is the hook of `getApiKey` and the key of `getApi` is `useGetApiKey2`.
+
 `clientOptions` is the SDK options object: `{ path, query, body, headers }`, typed from `requests/types.gen.ts`. Mutation results are the full SDK response (`data`, plus `response` for fetch or `headers` for axios).
 
 ```tsx
@@ -196,6 +198,7 @@ import { check, generate } from "@7nohe/openapi-react-query-codegen";
 - `src/client/` is the client generator. It reads the OpenAPI document and writes `requests/` (`types.gen.ts`, `sdk.gen.ts`, `client.gen.ts`, `runtime.gen.ts`, and on request `schemas.gen.ts` and `transformers.gen.ts`). It also returns the normalized operations (`OperationInfo` in `src/types.mts`) for the hook generators, so nothing re-parses the generated SDK.
 - `src/generate.mts` is the only place that turns the client generator's failures into the error codes of `--json` (`mapClientError`).
 - Generation-side modules (`src/hooks/build*.mts`, `generateFiles.mts`) consume only `OperationInfo` and `GenerationContext`. Do not teach them about the OpenAPI document or the runtime's internals; extend the IR instead.
+- A hook builder takes the names it declares and refers to from `hookNames(op)` (`src/hooks/hookNames.mts`), never from the operation's name directly: `settleHookNames` numbers a name that its file already imports or declares, and the files are then built again with those names.
 - A hook builder declares what its statement needs from the generated client: `service` (the SDK function) and `models` (types from `types.gen`). The fixed names (TanStack Query, `Options`, `Common`, `AxiosError`) are imported when the code mentions them, which is only safe because the client generator reserves them. When hook code starts using a new name, add it to `RESERVED_TYPE_NAMES` or `RESERVED_FUNCTION_NAMES` and to the list in `tests/hooks/imports.test.ts`.
 - The generated hooks rely on a small SDK contract: `Options<XData, ThrowOnError>` exported from `sdk.gen`, calls returning `{ data }` and rejecting when `throwOnError` is set, and the `XData` / `XError` type names. Keep it in sync with `src/client/emitSdk.mts` and the runtimes in `src/client/runtime/`.
 - The runtimes (`src/client/runtime/*.runtime.ts`) are plain TypeScript that is copied verbatim into users' projects. Keep them dependency-free (axios aside), strict-mode clean, and free of syntax that needs a newer TypeScript than the generated code supports. `scripts/copy-runtime.mjs` ships them next to the compiled generator.

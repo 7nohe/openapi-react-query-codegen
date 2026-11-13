@@ -1,5 +1,6 @@
-import type { GenerationContext, OperationInfo } from "../types.mjs";
+import type { GenerationContext } from "../types.mjs";
 import { SDK_CALL_ARGS } from "./buildQueryHooks.mjs";
+import { type HookOperation, hookNames } from "./hookNames.mjs";
 import {
   dataModels,
   errorModels,
@@ -22,18 +23,18 @@ import type { ConstStatement } from "./statement.mjs";
  * });
  */
 export function buildUseMutationHook(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): ConstStatement {
-  const hookName = `use${op.capitalizedMethodName}`;
+  const hookName = hookNames(op).hook;
   const errorType = getErrorType(op, ctx);
-  const dataTypeDefault = `Common.${op.capitalizedMethodName}MutationResult`;
+  const dataTypeDefault = `Common.${hookNames(op).mutationResult}`;
 
   const optionsType = `Options<${getDataTypeName(op)}, true>`;
 
   const mutationFn = `clientOptions => ${op.methodName}(${SDK_CALL_ARGS}) as unknown as Promise<TData>`;
 
-  const body = `useMutation<TData, TError, ${optionsType}, TContext>({ mutationKey: Common.Use${op.capitalizedMethodName}KeyFn(mutationKey), mutationFn: ${mutationFn}, ...options })`;
+  const body = `useMutation<TData, TError, ${optionsType}, TContext>({ mutationKey: Common.${hookNames(op).keyFn}(mutationKey), mutationFn: ${mutationFn}, ...options })`;
 
   return operationConst(
     op,

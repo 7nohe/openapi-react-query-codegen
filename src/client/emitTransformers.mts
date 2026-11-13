@@ -714,10 +714,17 @@ export function emitTransformers(
   prune();
 
   const used = new Set<string>();
+  // `sdk.gen.ts` imports a transformer next to the functions it declares.
+  const sdkFunctions = new Set(
+    operations.map((operation) => operation.functionName),
+  );
   const byOperation = new Map<string, string>();
   for (const [name, plan] of responses) {
     if (plan) {
-      byOperation.set(name, uniqueName(`${name}ResponseTransformer`, used));
+      byOperation.set(
+        name,
+        uniqueName(`${name}ResponseTransformer`, used, sdkFunctions),
+      );
     }
   }
   if (byOperation.size === 0) {

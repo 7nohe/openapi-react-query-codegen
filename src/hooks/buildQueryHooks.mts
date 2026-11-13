@@ -1,5 +1,6 @@
 import { isValidIdentifier, propertyKey } from "../client/naming.mjs";
-import type { GenerationContext, OperationInfo } from "../types.mjs";
+import type { GenerationContext } from "../types.mjs";
+import { type HookOperation, hookNames } from "./hookNames.mjs";
 import {
   dataModels,
   errorModels,
@@ -22,14 +23,14 @@ export const QUERY_SDK_CALL_ARGS =
   "{ ...clientOptions, signal, throwOnError: true }";
 
 /** Resolve the OpenAPI page parameter type, preserving older numeric output. */
-export function getPageParamType(op: OperationInfo): string {
+export function getPageParamType(op: HookOperation): string {
   return op.pageParamType ?? "number";
 }
 
 /**
  * Build the client options parameter string.
  */
-export function buildClientOptionsParam(op: OperationInfo): string {
+export function buildClientOptionsParam(op: HookOperation): string {
   const defaultValue = op.allParamsOptional ? " = {}" : "";
   return `clientOptions: Options<${getDataTypeName(op)}, true>${defaultValue}`;
 }
@@ -39,9 +40,9 @@ export function buildClientOptionsParam(op: OperationInfo): string {
  * options type — the page parameter is supplied by TanStack Query's
  * pageParam mechanism.
  */
-export function buildInfiniteClientOptionsParam(op: OperationInfo): string {
+export function buildInfiniteClientOptionsParam(op: HookOperation): string {
   const defaultValue = op.allParamsOptional ? " = {}" : "";
-  return `clientOptions: Common.${op.capitalizedMethodName}InfiniteClientOptions${defaultValue}`;
+  return `clientOptions: Common.${hookNames(op).infiniteClientOptions}${defaultValue}`;
 }
 
 /**
@@ -50,15 +51,15 @@ export function buildInfiniteClientOptionsParam(op: OperationInfo): string {
  * `lastPage` (#203). NonNullable because `throwOnError: true` means a resolved
  * page is always present.
  */
-export function getPageType(op: OperationInfo): string {
-  return `NonNullable<Common.${op.capitalizedMethodName}DefaultResponse>`;
+export function getPageType(op: HookOperation): string {
+  return `NonNullable<Common.${hookNames(op).defaultResponse}>`;
 }
 
 /**
  * The models a paginated query names: the Data type in `buildPagedQueryFn`,
  * and whatever the page parameter's type refers to.
  */
-export function pagedModels(op: OperationInfo): string[] {
+export function pagedModels(op: HookOperation): string[] {
   return [...dataModels(op), ...(op.pageParamModels ?? [])];
 }
 
@@ -70,7 +71,7 @@ export function pagedModels(op: OperationInfo): string[] {
  * non-null assertion trips biome's noNonNullAssertion.
  */
 export function buildPagedQueryFn(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): string {
   const dataTypeName = getDataTypeName(op);
@@ -92,7 +93,7 @@ export function buildPagedQueryFn(
  */
 export function formatInitialPageParam(
   ctx: GenerationContext,
-  op?: OperationInfo,
+  op?: HookOperation,
 ): string {
   if (ctx.omitInitialPageParam) {
     return "undefined";
@@ -132,7 +133,7 @@ export function buildNestedNextPageType(
  */
 export function buildGetNextPageParamExpr(
   ctx: GenerationContext,
-  op?: OperationInfo,
+  op?: HookOperation,
 ): string {
   const nestedType = buildNestedNextPageType(
     ctx.nextPageParam,
@@ -185,17 +186,17 @@ export function buildOverridableInfiniteOptionsType(
  * });
  */
 export function buildUseQueryHook(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): ConstStatement {
-  const hookName = `use${op.capitalizedMethodName}`;
+  const hookName = hookNames(op).hook;
   const errorType = getErrorType(op, ctx);
-  const dataTypeDefault = `Common.${op.capitalizedMethodName}DefaultResponse`;
+  const dataTypeDefault = `Common.${hookNames(op).defaultResponse}`;
   const clientOptionsParam = buildClientOptionsParam(op);
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data as TData) as TData`;
 
-  const body = `useQuery<TData, TError>({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
+  const body = `useQuery<TData, TError>({ queryKey: Common.${hookNames(op).keyFn}(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
 
   return operationConst(
     op,
@@ -209,17 +210,17 @@ export function buildUseQueryHook(
  * Build useSuspenseQuery hook.
  */
 export function buildUseSuspenseQueryHook(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): ConstStatement {
-  const hookName = `use${op.capitalizedMethodName}Suspense`;
+  const hookName = hookNames(op).suspenseHook;
   const errorType = getErrorType(op, ctx);
-  const dataTypeDefault = `NonNullable<Common.${op.capitalizedMethodName}DefaultResponse>`;
+  const dataTypeDefault = `NonNullable<Common.${hookNames(op).defaultResponse}>`;
   const clientOptionsParam = buildClientOptionsParam(op);
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data as TData) as TData`;
 
-  const body = `useSuspenseQuery<TData, TError>({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
+  const body = `useSuspenseQuery<TData, TError>({ queryKey: Common.${hookNames(op).keyFn}(clientOptions, queryKey), queryFn: ${queryFn}, ...options })`;
 
   return operationConst(
     op,
@@ -236,7 +237,7 @@ export function buildUseSuspenseQueryHook(
  * default of the suspense variant.
  */
 function buildInfiniteHook(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
   suspense: boolean,
 ): ConstStatement {
@@ -245,11 +246,11 @@ function buildInfiniteHook(
     ? "UseSuspenseInfiniteQueryOptions"
     : "UseInfiniteQueryOptions";
   const hookName = suspense
-    ? `use${op.capitalizedMethodName}SuspenseInfinite`
-    : `use${op.capitalizedMethodName}Infinite`;
+    ? hookNames(op).suspenseInfiniteHook
+    : hookNames(op).infiniteHook;
 
   const errorType = getErrorType(op, ctx);
-  const baseDataType = `Common.${op.capitalizedMethodName}DefaultResponse`;
+  const baseDataType = `Common.${hookNames(op).defaultResponse}`;
   const dataTypeDefault = suspense
     ? `InfiniteData<NonNullable<${baseDataType}>>`
     : `InfiniteData<${baseDataType}>`;
@@ -257,7 +258,7 @@ function buildInfiniteHook(
   const queryFn = buildPagedQueryFn(op, ctx);
   const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
 
-  const body = `${hookCall}({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
+  const body = `${hookCall}({ queryKey: Common.${hookNames(op).infiniteKeyFn}(clientOptions, queryKey), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return operationConst(
     op,
@@ -271,7 +272,7 @@ function buildInfiniteHook(
  * Build useInfiniteQuery hook.
  */
 export function buildUseInfiniteQueryHook(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): ConstStatement {
   return buildInfiniteHook(op, ctx, false);
@@ -281,7 +282,7 @@ export function buildUseInfiniteQueryHook(
  * Build useSuspenseInfiniteQuery hook.
  */
 export function buildUseSuspenseInfiniteQueryHook(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): ConstStatement {
   return buildInfiniteHook(op, ctx, true);
@@ -297,13 +298,13 @@ export function buildUseSuspenseInfiniteQueryHook(
  *     ...options
  *   });
  */
-export function buildPrefetchFn(op: OperationInfo): ConstStatement {
-  const fnName = `prefetchUse${op.capitalizedMethodName}`;
+export function buildPrefetchFn(op: HookOperation): ConstStatement {
+  const fnName = hookNames(op).prefetch;
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data)`;
 
-  const optionsParam = `options?: Omit<FetchQueryOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn">`;
-  const body = `queryClient.prefetchQuery({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions), queryFn: ${queryFn}, ...options })`;
+  const optionsParam = `options?: Omit<FetchQueryOptions<Common.${hookNames(op).defaultResponse}>, "queryKey" | "queryFn">`;
+  const body = `queryClient.prefetchQuery({ queryKey: Common.${hookNames(op).keyFn}(clientOptions), queryFn: ${queryFn}, ...options })`;
 
   return operationConst(
     op,
@@ -326,10 +327,10 @@ export function buildPrefetchFn(op: OperationInfo): ConstStatement {
  *   });
  */
 export function buildPrefetchInfiniteQueryFn(
-  op: OperationInfo,
+  op: HookOperation,
   ctx: GenerationContext,
 ): ConstStatement {
-  const fnName = `prefetchUse${op.capitalizedMethodName}Infinite`;
+  const fnName = hookNames(op).prefetchInfinite;
 
   const queryFn = buildPagedQueryFn(op, ctx);
   const infiniteOptions = `initialPageParam: ${formatInitialPageParam(ctx, op)}, getNextPageParam: ${buildGetNextPageParamExpr(ctx, op)}`;
@@ -343,7 +344,7 @@ export function buildPrefetchInfiniteQueryFn(
   const instantiated = `FetchInfiniteQueryOptions<${pageType}>`;
   const overrides = `Partial<Pick<${instantiated}, "initialPageParam">> & { getNextPageParam?: GetNextPageParamFunction<unknown, ${pageType}> }`;
   const optionsParam = `options?: Omit<${instantiated}, "queryKey" | "queryFn" | "initialPageParam" | "getNextPageParam"> & ${overrides}`;
-  const body = `queryClient.prefetchInfiniteQuery({ queryKey: Common.Use${op.capitalizedMethodName}InfiniteKeyFn(clientOptions), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
+  const body = `queryClient.prefetchInfiniteQuery({ queryKey: Common.${hookNames(op).infiniteKeyFn}(clientOptions), queryFn: ${queryFn}, ${infiniteOptions}, ...options })`;
 
   return operationConst(
     op,
@@ -363,13 +364,13 @@ export function buildPrefetchInfiniteQueryFn(
  *     ...options
  *   });
  */
-export function buildEnsureQueryDataFn(op: OperationInfo): ConstStatement {
-  const fnName = `ensureUse${op.capitalizedMethodName}Data`;
+export function buildEnsureQueryDataFn(op: HookOperation): ConstStatement {
+  const fnName = hookNames(op).ensureData;
 
   const queryFn = `({ signal }) => ${op.methodName}(${QUERY_SDK_CALL_ARGS}).then(response => response.data)`;
 
-  const optionsParam = `options?: Omit<EnsureQueryDataOptions<Common.${op.capitalizedMethodName}DefaultResponse>, "queryKey" | "queryFn">`;
-  const body = `queryClient.ensureQueryData({ queryKey: Common.Use${op.capitalizedMethodName}KeyFn(clientOptions), queryFn: ${queryFn}, ...options })`;
+  const optionsParam = `options?: Omit<EnsureQueryDataOptions<Common.${hookNames(op).defaultResponse}>, "queryKey" | "queryFn">`;
+  const body = `queryClient.ensureQueryData({ queryKey: Common.${hookNames(op).keyFn}(clientOptions), queryFn: ${queryFn}, ...options })`;
 
   return operationConst(
     op,
