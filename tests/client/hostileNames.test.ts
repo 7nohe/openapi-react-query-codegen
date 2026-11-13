@@ -81,6 +81,14 @@ describe("what the awkward names become", () => {
         "Client",
         // An operation's type gives way to the TanStack import as well.
         "InfiniteData3",
+        // The hooks' type parameters would shadow a model of the same name,
+        // whether it comes from a schema or from the operation `t`.
+        "TData2",
+        "TData3",
+        "TError2",
+        "TError3",
+        "TQueryKey2",
+        "TContext2",
       ]),
     );
     expect(generated.serviceNames).toEqual(

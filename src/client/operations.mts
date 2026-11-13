@@ -11,7 +11,8 @@ import { type Doc, getByPointer, type Json, resolveRef } from "./spec.mjs";
  * Type names a schema or an operation type cannot take: `ClientOptions` and
  * `Options` are exported next to them, and the rest are what the generated hook
  * files import or use, where an imported model of the same name would clash
- * with or shadow them.
+ * with or shadow them. The last four are the type parameters of the hooks,
+ * which would shadow the model instead.
  */
 const RESERVED_TYPE_NAMES: readonly string[] = [
   "ClientOptions",
@@ -40,6 +41,10 @@ const RESERVED_TYPE_NAMES: readonly string[] = [
   "Promise",
   "Record",
   "ReturnType",
+  "TContext",
+  "TData",
+  "TError",
+  "TQueryKey",
 ];
 
 const HTTP_METHODS = [

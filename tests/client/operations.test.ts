@@ -190,6 +190,27 @@ describe("collectOperations", () => {
     expect(names).toContain("getPetsById");
   });
 
+  test("keeps type names apart from the type parameters of the hooks", () => {
+    const [op] = collectOperations({
+      paths: { "/t": { post: { operationId: "t", responses: {} } } },
+    });
+    // `TData` and `TError` inside a hook would be its own type parameters.
+    expect(op.typeNames).toEqual({
+      data: "TData2",
+      errors: "TErrors",
+      error: "TError2",
+      responses: "TResponses",
+      response: "TResponse",
+    });
+    expect(
+      [
+        ...buildSchemaNames({
+          components: { schemas: { TData: {}, TQueryKey: {}, TContext: {} } },
+        }).values(),
+      ].sort(),
+    ).toEqual(["TContext2", "TData2", "TQueryKey2"]);
+  });
+
   test("keeps type names apart from reserved ones and each other", () => {
     const ops = collectOperations(
       {

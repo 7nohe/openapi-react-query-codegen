@@ -103,6 +103,28 @@ paths:
   /p: { get: { operationId: useSuspenseInfiniteQuery, responses: { "200": { description: ok } } } }
   /q: { get: { operationId: initialPageParam, responses: { "200": { description: ok } } } }
   /r: { get: { operationId: signal, responses: { "200": { description: ok } } } }
+  /s:
+    post:
+      operationId: t
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TContext"
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TData"
+        "400":
+          description: bad
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TError"
 components:
   schemas:
     Array: { type: array, items: { type: string } }
@@ -123,5 +145,9 @@ components:
     QueryClient: { type: object, properties: { a: { type: string } } }
     InfiniteData: { type: object, properties: { a: { type: string } } }
     UseQueryOptions: { type: object, properties: { a: { type: string } } }
+    TData: { type: object, properties: { a: { type: string } } }
+    TError: { type: object, properties: { a: { type: string } } }
+    TQueryKey: { type: object, properties: { a: { type: string } } }
+    TContext: { type: object, properties: { a: { type: string } } }
     AxiosError: { type: object, properties: { a: { type: string } } }
     1abc: { type: object, properties: { a: { type: string } } }
