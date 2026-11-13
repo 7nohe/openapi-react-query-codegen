@@ -141,8 +141,11 @@ function install() {
     "esbuild",
     "yaml",
   ]);
+  // Variants of one tool share a project.
+  const installed = new Set();
   for (const tool of tools) {
-    if (results.install[tool.project]?.fresh) continue;
+    if (installed.has(tool.project)) continue;
+    installed.add(tool.project);
     log(`installing ${tool.project}`);
     const dir = join(work, tool.project);
     freshProject(dir);
@@ -160,7 +163,6 @@ function install() {
       ).version;
     }
     results.install[tool.project] = {
-      fresh: true,
       typescript: JSON.parse(
         readFileSync(join(dir, "node_modules/typescript/package.json"), "utf8"),
       ).version,
@@ -170,8 +172,6 @@ function install() {
     };
     save();
   }
-  for (const entry of Object.values(results.install)) delete entry.fresh;
-  save();
 }
 
 const outOf = (tool, spec) => `out/${tool.id}/${spec.name}`;
@@ -287,8 +287,13 @@ function typecheck() {
 
 /** Three operations an application would typically call, in document order. */
 function sampleOperations(file) {
-  const { parse } = createRequire(join(harness, "package.json"))("yaml");
-  const document = parse(readFileSync(file, "utf8"), { maxAliasCount: -1 });
+  const text = readFileSync(file, "utf8");
+  // The YAML parser reads JSON too, but takes seconds for a large document.
+  const document = file.endsWith(".json")
+    ? JSON.parse(text)
+    : createRequire(join(harness, "package.json"))("yaml").parse(text, {
+        maxAliasCount: -1,
+      });
   const all = [];
   for (const [path, item] of Object.entries(document.paths ?? {})) {
     for (const method of ["get", "post", "put", "patch", "delete"]) {

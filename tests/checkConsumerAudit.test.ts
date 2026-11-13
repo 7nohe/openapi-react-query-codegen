@@ -41,7 +41,9 @@ const report = {
 describe("check-consumer-audit", () => {
   test("reviewAudit fails only unknown high or critical advisories", () => {
     const results = reviewAudit(report, known);
-    expect(results.map((r) => [r.id, r.known, r.failing])).toEqual([
+    expect(
+      results.map((r) => [r.id, r.reason !== undefined, r.failing]),
+    ).toEqual([
       ["GHSA-g3hv-75wg-m249", true, false],
       ["GHSA-aaaa-bbbb-cccc", false, true],
       ["GHSA-dddd-eeee-ffff", false, false],
@@ -85,7 +87,7 @@ describe("check-consumer-audit", () => {
   });
 
   test("formatSummary marks new, known and lower-severity advisories", () => {
-    const summary = formatSummary(reviewAudit(report, known), known);
+    const summary = formatSummary(reviewAudit(report, known));
     expect(summary).toContain(
       "3 advisories in the dependency tree users install, 1 failing.",
     );

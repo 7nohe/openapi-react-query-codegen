@@ -8,7 +8,7 @@ import { gzipSync } from "node:zlib";
 const SOURCE = /\.(ts|tsx|mts|cts)$/;
 
 /** Every file under `root`, as absolute paths. */
-export function listFiles(root) {
+function listFiles(root) {
   const found = [];
   const walk = (dir) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -21,7 +21,7 @@ export function listFiles(root) {
   return found.sort();
 }
 
-export const normalize = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+const normalize = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 /**
  * @param {string} harnessDir directory whose node_modules holds `ts6`,
@@ -373,7 +373,7 @@ export function createAnalyzer(harnessDir) {
     return { ...totals, lookups, bundle };
   }
 
-  return { analyze, countTokens };
+  return { analyze };
 }
 
 /** Files, bytes and lines under `root`. */

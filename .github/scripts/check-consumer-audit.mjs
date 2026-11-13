@@ -35,33 +35,31 @@ export function assertAuditReport(report) {
  * @param {Map<string, string>} [known]
  */
 export function reviewAudit(report, known = KNOWN) {
-  /** @type {Map<string, { id: string, name: string, severity: string, title: string, range: string, known: boolean, failing: boolean }>} */
+  /** @type {Map<string, { id: string, name: string, severity: string, title: string, range: string, reason: string | undefined, failing: boolean }>} */
   const advisories = new Map();
   for (const entry of Object.values(report.vulnerabilities ?? {})) {
     for (const via of entry.via) {
       if (typeof via !== "object" || !via.url) continue;
       const id = String(via.url).split("/").pop();
       if (!id || advisories.has(id)) continue;
-      const isKnown = known.has(id);
+      const reason = known.get(id);
       advisories.set(id, {
         id,
         name: via.name,
         severity: via.severity,
         title: via.title,
         range: via.range,
-        known: isKnown,
-        failing: FAILING_SEVERITIES.has(via.severity) && !isKnown,
+        // Why the advisory is accepted for now, if it is.
+        reason,
+        failing: FAILING_SEVERITIES.has(via.severity) && reason === undefined,
       });
     }
   }
   return [...advisories.values()];
 }
 
-/**
- * @param {ReturnType<typeof reviewAudit>} advisories
- * @param {Map<string, string>} [known]
- */
-export function formatSummary(advisories, known = KNOWN) {
+/** @param {ReturnType<typeof reviewAudit>} advisories */
+export function formatSummary(advisories) {
   const failing = advisories.filter((a) => a.failing);
   const lines = [
     "## User install audit",
@@ -77,8 +75,8 @@ export function formatSummary(advisories, known = KNOWN) {
     for (const a of advisories) {
       const status = a.failing
         ? "❌ new"
-        : a.known
-          ? `known: ${known.get(a.id)}`
+        : a.reason !== undefined
+          ? `known: ${a.reason}`
           : "below high";
       lines.push(
         `| [${a.id}](https://github.com/advisories/${a.id}) | \`${a.name}\` ${a.range} | ${a.severity} | ${status} |`,

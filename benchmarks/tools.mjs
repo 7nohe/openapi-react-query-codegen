@@ -8,6 +8,40 @@ import { join } from "node:path";
 export const BASE = ["react@19", "@tanstack/react-query@5", "@types/react@19"];
 
 const config = (dir, name, source) => writeFileSync(join(dir, name), source);
+const useHook = (op) => `use${op.id}`;
+
+/**
+ * Orval in one of its output modes.
+ * @param {string} id
+ * @param {string} label
+ * @param {(out: string) => object} output what the mode adds to `output`
+ */
+const orval = (id, label, output) => ({
+  id,
+  label,
+  project: "orval",
+  typescript: "7",
+  install: ["orval"],
+  generate: ({ dir, spec, out }) => {
+    config(
+      dir,
+      "orval.config.mjs",
+      `export default ${JSON.stringify({
+        api: {
+          input: spec,
+          output: {
+            target: `${out}/api.ts`,
+            client: "react-query",
+            httpClient: "fetch",
+            ...output(out),
+          },
+        },
+      })};\n`,
+    );
+    return { bin: "orval", args: [] };
+  },
+  hookName: useHook,
+});
 
 /**
  * @typedef {object} Operation
@@ -43,7 +77,7 @@ export function tools({ orqc }) {
         bin: "openapi-rq",
         args: ["-i", spec, "-o", out],
       }),
-      hookName: (op) => `use${op.id}`,
+      hookName: useHook,
     },
     {
       id: "hey-api",
@@ -68,59 +102,13 @@ export function tools({ orqc }) {
       hookName: (op) =>
         op.method === "get" ? `${op.id}Options` : `${op.id}Mutation`,
     },
-    {
-      id: "orval",
-      label: "Orval (mode: single, the default)",
-      project: "orval",
-      typescript: "7",
-      install: ["orval"],
-      generate: ({ dir, spec, out }) => {
-        config(
-          dir,
-          "orval.config.mjs",
-          `export default ${JSON.stringify({
-            api: {
-              input: spec,
-              output: {
-                target: `${out}/api.ts`,
-                client: "react-query",
-                httpClient: "fetch",
-                mode: "single",
-              },
-            },
-          })};\n`,
-        );
-        return { bin: "orval", args: [] };
-      },
-      hookName: (op) => `use${op.id}`,
-    },
-    {
-      id: "orval-split",
-      label: "Orval (mode: tags-split)",
-      project: "orval",
-      typescript: "7",
-      install: ["orval"],
-      generate: ({ dir, spec, out }) => {
-        config(
-          dir,
-          "orval.config.mjs",
-          `export default ${JSON.stringify({
-            api: {
-              input: spec,
-              output: {
-                target: `${out}/api.ts`,
-                schemas: `${out}/model`,
-                client: "react-query",
-                httpClient: "fetch",
-                mode: "tags-split",
-              },
-            },
-          })};\n`,
-        );
-        return { bin: "orval", args: [] };
-      },
-      hookName: (op) => `use${op.id}`,
-    },
+    orval("orval", "Orval (mode: single, the default)", () => ({
+      mode: "single",
+    })),
+    orval("orval-split", "Orval (mode: tags-split)", (out) => ({
+      schemas: `${out}/model`,
+      mode: "tags-split",
+    })),
     {
       id: "kubb",
       label: "Kubb (plugin-ts, plugin-fetch, plugin-react-query)",
@@ -151,7 +139,7 @@ export function tools({ orqc }) {
         );
         return { bin: "kubb", args: ["generate"] };
       },
-      hookName: (op) => `use${op.id}`,
+      hookName: useHook,
     },
     {
       id: "openapi-ts",
