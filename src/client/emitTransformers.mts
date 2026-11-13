@@ -4,8 +4,10 @@ import { classifyResponses, type OperationIR } from "./operations.mjs";
 import {
   componentSchemaKey,
   discriminatorValues,
+  hasObjectKeywords,
   isDateString,
   type SchemaCtx,
+  schemaKinds,
 } from "./schema.mjs";
 import {
   COMPONENT_SCHEMA_PREFIX,
@@ -19,7 +21,6 @@ import {
  * string, and everything else that holds one is an object or an array.
  */
 type Kind = "string" | "object" | "array" | "other";
-const ALL_KINDS: readonly Kind[] = ["string", "object", "array", "other"];
 const ACTED_KINDS = ["string", "object", "array"] as const;
 
 type UnionMember = {
@@ -65,66 +66,15 @@ export type EmittedTransformers = {
   skipped: string[];
 };
 
-function kindOfType(type: unknown): Kind {
-  return type === "string" || type === "object" || type === "array"
-    ? type
-    : "other";
-}
-
-function kindOfValue(value: unknown): Kind {
-  if (typeof value === "string") return "string";
-  if (Array.isArray(value)) return "array";
-  return typeof value === "object" && value !== null ? "object" : "other";
-}
-
 /** The shapes a value of the schema can have. Unknown means any of them. */
-function kindsOf(ctx: SchemaCtx, schema: Json, depth = 0): Set<Kind> {
-  if (schema === false) return new Set();
-  if (!schema || typeof schema !== "object" || depth > 16) {
-    return new Set(ALL_KINDS);
-  }
-  if (typeof schema.$ref === "string") {
-    return kindsOf(ctx, getByPointer(ctx.doc, schema.$ref), depth + 1);
-  }
-  if (schema.const !== undefined) return new Set([kindOfValue(schema.const)]);
-  if (Array.isArray(schema.enum)) {
-    return new Set((schema.enum as unknown[]).map(kindOfValue));
-  }
-
-  let kinds: Set<Kind>;
-  if (Array.isArray(schema.type)) {
-    kinds = new Set((schema.type as unknown[]).map(kindOfType));
-  } else if (typeof schema.type === "string") {
-    kinds = new Set([kindOfType(schema.type)]);
-  } else if (
-    schema.properties ||
-    schema.patternProperties ||
-    schema.additionalProperties !== undefined
-  ) {
-    kinds = new Set<Kind>(["object"]);
-  } else if (schema.items || schema.prefixItems) {
-    kinds = new Set<Kind>(["array"]);
-  } else {
-    kinds = new Set(ALL_KINDS);
-  }
-
-  const narrow = (other: Set<Kind>) => {
-    kinds = new Set([...kinds].filter((kind) => other.has(kind)));
-  };
-  for (const member of Array.isArray(schema.allOf) ? schema.allOf : []) {
-    narrow(kindsOf(ctx, member, depth + 1));
-  }
-  for (const key of ["oneOf", "anyOf"] as const) {
-    if (!Array.isArray(schema[key]) || schema[key].length === 0) continue;
-    narrow(
-      new Set(
-        (schema[key] as Json[]).flatMap((member) => [
-          ...kindsOf(ctx, member, depth + 1),
-        ]),
-      ),
-    );
-  }
-  return kinds;
+function kindsOf(ctx: SchemaCtx, schema: Json): Set<Kind> {
+  return new Set(
+    [...schemaKinds(ctx.doc, schema)].map((kind) =>
+      kind === "string" || kind === "object" || kind === "array"
+        ? kind
+        : "other",
+    ),
+  );
 }
 
 function all(steps: Array<Plan | undefined>): Plan | undefined {
@@ -174,10 +124,7 @@ function buildPlan(
     return undefined;
   }
 
-  const hasObjectKeywords =
-    schema.properties ||
-    schema.patternProperties ||
-    schema.additionalProperties;
+  const hasObjectPart = hasObjectKeywords(schema);
   const allOf: Json[] =
     Array.isArray(schema.allOf) && schema.allOf.length > 0 ? schema.allOf : [];
   const unionKeys = (["oneOf", "anyOf"] as const).filter(
@@ -197,7 +144,7 @@ function buildPlan(
           seen,
         ),
       ),
-      hasObjectKeywords ? buildObject(schema, ctx, where, seen) : undefined,
+      hasObjectPart ? buildObject(schema, ctx, where, seen) : undefined,
     ]);
   }
 
@@ -217,7 +164,7 @@ function buildPlan(
     case "object":
       return buildObject(schema, ctx, where, seen);
     case undefined:
-      if (hasObjectKeywords) return buildObject(schema, ctx, where, seen);
+      if (hasObjectPart) return buildObject(schema, ctx, where, seen);
       return schema.items || schema.prefixItems
         ? buildArray(schema, ctx, where, seen)
         : undefined;
@@ -714,10 +661,17 @@ export function emitTransformers(
   prune();
 
   const used = new Set<string>();
+  // `sdk.gen.ts` imports a transformer next to the functions it declares.
+  const sdkFunctions = new Set(
+    operations.map((operation) => operation.functionName),
+  );
   const byOperation = new Map<string, string>();
   for (const [name, plan] of responses) {
     if (plan) {
-      byOperation.set(name, uniqueName(`${name}ResponseTransformer`, used));
+      byOperation.set(
+        name,
+        uniqueName(`${name}ResponseTransformer`, used, sdkFunctions),
+      );
     }
   }
   if (byOperation.size === 0) {

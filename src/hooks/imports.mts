@@ -47,6 +47,17 @@ export const TANSTACK_IMPORTS: NamedImport[] = [
 ];
 
 /**
+ * Every fixed name a generated file can import. A name the hooks derive from
+ * an operation gives way to these, as the names of the client do.
+ */
+export const FIXED_IMPORT_NAMES: readonly string[] = [
+  ...TANSTACK_IMPORTS.map(({ name }) => name),
+  "AxiosError",
+  "Options",
+  "Common",
+];
+
+/**
  * The imports of a generated file.
  *
  * `services` and `models` are what the file's statements declare. Everything

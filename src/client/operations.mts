@@ -5,14 +5,8 @@ import {
   toTypeName,
   uniqueName,
 } from "./naming.mjs";
-import { docComment, findReadWriteOnlyKeys } from "./schema.mjs";
-import {
-  baseMediaType,
-  type Doc,
-  getByPointer,
-  type Json,
-  resolveRef,
-} from "./spec.mjs";
+import { docComment, findReadWriteOnlyKeys, schemaKinds } from "./schema.mjs";
+import { baseMediaType, type Doc, getByPointer, type Json } from "./spec.mjs";
 
 /**
  * Type names a schema or an operation type cannot take: `ClientOptions` and
@@ -452,43 +446,12 @@ export function classifyResponses(operation: OperationIR): {
   return { responses, errors };
 }
 
-/** Resolve a schema (following `$ref` chains) down to its leading primitive. */
+/** The one primitive a schema holds, leaving `null` aside. */
 export function schemaPrimitiveKind(doc: Doc, node: Json): PageParamTypeKind {
-  const schema = resolveRef(doc, node);
-  if (!schema || typeof schema !== "object") return "other";
-  const alternatives: Json[] | undefined =
-    schema.anyOf ?? schema.oneOf ?? schema.allOf;
-  if (Array.isArray(alternatives)) {
-    const kinds = new Set(
-      alternatives
-        .filter((member) => resolveRef(doc, member)?.type !== "null")
-        .map((member) => schemaPrimitiveKind(doc, member)),
-    );
-    const [only] = kinds;
-    return kinds.size === 1 ? only : "other";
-  }
-  const kinds = new Set<string>();
-  const collect = (value: Json) => {
-    if (value === null) return;
-    if (typeof value === "string") kinds.add("string");
-    else if (typeof value === "number") kinds.add("number");
-    else kinds.add("other");
-  };
-  if (Array.isArray(schema.enum)) {
-    for (const value of schema.enum) collect(value);
-  } else {
-    const types = (
-      Array.isArray(schema.type) ? schema.type : [schema.type]
-    ).filter((type: string) => type !== "null");
-    for (const type of types) {
-      if (type === "string") kinds.add("string");
-      else if (type === "number" || type === "integer") kinds.add("number");
-      else kinds.add("other");
-    }
-  }
-  if (kinds.size === 1) {
-    const [only] = kinds;
-    if (only === "string" || only === "number") return only;
-  }
-  return "other";
+  const kinds = schemaKinds(doc, node);
+  kinds.delete("null");
+  const [only] = kinds;
+  return kinds.size === 1 && (only === "string" || only === "number")
+    ? only
+    : "other";
 }

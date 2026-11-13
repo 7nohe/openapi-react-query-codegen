@@ -443,6 +443,15 @@ async function getAuthToken(
   return token;
 }
 
+/** The key a header is stored under, however its name is written. */
+function findHeader(
+  headers: Record<string, unknown>,
+  name: string,
+): string | undefined {
+  const lower = name.toLowerCase();
+  return Object.keys(headers).find((key) => key.toLowerCase() === lower);
+}
+
 /** True when the caller already supplied this API key on the request. */
 function isProvided(
   auth: Auth,
@@ -452,8 +461,7 @@ function isProvided(
   const { name } = auth;
   if (!name) return false;
   if (auth.in === "query") return query?.[name] != null;
-  const lower = (auth.in === "cookie" ? "Cookie" : name).toLowerCase();
-  const key = Object.keys(headers).find((item) => item.toLowerCase() === lower);
+  const key = findHeader(headers, auth.in === "cookie" ? "Cookie" : name);
   if (!key) return false;
   return (
     auth.in !== "cookie" ||
@@ -484,8 +492,9 @@ async function applySecurity(
       if (auth.in === "query") {
         options.query = { ...options.query, [name]: token };
       } else if (auth.in === "cookie") {
-        headers.Cookie = headers.Cookie
-          ? `${headers.Cookie}; ${name}=${token}`
+        const key = findHeader(headers, "Cookie") ?? "Cookie";
+        headers[key] = headers[key]
+          ? `${headers[key]}; ${name}=${token}`
           : `${name}=${token}`;
       } else {
         headers[name] = token;
@@ -621,22 +630,18 @@ export const createClient = (config: Config = {}): Client => {
       await applySecurity(options, headers);
 
       const data = serializeBody(options);
-      const hasContentType = Object.keys(headers).some(
-        (key) => key.toLowerCase() === "content-type",
-      );
       if (
         data !== undefined &&
         options.bodyType === "json" &&
-        !hasContentType
+        !findHeader(headers, "Content-Type")
       ) {
         headers["Content-Type"] = "application/json";
       }
 
       // A header this request removed must not come back from the defaults.
       if (client === instance) {
-        const sent = Object.keys(headers).map((key) => key.toLowerCase());
         for (const key of defaultHeaders) {
-          if (!sent.includes(key.toLowerCase())) headers[key] = null;
+          if (findHeader(headers, key) === undefined) headers[key] = null;
         }
       }
 

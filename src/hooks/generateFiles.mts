@@ -29,6 +29,11 @@ import {
   buildInfiniteQueryOptionsFn,
   buildQueryOptionsFn,
 } from "./buildQueryOptions.mjs";
+import {
+  type Declared,
+  type HookOperation,
+  settleHookNames,
+} from "./hookNames.mjs";
 import { buildFileImports, printImports, relativeModule } from "./imports.mjs";
 import {
   printStatements,
@@ -74,37 +79,87 @@ function indexFile(ctx: GenerationContext): string {
     .join("");
 }
 
-function commonStatements(
-  queries: OperationInfo[],
-  paginated: OperationInfo[],
-  mutations: OperationInfo[],
+/** A builder of one statement for an operation. */
+type Builder = (op: HookOperation, ctx: GenerationContext) => Statement;
+
+/**
+ * The statements of every file but `index.ts`, in the order they are printed:
+ * for each operation of a kind, what each builder makes of it.
+ */
+function buildFiles(
+  operations: HookOperation[],
   ctx: GenerationContext,
-): Statement[] {
-  const statements: Statement[] = [];
-  for (const op of queries) {
-    statements.push(
-      buildDefaultResponseType(op),
-      buildQueryResultType(op),
-      buildKeyConst(op),
-      buildQueryKeyFn(op),
+): Array<[name: string, declared: Declared[]]> {
+  const queries = operations.filter((op) => op.httpMethod === "GET");
+  const mutations = operations.filter((op) =>
+    ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
+  );
+  // The infinite variants: their own types and keys in `common.ts`.
+  const paginated = queries.filter((op) => op.isPaginatable);
+  const each = (ops: HookOperation[], ...builders: Builder[]): Declared[] =>
+    ops.flatMap((op) =>
+      builders.map((build) => ({ op, statement: build(op, ctx) })),
     );
-  }
-  // Dedicated infinite query types and keys for paginatable operations
-  for (const op of paginated) {
-    statements.push(
-      buildInfiniteClientOptionsType(op, ctx),
-      buildInfiniteQueryKeyConst(op),
-      buildInfiniteQueryKeyFn(op),
-    );
-  }
-  for (const op of mutations) {
-    statements.push(
-      buildMutationResultType(op),
-      buildKeyConst(op),
-      buildMutationKeyFn(op),
-    );
-  }
-  return statements;
+
+  return [
+    [
+      OpenApiRqFiles.common,
+      [
+        ...each(
+          queries,
+          buildDefaultResponseType,
+          buildQueryResultType,
+          buildKeyConst,
+          buildQueryKeyFn,
+        ),
+        ...each(
+          paginated,
+          buildInfiniteClientOptionsType,
+          buildInfiniteQueryKeyConst,
+          buildInfiniteQueryKeyFn,
+        ),
+        ...each(
+          mutations,
+          buildMutationResultType,
+          buildKeyConst,
+          buildMutationKeyFn,
+        ),
+      ],
+    ],
+    [
+      OpenApiRqFiles.queries,
+      [
+        ...each(queries, buildUseQueryHook),
+        ...each(mutations, buildUseMutationHook),
+      ],
+    ],
+    [
+      OpenApiRqFiles.queryOptions,
+      [
+        ...each(queries, buildQueryOptionsFn),
+        ...each(paginated, buildInfiniteQueryOptionsFn),
+      ],
+    ],
+    [
+      OpenApiRqFiles.suspense,
+      [
+        ...each(queries, buildUseSuspenseQueryHook),
+        ...each(paginated, buildUseSuspenseInfiniteQueryHook),
+      ],
+    ],
+    [
+      OpenApiRqFiles.infiniteQueries,
+      each(paginated, buildUseInfiniteQueryHook),
+    ],
+    [
+      OpenApiRqFiles.prefetch,
+      [
+        ...each(queries, buildPrefetchFn),
+        ...each(paginated, buildPrefetchInfiniteQueryFn),
+      ],
+    ],
+    [OpenApiRqFiles.ensureQueryData, each(queries, buildEnsureQueryDataFn)],
+  ];
 }
 
 /**
@@ -122,64 +177,30 @@ export function generateAllFiles(
   operations: OperationInfo[],
   ctx: GenerationContext,
 ): GeneratedFile[] {
-  const queries = operations.filter((op) => op.httpMethod === "GET");
-  const mutations = operations.filter((op) =>
-    ["POST", "PUT", "PATCH", "DELETE"].includes(op.httpMethod),
-  );
-
-  const paginated = queries.filter((op) => op.isPaginatable);
-
-  const files: Array<[name: string, statements: Statement[]]> = [
-    [
-      OpenApiRqFiles.common,
-      commonStatements(queries, paginated, mutations, ctx),
-    ],
-    [
-      OpenApiRqFiles.queries,
-      [
-        ...queries.map((op) => buildUseQueryHook(op, ctx)),
-        ...mutations.map((op) => buildUseMutationHook(op, ctx)),
-      ],
-    ],
-    [
-      OpenApiRqFiles.queryOptions,
-      [
-        ...queries.map((op) => buildQueryOptionsFn(op)),
-        ...paginated.map((op) => buildInfiniteQueryOptionsFn(op, ctx)),
-      ],
-    ],
-    [
-      OpenApiRqFiles.suspense,
-      [
-        ...queries.map((op) => buildUseSuspenseQueryHook(op, ctx)),
-        ...paginated.map((op) => buildUseSuspenseInfiniteQueryHook(op, ctx)),
-      ],
-    ],
-    [
-      OpenApiRqFiles.infiniteQueries,
-      paginated.map((op) => buildUseInfiniteQueryHook(op, ctx)),
-    ],
-    [
-      OpenApiRqFiles.prefetch,
-      [
-        ...queries.map((op) => buildPrefetchFn(op)),
-        ...paginated.map((op) => buildPrefetchInfiniteQueryFn(op, ctx)),
-      ],
-    ],
-    [
-      OpenApiRqFiles.ensureQueryData,
-      queries.map((op) => buildEnsureQueryDataFn(op)),
-    ],
-  ];
+  let files = buildFiles(operations, ctx);
+  // Built again only when a name the hooks derive is already taken.
+  const names = settleHookNames(files);
+  if (names) {
+    files = buildFiles(
+      operations.map((op) => ({ ...op, names: names.get(op) })),
+      ctx,
+    );
+  }
 
   return [
     {
       name: `${OpenApiRqFiles.index}.ts`,
       content: addHeaderComment(indexFile(ctx), ctx.version),
     },
-    ...files.map(([name, statements]) => ({
+    ...files.map(([name, declared]) => ({
       name: `${name}.ts`,
-      content: addHeaderComment(createFile(ctx, statements), ctx.version),
+      content: addHeaderComment(
+        createFile(
+          ctx,
+          declared.map(({ statement }) => statement),
+        ),
+        ctx.version,
+      ),
     })),
   ];
 }

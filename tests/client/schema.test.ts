@@ -7,6 +7,7 @@ import {
   renderSchema,
   type SchemaCtx,
   schemaDescription,
+  schemaKinds,
 } from "../../src/client/schema.mts";
 
 const doc = {
@@ -480,6 +481,81 @@ describe("patternProperties", () => {
   });
 });
 
+describe("patternProperties next to a composition", () => {
+  const pattern = { "^at_": { type: "string", format: "date-time" } };
+  const member = { type: "object", properties: { a: { type: "string" } } };
+  const index = "{\n  [key: string]: string;\n}";
+
+  test.each(["allOf", "anyOf", "oneOf"])(
+    "%s keeps the index signature",
+    (key) => {
+      expect(
+        render({
+          [key]: [member],
+          patternProperties: pattern,
+          additionalProperties: false,
+        }),
+      ).toBe(`{\n  a?: string;\n} & ${index}`);
+    },
+  );
+});
+
+describe("schemaKinds", () => {
+  const kindsDoc = {
+    components: {
+      schemas: {
+        Id: { type: "integer" },
+        Loop: { $ref: "#/components/schemas/Loop" },
+      },
+    },
+  };
+  const kinds = (schema: unknown) => [...schemaKinds(kindsDoc, schema)].sort();
+  const all = [
+    "array",
+    "boolean",
+    "null",
+    "number",
+    "object",
+    "other",
+    "string",
+  ];
+
+  test.each([
+    [{ type: "string" }, ["string"]],
+    [{ type: "integer" }, ["number"]],
+    [{ type: ["string", "null"] }, ["null", "string"]],
+    [{ type: "file" }, ["other"]],
+    [{ $ref: "#/components/schemas/Id" }, ["number"]],
+    [{ enum: ["a", 1, null, true, [], {}] }, all.filter((k) => k !== "other")],
+    [{ const: "a" }, ["string"]],
+    // What a schema without `type` implies by its keywords.
+    [{ properties: {} }, ["object"]],
+    [{ patternProperties: {} }, ["object"]],
+    [{ additionalProperties: false }, ["object"]],
+    [{ items: {} }, ["array"]],
+    [{ prefixItems: [] }, ["array"]],
+    // A composition narrows what the schema says itself.
+    [{ allOf: [{ type: "integer" }] }, ["number"]],
+    [{ allOf: [{ type: "integer" }, { minimum: 1 }] }, ["number"]],
+    [
+      { type: "string", anyOf: [{ maxLength: 1 }, { pattern: "a" }] },
+      ["string"],
+    ],
+    [{ anyOf: [{ type: "string" }, { type: "array" }] }, ["array", "string"]],
+    [{ oneOf: [{ type: "object" }, { type: "null" }] }, ["null", "object"]],
+    [{ allOf: [{ type: "string" }, { type: "object" }] }, []],
+    // Nothing is known.
+    [{}, all],
+    [true, all],
+    [undefined, all],
+    [{ $ref: "#/components/schemas/Loop" }, all],
+    [{ $ref: "#/components/schemas/Nope" }, all],
+    [false, []],
+  ])("%j", (schema, expected) => {
+    expect(kinds(schema)).toEqual(expected);
+  });
+});
+
 describe("subtypes of a schema with a discriminator", () => {
   const schemas = {
     Pet: {
@@ -686,6 +762,57 @@ describe("findReadWriteOnlyKeys", () => {
       "Wrapper",
     ]);
     expect(findReadWriteOnlyKeys({}).size).toBe(0);
+  });
+
+  test("follows a reference into a schema, which the types inline", () => {
+    const holder = {
+      type: "object",
+      properties: {
+        owner: {
+          type: "object",
+          properties: { id: { type: "integer", readOnly: true } },
+        },
+        named: { $ref: "#/components/schemas/Direct" },
+        plain: { type: "string" },
+      },
+    };
+    const inner = (name: string) => ({
+      $ref: `#/components/schemas/Holder/properties/${name}`,
+    });
+    const keys = findReadWriteOnlyKeys({
+      components: {
+        schemas: {
+          Direct: {
+            type: "object",
+            properties: { id: { readOnly: true, type: "string" } },
+          },
+          Holder: holder,
+          // The inlined schema has the property itself.
+          Pet: { type: "object", properties: { owner: inner("owner") } },
+          // It refers to a schema that has it.
+          Named: { type: "array", items: inner("named") },
+          // Through another reference of the same sort.
+          Chain: {
+            allOf: [{ $ref: "#/components/schemas/Pet/properties/owner" }],
+          },
+          Plain: { type: "object", properties: { a: inner("plain") } },
+          Dangling: { type: "object", properties: { a: inner("nope") } },
+          Loop: {
+            type: "object",
+            properties: {
+              self: { $ref: "#/components/schemas/Loop/properties/self" },
+            },
+          },
+        },
+      },
+    });
+    expect([...keys].sort()).toEqual([
+      "Chain",
+      "Direct",
+      "Holder",
+      "Named",
+      "Pet",
+    ]);
   });
 });
 

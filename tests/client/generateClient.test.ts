@@ -480,6 +480,70 @@ describe("request-side variants", () => {
   });
 });
 
+describe("readOnly behind a reference into another schema", () => {
+  test("the schema that inlines it gets a request-side type", async () => {
+    const pet = { $ref: "#/components/schemas/Pet" };
+    const generated = await generateClient({
+      input: JSON.stringify({
+        openapi: "3.0.3",
+        components: {
+          schemas: {
+            Holder: {
+              type: "object",
+              properties: {
+                owner: {
+                  type: "object",
+                  required: ["id", "name"],
+                  properties: {
+                    id: { type: "integer", readOnly: true },
+                    name: { type: "string" },
+                  },
+                },
+              },
+            },
+            Pet: {
+              type: "object",
+              required: ["owner"],
+              properties: {
+                owner: { $ref: "#/components/schemas/Holder/properties/owner" },
+              },
+            },
+          },
+        },
+        paths: {
+          "/pet": {
+            post: {
+              operationId: "addPet",
+              requestBody: {
+                required: true,
+                content: { "application/json": { schema: pet } },
+              },
+              responses: {
+                "200": {
+                  description: "ok",
+                  content: { "application/json": { schema: pet } },
+                },
+              },
+            },
+          },
+        },
+      }),
+      client: "fetch",
+      importExtension: "",
+      pageParam: "page",
+    });
+    const types = file(generated, "types.gen.ts");
+    expect(types).toMatch(
+      /export type Pet = \{\s+owner: \{\s+readonly id: number;\s+name: string;\s+\};\s+\};/,
+    );
+    expect(types).toMatch(
+      /export type PetWritable = \{\s+owner: \{\s+name: string;\s+\};\s+\};/,
+    );
+    expect(types).toMatch(/type AddPetData = \{\s+body: PetWritable;/);
+    expect(types).toMatch(/200: Pet;/);
+  });
+});
+
 describe("parameters use the request-side types", () => {
   test("a writeOnly property of a parameter stays", async () => {
     const generated = await generateClient({
@@ -1087,6 +1151,7 @@ describe("serialization and parsing the SDK asks for", () => {
         components: {
           schemas: {
             Obj: { type: "object", properties: { r: { type: "string" } } },
+            Id: { type: "integer" },
           },
           securitySchemes: {
             a: { type: "apiKey", in: "header", name: "X-A" },
@@ -1313,6 +1378,45 @@ describe("serialization and parsing the SDK asks for", () => {
         "querySerializer",
       );
     }
+  });
+
+  test("a primitive behind a composition or an enum needs no override", async () => {
+    for (const schema of [
+      { allOf: [{ type: "integer" }] },
+      { allOf: [{ $ref: "#/components/schemas/Id" }], description: "an id" },
+      { anyOf: [{ type: "integer" }, { type: "string" }] },
+      { oneOf: [{ type: "string" }, { type: "boolean" }], nullable: true },
+      { enum: ["a", "b"] },
+    ]) {
+      const sdk = await operation("fetch", query({ schema }));
+      expect(sdk, JSON.stringify(schema)).not.toContain("querySerializer");
+      const path = await operation(
+        "fetch",
+        {
+          parameters: [
+            { name: "id", in: "path", required: true, explode: true, schema },
+          ],
+          responses: { "204": { description: "none" } },
+        },
+        "/x/{id}",
+      );
+      expect(path, JSON.stringify(schema)).not.toContain("pathSerializer");
+    }
+  });
+
+  test("an array or an object behind a composition gets its own setting", async () => {
+    expect(
+      await operation(
+        "fetch",
+        query({ schema: { allOf: [list] }, explode: false }),
+      ),
+    ).toContain('"p": { array: { style: "form", explode: false } } }');
+    expect(
+      await operation(
+        "fetch",
+        query({ schema: { allOf: [obj, { required: ["r"] }] } }),
+      ),
+    ).toContain('"p": { object: { style: "form", explode: true } } }');
   });
 
   test("a schema that can hold either shape gets both settings", async () => {

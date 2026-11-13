@@ -164,11 +164,18 @@ export function propertyKey(name: string): string {
   return isValidIdentifier(name) ? name : JSON.stringify(name);
 }
 
-/** Make `base` unique inside `used` by appending a counter. */
-export function uniqueName(base: string, used: Set<string>): string {
+/**
+ * Make `base` unique inside `used` by appending a counter. A name in `taken`
+ * is passed over as well; `taken` itself is left as it is.
+ */
+export function uniqueName(
+  base: string,
+  used: Set<string>,
+  taken?: ReadonlySet<string>,
+): string {
   let name = base;
   let counter = 2;
-  while (used.has(name)) {
+  while (used.has(name) || taken?.has(name)) {
     name = `${base}${counter}`;
     counter += 1;
   }

@@ -158,6 +158,14 @@ describe("naming", () => {
     expect(uniqueName("a", used)).toBe("a3");
   });
 
+  test("uniqueName passes over a name taken elsewhere", () => {
+    const used = new Set<string>();
+    const taken = new Set(["a", "a2"]);
+    expect(uniqueName("a", used, taken)).toBe("a3");
+    expect(uniqueName("a", used, taken)).toBe("a4");
+    expect([...taken]).toEqual(["a", "a2"]);
+  });
+
   test("toEnumMemberName", () => {
     expect(toEnumMemberName("in-progress")).toBe("IN_PROGRESS");
     expect(toEnumMemberName("inProgress")).toBe("IN_PROGRESS");

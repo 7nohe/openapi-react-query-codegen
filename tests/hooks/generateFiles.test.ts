@@ -127,3 +127,67 @@ describe("generateAllFiles", () => {
     );
   });
 });
+
+describe("generateAllFiles with a derived name that is taken", () => {
+  const get = (methodName: string): OperationInfo => ({
+    methodName,
+    capitalizedMethodName: methodName[0].toUpperCase() + methodName.slice(1),
+    httpMethod: "GET",
+    allParamsOptional: true,
+    isPaginatable: false,
+  });
+  const declarations = (operations: OperationInfo[], name: string) =>
+    generateAllFiles(operations, ctx)
+      .find((file) => file.name === name)
+      ?.content.split("\n")
+      .filter((line) => line.startsWith("export "))
+      .map((line) => line.split(" ")[2]);
+
+  it("should number the options of one operation named like another", () => {
+    const operations = [get("getUser"), get("getUserOptions")];
+    expect(declarations(operations, "queryOptions.ts")).toEqual([
+      "getUserOptions2",
+      "getUserOptionsOptions",
+    ]);
+    // Whichever comes first: the SDK function is the one imported.
+    expect(declarations(operations.toReversed(), "queryOptions.ts")).toEqual([
+      "getUserOptionsOptions",
+      "getUserOptions2",
+    ]);
+  });
+
+  it("should leave the name alone when the file does not import the other", () => {
+    // queryOptions.ts has no mutations, so it never imports this function.
+    const operations = [
+      get("getUser"),
+      { ...get("getUserOptions"), httpMethod: "POST" },
+    ];
+    expect(declarations(operations, "queryOptions.ts")).toEqual([
+      "getUserOptions",
+    ]);
+  });
+
+  it("should refer to a numbered name wherever it is used", () => {
+    const files = generateAllFiles([get("getApi"), get("getApiKey")], ctx);
+    const content = (name: string) =>
+      files.find((file) => file.name === name)?.content;
+    // The hook of `getApiKey` and the key of `getApi` are both re-exported
+    // from index.ts. The hook keeps the name.
+    expect(content("queries.ts")).toContain("export const useGetApiKey = ");
+    expect(content("common.ts")).toContain(
+      'export const useGetApiKey2 = "GetApi";',
+    );
+    expect(content("common.ts")).toContain(
+      "=> [useGetApiKey2, ...(queryKey ?? [clientOptions])];",
+    );
+    expect(content("common.ts")).not.toContain("useGetApiKey ");
+  });
+
+  it("should not build anything twice when every name is free", () => {
+    const first = generateAllFiles([query, mutation], ctx);
+    expect(generateAllFiles([query, mutation], ctx)).toEqual(first);
+    expect(first.map((file) => file.content).join("")).not.toMatch(
+      /export (const|type) \w+\d /,
+    );
+  });
+});
