@@ -1,7 +1,7 @@
 {
   "name": "@7nohe/openapi-react-query-codegen",
   "version": "4.0.0-beta.7",
-  "description": "OpenAPI React Query Codegen",
+  "description": "Generate TanStack Query (React Query) hooks, queryOptions factories and a typed fetch/axios client from your OpenAPI spec",
   "bin": {
     "orqc": "dist/cli.mjs",
     "openapi-rq": "dist/cli.mjs",
@@ -35,20 +35,26 @@
     "type": "git",
     "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git"
   },
-  "homepage": "https://github.com/7nohe/openapi-react-query-codegen",
+  "homepage": "https://orqc.7nohe.dev",
   "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
   "files": [
     "dist",
     "AGENTS.md"
   ],
   "keywords": [
+    "openapi",
+    "openapi3",
+    "swagger",
     "codegen",
+    "code-generator",
+    "tanstack-query",
     "react-query",
     "react",
-    "openapi",
-    "swagger",
+    "hooks",
     "typescript",
-    "openapi-typescript-codegen"
+    "fetch",
+    "axios",
+    "orqc"
   ],
   "license": "MIT",
   "author": "Daiki Urata (@7nohe)",

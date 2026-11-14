@@ -8,11 +8,11 @@ v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this
 ## TL;DR
 
 1. Use Node.js 24 or later to run the generator (v3 needed 22.18).
-2. Update the package and regenerate:
+2. Update the package and regenerate with your codegen script:
 
    ```bash
    npm install -D @7nohe/openapi-react-query-codegen@beta
-   npx orqc -i ./petstore.yaml
+   npm run codegen
    ```
 
 3. If you pass `-c @hey-api/client-fetch` or `-c @hey-api/client-axios`, both still work. Prefer the new spellings `-c fetch` and `-c axios`.

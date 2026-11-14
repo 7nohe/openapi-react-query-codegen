@@ -29,3 +29,6 @@ coverage
 
 .agentstests/client/compile-*
 tests/client/e2e-*
+
+# Serena (local MCP tool state)
+.serena/

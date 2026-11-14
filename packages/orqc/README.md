@@ -8,11 +8,14 @@ npx @7nohe/orqc@beta -i ./petstore.yaml
 
 Each version runs exactly the same version of `@7nohe/openapi-react-query-codegen`, so `npx @7nohe/orqc@4.0.0` is `@7nohe/openapi-react-query-codegen@4.0.0`. v4 is in beta: until 4.0.0 is released, `@beta` selects it, and a plain `npx @7nohe/orqc` runs the current stable release, v3.
 
-In a project, install the main package instead and run its `orqc` command (v4 and later; in v3 the command is `openapi-rq`):
+In a project, install the main package instead and run its `orqc` command from a `package.json` script (v4 and later; in v3 the command is `openapi-rq`). `npx @7nohe/orqc` in a project would fetch its own copy instead of the version you installed.
 
 ```bash
 npm install -D @7nohe/openapi-react-query-codegen@beta
-npx orqc -i ./petstore.yaml
+```
+
+```json
+{ "scripts": { "codegen": "orqc -i ./petstore.yaml" } }
 ```
 
 Documentation: https://orqc.7nohe.dev
