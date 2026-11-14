@@ -81,11 +81,11 @@ text { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consol
 
   <text class="label" x="32" y="94">openapi.yaml</text>
   <rect class="mark" x="24" y="192" width="352" height="26" rx="4" fill="rgb(147 214 110 / 0.14)" />
-  <text class="code" x="32" y="132" xml:space="preserve">paths%3A</text>
-    <text class="code" x="32" y="158" xml:space="preserve">%20%20/pets%3A</text>
-    <text class="code" x="32" y="184" xml:space="preserve">%20%20%20%20get%3A</text>
-    <text class="code" x="32" y="210" xml:space="preserve">%20%20%20%20%20%20operationId%3A%20<tspan class="signal">findPets</tspan></text>
-    <text class="code" x="32" y="236" xml:space="preserve">%20%20%20%20%20%20responses%3A%20<tspan class="muted">%7B%20%22200%22%3A%20Pet%5B%5D%20%7D</tspan></text>
+  <text class="code" x="32" y="132" xml:space="preserve">paths:</text>
+    <text class="code" x="32" y="158" xml:space="preserve">  /pets:</text>
+    <text class="code" x="32" y="184" xml:space="preserve">    get:</text>
+    <text class="code" x="32" y="210" xml:space="preserve">      operationId: <tspan class="signal">findPets</tspan></text>
+    <text class="code" x="32" y="236" xml:space="preserve">      responses: <tspan class="muted">{ "200": Pet[] }</tspan></text>
 
   <path class="arrow" d="M 384 205 h 52 m -10 -8 l 10 8 l -10 8" fill="none" stroke="#4f9fe8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 

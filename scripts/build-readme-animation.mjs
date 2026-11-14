@@ -109,7 +109,7 @@ function svg(colors) {
       (parts, i) =>
         `<text class="code" x="32" y="${132 + i * 26}" xml:space="preserve">${parts
           .map(([t, c]) =>
-            c ? `<tspan class="${c}">${escape(t)}</tspan>` : escape(t),
+            c ? `<tspan class="${c}">${escapeXml(t)}</tspan>` : escapeXml(t),
           )
           .join("")}</text>`,
     )
@@ -119,7 +119,7 @@ function svg(colors) {
     .map(([before, id, after, note], i) => {
       const y = 132 + i * 26;
       return `<g class="row${i}">
-      <text class="code" x="452" y="${y}">${escape(before)}<tspan class="signal">${id}</tspan>${escape(after)}</text>
+      <text class="code" x="452" y="${y}">${escapeXml(before)}<tspan class="signal">${id}</tspan>${escapeXml(after)}</text>
       <text class="code muted" x="${width - 32}" y="${y}" text-anchor="end">${note}</text>
     </g>`;
     })
