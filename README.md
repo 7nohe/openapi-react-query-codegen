@@ -72,7 +72,7 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 | [Vite + React](https://orqc.7nohe.dev/examples/vite-react/) | [`examples/react-app`](./examples/react-app) |
 | [Next.js (App Router)](https://orqc.7nohe.dev/examples/nextjs/) | [`examples/nextjs-app`](./examples/nextjs-app) |
 | [TanStack Router](https://orqc.7nohe.dev/examples/tanstack-router/) | [`examples/tanstack-router-app`](./examples/tanstack-router-app) |
-| [React Router 7](https://orqc.7nohe.dev/examples/react-router-7/) | [`examples/react-router-7-app`](./examples/react-router-7-app) |
+| [React Router](https://orqc.7nohe.dev/examples/react-router/) | [`examples/react-router-app`](./examples/react-router-app) |
 
 > [!IMPORTANT]
 > This project publishes only the scoped **`@7nohe/openapi-react-query-codegen`** and its short name **`@7nohe/orqc`**. The unscoped `openapi-react-query-codegen` and `openapi-rq` and the copies under other scopes on npm are published by third parties, not by this project.
