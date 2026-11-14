@@ -3,7 +3,7 @@ import starlight from "@astrojs/starlight";
 // @ts-check
 import { defineConfig } from "astro/config";
 
-const site = "https://openapi-react-query-codegen.vercel.app";
+const site = "https://orqc.7nohe.dev";
 const ogUrl = new URL("og.jpg", site).href;
 const ogImageAlt = "OpenAPI React Query Codegen";
 

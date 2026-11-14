@@ -41,7 +41,7 @@ export function buildProgram(
   { json }: { json: boolean },
 ) {
   return new Command()
-    .name("openapi-rq")
+    .name("orqc")
     .version(version)
     .description("Generate React Query code based on OpenAPI")
     .exitOverride()

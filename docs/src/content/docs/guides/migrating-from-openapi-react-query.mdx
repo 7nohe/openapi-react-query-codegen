@@ -24,10 +24,10 @@ The move is a rewrite of call sites, not a drop-in swap. Hook names come from ea
 ```bash
 npm uninstall openapi-typescript openapi-fetch openapi-react-query
 npm install -D @7nohe/openapi-react-query-codegen@beta
-npx openapi-rq -i ./openapi.yaml
+npx orqc -i ./openapi.yaml
 ```
 
-Keep `@tanstack/react-query` 5.x installed. Replace the `openapi-typescript` step in your scripts with `openapi-rq`.
+Keep `@tanstack/react-query` 5.x installed. Replace the `openapi-typescript` step in your scripts with `orqc`.
 
 ## 2. Replace client setup
 
@@ -134,7 +134,7 @@ $api.useInfiniteQuery(
 );
 ```
 
-After — the page parameter is wired by the generator. Pass `--pageParam` and `--nextPageParam` to `openapi-rq` to match your API. The generated hooks start at page 1 by default, so for this example also pass `--initialPageParam 0`, then:
+After — the page parameter is wired by the generator. Pass `--pageParam` and `--nextPageParam` to `orqc` to match your API. The generated hooks start at page 1 by default, so for this example also pass `--initialPageParam 0`, then:
 
 ```tsx
 import { useFindPetsInfinite } from "./openapi/queries/infiniteQueries";

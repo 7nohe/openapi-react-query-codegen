@@ -4,7 +4,7 @@
 
 [![npm version](https://badge.fury.io/js/%407nohe%2Fopenapi-react-query-codegen.svg)](https://badge.fury.io/js/%407nohe%2Fopenapi-react-query-codegen)
 
-📖 **[Documentation](https://openapi-react-query-codegen.vercel.app)** · [Migrating to v3](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v3/) · [Coming from openapi-react-query](https://openapi-react-query-codegen.vercel.app/guides/migrating-from-openapi-react-query/)
+📖 **[Documentation](https://orqc.7nohe.dev)** · [Migrating to v3](https://orqc.7nohe.dev/guides/migrating-to-v3/) · [Coming from openapi-react-query](https://orqc.7nohe.dev/guides/migrating-from-openapi-react-query/)
 
 ## Features
 
@@ -18,11 +18,11 @@
 ## Quick start
 
 > [!NOTE]
-> v4 is in beta, and this README describes it. Install it with `@beta`; a plain `npm install` still gets v3, whose README and docs are in the [`v3` branch](https://github.com/7nohe/openapi-react-query-codegen/tree/v3). What changes from v3 is in [Migrating to v4](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v4/).
+> v4 is in beta, and this README describes it. Install it with `@beta`; a plain `npm install` still gets v3, whose README and docs are in the [`v3` branch](https://github.com/7nohe/openapi-react-query-codegen/tree/v3). What changes from v3 is in [Migrating to v4](https://orqc.7nohe.dev/guides/migrating-to-v4/).
 
 ```bash
 npm install -D @7nohe/openapi-react-query-codegen@beta
-npx openapi-rq -i ./petstore.yaml
+npx orqc -i ./petstore.yaml
 ```
 
 ```tsx
@@ -35,10 +35,10 @@ function Pets() {
 }
 ```
 
-See the [documentation](https://openapi-react-query-codegen.vercel.app) for CLI options, SSR recipes, and infinite query usage.
+See the [documentation](https://orqc.7nohe.dev) for CLI options, SSR recipes, and infinite query usage.
 
 > [!IMPORTANT]
-> The only package published by this project is the scoped **`@7nohe/openapi-react-query-codegen`**. The unscoped `openapi-react-query-codegen` and the copies under other scopes on npm are published by third parties, not by this project.
+> This project publishes only the scoped **`@7nohe/openapi-react-query-codegen`** and its short name **`@7nohe/orqc`**. The unscoped `openapi-react-query-codegen` and `openapi-rq` and the copies under other scopes on npm are published by third parties, not by this project.
 
 ## How it compares
 
@@ -54,11 +54,11 @@ See the [documentation](https://openapi-react-query-codegen.vercel.app) for CLI 
 
 **Scope**: this library is deliberately React-focused and does not generate API mocks — use Orval if MSW mocks are your priority, or the hey-api plugin if you need non-React frameworks.
 
-**Coming from openapi-typescript / openapi-fetch / openapi-react-query?** See the [migration guide](https://openapi-react-query-codegen.vercel.app/guides/migrating-from-openapi-react-query/).
+**Coming from openapi-typescript / openapi-fetch / openapi-react-query?** See the [migration guide](https://orqc.7nohe.dev/guides/migrating-from-openapi-react-query/).
 
 ## Stability policy
 
-The client generator is part of this package, so the generated `requests/` directory and the hooks built on it change together and follow SemVer: breaking output changes only happen in major versions, with a migration guide (see [Migrating to v4](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v4/) if you are coming from v3, where the client was produced by `@hey-api/openapi-ts`).
+The client generator is part of this package, so the generated `requests/` directory and the hooks built on it change together and follow SemVer: breaking output changes only happen in major versions, with a migration guide (see [Migrating to v4](https://orqc.7nohe.dev/guides/migrating-to-v4/) if you are coming from v3, where the client was produced by `@hey-api/openapi-ts`).
 
 ## Requirements
 
