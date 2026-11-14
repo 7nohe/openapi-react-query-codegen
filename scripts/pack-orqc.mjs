@@ -4,7 +4,7 @@
 // it can only be published through this script.
 //
 //   node scripts/pack-orqc.mjs <destination directory>
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -36,11 +36,21 @@ try {
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
   await mkdir(destination, { recursive: true });
-  execFileSync(
-    "npm",
-    ["pack", "--ignore-scripts", "--pack-destination", destination],
-    { cwd: work, stdio: ["ignore", "ignore", "inherit"] },
-  );
+  const options = { cwd: work, stdio: ["ignore", "ignore", "inherit"] };
+  if (process.platform === "win32") {
+    // npm is npm.cmd on Windows, which Node only starts through a shell.
+    // Windows paths cannot contain double quotes.
+    execSync(
+      `npm pack --ignore-scripts --pack-destination "${destination}"`,
+      options,
+    );
+  } else {
+    execFileSync(
+      "npm",
+      ["pack", "--ignore-scripts", "--pack-destination", destination],
+      options,
+    );
+  }
   console.log(
     `packed ${manifest.name}@${manifest.version} into ${destination}`,
   );
