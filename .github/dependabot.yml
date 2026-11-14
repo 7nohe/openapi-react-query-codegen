@@ -42,6 +42,12 @@ updates:
       # (#254). docs/ builds with `astro check`, which rejects TypeScript 7.
       # Bump TypeScript by hand in each package.
       - dependency-name: "typescript"
+      # The root library's types must not be newer than the oldest Node.js that
+      # `engines` allows, so that code using a newer API fails to compile. Bump
+      # the major by hand together with `engines`.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
     # Groups apply to version updates only. Security updates still arrive one
     # dependency per pull request.
     groups:
