@@ -245,6 +245,11 @@ describe("emitMocks", () => {
         "looserExclusive: 5,",
         // No multiple is in the range
         "noMultiple: 2,",
+        // An integer that is a multiple of a fraction is still an integer
+        "wholeOfFraction: 3,",
+        "noWholeMultiple: 1,",
+        // A whole step is not rounded to a few digits
+        "bigInteger: 1700000000001,",
       ]) {
         expect(shapes).toContain(`    ${line}\n`);
       }
@@ -260,12 +265,24 @@ describe("emitMocks", () => {
       expect(functionBody(data, "moreMetaMock")).toContain(
         '    ...withMetaMock(),\n    meta: {\n      x: "string",\n      y: 1,\n    },',
       );
-      // No value is both, so the property is left out.
-      expect(shapes).not.toContain("conflicting");
+      // No value of `k` is both, and it may be absent: it is left out.
+      expect(shapes).toContain("    conflicting: {},\n");
       // The same schema twice is spread once.
       expect(shapes).toContain(
         '    petPlus: {\n      ...dogMock(),\n      extra: "string",\n    },',
       );
+    });
+
+    test("an optional property no value fits is taken out, a required one ends the object", async () => {
+      const { data, warnings } = await mocksOf("mocks.yaml");
+      // `k` and "odd key" come with ClashA's mock and are taken out of it.
+      // The rest of the object stays, with what it requires.
+      expect(functionBody(data, "clashMock")).toContain(
+        '    ...(({ k: _0, "odd key": _1, ...rest }) => rest)(clashAMock()),\n    ...clashBMock(),\n    id: 1,\n    ...overrides,',
+      );
+      expect(warnings.join("\n")).not.toContain("Clash");
+      // Required, so there is no object at all.
+      expect(functionBody(data, "shapesMock")).not.toContain("requiredClash");
     });
 
     test("an intersection that limits the values takes one every member allows", async () => {
@@ -421,7 +438,7 @@ describe("emitMocks", () => {
       );
       expect(warnings).toContainEqual(
         expect.stringMatching(
-          /require themselves[\s\S]*\n {2}- Node\n {2}- Ring$/,
+          /no value can be written[\s\S]*\n {2}- Node\n {2}- Ring$/,
         ),
       );
     });

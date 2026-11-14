@@ -290,7 +290,7 @@ export function emitMocks(
   }
   if (unbuildable.length > 0) {
     warnings.push(
-      `--mock: these schemas require themselves, so no value of them ends. Their mocks return an empty object:\n${unbuildable
+      `--mock: no value can be written for these schemas: they require themselves, or put schemas together that no value is one of all of. Their mocks return an empty object:\n${unbuildable
         .map((key) => `  - ${key}`)
         .join("\n")}`,
     );

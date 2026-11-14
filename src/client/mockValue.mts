@@ -13,6 +13,7 @@ import {
   isRequiredOnly,
   OMITTED_PROPERTY,
   renderSchema,
+  requiresProperty,
   type SchemaCtx,
   schemaKinds,
 } from "./schema.mjs";
@@ -208,17 +209,29 @@ function numberSample(schema: Json): number {
     (minOpen ? value > min : value >= min) &&
     (maxOpen ? value < max : value <= max);
 
-  const step =
+  const integer = schema.type === "integer";
+  let step: number | undefined =
     typeof schema.multipleOf === "number" && schema.multipleOf > 0
       ? schema.multipleOf
-      : schema.type === "integer"
+      : integer
         ? 1
         : undefined;
+  if (integer && step !== undefined && !Number.isInteger(step)) {
+    // An integer that is a multiple of a fraction is a multiple of the first
+    // whole number the fraction goes into (3 for 0.3). Without one in reach
+    // the value is at least an integer.
+    const fraction = step;
+    const whole = Array.from({ length: 1000 }, (_, index) =>
+      Math.round((index + 1) * fraction),
+    ).find((value, index) => Math.abs((index + 1) * fraction - value) < 1e-9);
+    step = whole ?? 1;
+  }
   if (step !== undefined) {
+    const size = step;
     // How many steps a bound is, as a whole number where it is one but for
     // the rounding of the division.
     const steps = (bound: number) => {
-      const exact = bound / step;
+      const exact = bound / size;
       const whole = Math.round(exact);
       return Math.abs(exact - whole) < 1e-9 ? whole : exact;
     };
@@ -235,7 +248,13 @@ function numberSample(schema: Json): number {
       ...(Number.isFinite(max)
         ? [highest - (maxOpen && highest === steps(max) ? 1 : 0)]
         : []),
-    ].map((count) => Number((count * step).toPrecision(12)));
+    ].map((count) =>
+      // A whole step gives the number as it is. A fraction leaves the dust
+      // of its multiplication behind (0.1 * 3), which is rounded away.
+      Number.isInteger(size)
+        ? count * size
+        : Number((count * size).toPrecision(12)),
+    );
     return candidates.find(inRange) ?? candidates[0];
   }
 
@@ -369,6 +388,36 @@ function collectDeclarations(
   }
 }
 
+/**
+ * A part of an intersection without the properties in `names`. A property the
+ * part writes out is dropped; one that comes with what it spreads (the mock of
+ * a referenced schema) is taken out of that.
+ */
+function withoutProperties(
+  part: Built,
+  source: Json,
+  names: ReadonlySet<string>,
+  ctx: MockValueCtx,
+): Built {
+  if ("entries" in part) {
+    return {
+      entries: part.entries.filter(
+        (entry) => "spread" in entry || !names.has(entry.key),
+      ),
+    };
+  }
+  const declared = new Map<string, Json[]>();
+  collectDeclarations(ctx, source, declared);
+  const present = [...names].filter((name) => declared.has(name));
+  if (present.length === 0) return part;
+  const bindings = present.map(
+    (name, index) => `${literalKey(name)}: _${index}`,
+  );
+  return {
+    expr: `(({ ${bindings.join(", ")}, ...rest }) => rest)(${part.expr})`,
+  };
+}
+
 /** The values a schema is limited to by its `const` or `enum`, if it is. */
 function pinnedValues(
   ctx: MockValueCtx,
@@ -483,11 +532,29 @@ function buildComposed(
     const declarations = new Map<string, Json[]>();
     collectDeclarations(ctx, schema, declarations);
     const shared: Entry[] = [];
+    const impossible = new Set<string>();
     for (const [name, schemas] of declarations) {
       if (schemas.length < 2) continue;
       const value = mockValue({ allOf: schemas }, ctx, `${indent}  `, seen);
-      if (value === undefined) return undefined;
-      shared.push({ key: name, value });
+      if (value !== undefined) {
+        shared.push({ key: name, value });
+      } else if (requiresProperty(doc, schema, name)) {
+        return undefined;
+      } else {
+        // No value is one of every declaration, and the property may be
+        // absent: it is taken out of what the members give.
+        impossible.add(name);
+      }
+    }
+    if (impossible.size > 0) {
+      const sources: Json[] = [
+        ...typed,
+        ...(parts.length > firstTyped + typed.length ? [schema] : []),
+      ];
+      sources.forEach((source, index) => {
+        const at = firstTyped + index;
+        parts[at] = withoutProperties(parts[at], source, impossible, ctx);
+      });
     }
     if (shared.length > 0) parts.push({ entries: shared });
   } else if (typed.length > 1) {

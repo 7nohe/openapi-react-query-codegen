@@ -201,7 +201,7 @@ function findInheritedDiscriminator(
 }
 
 /** True when a schema or what it is composed of requires `name`. */
-function requiresProperty(
+export function requiresProperty(
   doc: Doc,
   schema: Json,
   name: string,

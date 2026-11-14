@@ -72,6 +72,31 @@ export function exampledMock(overrides?: Partial<Types.Exampled>): Types.Example
   };
 }
 
+export function clashAMock(overrides?: Partial<Types.ClashA>): Types.ClashA {
+  return {
+    k: "a",
+    "odd key": "a",
+    a: "string",
+    ...overrides,
+  };
+}
+
+export function clashBMock(overrides?: Partial<Types.ClashB>): Types.ClashB {
+  return {
+    b: "string",
+    ...overrides,
+  };
+}
+
+export function clashMock(overrides?: Partial<Types.Clash>): Types.Clash {
+  return {
+    ...(({ k: _0, "odd key": _1, ...rest }) => rest)(clashAMock()),
+    ...clashBMock(),
+    id: 1,
+    ...overrides,
+  };
+}
+
 export function withMetaMock(overrides?: Partial<Types.WithMeta>): Types.WithMeta {
   return {
     meta: {
@@ -274,12 +299,17 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     between: 2,
     betweenOpen: 2.5,
     looserExclusive: 5,
+    wholeOfFraction: 3,
+    noWholeMultiple: 1,
+    bigInteger: 1700000000001,
+    clash: clashMock(),
     overlap: {
       a: {
         x: "string",
         y: 1,
       },
     },
+    conflicting: {},
     moreMeta: moreMetaMock(),
     petPlus: {
       ...dogMock(),
@@ -641,6 +671,31 @@ export function exampledMock(overrides?: Partial<Types.Exampled>): Types.Example
   };
 }
 
+export function clashAMock(overrides?: Partial<Types.ClashA>): Types.ClashA {
+  return {
+    k: "a",
+    "odd key": "a",
+    a: "string",
+    ...overrides,
+  };
+}
+
+export function clashBMock(overrides?: Partial<Types.ClashB>): Types.ClashB {
+  return {
+    b: "string",
+    ...overrides,
+  };
+}
+
+export function clashMock(overrides?: Partial<Types.Clash>): Types.Clash {
+  return {
+    ...(({ k: _0, "odd key": _1, ...rest }) => rest)(clashAMock()),
+    ...clashBMock(),
+    id: 1,
+    ...overrides,
+  };
+}
+
 export function withMetaMock(overrides?: Partial<Types.WithMeta>): Types.WithMeta {
   return {
     meta: {
@@ -843,12 +898,17 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     between: 2,
     betweenOpen: 2.5,
     looserExclusive: 5,
+    wholeOfFraction: 3,
+    noWholeMultiple: 1,
+    bigInteger: 1700000000001,
+    clash: clashMock(),
     overlap: {
       a: {
         x: "string",
         y: 1,
       },
     },
+    conflicting: {},
     moreMeta: moreMetaMock(),
     petPlus: {
       ...dogMock(),

@@ -99,6 +99,7 @@ describe("generated mocks compile", () => {
           strict: true,
           // An import or a helper the handlers do not use is an error here.
           noUnusedLocals: true,
+          noUnusedParameters: true,
           noEmit: true,
           skipLibCheck: true,
           lib: ["lib.es2022.d.ts", "lib.dom.d.ts", "lib.dom.iterable.d.ts"],

@@ -407,6 +407,34 @@ components:
               $ref: "#/components/schemas/Pet/properties/tags"
           example:
             tags: [a, b]
+    ClashA:
+      type: object
+      properties:
+        k:
+          enum: [a]
+        "odd key":
+          enum: [a]
+        a:
+          type: string
+    ClashB:
+      type: object
+      properties:
+        b:
+          type: string
+    Clash:
+      description: Optional properties that no value is a value of everywhere
+      allOf:
+        - $ref: "#/components/schemas/ClashA"
+        - $ref: "#/components/schemas/ClashB"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: integer
+            k:
+              enum: [b]
+            "odd key":
+              enum: [b]
     WithMeta:
       type: object
       properties:
@@ -872,6 +900,31 @@ components:
           exclusiveMinimum: 3
           maximum: 9
           exclusiveMaximum: 12
+        wholeOfFraction:
+          type: integer
+          multipleOf: 0.3
+          minimum: 1
+          maximum: 4
+        noWholeMultiple:
+          type: integer
+          multipleOf: 3.14159265
+        bigInteger:
+          type: integer
+          minimum: 1700000000001
+          maximum: 1700000000001
+        clash:
+          $ref: "#/components/schemas/Clash"
+        requiredClash:
+          allOf:
+            - type: object
+              required: [k]
+              properties:
+                k:
+                  enum: [a]
+            - type: object
+              properties:
+                k:
+                  enum: [b]
         overlap:
           allOf:
             - type: object
