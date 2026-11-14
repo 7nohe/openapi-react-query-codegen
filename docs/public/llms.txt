@@ -4,7 +4,7 @@
 
 Key facts for agents:
 
-- Install: `npm install -D @7nohe/openapi-react-query-codegen` and `npm install @tanstack/react-query`. Only the scoped package belongs to this project.
+- Install: `npm install -D @7nohe/openapi-react-query-codegen@beta` (v4 is in beta; without `@beta` npm installs v3) and `npm install @tanstack/react-query`. Only the scoped package belongs to this project.
 - Run: `openapi-rq -i ./openapi.yaml -o ./src/openapi`. Keep the flags in a package.json script and always pass the same ones.
 - Do not edit generated files. Change the spec or the flags and regenerate.
 - `--check` changes no existing file and exits 1 when the committed output is out of date, which makes it a CI drift check.

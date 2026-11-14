@@ -17,9 +17,11 @@ Docs: https://openapi-react-query-codegen.vercel.app (summary for LLMs: https://
 ### Install
 
 ```bash
-npm install -D @7nohe/openapi-react-query-codegen
+npm install -D @7nohe/openapi-react-query-codegen@beta
 npm install @tanstack/react-query
 ```
+
+v4 is in beta: without `@beta`, npm installs v3, which this file does not describe.
 
 `commander` is a peer dependency. If your package manager does not install peers automatically, add it as a devDependency. The generated code compiles with TypeScript 5, 6 and 7; the generator itself does not need the `typescript` package. For `--client axios`, also add `axios`. Nothing else is needed at runtime; the client code is generated into `requests/`.
 

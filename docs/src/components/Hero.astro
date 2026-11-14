@@ -5,7 +5,7 @@ import SpecToHooks from "./SpecToHooks.astro";
 
 const { data } = Astro.locals.starlightRoute.entry;
 const { title = data.title, tagline, actions = [] } = data.hero || {};
-const install = "npm install -D @7nohe/openapi-react-query-codegen";
+const install = "npm install -D @7nohe/openapi-react-query-codegen@beta";
 // The id Starlight gives the title of a page; "Skip to content" and the
 // table of contents point at it.
 const PAGE_TITLE_ID = "_top";

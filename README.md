@@ -17,8 +17,11 @@
 
 ## Quick start
 
+> [!NOTE]
+> v4 is in beta, and this README describes it. Install it with `@beta`; a plain `npm install` still gets v3, whose README and docs are in the [`v3` branch](https://github.com/7nohe/openapi-react-query-codegen/tree/v3). What changes from v3 is in [Migrating to v4](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v4/).
+
 ```bash
-npm install -D @7nohe/openapi-react-query-codegen
+npm install -D @7nohe/openapi-react-query-codegen@beta
 npx openapi-rq -i ./petstore.yaml
 ```
 

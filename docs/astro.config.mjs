@@ -25,6 +25,7 @@ export default defineConfig({
         "./src/styles/theme.css",
       ],
       components: {
+        Banner: "./src/components/Banner.astro",
         Hero: "./src/components/Hero.astro",
       },
       social: [
