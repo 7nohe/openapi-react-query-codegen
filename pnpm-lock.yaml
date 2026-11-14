@@ -26,8 +26,6 @@ overrides:
   lodash: 4.18.0
   mdast-util-to-hast: 13.2.1
   micromatch: 4.0.8
-  minimatch@9: 9.0.7
-  minimatch@10: 10.2.3
   morgan: 1.12.1
   on-headers: 1.1.0
   path-to-regexp@0: 0.1.13
@@ -215,9 +213,6 @@ importers:
 
   examples/react-router-app:
     dependencies:
-      '@react-router/fs-routes':
-        specifier: ^8.5.1
-        version: 8.5.1(@react-router/dev@8.5.1(@react-router/serve@8.5.1(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3))(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3)(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.1)))(typescript@5.6.3)
       '@react-router/node':
         specifier: ^8.5.1
         version: 8.5.1(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3)
@@ -1288,16 +1283,6 @@ packages:
       typescript:
         optional: true
 
-  '@react-router/fs-routes@8.5.1':
-    resolution: {integrity: sha512-rSvu2d33x5aNGYcdevdW9Rtz7gD36Dfz+uFiQYuwIgvSShrf8/eKrg1AwDtXyfA8nak/2oTOeUtqxH7K7GoTug==}
-    engines: {node: '>=22.22.0'}
-    peerDependencies:
-      '@react-router/dev': ^8.5.1
-      typescript: ^5.1.0 || ^6.0.0 || ^7.0.0
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
   '@react-router/node@8.5.1':
     resolution: {integrity: sha512-hEr3YFQaSoQL8T85+DqNOpdDLfuD2mKEeGdQAEvfix2bQdCtcpatE0uzB3zYidIUex0iEJG/eOZdAjLrzlJrjA==}
     engines: {node: '>=22.22.0'}
@@ -2236,10 +2221,6 @@ packages:
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
 
-  balanced-match@4.0.4:
-    resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
-    engines: {node: 18 || 20 || >=22}
-
   baseline-browser-mapping@2.11.34:
     resolution: {integrity: sha512-Aqr8mA1kIvyJ3UY5YAY7ib8LSo1DmDMbMnVqGPtsKW1LxaFQFwn9Eb3yvq2fUKJsRvaXjnAV7R5osqETapzNiA==}
     engines: {node: '>=6.0.0'}
@@ -2268,10 +2249,6 @@ packages:
 
   boolbase@1.0.0:
     resolution: {integrity: sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww==}
-
-  brace-expansion@5.0.12:
-    resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
-    engines: {node: 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -3422,10 +3399,6 @@ packages:
   mime-types@3.0.2:
     resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
     engines: {node: '>=18'}
-
-  minimatch@10.2.3:
-    resolution: {integrity: sha512-Rwi3pnapEqirPSbWbrZaa6N3nmqq4Xer/2XooiOKyV3q12ML06f7MOuc5DVH8ONZIFhwIYQ3yzPH4nt7iWHaTg==}
-    engines: {node: 18 || 20 || >=22}
 
   minimist@1.2.6:
     resolution: {integrity: sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==}
@@ -5567,13 +5540,6 @@ snapshots:
     optionalDependencies:
       typescript: 5.6.3
 
-  '@react-router/fs-routes@8.5.1(@react-router/dev@8.5.1(@react-router/serve@8.5.1(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3))(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3)(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.1)))(typescript@5.6.3)':
-    dependencies:
-      '@react-router/dev': 8.5.1(@react-router/serve@8.5.1(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3))(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3)(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.1))
-      minimatch: 10.2.3
-    optionalDependencies:
-      typescript: 5.6.3
-
   '@react-router/node@8.5.1(react-router@8.5.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.6.3)':
     dependencies:
       '@remix-run/node-fetch-server': 0.14.2
@@ -6621,8 +6587,6 @@ snapshots:
 
   bail@2.0.2: {}
 
-  balanced-match@4.0.4: {}
-
   baseline-browser-mapping@2.11.34: {}
 
   basic-auth@2.0.1:
@@ -6656,10 +6620,6 @@ snapshots:
       - supports-color
 
   boolbase@1.0.0: {}
-
-  brace-expansion@5.0.12:
-    dependencies:
-      balanced-match: 4.0.4
 
   braces@3.0.3:
     dependencies:
@@ -7903,10 +7863,6 @@ snapshots:
   mime-types@3.0.2:
     dependencies:
       mime-db: 1.54.0
-
-  minimatch@10.2.3:
-    dependencies:
-      brace-expansion: 5.0.12
 
   minimist@1.2.6: {}
 
