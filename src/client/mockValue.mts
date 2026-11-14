@@ -436,21 +436,35 @@ function pinnedValues(
 }
 
 /**
- * The value of an intersection that is not an object. Where a member limits
- * the values (`string & "ok"`), only one of those that every member takes is
- * a value of the type; undefined when there is none. Otherwise the members
- * differ in what a type does not show, and the first part stands for all.
+ * The value of an intersection that is not an object, from the values of its
+ * members (`parts`). Where a member limits the values (`string & "ok"`), only
+ * one of those that every member takes is a value of the type. Otherwise it
+ * is the value of a member that only allows the kinds every member does: of
+ * `(string | number) & number` the number, and of `string & number` nothing.
+ * Undefined when there is no value.
  */
 function buildScalarIntersection(
   members: Json[],
-  first: Built,
+  parts: Built[],
   ctx: MockValueCtx,
   indent: string,
 ): Built | undefined {
+  const { doc } = ctx.schema;
   const pinned = members
     .map((member) => pinnedValues(ctx, member))
     .find((values) => values !== undefined);
-  if (pinned === undefined) return first;
+  if (pinned === undefined) {
+    const shared = schemaKinds(doc, { allOf: members });
+    const fitting = members.findIndex((member) =>
+      [...schemaKinds(doc, member)].every((kind) => shared.has(kind)),
+    );
+    if (fitting !== -1) return parts[fitting];
+    // Every member allows more than they share. Only of `null` is the value
+    // known without a member to take it from.
+    return shared.size === 1 && shared.has("null")
+      ? { expr: "null" }
+      : undefined;
+  }
   for (const candidate of pinned) {
     const rendered = members.map((member) =>
       exampleValue(member, candidate, ctx, indent),
@@ -560,7 +574,7 @@ function buildComposed(
   } else if (typed.length > 1) {
     const scalar = buildScalarIntersection(
       typed,
-      parts[firstTyped],
+      parts.slice(firstTyped, firstTyped + typed.length),
       ctx,
       indent,
     );

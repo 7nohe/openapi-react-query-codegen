@@ -306,6 +306,19 @@ describe("emitMocks", () => {
       expect(typed).not.toContain("statusAndPriority");
     });
 
+    test("an intersection of types takes the value of a member that fits all", async () => {
+      const { data } = await mocksOf("mocks.yaml");
+      const shapes = functionBody(data, "shapesMock");
+      // `string & number` has no value.
+      expect(shapes).not.toContain("stringAndNumber");
+      // `(string | number) & number`: the second member's value, not "string".
+      expect(shapes).toContain("    numberOfEither: 1,\n");
+      // `(string | null) & (number | null)` is `null`.
+      expect(shapes).toContain("    nullOfBoth: null,\n");
+      // A number, but neither member's own value is known to be one.
+      expect(shapes).not.toContain("numberOfNeither");
+    });
+
     test("a reference that only leads back to itself limits nothing", async () => {
       const { data } = await mocksOfDocument({
         components: {

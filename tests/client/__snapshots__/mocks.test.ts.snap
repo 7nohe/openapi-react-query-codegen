@@ -317,6 +317,8 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     },
     stringAndOk: "ok",
     okAndString: "ok",
+    numberOfEither: 1,
+    nullOfBoth: null,
     statusAndSold: "sold",
     statusAndText: "available",
     wrapperRequired: {
@@ -916,6 +918,8 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     },
     stringAndOk: "ok",
     okAndString: "ok",
+    numberOfEither: 1,
+    nullOfBoth: null,
     statusAndText: ("available" as Types.Status),
     wrapperRequired: {
       ...dogMock(),

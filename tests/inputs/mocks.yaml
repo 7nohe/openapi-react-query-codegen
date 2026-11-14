@@ -972,6 +972,22 @@ components:
             - enum: [nope, ok]
             - type: string
               enum: [ok]
+        stringAndNumber:
+          allOf:
+            - type: string
+            - type: number
+        numberOfEither:
+          allOf:
+            - type: [string, number]
+            - type: number
+        nullOfBoth:
+          allOf:
+            - type: [string, "null"]
+            - type: [number, "null"]
+        numberOfNeither:
+          allOf:
+            - type: [string, number]
+            - type: [number, boolean]
         noCommon:
           allOf:
             - enum: [a]
