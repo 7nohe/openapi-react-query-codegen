@@ -300,7 +300,11 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     betweenOpen: 2.5,
     looserExclusive: 5,
     wholeOfFraction: 3,
+    smallFraction: 3,
+    farWholeMultiple: 62831853,
+    exponentFraction: 1,
     noWholeMultiple: 1,
+    bigTenths: 170000000000.1,
     bigInteger: 1700000000001,
     clash: clashMock(),
     overlap: {
@@ -901,7 +905,11 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     betweenOpen: 2.5,
     looserExclusive: 5,
     wholeOfFraction: 3,
+    smallFraction: 3,
+    farWholeMultiple: 62831853,
+    exponentFraction: 1,
     noWholeMultiple: 1,
+    bigTenths: 170000000000.1,
     bigInteger: 1700000000001,
     clash: clashMock(),
     overlap: {

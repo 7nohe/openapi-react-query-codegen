@@ -174,6 +174,27 @@ function stringSample(schema: Json): string {
 }
 
 /**
+ * The first whole number a fraction goes into: 3 for 0.3, and 3 for 0.0003.
+ * An integer that is a multiple of the fraction is a multiple of it. Read off
+ * the digits of the fraction, so that it is exact however small the fraction
+ * is; `1` when the number is too large or the fraction too small to tell.
+ */
+function wholeMultiple(fraction: number): number {
+  const text = fraction.toString();
+  // In exponent form (`3e-7`) the digits are not all there.
+  const digits = text.includes("e") ? fraction.toFixed(20) : text;
+  const [whole, decimals = ""] = digits.split(".");
+  const numerator = BigInt(whole + decimals);
+  const denominator = 10n ** BigInt(decimals.length);
+  let [a, b] = [numerator, denominator];
+  while (b !== 0n) [a, b] = [b, a % b];
+  const multiple = a === 0n ? 0n : numerator / a;
+  return multiple > 0n && multiple <= BigInt(Number.MAX_SAFE_INTEGER)
+    ? Number(multiple)
+    : 1;
+}
+
+/**
  * `1`, or where the schema does not allow it, a value in the range it gives
  * that is a multiple of its `multipleOf`.
  */
@@ -217,14 +238,7 @@ function numberSample(schema: Json): number {
         ? 1
         : undefined;
   if (integer && step !== undefined && !Number.isInteger(step)) {
-    // An integer that is a multiple of a fraction is a multiple of the first
-    // whole number the fraction goes into (3 for 0.3). Without one in reach
-    // the value is at least an integer.
-    const fraction = step;
-    const whole = Array.from({ length: 1000 }, (_, index) =>
-      Math.round((index + 1) * fraction),
-    ).find((value, index) => Math.abs((index + 1) * fraction - value) < 1e-9);
-    step = whole ?? 1;
+    step = wholeMultiple(step);
   }
   if (step !== undefined) {
     const size = step;
@@ -233,7 +247,8 @@ function numberSample(schema: Json): number {
     const steps = (bound: number) => {
       const exact = bound / size;
       const whole = Math.round(exact);
-      return Math.abs(exact - whole) < 1e-9 ? whole : exact;
+      const near = 1e-9 * Math.max(1, Math.abs(exact));
+      return Math.abs(exact - whole) <= near ? whole : exact;
     };
     const lowest = Math.ceil(steps(min));
     const highest = Math.floor(steps(max));
@@ -248,13 +263,15 @@ function numberSample(schema: Json): number {
       ...(Number.isFinite(max)
         ? [highest - (maxOpen && highest === steps(max) ? 1 : 0)]
         : []),
-    ].map((count) =>
+    ].map((count) => {
       // A whole step gives the number as it is. A fraction leaves the dust
-      // of its multiplication behind (0.1 * 3), which is rounded away.
-      Number.isInteger(size)
-        ? count * size
-        : Number((count * size).toPrecision(12)),
-    );
+      // of its multiplication behind (0.1 * 3), which is rounded away, unless
+      // that would take a number out of the range it was in.
+      const exact = count * size;
+      if (Number.isInteger(size)) return exact;
+      const rounded = Number(exact.toPrecision(15));
+      return inRange(rounded) || !inRange(exact) ? rounded : exact;
+    });
     return candidates.find(inRange) ?? candidates[0];
   }
 

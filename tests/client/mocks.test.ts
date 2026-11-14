@@ -247,7 +247,14 @@ describe("emitMocks", () => {
         "noMultiple: 2,",
         // An integer that is a multiple of a fraction is still an integer
         "wholeOfFraction: 3,",
+        // However small the fraction is, or however far the whole number
+        "smallFraction: 3,",
+        "farWholeMultiple: 62831853,",
+        "exponentFraction: 1,",
+        // Too small to tell, so at least an integer
         "noWholeMultiple: 1,",
+        // Rounding the dust away must not leave the range
+        "bigTenths: 170000000000.1,",
         // A whole step is not rounded to a few digits
         "bigInteger: 1700000000001,",
       ]) {

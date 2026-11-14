@@ -905,9 +905,25 @@ components:
           multipleOf: 0.3
           minimum: 1
           maximum: 4
-        noWholeMultiple:
+        smallFraction:
+          type: integer
+          multipleOf: 0.0003
+          minimum: 1
+          maximum: 4
+        farWholeMultiple:
           type: integer
           multipleOf: 3.14159265
+        exponentFraction:
+          type: integer
+          multipleOf: 2.5e-7
+        noWholeMultiple:
+          type: integer
+          multipleOf: 1.0e-300
+        bigTenths:
+          type: number
+          multipleOf: 0.1
+          minimum: 170000000000.1
+          maximum: 170000000000.1
         bigInteger:
           type: integer
           minimum: 1700000000001
