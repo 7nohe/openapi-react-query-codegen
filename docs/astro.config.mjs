@@ -56,6 +56,7 @@ export default defineConfig({
             { slug: "guides/introduction" },
             { slug: "guides/usage" },
             { slug: "guides/cli-options" },
+            { slug: "guides/mocking" },
             { slug: "guides/ci-and-agents" },
             { slug: "guides/benchmarks" },
             { slug: "guides/migrating-to-v3" },

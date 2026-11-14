@@ -30,6 +30,8 @@ export type LimitedUserConfig = {
   nextPageParam: string;
   initialPageParam: string | number;
   omitInitialPageParam?: boolean;
+  /** `--mock`: also generate mock data and request handlers for this library. */
+  mock?: "msw";
   /** `--agentsMd`: the file to keep the agent guide in, or `true` for `AGENTS.md`. */
   agentsMd?: string | boolean;
 };

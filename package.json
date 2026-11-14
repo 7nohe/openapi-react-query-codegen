@@ -71,6 +71,7 @@
     "axios": "1.20.0",
     "commander": "^15.1.0",
     "lefthook": "^2.1.10",
+    "msw": "^3.0.4",
     "typescript": "^6.0.3",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"

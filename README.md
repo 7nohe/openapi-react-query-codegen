@@ -21,6 +21,7 @@
 - **SSR helpers**: `prefetchQuery`, `prefetchInfiniteQuery`, and `ensureQueryData` functions per operation — ready for Next.js App Router hydration
 - **Hierarchical query keys** with exported key constants and functions: invalidate one exact query, all infinite pages of an operation, or every cache entry of an operation with a single prefix
 - **Pure TypeScript client** (types, SDK functions and a small fetch or axios runtime) generated from the same OpenAPI 3.0/3.1 document — no separate client generator to install
+- **MSW mocks from the same spec** (`--mock msw`): typed mock data and a request handler per operation, with fixed values taken from the spec's examples — build the frontend before the backend exists, and reuse the handlers in tests
 - **CI- and agent-friendly**: `--check` fails CI when committed output is out of date, `--json` prints errors as machine-readable JSON, `--agentsMd` keeps a guide in your `AGENTS.md` that lets a coding agent look one operation up instead of reading the generated files, and the package ships an [`AGENTS.md`](./AGENTS.md) for coding agents
 
 ## Quick start
@@ -63,7 +64,7 @@ function Pets() {
 }
 ```
 
-See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7nohe.dev/guides/cli-options/), [usage](https://orqc.7nohe.dev/guides/usage/) (SSR, infinite queries, mutations) and [CI and coding agents](https://orqc.7nohe.dev/guides/ci-and-agents/).
+See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7nohe.dev/guides/cli-options/), [usage](https://orqc.7nohe.dev/guides/usage/) (SSR, infinite queries, mutations), [mocking with MSW](https://orqc.7nohe.dev/guides/mocking/) and [CI and coding agents](https://orqc.7nohe.dev/guides/ci-and-agents/).
 
 ## Examples
 
@@ -86,7 +87,7 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 | SSR helpers (`prefetchQuery` / `prefetchInfiniteQuery` / `ensureQueryData`) | ✅ | ❌ | Partial (`usePrefetch`) | Not provided (use `queryOptions`) |
 | Hierarchical query keys for granular invalidation | ✅ | ✅ (tags) | Partial | Not documented |
 | Stable release line | ✅ SemVer | pre-1.0, frequent breaking changes | ✅ | ⚠️ upstream openapi-typescript is in [maintenance mode](https://github.com/openapi-ts/openapi-typescript/issues/2874) |
-| MSW mock generation | ❌ (out of scope) | ❌ | ✅ | ❌ |
+| MSW mock generation | ✅ (`--mock msw`, fixed values) | ❌ | ✅ (random values with Faker) | ❌ |
 | Vue / Solid / Svelte / Angular | ❌ React-focused | ✅ | ✅ | ❌ |
 | Generation time, GitHub REST API (1,272 operations)¹ | **0.46 s** | 2.98 s | 4.31 s | 2.10 s |
 | Packages added by installing the generator¹ | **9** (2.1 MB) | 51 (10.8 MB) | 89 (101.5 MB) | 35 (20.5 MB) |
@@ -94,7 +95,7 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 
 ¹ Measured on 2026-11-13 on an Apple M2 with Node.js 24 (generation time is the median wall-clock time of the CLI), with 4.0.0-beta.4, `@hey-api/openapi-ts` 0.99.0, Orval 8.46.0 and openapi-typescript 7.13.0 + openapi-react-query 0.5.4. Methods, the other specifications and type-checking times are on the [Benchmarks](https://orqc.7nohe.dev/guides/benchmarks/) page; the scripts are in [`benchmarks/`](./benchmarks).
 
-**Scope**: this library is deliberately React-focused and does not generate API mocks — use Orval if MSW mocks are your priority, or the hey-api plugin if you need non-React frameworks.
+**Scope**: this library is deliberately React-focused — use the hey-api plugin if you need non-React frameworks. Its [MSW mocks](https://orqc.7nohe.dev/guides/mocking/) answer with fixed values taken from the spec and keep no state; use Orval if you want randomly generated mock data.
 
 **Coming from openapi-typescript / openapi-fetch / openapi-react-query?** See the [migration guide](https://orqc.7nohe.dev/guides/migrating-from-openapi-react-query/).
 

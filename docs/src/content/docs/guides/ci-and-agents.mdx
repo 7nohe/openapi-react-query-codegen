@@ -25,7 +25,7 @@ Use exactly the same options as your normal codegen script. Different options pr
 `--check`:
 
 - generates into a temporary directory inside `<output>/queries` (`.openapi-rq-check-*`) and deletes it afterwards. `--format` and `--lint` run on that copy with the same configuration files, and overrides or ignore rules that target the output directory by path (`src/openapi/**`, a folder named `openapi`) apply to it as well
-- compares only the directories the generator owns: `<output>/requests` and `<output>/queries`
+- compares only the directories the generator owns: `<output>/requests` and `<output>/queries`, and `<output>/mocks` when `--mock` is passed
 - never changes an existing file in the output directory
 - exits with `0` when everything matches, and with `1` when files differ
 

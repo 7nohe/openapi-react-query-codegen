@@ -7,6 +7,7 @@ import type { ClientChoice, LimitedUserConfig } from "./cli.mjs";
 import {
   type ClientKind,
   detectImportExtension,
+  detectMswMajor,
   findNearestTsConfigPath,
   type GeneratedClient,
   generateClient,
@@ -14,6 +15,7 @@ import {
   writeGeneratedFiles,
 } from "./client/index.mjs";
 import {
+  buildMocksOutputPath,
   buildQueriesOutputPath,
   buildRequestsOutputPath,
   formatOptions,
@@ -102,6 +104,9 @@ async function runGenerate(
   // One answer for both directories: the queries import the requests.
   const importExtension = detectImportExtension(process.cwd());
 
+  // The handlers import MSW the way the installed version exports it.
+  const msw = formattedOptions.mock ? detectMswMajor(process.cwd()) : undefined;
+
   let generated: GeneratedClient;
   try {
     generated = await generateClient({
@@ -109,6 +114,7 @@ async function runGenerate(
       client,
       enums: formattedOptions.enums,
       importExtension,
+      mocks: msw ? { mswMajor: msw.major } : undefined,
       noOperationId: formattedOptions.noOperationId,
       pageParam: formattedOptions.pageParam,
       schemas: formattedOptions.noSchemas
@@ -120,9 +126,14 @@ async function runGenerate(
     throw mapClientError(error, formattedOptions.input);
   }
   if (!runtime.silent) {
+    if (msw?.warning) console.warn(msw.warning);
     for (const warning of generated.warnings) console.warn(warning);
   }
   await writeGeneratedFiles(openApiOutputPath, generated.files);
+  const mocksOutputPath = buildMocksOutputPath(options.output);
+  if (generated.mockFiles) {
+    await writeGeneratedFiles(mocksOutputPath, generated.mockFiles);
+  }
 
   const source = createSource({
     generated,
@@ -141,6 +152,14 @@ async function runGenerate(
     format: formattedOptions.format,
     lint: formattedOptions.lint,
   });
+  if (generated.mockFiles) {
+    await processOutput({
+      output: mocksOutputPath,
+      format: formattedOptions.format,
+      lint: formattedOptions.lint,
+      label: "mocks",
+    });
+  }
 
   if (options.agentsMd) {
     const file = agentsFilePath(options.agentsMd);

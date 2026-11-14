@@ -96,6 +96,10 @@ export interface ResponseIR {
   schema?: Json;
   /** Every media type the response declares. */
   mediaTypes: string[];
+  /** The media type `schema` and `example` are taken from. */
+  mediaType?: string;
+  /** The body the media type gives as its `example`, or as the first of its `examples`. */
+  example?: Json;
 }
 
 export interface SecurityIR {
@@ -178,6 +182,27 @@ export function pickContent(
   const json = entries.find(([type]) => mediaKind(type) === "json");
   const [mediaType, media] = json ?? entries[0];
   return { mediaType, media };
+}
+
+/** The example of a media type: its `example`, or the first of its `examples`. */
+function mediaExample(doc: Doc, media: Json): Json {
+  if (!media || typeof media !== "object") return undefined;
+  if (media.example !== undefined) return media.example;
+  const examples =
+    media.examples && typeof media.examples === "object"
+      ? Object.values(media.examples as Record<string, Json>)
+      : [];
+  for (const raw of examples) {
+    let example: Json;
+    try {
+      example = deref(doc, raw);
+    } catch {
+      // An example that is not there is no example.
+      continue;
+    }
+    if (example?.value !== undefined) return example.value;
+  }
+  return undefined;
 }
 
 function buildJsDoc(
@@ -356,6 +381,8 @@ export function collectOperations(
           description: response.description,
           schema: content?.media?.schema,
           mediaTypes: Object.keys(response.content ?? {}),
+          mediaType: content?.mediaType,
+          example: mediaExample(doc, content?.media),
         });
       }
 
