@@ -34,10 +34,14 @@ import {
    npm install @tanstack/react-query
    ```
 
-2. Generate. Run it again whenever the specification changes.
+2. Add the command to your `package.json` scripts, then generate. Run it again whenever the specification changes.
+
+   ```json
+   { "scripts": { "codegen": "orqc -i ./petstore.yaml -o ./src/openapi" } }
+   ```
 
    ```bash
-   npx orqc -i ./petstore.yaml -o ./src/openapi
+   npm run codegen
    ```
 
 3. Call an operation. Its parameters, its response and its errors are typed from the specification.
