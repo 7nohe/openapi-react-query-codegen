@@ -174,24 +174,25 @@ function stringSample(schema: Json): string {
 }
 
 /**
- * The first whole number a fraction goes into: 3 for 0.3, and 3 for 0.0003.
+ * The first whole number a fraction goes into: 3 for 0.3, and 3 for 3e-21.
  * An integer that is a multiple of the fraction is a multiple of it. Read off
- * the digits of the fraction, so that it is exact however small the fraction
- * is; `1` when the number is too large or the fraction too small to tell.
+ * the digits and the exponent of the fraction, so that it is exact however
+ * small the fraction is; `1` when the whole number is too large to be one a
+ * mock can hold.
  */
 function wholeMultiple(fraction: number): number {
-  const text = fraction.toString();
-  // In exponent form (`3e-7`) the digits are not all there.
-  const digits = text.includes("e") ? fraction.toFixed(20) : text;
-  const [whole, decimals = ""] = digits.split(".");
-  const numerator = BigInt(whole + decimals);
-  const denominator = 10n ** BigInt(decimals.length);
+  const [mantissa, exponent = "0"] = fraction.toString().split("e");
+  const [whole, decimals = ""] = mantissa.split(".");
+  // The fraction is `numerator / denominator`, with a power of ten for one
+  // of them.
+  const shift = decimals.length - Number(exponent);
+  const power = 10n ** BigInt(Math.abs(shift));
+  const numerator = BigInt(whole + decimals) * (shift < 0 ? power : 1n);
+  const denominator = shift > 0 ? power : 1n;
   let [a, b] = [numerator, denominator];
   while (b !== 0n) [a, b] = [b, a % b];
-  const multiple = a === 0n ? 0n : numerator / a;
-  return multiple > 0n && multiple <= BigInt(Number.MAX_SAFE_INTEGER)
-    ? Number(multiple)
-    : 1;
+  const multiple = numerator / a;
+  return multiple <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(multiple) : 1;
 }
 
 /**

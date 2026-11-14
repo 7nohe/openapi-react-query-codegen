@@ -251,7 +251,9 @@ describe("emitMocks", () => {
         "smallFraction: 3,",
         "farWholeMultiple: 62831853,",
         "exponentFraction: 1,",
-        // Too small to tell, so at least an integer
+        "tinyFraction: 3,",
+        "everyInteger: 1,",
+        // The whole number is too large to hold, so at least an integer
         "noWholeMultiple: 1,",
         // Rounding the dust away must not leave the range
         "bigTenths: 170000000000.1,",
