@@ -15,7 +15,6 @@
     "test:generated": "pnpm typegen && tsc -p ./tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@react-router/fs-routes": "^8.5.1",
     "@react-router/node": "^8.5.1",
     "@react-router/serve": "^8.5.1",
     "@tanstack/react-query": "^5.59.13",
