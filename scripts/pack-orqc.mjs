@@ -5,7 +5,15 @@
 //
 //   node scripts/pack-orqc.mjs <destination directory>
 import { execFileSync, execSync } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,22 +43,18 @@ try {
     path.join(work, "package.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
-  await mkdir(destination, { recursive: true });
+  // Packs inside the work directory, so the command holds no path: npm is
+  // npm.cmd on Windows, which Node only starts through cmd.exe, and cmd.exe
+  // expands `%NAME%` even inside quotes.
   const options = { cwd: work, stdio: ["ignore", "ignore", "inherit"] };
   if (process.platform === "win32") {
-    // npm is npm.cmd on Windows, which Node only starts through a shell.
-    // Windows paths cannot contain double quotes.
-    execSync(
-      `npm pack --ignore-scripts --pack-destination "${destination}"`,
-      options,
-    );
+    execSync("npm pack --ignore-scripts", options);
   } else {
-    execFileSync(
-      "npm",
-      ["pack", "--ignore-scripts", "--pack-destination", destination],
-      options,
-    );
+    execFileSync("npm", ["pack", "--ignore-scripts"], options);
   }
+  const tarball = `7nohe-orqc-${manifest.version}.tgz`;
+  await mkdir(destination, { recursive: true });
+  await copyFile(path.join(work, tarball), path.join(destination, tarball));
   console.log(
     `packed ${manifest.name}@${manifest.version} into ${destination}`,
   );

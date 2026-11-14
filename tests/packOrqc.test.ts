@@ -12,7 +12,10 @@ describe("scripts/pack-orqc.mjs", () => {
   let tarball: string;
 
   beforeAll(async () => {
-    destination = await mkdtemp(path.join(tmpdir(), "orqc-pack-test-"));
+    // `%USERNAME%` stays literal only if the path never reaches cmd.exe.
+    destination = await mkdtemp(
+      path.join(tmpdir(), "orqc-pack-test-%USERNAME%-"),
+    );
     execFileSync("node", ["scripts/pack-orqc.mjs", destination], {
       cwd: root,
       stdio: "ignore",
