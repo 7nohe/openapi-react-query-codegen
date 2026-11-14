@@ -90,16 +90,26 @@ function isPlainObject(doc: Doc, schema: Json, depth = 0): boolean {
 
 const PATH_PARAMETER = /\{([^{}]+)\}/g;
 
+const REGEXP_SYNTAX = /[.*+?^${}()|[\]\\]/;
+
 /**
- * The fixed text of a path as a request carries it: a URL percent-encodes
- * what is not ASCII and a few characters besides (`/café` is requested as
- * `/caf%C3%A9`). What is encoded already stays as it is.
+ * A regular expression for the fixed text of a path as a request carries it.
+ * A URL percent-encodes what is not ASCII (`/café` is requested as
+ * `/caf%C3%A9`); what is encoded already stays as it is. A few ASCII
+ * characters are encoded by some URL parsers and not by others (`^` is by
+ * Node.js 24 and not by 22), so both spellings match. The parser is not
+ * asked: the output must not depend on what runs the generator.
  */
-function encodePathText(text: string): string {
-  return text.replace(/[^\x21-\x7e]|["<>`^{}]/gu, (char) =>
-    // Between two letters, as a URL drops a space from its ends.
-    new URL(`http://x/a${char}a`).pathname.slice(2, -1),
-  );
+function pathTextPattern(text: string): string {
+  return text.replace(/[^\x21-\x7e]|[.*+?^${}()|[\]\\"<>`]/gu, (char) => {
+    const literal = REGEXP_SYNTAX.test(char) ? `\\${char}` : char;
+    if (/["<>^`{}]/.test(char)) {
+      return `(?:${literal}|${encodeURIComponent(char)})`;
+    }
+    if (char >= "!" && char <= "~") return literal;
+    // A lone surrogate is sent as the replacement character.
+    return encodeURIComponent(char.isWellFormed() ? char : "\uFFFD");
+  });
 }
 
 /**
@@ -128,11 +138,7 @@ function mswPath(path: string): string {
   const source = path
     .split(PATH_PARAMETER)
     // Every other part is the name of a parameter.
-    .map((part, index) =>
-      index % 2 === 1
-        ? "([^/]+)"
-        : encodePathText(part).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-    )
+    .map((part, index) => (index % 2 === 1 ? "([^/]+)" : pathTextPattern(part)))
     .join("");
   // As in a path given as text, a trailing slash is only required when the
   // path has one.

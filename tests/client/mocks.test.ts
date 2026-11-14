@@ -532,12 +532,18 @@ describe("emitMocks", () => {
           "/a b/%41%/x^y": {
             get: { responses: { 204: { description: "ok" } } },
           },
+          "/lone\ud800/surrogate": {
+            get: { responses: { 204: { description: "ok" } } },
+          },
         },
       });
       // What is encoded already stays, and a lone `%` is not encoded again.
-      // The URL parser decides what is encoded: a space is, `^` is not.
+      // URL parsers differ on `^`, so both spellings match.
       expect(encoded.handlers).toContain(
-        String.raw`new RegExp("/a%20b/%41%/x\\^y/?$")`,
+        String.raw`new RegExp("/a%20b/%41%/x(?:\\^|%5E)y/?$")`,
+      );
+      expect(encoded.handlers).toContain(
+        'new RegExp("/lone%EF%BF%BD/surrogate/?$")',
       );
     });
 
