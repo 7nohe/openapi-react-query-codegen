@@ -1,6 +1,6 @@
 {
   "name": "@7nohe/openapi-react-query-codegen",
-  "version": "4.0.0-beta.7",
+  "version": "4.0.0-beta.8",
   "description": "Generate TanStack Query (React Query) hooks, queryOptions factories and a typed fetch/axios client from your OpenAPI spec",
   "bin": {
     "orqc": "dist/cli.mjs",
