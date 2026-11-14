@@ -11,7 +11,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./.github/assets/how-it-works-dark.svg">
-  <img alt="The findPets operation of an OpenAPI document. Running npx orqc -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets." src="./.github/assets/how-it-works-light.svg" width="880">
+  <img alt="The findPets operation of an OpenAPI document. Running npx @7nohe/orqc@beta -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets." src="./.github/assets/how-it-works-light.svg" width="880">
 </picture>
 
 ## Features
@@ -34,12 +34,21 @@ Try it without installing:
 npx @7nohe/orqc@beta -i ./petstore.yaml
 ```
 
-Then add it to your project, next to TanStack Query, and keep the command in a `package.json` script:
+Then add it to your project, next to TanStack Query:
 
 ```bash
 npm install -D @7nohe/openapi-react-query-codegen@beta
 npm install @tanstack/react-query
-npx orqc -i ./petstore.yaml
+```
+
+Keep the command in a `package.json` script. A script only runs the version installed in the project, so the output always matches your lockfile:
+
+```json
+{ "scripts": { "codegen": "orqc -i ./petstore.yaml" } }
+```
+
+```bash
+npm run codegen
 ```
 
 This writes the client to `openapi/requests/` and the TanStack Query code to `openapi/queries/` (change the folder with `-o`):

@@ -32,7 +32,7 @@ OpenAPI React Query Codegen is a code generator for creating React Query (also k
 This project publishes only `@7nohe/openapi-react-query-codegen` and its short name `@7nohe/orqc`. The unscoped `openapi-react-query-codegen` and `openapi-rq` and the copies under other scopes on npm are published by third parties, not by this project.
 :::
 
-Register the command to the `scripts` property in your package.json file.
+Register the command to the `scripts` property in your package.json file. A script only runs the version installed in the project, so the output always matches your lockfile.
 
 ```json
 {
@@ -48,7 +48,7 @@ The command is `orqc`; `openapi-rq` and `openapi-react-query-codegen` run the sa
 $ npx @7nohe/orqc@beta -i ./petstore.yaml
 ```
 
-Do not run `npx orqc`, `npx openapi-rq` or `npx openapi-react-query-codegen` outside a project that has the package installed: npx would then look up the unscoped package with that name, and on npm those are other people's packages.
+Use `@7nohe/orqc` only for trying it out: in a project it would fetch its own copy instead of the version you installed. And do not run `npx orqc`, `npx openapi-rq` or `npx openapi-react-query-codegen` outside a project that has the package installed: npx then looks up the unscoped package of that name, and on npm `openapi-rq` and `openapi-react-query-codegen` are other people's packages.
 
 
 ## Usage

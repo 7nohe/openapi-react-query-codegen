@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="372" viewBox="0 0 880 372" role="img" aria-labelledby="title desc">
   <title id="title">How OpenAPI React Query Codegen works</title>
-  <desc id="desc">The findPets operation of an OpenAPI document. Running npx orqc -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets.</desc>
+  <desc id="desc">The findPets operation of an OpenAPI document. Running npx @7nohe/orqc@beta -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets.</desc>
   <style>
 text { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #e6eef8; }
 .label { font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; fill: #8ea3be; letter-spacing: 0.02em; }
@@ -8,8 +8,8 @@ text { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consol
 .signal { fill: #93d66e; font-weight: 600; }
 .code { font-size: 14px; }
 @keyframes type {
-  0%, 2% { width: 0; animation-timing-function: steps(24, end); }
-  13%, 100% { width: 239px; }
+  0%, 2% { width: 0; animation-timing-function: steps(36, end); }
+  13%, 100% { width: 376px; }
 }
 .typing { animation: type 10s linear infinite; }
 @keyframes draw {
@@ -71,12 +71,12 @@ text { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consol
 }
   </style>
   <defs>
-    <clipPath id="typed"><rect class="typing" x="52" y="18" height="32" width="239" /></clipPath>
+    <clipPath id="typed"><rect class="typing" x="52" y="18" height="32" width="376" /></clipPath>
   </defs>
   <rect x="0.5" y="0.5" width="879" height="371" rx="12" fill="#112741" stroke="#29415f" />
 
   <text x="32" y="40" font-size="16" class="muted">$</text>
-  <text x="52" y="40" font-size="16" clip-path="url(#typed)">npx orqc -i openapi.yaml</text>
+  <text x="52" y="40" font-size="16" clip-path="url(#typed)">npx @7nohe/orqc@beta -i openapi.yaml</text>
   <line x1="0" y1="62" x2="880" y2="62" stroke="#29415f" />
 
   <text class="label" x="32" y="94">openapi.yaml</text>

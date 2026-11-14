@@ -42,7 +42,7 @@ const mono =
 const sans =
   "'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
 
-const command = "npx orqc -i openapi.yaml";
+const command = "npx @7nohe/orqc@beta -i openapi.yaml";
 const commandSize = 16;
 const charWidth = 0.61 * commandSize;
 
@@ -79,7 +79,7 @@ function svg(colors) {
     // Typing: a clip that widens one character at a time.
     `@keyframes type {
   0%, 2% { width: 0; animation-timing-function: steps(${command.length}, end); }
-  13%, 100% { width: ${Math.ceil(command.length * charWidth) + 4}px; }
+  13%, 100% { width: ${Math.ceil(command.length * charWidth) + 24}px; }
 }
 .typing { animation: type ${cycle}s linear infinite; }`,
     `@keyframes draw {
@@ -127,12 +127,12 @@ function svg(colors) {
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title desc">
   <title id="title">How OpenAPI React Query Codegen works</title>
-  <desc id="desc">The findPets operation of an OpenAPI document. Running npx orqc -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets.</desc>
+  <desc id="desc">The findPets operation of an OpenAPI document. Running npx @7nohe/orqc@beta -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets.</desc>
   <style>
 ${css}
   </style>
   <defs>
-    <clipPath id="typed"><rect class="typing" x="52" y="18" height="32" width="${Math.ceil(command.length * charWidth) + 4}" /></clipPath>
+    <clipPath id="typed"><rect class="typing" x="52" y="18" height="32" width="${Math.ceil(command.length * charWidth) + 24}" /></clipPath>
   </defs>
   <rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="12" fill="${colors.bg}" stroke="${colors.line}" />
 

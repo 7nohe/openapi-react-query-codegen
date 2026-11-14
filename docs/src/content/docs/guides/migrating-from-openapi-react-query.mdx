@@ -24,10 +24,17 @@ The move is a rewrite of call sites, not a drop-in swap. Hook names come from ea
 ```bash
 npm uninstall openapi-typescript openapi-fetch openapi-react-query
 npm install -D @7nohe/openapi-react-query-codegen@beta
-npx orqc -i ./openapi.yaml
 ```
 
-Keep `@tanstack/react-query` 5.x installed. Replace the `openapi-typescript` step in your scripts with `orqc`.
+Keep `@tanstack/react-query` 5.x installed. Replace the `openapi-typescript` step in your scripts with `orqc`, then run it:
+
+```json
+{ "scripts": { "codegen": "orqc -i ./openapi.yaml" } }
+```
+
+```bash
+npm run codegen
+```
 
 ## 2. Replace client setup
 
