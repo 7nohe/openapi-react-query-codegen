@@ -927,6 +927,10 @@ components:
         noWholeMultiple:
           type: integer
           multipleOf: 1.2345678901234567
+        noWholeMultipleAboveZero:
+          type: integer
+          multipleOf: 1.2345678901234567
+          minimum: 2
         bigTenths:
           type: number
           multipleOf: 0.1

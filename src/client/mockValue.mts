@@ -177,10 +177,10 @@ function stringSample(schema: Json): string {
  * The first whole number a fraction goes into: 3 for 0.3, and 3 for 3e-21.
  * An integer that is a multiple of the fraction is a multiple of it. Read off
  * the digits and the exponent of the fraction, so that it is exact however
- * small the fraction is; `1` when the whole number is too large to be one a
- * mock can hold.
+ * small the fraction is; undefined when the whole number is too large to be
+ * one a mock can hold.
  */
-function wholeMultiple(fraction: number): number {
+function wholeMultiple(fraction: number): number | undefined {
   const [mantissa, exponent = "0"] = fraction.toString().split("e");
   const [whole, decimals = ""] = mantissa.split(".");
   // The fraction is `numerator / denominator`, with a power of ten for one
@@ -192,7 +192,9 @@ function wholeMultiple(fraction: number): number {
   let [a, b] = [numerator, denominator];
   while (b !== 0n) [a, b] = [b, a % b];
   const multiple = numerator / a;
-  return multiple <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(multiple) : 1;
+  return multiple <= BigInt(Number.MAX_SAFE_INTEGER)
+    ? Number(multiple)
+    : undefined;
 }
 
 /**
@@ -239,7 +241,11 @@ function numberSample(schema: Json): number {
         ? 1
         : undefined;
   if (integer && step !== undefined && !Number.isInteger(step)) {
-    step = wholeMultiple(step);
+    const whole = wholeMultiple(step);
+    // With no whole multiple a mock can hold, zero is the only one left.
+    // Outside the range, the value is at least an integer inside it.
+    if (whole === undefined && inRange(0)) return 0;
+    step = whole ?? 1;
   }
   if (step !== undefined) {
     const size = step;

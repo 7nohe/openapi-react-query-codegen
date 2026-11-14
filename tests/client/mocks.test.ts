@@ -253,8 +253,10 @@ describe("emitMocks", () => {
         "exponentFraction: 1,",
         "tinyFraction: 3,",
         "everyInteger: 1,",
-        // The whole number is too large to hold, so at least an integer
-        "noWholeMultiple: 1,",
+        // The whole number is too large to hold, which leaves zero
+        "noWholeMultiple: 0,",
+        // Zero is out of the range, so at least an integer inside it
+        "noWholeMultipleAboveZero: 2,",
         // Rounding the dust away must not leave the range
         "bigTenths: 170000000000.1,",
         // A whole step is not rounded to a few digits
