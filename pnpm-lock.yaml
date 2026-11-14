@@ -99,9 +99,18 @@ importers:
       '@astrojs/check':
         specifier: ^0.9.4
         version: 0.9.12(@emnapi/runtime@1.11.3)(prettier@3.9.6)(typescript@5.6.3)
+      '@astrojs/markdown-satteri':
+        specifier: 0.4.6
+        version: 0.4.6
       '@astrojs/starlight':
         specifier: ^0.42.8
         version: 0.42.8(astro@7.4.5(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.1))(typescript@5.6.3)
+      '@fontsource-variable/ibm-plex-sans':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/ibm-plex-mono':
+        specifier: 5.3.0
+        version: 5.3.0
       astro:
         specifier: ~7.4.5
         version: 7.4.5(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.34.1)(tsx@4.23.12)(yaml@2.9.1)
@@ -1384,6 +1393,12 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@fontsource-variable/ibm-plex-sans@5.3.0':
+    resolution: {integrity: sha512-agG8tXFEo0hD9+J7npa4vbbWult52eMLVaQ6WQRlhs/iCAojrMAoejru85W9HTVXHfyUj96KM7gp/KGAS87XaQ==}
+
+  '@fontsource/ibm-plex-mono@5.3.0':
+    resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -6363,6 +6378,10 @@ snapshots:
       '@floating-ui/utils': 0.2.12
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@fontsource-variable/ibm-plex-sans@5.3.0': {}
+
+  '@fontsource/ibm-plex-mono@5.3.0': {}
 
   '@img/colour@1.1.0': {}
 

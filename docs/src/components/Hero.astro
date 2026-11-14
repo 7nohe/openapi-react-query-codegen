@@ -1,0 +1,148 @@
+---
+// The hero of the home page: what the generator is, how to get it, and a
+// panel that shows what one operation of a specification turns into.
+import SpecToHooks from "./SpecToHooks.astro";
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero || {};
+const install = "npm install -D @7nohe/openapi-react-query-codegen";
+// The id Starlight gives the title of a page; "Skip to content" and the
+// table of contents point at it.
+const PAGE_TITLE_ID = "_top";
+---
+
+<div class="hero">
+  <div class="copy">
+    <h1 id={PAGE_TITLE_ID} data-page-title set:html={title} />
+    {tagline && <p class="tagline" set:html={tagline} />}
+    <div class="install">
+      <code>{install}</code>
+      <button type="button" data-copy={install}>Copy</button>
+    </div>
+    <div class="actions">
+      {
+        actions.map(({ link, text, variant }) => (
+          <a href={link} class:list={["action", variant]}>
+            {text}
+          </a>
+        ))
+      }
+    </div>
+  </div>
+  <SpecToHooks />
+</div>
+
+<script>
+  for (const button of document.querySelectorAll<HTMLButtonElement>(
+    "button[data-copy]",
+  )) {
+    button.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(button.dataset.copy ?? "");
+      button.textContent = "Copied";
+      setTimeout(() => {
+        button.textContent = "Copy";
+      }, 1600);
+    });
+  }
+</script>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+    align-items: center;
+    padding-block: clamp(1.5rem, 5vw, 4rem) clamp(2rem, 5vw, 4rem);
+  }
+  @media (min-width: 72rem) {
+    .hero {
+      grid-template-columns: minmax(0, 9fr) minmax(0, 14fr);
+      gap: 3.5rem;
+    }
+  }
+
+  h1 {
+    font-size: clamp(2.1rem, 1.4rem + 2.6vw, 3.4rem);
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--sl-color-white);
+    text-wrap: balance;
+  }
+  .tagline {
+    margin-top: 1.25rem;
+    max-width: 34rem;
+    font-size: clamp(1.05rem, 1rem + 0.3vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+  }
+
+  .install {
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    max-width: 100%;
+    width: fit-content;
+    border: 1px solid var(--orqc-panel-line);
+    border-radius: 0.5rem;
+    background: var(--orqc-panel);
+    overflow: hidden;
+  }
+  .install code {
+    min-width: 0;
+    padding: 0.7rem 0.9rem;
+    font-family: var(--__sl-font-mono);
+    font-size: 0.85rem;
+    color: var(--sl-color-white);
+    background: none;
+    white-space: nowrap;
+    overflow-x: auto;
+  }
+  .install button {
+    flex: none;
+    align-self: stretch;
+    padding-inline: 0.9rem;
+    border: 0;
+    border-inline-start: 1px solid var(--orqc-panel-line);
+    background: none;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--sl-color-text-accent);
+    cursor: pointer;
+  }
+  .install button:hover {
+    background: var(--sl-color-accent-low);
+  }
+
+  .actions {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    align-items: center;
+  }
+  .action {
+    font-weight: 600;
+    text-decoration: none;
+    padding: 0.6rem 1.1rem;
+    border-radius: 0.5rem;
+    background: var(--sl-color-text-accent);
+    color: var(--sl-color-black);
+  }
+  .action:hover {
+    background: var(--sl-color-white);
+  }
+  .action.minimal {
+    padding-inline: 0;
+    background: none;
+    color: var(--sl-color-white);
+    text-decoration: underline;
+    text-decoration-color: var(--sl-color-gray-4);
+    text-underline-offset: 0.3em;
+  }
+  .action.minimal:hover {
+    background: none;
+    text-decoration-color: currentColor;
+  }
+</style>
