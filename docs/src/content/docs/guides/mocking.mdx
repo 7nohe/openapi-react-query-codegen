@@ -1,0 +1,138 @@
+---
+title: Mocking with MSW
+description: Generate mock data and MSW request handlers from the OpenAPI specification, to build the frontend before the backend exists and to test without one.
+---
+
+With `--mock msw` the generator also writes mock data and [MSW](https://mswjs.io) request handlers for every operation. The frontend can then be built against the specification before the backend exists, and the same handlers serve tests and Storybook.
+
+```bash
+npm install -D msw
+orqc -i ./openapi.yaml --mock msw
+```
+
+This adds a third directory next to `requests/` and `queries/`:
+
+```
+openapi/mocks/
+├── data.ts       # one mock function per schema and per response
+├── handlers.ts   # one MSW handler per operation, and `handlers` with all of them
+└── index.ts      # re-exports both
+```
+
+The mocks are typed by the generated types, so they stay in step with the specification: regenerate after it changes, and anything of your own that no longer fits is a compile error.
+
+## In the browser
+
+Copy MSW's worker script into the folder your app serves static files from, once:
+
+```bash
+npx msw init public/ --save
+```
+
+Create the worker from the generated handlers:
+
+```ts
+// src/mocks/browser.ts
+import { setupWorker } from "msw/browser";
+import { handlers } from "../openapi/mocks";
+
+export const worker = setupWorker(...handlers);
+```
+
+Start it before the app renders, in development only:
+
+```tsx
+// src/main.tsx
+async function enableMocking() {
+  if (!import.meta.env.DEV) return;
+  const { worker } = await import("./mocks/browser");
+  await worker.start();
+}
+
+enableMocking().then(() => {
+  createRoot(document.getElementById("root")!).render(<App />);
+});
+```
+
+The handlers match the path under any base URL (`*/pets/:petId`), so they answer whatever the client's `baseUrl` is. The generated hooks need no change.
+
+## In tests
+
+```ts
+import { setupServer } from "msw/node";
+import { handlers } from "../openapi/mocks";
+
+const server = setupServer(...handlers);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+## Answering with something else
+
+By default a handler answers with the mock of its operation's successful response. Each handler is also exported as a function that takes what to answer with instead: a body, or a resolver of your own.
+
+```ts
+import { HttpResponse } from "msw/http"; // "msw" with MSW 2
+import { findPetsHandler, findPetByIdHandler, petMock } from "../openapi/mocks";
+
+server.use(
+  // Another body, typed as the operation's response
+  findPetsHandler([petMock({ name: "Momo" }), petMock({ id: 2 })]),
+  // A resolver, for an error or anything that depends on the request
+  findPetByIdHandler(({ params }) =>
+    HttpResponse.json({ message: `No pet ${params.id}` }, { status: 404 }),
+  ),
+);
+```
+
+MSW uses the first handler that matches, so put your own before the generated ones:
+
+```ts
+setupWorker(findPetsHandler([]), ...handlers);
+```
+
+The mock of an object schema takes the properties to replace (`petMock({ name: "Momo" })`). The mocks of other schemas (arrays, unions, enums) take nothing.
+
+## What the values are
+
+The values are fixed, never random, so a test or a snapshot sees the same data on every run. For each schema the first of these that applies is used:
+
+1. the `example` of the response's media type, or the first of its `examples`
+2. the schema's `example`, the first of its `examples`, or its `default`
+3. its `const`, or the first value of its `enum`
+4. a value made up from the type: `"string"` or a fixed value for the `format` (`date-time`, `uuid`, `email`, ...), `1` moved into `minimum` and `maximum`, `true`, an array of one item, an object with all of its properties
+
+So the quickest way to better mock data is to write examples in the specification. They are also what the backend has agreed to return.
+
+```yaml
+Pet:
+  type: object
+  properties:
+    name:
+      type: string
+      example: Momo
+```
+
+An example is only used when it is a value of its schema. One that has drifted from it (a missing required property, a string where the schema says integer) is passed over and the value is made up instead, because the mock would not compile otherwise. The same goes for an example of a schema composed with `oneOf`, `anyOf` or several `allOf` members, which is not checked.
+
+Of a `oneOf` or `anyOf` the first member is used. With `--useDateType` the dates are `Date` objects, as the types say, and travel as text. `writeOnly` properties are left out, as they are in the response types.
+
+A schema that refers to itself would never end, so a reference back to a schema that is still being built is cut: an optional property is left out, an array is empty, a nullable value is `null`. A schema that *requires* itself has no value at all; its mock returns an empty object and the generator says which schema it is.
+
+## What is not generated
+
+The handlers hold no state and do not look at the request. That is enough to build and test most screens, and these need a handler of your own, written with the generated types and mocks:
+
+- **A change that shows up later.** Creating a pet does not add it to the list. Keep the list in a variable and answer both operations from it.
+- **Pagination.** Every page is the same response, so an infinite query never reaches the end.
+- **Errors and empty states.** Only the successful response is mocked. Answer with a resolver that returns the error.
+
+Operations whose successful response has no JSON or text body (a `204`, a file, a `HEAD`) are answered with the status and an empty body.
+
+## MSW versions
+
+MSW 2 and 3 are supported. Version 3 moved `http` and `HttpResponse` from `msw` to `msw/http`, so the generator looks at the MSW installed in your project and imports from where that version exports them. Without MSW installed it writes the imports for version 3. After upgrading MSW, generate again.
+
+`--check` compares `mocks/` as well when `--mock` is passed, and `--format` and `--lint` run on it with `queries/`.

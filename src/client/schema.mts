@@ -153,7 +153,7 @@ function intersection(types: string[]): string {
     .join(" & ");
 }
 
-function isNullableSchema(schema: Json): boolean {
+export function isNullableSchema(schema: Json): boolean {
   return (
     schema.nullable === true ||
     (Array.isArray(schema.type) && schema.type.includes("null"))
@@ -176,7 +176,7 @@ function globalTypeRef(name: string, ctx: SchemaCtx): string {
 }
 
 /** Marks a `$ref` member of an `allOf` whose discriminator literal is replaced. */
-const OMITTED_PROPERTY = "x-orqc-omit";
+export const OMITTED_PROPERTY = "x-orqc-omit";
 
 /** The discriminator of what an `allOf` builds on, if any. */
 function findInheritedDiscriminator(
@@ -220,27 +220,27 @@ function requiresProperty(
 }
 
 /**
- * Render a component schema. A subtype that builds on a schema with a
- * discriminator gets its own value of the discriminator property, from the
- * mapping or else its name, so that a union of subtypes narrows on it.
+ * A component schema as it is rendered. A subtype that builds on a schema with
+ * a discriminator gets its own value of the discriminator property, from the
+ * mapping or else its name, so that a union of subtypes narrows on it. Any
+ * other schema is returned as it is.
  */
-export function renderComponentSchema(
+export function componentSchemaView(
   schema: Json,
   key: string,
   ctx: SchemaCtx,
-): string {
+): Json {
   const discriminator = schema?.discriminator
     ? undefined
     : findInheritedDiscriminator(ctx.doc, schema);
-  if (!discriminator) return renderSchema(schema, ctx);
+  if (!discriminator) return schema;
 
   const property: string = discriminator.propertyName;
   const pinned = pinnedValues(schema, property, ctx);
   const allowed = valuesNaming(discriminator, key, pinned, (target) =>
     isMappingTarget(target, key),
   );
-  if (allowed.length === 0 || pinned?.length === 1)
-    return renderSchema(schema, ctx);
+  if (allowed.length === 0 || pinned?.length === 1) return schema;
 
   const members = schema.allOf.map((member: Json) =>
     // A parent that is a subtype itself has a value of its own to replace.
@@ -254,7 +254,16 @@ export function renderComponentSchema(
     required: requiresProperty(ctx.doc, schema, property) ? [property] : [],
     properties: { [property]: { enum: allowed } },
   };
-  return renderSchema({ ...schema, allOf: [...members, tag] }, ctx);
+  return { ...schema, allOf: [...members, tag] };
+}
+
+/** Render a component schema, as {@link componentSchemaView} shows it. */
+export function renderComponentSchema(
+  schema: Json,
+  key: string,
+  ctx: SchemaCtx,
+): string {
+  return renderSchema(componentSchemaView(schema, key, ctx), ctx);
 }
 
 /**
@@ -270,7 +279,7 @@ export function hasObjectKeywords(schema: Json): boolean {
 }
 
 /** What a schema without a `type` is taken for, going by its keywords. */
-function impliedType(schema: Json): "object" | "array" | undefined {
+export function impliedType(schema: Json): "object" | "array" | undefined {
   if (
     schema.properties ||
     schema.patternProperties ||
@@ -523,7 +532,7 @@ const TEXT_MEDIA_TYPE =
  * Whether the schema is a file the way OpenAPI 3.1 writes one: a media type
  * that is not text, and no `contentEncoding` making a string of it.
  */
-function hasBinaryContent(schema: Json): boolean {
+export function hasBinaryContent(schema: Json): boolean {
   const mediaType = schema.contentMediaType;
   return (
     typeof mediaType === "string" &&
@@ -546,7 +555,7 @@ const TYPE_KEYWORDS = [
 ];
 
 /** An `allOf` member that declares nothing and only makes properties required. */
-function isRequiredOnly(member: Json): boolean {
+export function isRequiredOnly(member: Json): boolean {
   if (
     !member ||
     typeof member !== "object" ||
@@ -609,10 +618,39 @@ function undeclaredRequired(
 }
 
 /**
- * The properties an `allOf` requires while another of its members declares them.
- * They are repeated with their own type, because an optional property
- * intersected with `unknown` would stay `undefined`-able. The result is `{}`
- * when there are none.
+ * The properties an `allOf` requires while another of its members declares
+ * them, each with its declaration.
+ */
+export function inheritedRequired(
+  doc: Doc,
+  schema: Json,
+): Record<string, Json> {
+  const own: string[] = Array.isArray(schema.required) ? schema.required : [];
+  const names = new Set<string>([
+    ...own.filter((name) => !Object.hasOwn(schema.properties ?? {}, name)),
+    ...schema.allOf.flatMap((member: Json) => {
+      const required = undeclaredRequired(doc, member);
+      // A named schema drops what it requires and nobody declares, so an
+      // `allOf` around it does too.
+      return member?.$ref
+        ? required.filter(
+            (name) => findDeclaredProperty(doc, schema, name) !== undefined,
+          )
+        : required;
+    }),
+  ]);
+  return Object.fromEntries(
+    [...names].map((name) => [
+      name,
+      findDeclaredProperty(doc, schema, name) ?? {},
+    ]),
+  );
+}
+
+/**
+ * {@link inheritedRequired} as an object type. The properties are repeated
+ * with their own type, because an optional property intersected with `unknown`
+ * would stay `undefined`-able. The result is `{}` when there are none.
  */
 function renderInheritedRequired(
   schema: Json,
@@ -620,29 +658,11 @@ function renderInheritedRequired(
   indent: string,
   seen: Seen,
 ): string {
-  const own: string[] = Array.isArray(schema.required) ? schema.required : [];
-  const names = new Set<string>([
-    ...own.filter((name) => !Object.hasOwn(schema.properties ?? {}, name)),
-    ...schema.allOf.flatMap((member: Json) => {
-      const required = undeclaredRequired(ctx.doc, member);
-      // A named schema drops what it requires and nobody declares, so an
-      // `allOf` around it does too.
-      return member?.$ref
-        ? required.filter(
-            (name) => findDeclaredProperty(ctx.doc, schema, name) !== undefined,
-          )
-        : required;
-    }),
-  ]);
-  const properties = Object.fromEntries(
-    [...names].map((name) => [
-      name,
-      findDeclaredProperty(ctx.doc, schema, name) ?? {},
-    ]),
-  );
-  return names.size === 0
+  const properties = inheritedRequired(ctx.doc, schema);
+  const names = Object.keys(properties);
+  return names.length === 0
     ? "{}"
-    : renderObject({ properties, required: [...names] }, ctx, indent, seen);
+    : renderObject({ properties, required: names }, ctx, indent, seen);
 }
 
 function renderRef(

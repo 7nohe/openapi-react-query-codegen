@@ -21,6 +21,7 @@
 - **SSR helpers**: `prefetchQuery`, `prefetchInfiniteQuery`, and `ensureQueryData` functions per operation — ready for Next.js App Router hydration
 - **Hierarchical query keys** with exported key constants and functions: invalidate one exact query, all infinite pages of an operation, or every cache entry of an operation with a single prefix
 - **Pure TypeScript client** (types, SDK functions and a small fetch or axios runtime) generated from the same OpenAPI 3.0/3.1 document — no separate client generator to install
+- **MSW mocks from the same spec** (`--mock msw`): typed mock data and a request handler per operation, with fixed values taken from the spec's examples — build the frontend before the backend exists, and reuse the handlers in tests
 - **CI- and agent-friendly**: `--check` fails CI when committed output is out of date, `--json` prints errors as machine-readable JSON, `--agentsMd` keeps a guide in your `AGENTS.md` that lets a coding agent look one operation up instead of reading the generated files, and the package ships an [`AGENTS.md`](./AGENTS.md) for coding agents
 
 ## Quick start
@@ -63,7 +64,7 @@ function Pets() {
 }
 ```
 
-See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7nohe.dev/guides/cli-options/), [usage](https://orqc.7nohe.dev/guides/usage/) (SSR, infinite queries, mutations) and [CI and coding agents](https://orqc.7nohe.dev/guides/ci-and-agents/).
+See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7nohe.dev/guides/cli-options/), [usage](https://orqc.7nohe.dev/guides/usage/) (SSR, infinite queries, mutations), [mocking with MSW](https://orqc.7nohe.dev/guides/mocking/) and [CI and coding agents](https://orqc.7nohe.dev/guides/ci-and-agents/).
 
 ## Examples
 

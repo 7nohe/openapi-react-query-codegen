@@ -117,6 +117,12 @@ export function buildProgram(
       "--omitInitialPageParam",
       "Send no initial page parameter at all (overrides --initialPageParam)",
     )
+    .addOption(
+      new Option(
+        "--mock <value>",
+        "Also generate mock data and request handlers from the specification, into <output>/mocks",
+      ).choices(["msw"]),
+    )
     .option(
       "--agentsMd [file]",
       "Also keep a short guide for coding agents (how to look operations up in the output) in AGENTS.md, or in the file named",

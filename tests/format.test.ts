@@ -48,6 +48,23 @@ describe("processOutput", () => {
     ]);
   });
 
+  test("names what it runs on", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await processOutput({ output: "/tmp/test", format: "biome" });
+    await processOutput({
+      output: "/tmp/test",
+      format: "biome",
+      lint: "eslint",
+      label: "mocks",
+    });
+    expect(log.mock.calls.map(([message]) => message)).toEqual([
+      "✨ Running Biome (Format) on queries",
+      "✨ Running Biome (Format) on mocks",
+      "✨ Running ESLint on mocks",
+    ]);
+    log.mockRestore();
+  });
+
   test("does nothing without format or lint", async () => {
     const { sync } = await import("cross-spawn");
     await processOutput({ output: "/tmp/test" });
