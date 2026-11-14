@@ -42,7 +42,7 @@ describe("scripts/pack-orqc.mjs", () => {
 
   test("ships only the bin script and the readme", () => {
     const files = execFileSync("tar", ["-tzf", tarball], { encoding: "utf8" })
-      .split("\n")
+      .split(/\r?\n/)
       .filter(Boolean)
       .sort();
     expect(files).toEqual([
