@@ -9,6 +9,11 @@
 
 📖 **[Documentation](https://orqc.7nohe.dev)** · [Getting started](https://orqc.7nohe.dev/guides/introduction/) · [Migrating to v4](https://orqc.7nohe.dev/guides/migrating-to-v4/) · [Coming from openapi-react-query](https://orqc.7nohe.dev/guides/migrating-from-openapi-react-query/) · [Benchmarks](https://orqc.7nohe.dev/guides/benchmarks/)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./.github/assets/how-it-works-dark.svg">
+  <img alt="The findPets operation of an OpenAPI document. Running npx orqc -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets." src="./.github/assets/how-it-works-light.svg" width="880">
+</picture>
+
 ## Features
 
 - **`queryOptions` / `infiniteQueryOptions` factories** for every GET operation — the [TanStack Query v5 recommended pattern](https://tanstack.com/query/latest/docs/framework/react/guides/query-options), composable with `useQuery`, `useQueries`, `useSuspenseQuery`, `prefetchQuery`, `ensureQueryData`, and `setQueryData` with full type safety

@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="372" viewBox="0 0 880 372" role="img" aria-labelledby="title desc">
+  <title id="title">How OpenAPI React Query Codegen works</title>
+  <desc id="desc">The findPets operation of an OpenAPI document. Running npx orqc -i openapi.yaml generates useFindPets, findPetsOptions, useFindPetsSuspense, prefetchUseFindPets and UseFindPetsKeyFn in openapi/queries, plus a typed client in openapi/requests. An app then calls useFindPets.</desc>
+  <style>
+text { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #e6eef8; }
+.label { font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; fill: #8ea3be; letter-spacing: 0.02em; }
+.muted { fill: #8ea3be; }
+.signal { fill: #93d66e; font-weight: 600; }
+.code { font-size: 14px; }
+@keyframes type {
+  0%, 2% { width: 0; animation-timing-function: steps(24, end); }
+  13%, 100% { width: 239px; }
+}
+.typing { animation: type 10s linear infinite; }
+@keyframes draw {
+  0%, 14% { stroke-dashoffset: 64; }
+  19%, 90% { stroke-dashoffset: 0; }
+  94%, 100% { stroke-dashoffset: 64; }
+}
+.arrow { stroke-dasharray: 64; animation: draw 10s ease-out infinite; }
+@keyframes mark {
+  0%, 13.00% { opacity: 0; transform: translateX(-6px); }
+  16.50%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.mark { animation: mark 10s linear infinite; }
+@keyframes row0 {
+  0%, 20.00% { opacity: 0; transform: translateX(-6px); }
+  23.50%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.row0 { animation: row0 10s linear infinite; }
+@keyframes row1 {
+  0%, 22.50% { opacity: 0; transform: translateX(-6px); }
+  26.00%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.row1 { animation: row1 10s linear infinite; }
+@keyframes row2 {
+  0%, 25.00% { opacity: 0; transform: translateX(-6px); }
+  28.50%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.row2 { animation: row2 10s linear infinite; }
+@keyframes row3 {
+  0%, 27.50% { opacity: 0; transform: translateX(-6px); }
+  31.00%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.row3 { animation: row3 10s linear infinite; }
+@keyframes row4 {
+  0%, 30.00% { opacity: 0; transform: translateX(-6px); }
+  33.50%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.row4 { animation: row4 10s linear infinite; }
+@keyframes requests {
+  0%, 34.00% { opacity: 0; transform: translateX(-6px); }
+  37.50%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.requests { animation: requests 10s linear infinite; }
+@keyframes usage {
+  0%, 40.00% { opacity: 0; transform: translateX(-6px); }
+  43.50%, 90% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; transform: none; }
+}
+.usage { animation: usage 10s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .typing, .arrow, .mark, .row0, .row1, .row2, .row3, .row4, .requests, .usage { animation: none; }
+}
+  </style>
+  <defs>
+    <clipPath id="typed"><rect class="typing" x="52" y="18" height="32" width="239" /></clipPath>
+  </defs>
+  <rect x="0.5" y="0.5" width="879" height="371" rx="12" fill="#112741" stroke="#29415f" />
+
+  <text x="32" y="40" font-size="16" class="muted">$</text>
+  <text x="52" y="40" font-size="16" clip-path="url(#typed)">npx orqc -i openapi.yaml</text>
+  <line x1="0" y1="62" x2="880" y2="62" stroke="#29415f" />
+
+  <text class="label" x="32" y="94">openapi.yaml</text>
+  <rect class="mark" x="24" y="192" width="352" height="26" rx="4" fill="rgb(147 214 110 / 0.14)" />
+  <text class="code" x="32" y="132" xml:space="preserve">paths%3A</text>
+    <text class="code" x="32" y="158" xml:space="preserve">%20%20/pets%3A</text>
+    <text class="code" x="32" y="184" xml:space="preserve">%20%20%20%20get%3A</text>
+    <text class="code" x="32" y="210" xml:space="preserve">%20%20%20%20%20%20operationId%3A%20<tspan class="signal">findPets</tspan></text>
+    <text class="code" x="32" y="236" xml:space="preserve">%20%20%20%20%20%20responses%3A%20<tspan class="muted">%7B%20%22200%22%3A%20Pet%5B%5D%20%7D</tspan></text>
+
+  <path class="arrow" d="M 384 205 h 52 m -10 -8 l 10 8 l -10 8" fill="none" stroke="#4f9fe8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+
+  <text class="label" x="452" y="94">openapi/queries</text>
+  <g class="row0">
+      <text class="code" x="452" y="132">use<tspan class="signal">FindPets</tspan></text>
+      <text class="code muted" x="848" y="132" text-anchor="end">useQuery</text>
+    </g>
+    <g class="row1">
+      <text class="code" x="452" y="158"><tspan class="signal">findPets</tspan>Options</text>
+      <text class="code muted" x="848" y="158" text-anchor="end">queryOptions</text>
+    </g>
+    <g class="row2">
+      <text class="code" x="452" y="184">use<tspan class="signal">FindPets</tspan>Suspense</text>
+      <text class="code muted" x="848" y="184" text-anchor="end">useSuspenseQuery</text>
+    </g>
+    <g class="row3">
+      <text class="code" x="452" y="210">prefetchUse<tspan class="signal">FindPets</tspan></text>
+      <text class="code muted" x="848" y="210" text-anchor="end">prefetchQuery</text>
+    </g>
+    <g class="row4">
+      <text class="code" x="452" y="236">Use<tspan class="signal">FindPets</tspan>KeyFn</text>
+      <text class="code muted" x="848" y="236" text-anchor="end">query key</text>
+    </g>
+  <text class="code muted requests" x="452" y="270">+ openapi/requests: typed fetch or axios client</text>
+
+  <line x1="0" y1="290" x2="880" y2="290" stroke="#29415f" />
+  <text class="label" x="32" y="320">your app</text>
+  <text class="usage" x="32" y="350" font-size="15">const { data } = <tspan class="signal">useFindPets</tspan>({ query: { limit: 10 } });</text>
+</svg>
