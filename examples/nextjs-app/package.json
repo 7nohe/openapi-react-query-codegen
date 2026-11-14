@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "run-p dev:mock dev:next",
     "dev:next": "next dev",
-    "dev:mock": "prism mock ../petstore.yaml --dynamic",
+    "dev:mock": "node ../mock-server.mjs",
     "build": "next build",
     "start": "next start",
     "generate:api": "node ../../scripts/clean.mjs ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome",
@@ -19,7 +19,6 @@
     "react-dom": "^19"
   },
   "devDependencies": {
-    "@stoplight/prism-cli": "^5.5.2",
     "@tailwindcss/postcss": "^4.3.4",
     "@types/node": "^20.19.43",
     "@types/react": "^19",

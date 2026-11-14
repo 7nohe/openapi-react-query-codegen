@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "run-p dev:mock dev:client",
     "dev:client": "react-router dev",
-    "dev:mock": "prism mock ../petstore.yaml --dynamic",
+    "dev:mock": "node ../mock-server.mjs",
     "build": "pnpm typecheck && react-router build",
     "preview": "react-router-serve ./build/server/index.js",
     "typegen": "react-router typegen",
@@ -28,7 +28,6 @@
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",
     "@react-router/dev": "^8.5.1",
-    "@stoplight/prism-cli": "^5.5.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",
