@@ -74,6 +74,11 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 | Stable release line | ✅ SemVer | pre-1.0, frequent breaking changes | ✅ | ⚠️ upstream openapi-typescript is in [maintenance mode](https://github.com/openapi-ts/openapi-typescript/issues/2874) |
 | MSW mock generation | ❌ (out of scope) | ❌ | ✅ | ❌ |
 | Vue / Solid / Svelte / Angular | ❌ React-focused | ✅ | ✅ | ❌ |
+| Generation time, GitHub REST API (1,272 operations)¹ | **0.46 s** | 2.98 s | 4.31 s | 2.10 s |
+| Packages added by installing the generator¹ | **9** (2.1 MB) | 51 (10.8 MB) | 89 (101.5 MB) | 35 (20.5 MB) |
+| Type errors in the generated code, Stripe / GitHub APIs¹ | **0 / 0** | 274 / 0 | 219 / 1 | 0 / 0 |
+
+¹ Measured on 2026-11-13 on an Apple M2 with Node.js 24 (generation time is the median wall-clock time of the CLI), with 4.0.0-beta.4, `@hey-api/openapi-ts` 0.99.0, Orval 8.46.0 and openapi-typescript 7.13.0 + openapi-react-query 0.5.4. Methods, the other specifications and type-checking times are on the [Benchmarks](https://orqc.7nohe.dev/guides/benchmarks/) page; the scripts are in [`benchmarks/`](./benchmarks).
 
 **Scope**: this library is deliberately React-focused and does not generate API mocks — use Orval if MSW mocks are your priority, or the hey-api plugin if you need non-React frameworks.
 
