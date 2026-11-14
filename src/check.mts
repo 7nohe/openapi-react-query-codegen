@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { agentsFilePath, checkAgentsBlock } from "./agentsMd.mjs";
 import type { LimitedUserConfig } from "./cli.mjs";
-import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
+import {
+  mocksOutputPath,
+  queriesOutputPath,
+  requestsOutputPath,
+} from "./constants.mjs";
 import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
 import { generate } from "./generate.mjs";
 
@@ -26,8 +30,18 @@ export type CheckResult = {
   files: FileChange[];
 };
 
-/** The generator owns exactly these subdirectories of the output path. */
-const checkedSubdirectories = [requestsOutputPath, queriesOutputPath];
+/**
+ * The generator owns exactly these subdirectories of the output path. The
+ * mocks are only its own when it is asked for them: without `--mock` a
+ * `mocks/` directory is somebody else's and is left alone.
+ */
+function checkedSubdirectories(options: LimitedUserConfig): string[] {
+  return [
+    requestsOutputPath,
+    queriesOutputPath,
+    ...(options.mock ? [mocksOutputPath] : []),
+  ];
+}
 
 /** Name prefix of the throwaway directory `check` generates into. */
 export const scratchPrefix = ".openapi-rq-check-";
@@ -183,7 +197,7 @@ async function runCheck(
       { silent: true },
     );
     const changesPerDir = await Promise.all(
-      checkedSubdirectories.map((subdirectory) =>
+      checkedSubdirectories(options).map((subdirectory) =>
         diffDirectories({
           expectedRoot: path.join(scratchOutput, subdirectory),
           actualRoot: path.join(options.output, subdirectory),

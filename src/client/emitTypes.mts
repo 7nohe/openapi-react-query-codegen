@@ -157,6 +157,27 @@ function enumKey(name: string): string {
   return /^(0|[1-9]\d*)$/.test(name) ? name : propertyKey(name);
 }
 
+/**
+ * Whether a component schema is declared as an enum of its own (`--enums`): a
+ * TypeScript enum, or an object of its values with the type of them.
+ */
+export function isEnumDeclaration(schema: Json, enumsMode: EnumsMode): boolean {
+  if (!enumsMode) return false;
+  const values: unknown[] = Array.isArray(schema?.enum) ? schema.enum : [];
+  const isMember = (value: unknown) =>
+    typeof value === "string" || typeof value === "number";
+  // A TypeScript enum can only hold strings and numbers, an object anything.
+  return (
+    values.some((value) => value !== null) &&
+    values.every(
+      (value) =>
+        isMember(value) ||
+        (enumsMode === "javascript" &&
+          (value === null || typeof value === "boolean")),
+    )
+  );
+}
+
 function emitComponentSchema(
   schema: Json,
   key: string,
@@ -169,19 +190,8 @@ function emitComponentSchema(
     deprecated: schema?.deprecated,
   });
   const values: unknown[] = Array.isArray(schema?.enum) ? schema.enum : [];
-  const isMember = (value: unknown) =>
-    typeof value === "string" || typeof value === "number";
-  // A TypeScript enum can only hold strings and numbers, an object anything.
-  const isLiteralEnum =
-    values.some((value) => value !== null) &&
-    values.every(
-      (value) =>
-        isMember(value) ||
-        (enumsMode === "javascript" &&
-          (value === null || typeof value === "boolean")),
-    );
 
-  if (enumsMode && isLiteralEnum) {
+  if (isEnumDeclaration(schema, enumsMode)) {
     const used = new Set<string>();
     const memberNames = schema["x-enum-varnames"] ?? schema["x-enumNames"];
     const descriptions = schema["x-enum-descriptions"];

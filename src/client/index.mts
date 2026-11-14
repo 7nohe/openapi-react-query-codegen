@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { GeneratedFile, OperationInfo } from "../types.mjs";
+import { emitMocks, type MswMajor } from "./emitMocks.mjs";
 import { emitSchemas, type SchemasMode } from "./emitSchemas.mjs";
 import {
   type ClientKind,
@@ -23,9 +24,11 @@ import {
 import { renderSchema, type SchemaCtx } from "./schema.mjs";
 import { bundleExternalRefs, type Doc, loadSpec } from "./spec.mjs";
 
+export type { MswMajor } from "./emitMocks.mjs";
 export type { SchemasMode } from "./emitSchemas.mjs";
 export type { ClientKind } from "./emitSdk.mjs";
 export type { EnumsMode } from "./emitTypes.mjs";
+export { detectMswMajor } from "./msw.mjs";
 export { SpecError } from "./spec.mjs";
 export { detectImportExtension, findNearestTsConfigPath } from "./tsconfig.mjs";
 
@@ -36,6 +39,11 @@ export interface ClientGenOptions {
   enums?: EnumsMode;
   /** `.js` for Node16/NodeNext module resolution, otherwise empty. */
   importExtension: "" | ".js";
+  /**
+   * Also generate mock data and MSW request handlers, written for this major
+   * version of MSW. Off when not set.
+   */
+  mocks?: { mswMajor: MswMajor };
   /** Name operations after the HTTP method and path instead of operationId. */
   noOperationId?: boolean;
   /** Query parameter used for pagination. */
@@ -54,6 +62,8 @@ export interface ClientGenOptions {
 
 export interface GeneratedClient {
   files: GeneratedFile[];
+  /** The files of the mocks directory, when `mocks` is set. */
+  mockFiles?: GeneratedFile[];
   operations: OperationInfo[];
   /** Type names exported from `types.gen.ts`. */
   modelNames: string[];
@@ -199,9 +209,19 @@ export async function generateClient(
     files.push({ name: "schemas.gen.ts", content: schemas });
   }
 
+  const mocks = options.mocks
+    ? emitMocks(operations, ctx, {
+        mswMajor: options.mocks.mswMajor,
+        enums: options.enums,
+        ext,
+      })
+    : undefined;
+  if (mocks) warnings.push(...mocks.warnings);
+
   const emittedTypes = new Set(types.exportedNames);
   return {
     files,
+    mockFiles: mocks?.files,
     operations: operations.map((operation) =>
       toOperationInfo(operation, ctx, options.pageParam, emittedTypes),
     ),

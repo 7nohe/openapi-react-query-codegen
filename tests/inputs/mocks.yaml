@@ -1,0 +1,1080 @@
+openapi: 3.1.0
+info:
+  title: Mock coverage
+  version: 1.0.0
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: Pets, with an example for the whole body
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+              example:
+                - id: 7
+                  name: Momo
+                  status: sold
+                  bornAt: "2020-05-17T09:00:00Z"
+    post:
+      operationId: createPet
+      responses:
+        "201":
+          description: Created, with named examples
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+              examples:
+                missing:
+                  $ref: "#/components/examples/Missing"
+                empty:
+                  summary: An example without a value
+                kuro:
+                  $ref: "#/components/examples/Kuro"
+        "202":
+          description: Accepted
+    head:
+      operationId: headPets
+      responses:
+        "200":
+          description: A HEAD response has no body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+    trace:
+      operationId: tracePets
+      responses:
+        "200":
+          description: MSW has no handler for TRACE
+  /pets/{pet-id}:
+    get:
+      operationId: getPet
+      parameters:
+        - name: pet-id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: An example that is not a value of the schema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+              example:
+                id: seven
+                name: Momo
+    delete:
+      operationId: deletePet
+      parameters:
+        - name: pet-id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /pets/{pet-id}:archive:
+    delete:
+      operationId: archivePet
+      parameters:
+        - name: pet-id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          description: A parameter followed by text is tighter than the parameter alone
+  /pets/mine:
+    get:
+      operationId: listMyPets
+      responses:
+        "2XX":
+          description: A range of statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+  /pets:count:
+    get:
+      operationId: countPets
+      responses:
+        "200":
+          description: A colon outside a parameter is not MSW's to read
+          content:
+            application/json:
+              schema:
+                type: integer
+                example: 3
+  /tags/{1st}/:
+    get:
+      operationId: getTag
+      parameters:
+        - name: 1st
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A parameter name MSW would not take, and a trailing slash
+          content:
+            application/json:
+              schema:
+                type: string
+  /files/{name}.(json|yaml)/:
+    get:
+      operationId: getFile
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Characters of a regular expression, and a trailing slash
+          content:
+            application/json:
+              schema:
+                type: string
+  /archives/{name}{extension}:
+    get:
+      operationId: getArchive
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: extension
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Two parameters with nothing between them
+          content:
+            application/json:
+              schema:
+                type: string
+  /v{major}beta/ping:
+    get:
+      operationId: pingBeta
+      parameters:
+        - name: major
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A parameter followed by letters
+          content:
+            application/json:
+              schema:
+                type: string
+  /café/{id}:
+    get:
+      operationId: getCafe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Text a URL percent-encodes
+          content:
+            application/json:
+              schema:
+                type: string
+  /animals:
+    get:
+      operationId: listAnimals
+      responses:
+        default:
+          description: Only a default response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Animal"
+  /status:
+    get:
+      operationId: getStatus
+      responses:
+        "200":
+          description: Plain text
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+  /export:
+    get:
+      operationId: exportPets
+      responses:
+        "200":
+          description: A file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /anything:
+    get:
+      operationId: getAnything
+      responses:
+        "200":
+          description: A body of any type
+          content:
+            application/json:
+              schema: {}
+  /nothing:
+    get:
+      operationId: getNothing
+      responses:
+        "404":
+          description: No successful response at all
+  /ranged:
+    get:
+      operationId: getRanged
+      responses:
+        "2XX":
+          description: Any other success
+          content:
+            application/json:
+              schema:
+                type: string
+        "206":
+          description: The status that is answered with
+          content:
+            application/json:
+              schema:
+                type: integer
+  /impossible:
+    get:
+      operationId: getImpossible
+      responses:
+        "200":
+          description: A body no value can be written for
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [never]
+                properties:
+                  never: false
+  /shapes:
+    get:
+      operationId: getShapes
+      responses:
+        "200":
+          description: Every shape of schema a value is made up for
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shapes"
+components:
+  examples:
+    Kuro:
+      value:
+        id: 8
+        name: Kuro
+        tags: [black, small]
+        extra: dropped, the type has no such property
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Pochi
+        status:
+          $ref: "#/components/schemas/Status"
+        tags:
+          type: array
+          items:
+            type: string
+        bornAt:
+          type: string
+          format: date-time
+        secret:
+          type: string
+          writeOnly: true
+        owner:
+          $ref: "#/components/schemas/Owner"
+    Status:
+      type: string
+      enum: [available, pending, sold]
+    Priority:
+      type: integer
+      enum: [1, 2, 3]
+      example: 2
+    Owner:
+      type: object
+      required: [name, pets]
+      properties:
+        name:
+          type: string
+        pets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pet"
+        bestFriend:
+          $ref: "#/components/schemas/Owner"
+        partner:
+          oneOf:
+            - $ref: "#/components/schemas/Owner"
+            - type: "null"
+    Node:
+      type: object
+      required: [next]
+      properties:
+        next:
+          $ref: "#/components/schemas/Node"
+    Ring:
+      type: array
+      prefixItems:
+        - $ref: "#/components/schemas/Ring"
+    Dangling:
+      allOf:
+        - $ref: "#/components/schemas/Missing"
+        - type: object
+          properties:
+            id:
+              type: integer
+    Exampled:
+      type: object
+      description: Every example here is a value of its schema
+      properties:
+        ratio:
+          type: number
+          example: 0.5
+        fixed:
+          const: x
+          example: x
+        nullableFixed:
+          const: x
+          nullable: true
+          example: null
+        status:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+          example: pending
+        noStatus:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+          nullable: true
+          example: null
+        maybeText:
+          type: [string, "null"]
+          example: null
+        textOrNumber:
+          type: [integer, string]
+          example: text
+        unknownNull:
+          example: null
+        anyItems:
+          type: array
+          example: [1, a]
+        nested:
+          type: object
+          properties:
+            tags:
+              $ref: "#/components/schemas/Pet/properties/tags"
+          example:
+            tags: [a, b]
+    ClashA:
+      type: object
+      properties:
+        k:
+          enum: [a]
+        "odd key":
+          enum: [a]
+        a:
+          type: string
+    ClashB:
+      type: object
+      properties:
+        b:
+          type: string
+    Clash:
+      description: Optional properties that no value is a value of everywhere
+      allOf:
+        - $ref: "#/components/schemas/ClashA"
+        - $ref: "#/components/schemas/ClashB"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: integer
+            k:
+              enum: [b]
+            "odd key":
+              enum: [b]
+    WithMeta:
+      type: object
+      properties:
+        meta:
+          type: object
+          required: [x]
+          properties:
+            x:
+              type: string
+        secret:
+          type: string
+          writeOnly: true
+    MoreMeta:
+      allOf:
+        - $ref: "#/components/schemas/WithMeta"
+        - type: object
+          properties:
+            meta:
+              type: object
+              required: [y]
+              properties:
+                y:
+                  type: integer
+            secret:
+              type: string
+              writeOnly: true
+    Maybe:
+      type: [object, "null"]
+      required: [self]
+      properties:
+        self:
+          $ref: "#/components/schemas/Maybe"
+    Animal:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: "#/components/schemas/Cat"
+          dog: "#/components/schemas/Dog"
+    Cat:
+      type: object
+      required: [kind, lives]
+      properties:
+        kind:
+          type: string
+        lives:
+          type: integer
+          minimum: 9
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        goodBoy:
+          type: boolean
+    Vehicle:
+      type: object
+      required: [type]
+      discriminator:
+        propertyName: type
+      properties:
+        type:
+          type: string
+        wheels:
+          type: integer
+          default: 4
+    Car:
+      allOf:
+        - $ref: "#/components/schemas/Vehicle"
+        - type: object
+          properties:
+            doors:
+              type: integer
+              maximum: 0
+    SportsCar:
+      allOf:
+        - $ref: "#/components/schemas/Car"
+        - required: [doors]
+        - type: object
+          properties:
+            turbo:
+              type: boolean
+    Settings:
+      type: object
+      example:
+        theme: dark
+        limits:
+          daily: 10
+        flags:
+          beta: true
+        point: [1, two]
+        pair: [1, 2]
+        anything:
+          nested: [1, null]
+      properties:
+        theme:
+          enum: [light, dark]
+        limits:
+          type: object
+          additionalProperties:
+            type: integer
+        flags:
+          type: object
+          additionalProperties: true
+          properties:
+            beta:
+              type: boolean
+        point:
+          type: array
+          prefixItems:
+            - type: integer
+            - type: string
+        pair:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: integer
+        anything: {}
+    Drifted:
+      type: object
+      description: Every example here is not a value of its schema
+      properties:
+        number:
+          type: integer
+          example: 1.5
+        text:
+          type: string
+          example: 5
+        flag:
+          type: boolean
+          example: "yes"
+        choice:
+          enum: [a, b]
+          example: c
+        fixed:
+          const: x
+          example: y
+        list:
+          type: array
+          items:
+            type: integer
+          example: [1, two]
+        notList:
+          type: array
+          items:
+            type: integer
+          example: 1
+        short:
+          type: array
+          prefixItems:
+            - type: integer
+            - type: integer
+          example: [1]
+        long:
+          type: array
+          prefixItems:
+            - type: integer
+          items: false
+          example: [1, 2]
+        sized:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: integer
+          example: [1]
+        object:
+          type: object
+          required: [id]
+          properties:
+            id:
+              type: integer
+          example:
+            name: no id
+        notObject:
+          type: object
+          properties:
+            id:
+              type: integer
+          example: [1]
+        nulled:
+          type: string
+          example: null
+        typedExtra:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            a: one
+        when:
+          type: string
+          format: date-time
+          example: not a date
+        file:
+          type: string
+          format: binary
+          example: bytes
+        union:
+          oneOf:
+            - type: string
+            - type: integer
+          example: 1
+        merged:
+          allOf:
+            - type: object
+              properties:
+                a:
+                  type: string
+            - type: object
+              properties:
+                b:
+                  type: string
+          example:
+            a: x
+        closed:
+          type: object
+          additionalProperties: false
+          example:
+            a: 1
+        nullType:
+          type: "null"
+          example: 1
+        referenced:
+          $ref: "#/components/schemas/Status"
+          example: other
+        nullableRef:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+          example: null
+        picture:
+          contentMediaType: image/png
+          example: bytes
+        noItems:
+          type: array
+          items: false
+          example: [1]
+        siblings:
+          type: object
+          properties:
+            dog:
+              $ref: "#/components/schemas/Dog"
+              properties:
+                name:
+                  type: string
+          example:
+            dog:
+              kind: shiba
+        missing:
+          type: object
+          properties:
+            gone:
+              $ref: "#/components/schemas/Missing"
+          example:
+            gone: 1
+        fixedNull:
+          const: x
+          example: null
+    Shapes:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        uuid:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        short:
+          type: string
+          maxLength: 3
+        long:
+          type: string
+          minLength: 8
+        atLeast:
+          type: integer
+          minimum: 5
+        above:
+          type: number
+          exclusiveMinimum: 5
+        aboveFlag:
+          type: number
+          minimum: 5
+          exclusiveMinimum: true
+        atMost:
+          type: integer
+          maximum: -3
+        below:
+          type: number
+          exclusiveMaximum: 0
+        belowFlag:
+          type: number
+          maximum: 0
+          exclusiveMaximum: true
+        even:
+          type: integer
+          minimum: 3
+          multipleOf: 2
+        flag:
+          type: boolean
+        nothing:
+          type: "null"
+        fixed:
+          const: fixed
+        fixedObject:
+          const:
+            a: [1, 2]
+        choice:
+          enum: [null, a]
+        impossible:
+          enum: []
+        never: false
+        nullableNever:
+          type: [string, "null"]
+          allOf:
+            - false
+        defaulted:
+          type: integer
+          default: 20
+        firstExample:
+          type: string
+          examples: [first, second]
+        severalTypes:
+          type: [string, integer]
+        onlyNull:
+          type: ["null"]
+        untyped:
+          properties:
+            a:
+              type: string
+        untypedList:
+          items:
+            type: string
+        blob:
+          contentMediaType: image/png
+        file:
+          type: string
+          format: binary
+        three:
+          type: array
+          minItems: 3
+          items:
+            type: string
+        none:
+          type: array
+          maxItems: 0
+          items:
+            type: string
+        anyItems:
+          type: array
+        pair:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: integer
+        tuple:
+          type: array
+          prefixItems:
+            - type: string
+            - $ref: "#/components/schemas/Status"
+        dictionary:
+          type: object
+          additionalProperties:
+            type: string
+        nullableStatus:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+          nullable: true
+        narrowed:
+          allOf:
+            - maxLength: 3
+            - type: string
+        withSiblings:
+          $ref: "#/components/schemas/Dog"
+          properties:
+            name:
+              type: string
+        anything: true
+        aliasWithNothing:
+          allOf:
+            - $ref: "#/components/schemas/Dog"
+            - type: object
+        aliasOrAnything:
+          allOf:
+            - $ref: "#/components/schemas/Dog"
+          oneOf:
+            - {}
+        taggedWithMore:
+          oneOf:
+            - $ref: "#/components/schemas/Cat"
+          discriminator:
+            propertyName: kind
+            mapping:
+              cat: "#/components/schemas/Cat"
+          properties:
+            more:
+              type: string
+        noMember:
+          oneOf:
+            - enum: []
+        ownNever:
+          oneOf:
+            - type: object
+          required: [never]
+          properties:
+            never: false
+        onlyDocumented:
+          allOf:
+            - description: Says nothing about the type
+        twice:
+          allOf:
+            - type: string
+            - type: string
+              minLength: 1
+        noType:
+          type: [object]
+          required: [never]
+          properties:
+            never: false
+        halfOpen:
+          type: number
+          minimum: 0
+          exclusiveMaximum: 0.5
+        negativeEven:
+          type: integer
+          minimum: -5
+          maximum: -3
+          multipleOf: 2
+        tenths:
+          type: number
+          multipleOf: 0.1
+          maximum: 0.35
+        openSteps:
+          type: integer
+          exclusiveMinimum: 2
+          exclusiveMaximum: 4
+        openStepsBelow:
+          type: integer
+          exclusiveMaximum: -2
+        noMultiple:
+          type: integer
+          minimum: 3
+          maximum: 3.5
+          multipleOf: 2
+        between:
+          type: number
+          minimum: 2
+          maximum: 3
+        betweenOpen:
+          type: number
+          minimum: 2
+          exclusiveMinimum: true
+          maximum: 3
+        looserExclusive:
+          type: number
+          minimum: 5
+          exclusiveMinimum: 3
+          maximum: 9
+          exclusiveMaximum: 12
+        wholeOfFraction:
+          type: integer
+          multipleOf: 0.3
+          minimum: 1
+          maximum: 4
+        smallFraction:
+          type: integer
+          multipleOf: 0.0003
+          minimum: 1
+          maximum: 4
+        farWholeMultiple:
+          type: integer
+          multipleOf: 3.14159265
+        exponentFraction:
+          type: integer
+          multipleOf: 2.5e-7
+        tinyFraction:
+          type: integer
+          multipleOf: 3.0e-21
+          minimum: 1
+          maximum: 4
+        everyInteger:
+          type: integer
+          multipleOf: 1.0e-300
+        noWholeMultiple:
+          type: integer
+          multipleOf: 1.2345678901234567
+        noWholeMultipleAboveZero:
+          type: integer
+          multipleOf: 1.2345678901234567
+          minimum: 2
+        betweenFractions:
+          type: integer
+          exclusiveMinimum: 1000000000.75
+          exclusiveMaximum: 1000000001.25
+        betweenFractionsOfTenths:
+          type: number
+          multipleOf: 0.1
+          exclusiveMinimum: 100000000.04
+          exclusiveMaximum: 100000000.16
+        bigTenths:
+          type: number
+          multipleOf: 0.1
+          minimum: 170000000000.1
+          maximum: 170000000000.1
+        bigInteger:
+          type: integer
+          minimum: 1700000000001
+          maximum: 1700000000001
+        clash:
+          $ref: "#/components/schemas/Clash"
+        requiredClash:
+          allOf:
+            - type: object
+              required: [k]
+              properties:
+                k:
+                  enum: [a]
+            - type: object
+              properties:
+                k:
+                  enum: [b]
+        overlap:
+          allOf:
+            - type: object
+              properties:
+                a:
+                  type: object
+                  required: [x]
+                  properties:
+                    x:
+                      type: string
+            - type: object
+              properties:
+                a:
+                  type: object
+                  required: [y]
+                  properties:
+                    y:
+                      type: integer
+        conflicting:
+          allOf:
+            - type: object
+              properties:
+                k:
+                  enum: [a]
+            - type: object
+              properties:
+                k:
+                  enum: [b]
+        moreMeta:
+          $ref: "#/components/schemas/MoreMeta"
+        petPlus:
+          allOf:
+            - $ref: "#/components/schemas/Dog"
+            - $ref: "#/components/schemas/Dog"
+            - type: object
+              properties:
+                extra:
+                  type: string
+        stringAndOk:
+          allOf:
+            - type: string
+            - enum: [ok]
+        okAndString:
+          allOf:
+            - enum: [nope, ok]
+            - type: string
+              enum: [ok]
+        stringAndNumber:
+          allOf:
+            - type: string
+            - type: number
+        numberOfEither:
+          allOf:
+            - type: [string, number]
+            - type: number
+        nullOfBoth:
+          allOf:
+            - type: [string, "null"]
+            - type: [number, "null"]
+        numberOfNeither:
+          allOf:
+            - type: [string, number]
+            - type: [number, boolean]
+        noCommon:
+          allOf:
+            - enum: [a]
+            - enum: [b]
+        statusAndSold:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+            - enum: [sold]
+        statusAndText:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+            - type: string
+        statusAndPriority:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+            - $ref: "#/components/schemas/Priority"
+        wrapperRequired:
+          allOf:
+            - $ref: "#/components/schemas/Dog"
+          required: [goodBoy]
+          example:
+            kind: shiba
+        oneOfPrimitives:
+          anyOf:
+            - type: integer
+            - type: string
+        animal:
+          $ref: "#/components/schemas/Animal"
+        car:
+          $ref: "#/components/schemas/SportsCar"
+        missing:
+          $ref: "#/components/schemas/Missing"
+        inlined:
+          $ref: "#/components/schemas/Pet/properties/tags"
+        loop:
+          $ref: "#/components/schemas/Shapes/properties/loop"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        __proto__:
+          type: string
+        "odd key":
+          type: string
+        requiredLoop:
+          type: object
+          properties:
+            node:
+              $ref: "#/components/schemas/Node"
+        writeOnly:
+          type: string
+          writeOnly: true
+        readOnly:
+          type: string
+          readOnly: true

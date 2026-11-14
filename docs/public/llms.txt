@@ -16,6 +16,7 @@ Key facts for agents:
 - [Introduction](https://orqc.7nohe.dev/guides/introduction/): install, first run, generated layout, client setup
 - [Usage](https://orqc.7nohe.dev/guides/usage/): using the generated query, suspense, mutation, infinite, prefetch and ensureQueryData exports
 - [CLI Options](https://orqc.7nohe.dev/guides/cli-options/): every flag with defaults
+- [Mocking with MSW](https://orqc.7nohe.dev/guides/mocking/): `--mock msw`, generated mock data and request handlers, overriding a response, how the values are chosen
 - [CI and Coding Agents](https://orqc.7nohe.dev/guides/ci-and-agents/): `--check`, `--json`, exit codes, error codes, AGENTS.md
 - [AGENTS.md](https://github.com/7nohe/openapi-react-query-codegen/blob/main/AGENTS.md): agent guide, also at `node_modules/@7nohe/openapi-react-query-codegen/AGENTS.md`
 

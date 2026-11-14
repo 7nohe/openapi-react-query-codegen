@@ -52,20 +52,23 @@ export const processOutput = async ({
   output,
   format,
   lint,
+  label = "queries",
 }: {
   output: string;
+  /** What `output` holds, for the progress message. */
+  label?: string;
   format?: "prettier" | "biome";
   lint?: "biome" | "eslint";
 }) => {
   if (format) {
     const module = formatters[format];
-    console.log(`✨ Running ${module.name} on queries`);
+    console.log(`✨ Running ${module.name} on ${label}`);
     sync(module.command, module.args(output));
   }
 
   if (lint) {
     const module = linters[lint];
-    console.log(`✨ Running ${module.name} on queries`);
+    console.log(`✨ Running ${module.name} on ${label}`);
     sync(module.command, module.args(output));
   }
 };
