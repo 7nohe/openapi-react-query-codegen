@@ -115,7 +115,7 @@ describe("common", () => {
     expect(formatted.lint).toStrictEqual("eslint");
   });
 
-  test("formatOptions - converts string number to number", () => {
+  test("formatOptions - keeps NaN as NaN", () => {
     const options: LimitedUserConfig = {
       input: "input",
       output: "output",
