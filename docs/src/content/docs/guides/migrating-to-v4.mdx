@@ -12,12 +12,14 @@ v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this
 
    ```bash
    npm install -D @7nohe/openapi-react-query-codegen@beta
-   npx openapi-rq -i ./petstore.yaml
+   npx orqc -i ./petstore.yaml
    ```
 
 3. If you pass `-c @hey-api/client-fetch` or `-c @hey-api/client-axios`, both still work. Prefer the new spellings `-c fetch` and `-c axios`.
 4. Delete the stale `client/` and `core/` folders from `openapi/requests` (the easiest way is to remove the whole `openapi` folder before regenerating).
 5. Everything else is compatible — you are done.
+
+The command is now called `orqc`. `openapi-rq` still works, so existing scripts need no change.
 
 ## What stays the same
 
@@ -119,7 +121,7 @@ The constants have the names v3 gave them (`PetSchema`, `my_schemaSchema`, `PetW
 
 ## Dependency changes
 
-- Node.js 24 or later is required (`engines.node` is `>=24.0.0`; v3 needed 22.18). This is the version that runs `openapi-rq`. The generated code has no Node.js requirement of its own.
+- Node.js 24 or later is required (`engines.node` is `>=24.0.0`; v3 needed 22.18). This is the version that runs `orqc`. The generated code has no Node.js requirement of its own.
 - `@hey-api/openapi-ts` is no longer a dependency, so its (FSL) license no longer applies to your install.
 - `yaml` (exact-pinned, no dependencies of its own) was added to parse YAML specifications.
 - `typescript` is no longer a peer dependency, so the TypeScript version of your project cannot conflict with this package, and TypeScript 7 works. The generator reads your `tsconfig.json` itself (comments, trailing commas and `extends` included) to decide whether relative imports need `.js`, instead of using the TypeScript compiler API, which version 7 does not have. The generated code compiles with TypeScript 5.x, 6.x and 7.x.

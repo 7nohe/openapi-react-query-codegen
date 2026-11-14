@@ -1,0 +1,26 @@
+{
+  "name": "@7nohe/orqc",
+  "private": true,
+  "description": "Short name for @7nohe/openapi-react-query-codegen: `npx @7nohe/orqc` runs its CLI.",
+  "type": "module",
+  "bin": {
+    "orqc": "bin/orqc.mjs"
+  },
+  "files": [
+    "bin"
+  ],
+  "homepage": "https://orqc.7nohe.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/7nohe/openapi-react-query-codegen.git",
+    "directory": "packages/orqc"
+  },
+  "bugs": "https://github.com/7nohe/openapi-react-query-codegen/issues",
+  "keywords": [
+    "openapi",
+    "react-query",
+    "tanstack-query",
+    "codegen"
+  ],
+  "license": "MIT"
+}

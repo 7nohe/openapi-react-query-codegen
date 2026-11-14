@@ -204,7 +204,7 @@ describe("runCli", () => {
       expect(await cli.run("-i", "spec.yaml", "--check")).toBe(1);
       expect(cli.stderr()).toBe(
         [
-          "error [OUTPUT_OUT_OF_DATE]: Generated output is out of date (2 files differ). Re-run openapi-rq without --check to update it.",
+          "error [OUTPUT_OUT_OF_DATE]: Generated output is out of date (2 files differ). Re-run orqc without --check to update it.",
           "  modified openapi/queries/queries.ts",
           "  removed  openapi/requests/old.gen.ts",
           "",

@@ -29,7 +29,7 @@ OpenAPI React Query Codegen is a code generator for creating React Query (also k
 </Tabs>
 
 :::caution
-The only package published by this project is the scoped `@7nohe/openapi-react-query-codegen`. The unscoped `openapi-react-query-codegen` and the copies under other scopes on npm are published by third parties, not by this project.
+This project publishes only `@7nohe/openapi-react-query-codegen` and its short name `@7nohe/orqc`. The unscoped `openapi-react-query-codegen` and `openapi-rq` and the copies under other scopes on npm are published by third parties, not by this project.
 :::
 
 Register the command to the `scripts` property in your package.json file.
@@ -37,16 +37,18 @@ Register the command to the `scripts` property in your package.json file.
 ```json
 {
   "scripts": {
-    "codegen": "openapi-rq -i ./petstore.yaml"
+    "codegen": "orqc -i ./petstore.yaml"
   }
 }
 ```
 
-You can also run the command without installing it in your project using the npx command.
+The command is `orqc`; `openapi-rq` and `openapi-react-query-codegen` run the same command. To try it without installing, run `@7nohe/orqc`, which runs the same version of `@7nohe/openapi-react-query-codegen`:
 
 ```bash
-$ npx --package @7nohe/openapi-react-query-codegen openapi-rq -i ./petstore.yaml
+$ npx @7nohe/orqc@beta -i ./petstore.yaml
 ```
+
+Do not run `npx orqc`, `npx openapi-rq` or `npx openapi-react-query-codegen` outside a project that has the package installed: npx would then look up the unscoped package with that name, and on npm those are other people's packages.
 
 
 ## Usage
