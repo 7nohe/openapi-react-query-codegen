@@ -254,9 +254,14 @@ export function emitSdk(
     blocks.push(code);
   }
   const typeImports = [...used].sort().join(", ");
+  // Only the operations use `client` and `RequestResult`, and an import that
+  // nothing uses is an error under `noUnusedLocals`.
+  const hasOperations = blocks.length > 0;
   const imports = [
-    `import { client } from "./client.gen${options.ext}";`,
-    `import type { Client, Options as Options2, RequestResult, TDataShape } from "./runtime.gen${options.ext}";`,
+    ...(hasOperations
+      ? [`import { client } from "./client.gen${options.ext}";`]
+      : []),
+    `import type { Client, Options as Options2, ${hasOperations ? "RequestResult, " : ""}TDataShape } from "./runtime.gen${options.ext}";`,
   ];
   const transformers = [...(options.transformers?.values() ?? [])].sort();
   if (transformers.length > 0) {
@@ -278,7 +283,7 @@ ${docComment({ description: "You can provide a client instance returned by `crea
 ${docComment({ description: "You can pass arbitrary values through the `meta` object. This can be\nused to access values that aren't defined as part of the SDK function." }, "  ")}  meta?: Record<string, unknown>;
 };`;
 
-  return `${HEADER}\n${imports.join("\n")}\n\n${optionsType}\n\n${blocks.join("\n\n")}\n`;
+  return `${HEADER}\n${[imports.join("\n"), optionsType, ...blocks].join("\n\n")}\n`;
 }
 
 /** The option that holds the base URL, spelled the way each client does. */
