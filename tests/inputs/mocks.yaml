@@ -153,6 +153,59 @@ paths:
             application/json:
               schema:
                 type: string
+  /archives/{name}{extension}:
+    get:
+      operationId: getArchive
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: extension
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Two parameters with nothing between them
+          content:
+            application/json:
+              schema:
+                type: string
+  /v{major}beta/ping:
+    get:
+      operationId: pingBeta
+      parameters:
+        - name: major
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A parameter followed by letters
+          content:
+            application/json:
+              schema:
+                type: string
+  /café/{id}:
+    get:
+      operationId: getCafe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Text a URL percent-encodes
+          content:
+            application/json:
+              schema:
+                type: string
   /animals:
     get:
       operationId: listAnimals
@@ -354,6 +407,32 @@ components:
               $ref: "#/components/schemas/Pet/properties/tags"
           example:
             tags: [a, b]
+    WithMeta:
+      type: object
+      properties:
+        meta:
+          type: object
+          required: [x]
+          properties:
+            x:
+              type: string
+        secret:
+          type: string
+          writeOnly: true
+    MoreMeta:
+      allOf:
+        - $ref: "#/components/schemas/WithMeta"
+        - type: object
+          properties:
+            meta:
+              type: object
+              required: [y]
+              properties:
+                y:
+                  type: integer
+            secret:
+              type: string
+              writeOnly: true
     Maybe:
       type: [object, "null"]
       required: [self]
@@ -753,6 +832,115 @@ components:
           required: [never]
           properties:
             never: false
+        halfOpen:
+          type: number
+          minimum: 0
+          exclusiveMaximum: 0.5
+        negativeEven:
+          type: integer
+          minimum: -5
+          maximum: -3
+          multipleOf: 2
+        tenths:
+          type: number
+          multipleOf: 0.1
+          maximum: 0.35
+        openSteps:
+          type: integer
+          exclusiveMinimum: 2
+          exclusiveMaximum: 4
+        openStepsBelow:
+          type: integer
+          exclusiveMaximum: -2
+        noMultiple:
+          type: integer
+          minimum: 3
+          maximum: 3.5
+          multipleOf: 2
+        between:
+          type: number
+          minimum: 2
+          maximum: 3
+        betweenOpen:
+          type: number
+          minimum: 2
+          exclusiveMinimum: true
+          maximum: 3
+        looserExclusive:
+          type: number
+          minimum: 5
+          exclusiveMinimum: 3
+          maximum: 9
+          exclusiveMaximum: 12
+        overlap:
+          allOf:
+            - type: object
+              properties:
+                a:
+                  type: object
+                  required: [x]
+                  properties:
+                    x:
+                      type: string
+            - type: object
+              properties:
+                a:
+                  type: object
+                  required: [y]
+                  properties:
+                    y:
+                      type: integer
+        conflicting:
+          allOf:
+            - type: object
+              properties:
+                k:
+                  enum: [a]
+            - type: object
+              properties:
+                k:
+                  enum: [b]
+        moreMeta:
+          $ref: "#/components/schemas/MoreMeta"
+        petPlus:
+          allOf:
+            - $ref: "#/components/schemas/Dog"
+            - $ref: "#/components/schemas/Dog"
+            - type: object
+              properties:
+                extra:
+                  type: string
+        stringAndOk:
+          allOf:
+            - type: string
+            - enum: [ok]
+        okAndString:
+          allOf:
+            - enum: [nope, ok]
+            - type: string
+              enum: [ok]
+        noCommon:
+          allOf:
+            - enum: [a]
+            - enum: [b]
+        statusAndSold:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+            - enum: [sold]
+        statusAndText:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+            - type: string
+        statusAndPriority:
+          allOf:
+            - $ref: "#/components/schemas/Status"
+            - $ref: "#/components/schemas/Priority"
+        wrapperRequired:
+          allOf:
+            - $ref: "#/components/schemas/Dog"
+          required: [goodBoy]
+          example:
+            kind: shiba
         oneOfPrimitives:
           anyOf:
             - type: integer

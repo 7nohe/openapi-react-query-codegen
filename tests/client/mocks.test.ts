@@ -228,6 +228,96 @@ describe("emitMocks", () => {
       expect(warnings[0]).toContain("  - Child");
     });
 
+    test("a number is inside both bounds and a multiple of its step", async () => {
+      const { data } = await mocksOf("mocks.yaml");
+      const shapes = functionBody(data, "shapesMock");
+      for (const line of [
+        // Half of an interval that is open at one end
+        "halfOpen: 0.25,",
+        "betweenOpen: 2.5,",
+        "between: 2,",
+        // The multiple inside the range, not the next one up
+        "negativeEven: -4,",
+        "tenths: 0.3,",
+        "openSteps: 3,",
+        "openStepsBelow: -3,",
+        // An exclusive bound looser than the inclusive one changes nothing
+        "looserExclusive: 5,",
+        // No multiple is in the range
+        "noMultiple: 2,",
+      ]) {
+        expect(shapes).toContain(`    ${line}\n`);
+      }
+    });
+
+    test("a property several allOf members declare is a value of all of them", async () => {
+      const { data } = await mocksOf("mocks.yaml");
+      const shapes = functionBody(data, "shapesMock");
+      expect(shapes).toContain(
+        '    overlap: {\n      a: {\n        x: "string",\n        y: 1,\n      },\n    },',
+      );
+      // Also when one of the declarations is in a referenced schema.
+      expect(functionBody(data, "moreMetaMock")).toContain(
+        '    ...withMetaMock(),\n    meta: {\n      x: "string",\n      y: 1,\n    },',
+      );
+      // No value is both, so the property is left out.
+      expect(shapes).not.toContain("conflicting");
+      // The same schema twice is spread once.
+      expect(shapes).toContain(
+        '    petPlus: {\n      ...dogMock(),\n      extra: "string",\n    },',
+      );
+    });
+
+    test("an intersection that limits the values takes one every member allows", async () => {
+      const { data } = await mocksOf("mocks.yaml");
+      const shapes = functionBody(data, "shapesMock");
+      expect(shapes).toContain('    stringAndOk: "ok",\n');
+      expect(shapes).toContain('    okAndString: "ok",\n');
+      expect(shapes).toContain('    statusAndSold: "sold",\n');
+      expect(shapes).toContain('    statusAndText: "available",\n');
+      expect(shapes).not.toContain("noCommon");
+      expect(shapes).not.toContain("statusAndPriority");
+
+      // A literal is not a value of a TypeScript enum and of something else
+      // that limits the values.
+      const enums = await mocksOf("mocks.yaml", { enums: "typescript" });
+      const typed = functionBody(enums.data, "shapesMock");
+      expect(typed).toContain(
+        '    statusAndText: ("available" as Types.Status),\n',
+      );
+      expect(typed).not.toContain("statusAndSold");
+      expect(typed).not.toContain("statusAndPriority");
+    });
+
+    test("a reference that only leads back to itself limits nothing", async () => {
+      const { data } = await mocksOfDocument({
+        components: {
+          schemas: {
+            Loop: { allOf: [{ $ref: "#/components/schemas/Loop" }] },
+            Holder: {
+              type: "object",
+              properties: {
+                value: {
+                  allOf: [
+                    { type: "string" },
+                    { allOf: [true, { $ref: "#/components/schemas/Loop" }] },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      });
+      expect(functionBody(data, "holderMock")).toContain('value: "string",');
+    });
+
+    test("an example is not taken for a wrapper that requires more", async () => {
+      const { data } = await mocksOf("mocks.yaml");
+      expect(functionBody(data, "shapesMock")).toContain(
+        "    wrapperRequired: {\n      ...dogMock(),\n      goodBoy: true,\n    },",
+      );
+    });
+
     test("dates are Date objects when the types say so", async () => {
       const { data } = await mocksOf("mocks.yaml", { useDateType: true });
       expect(functionBody(data, "petMock")).toContain(
@@ -423,6 +513,31 @@ describe("emitMocks", () => {
       // The path ends with a slash, so the request has to as well.
       expect(handlers).toContain(
         String.raw`new RegExp("/files/([^/]+)\\.\\(json\\|yaml\\)/$")`,
+      );
+    });
+
+    test("a parameter followed by another or by letters is matched by a regular expression", async () => {
+      const { handlers } = await mocksOf("mocks.yaml");
+      // MSW 2 rejects `:name:extension`, and `:majorbeta` would be one name.
+      expect(handlers).toContain('new RegExp("/archives/([^/]+)([^/]+)/?$")');
+      expect(handlers).toContain('new RegExp("/v([^/]+)beta/ping/?$")');
+      expect(handlers).not.toContain(":name:extension");
+    });
+
+    test("fixed text is matched as a request carries it", async () => {
+      const { handlers } = await mocksOf("mocks.yaml");
+      expect(handlers).toContain('new RegExp("/caf%C3%A9/([^/]+)/?$")');
+      const encoded = await mocksOfDocument({
+        paths: {
+          "/a b/%41%/x^y": {
+            get: { responses: { 204: { description: "ok" } } },
+          },
+        },
+      });
+      // What is encoded already stays, and a lone `%` is not encoded again.
+      // The URL parser decides what is encoded: a space is, `^` is not.
+      expect(encoded.handlers).toContain(
+        String.raw`new RegExp("/a%20b/%41%/x\\^y/?$")`,
       );
     });
 

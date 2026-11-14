@@ -91,16 +91,31 @@ function isPlainObject(doc: Doc, schema: Json, depth = 0): boolean {
 const PATH_PARAMETER = /\{([^{}]+)\}/g;
 
 /**
+ * The fixed text of a path as a request carries it: a URL percent-encodes
+ * what is not ASCII and a few characters besides (`/café` is requested as
+ * `/caf%C3%A9`). What is encoded already stays as it is.
+ */
+function encodePathText(text: string): string {
+  return text.replace(/[^\x21-\x7e]|["<>`^{}]/gu, (char) =>
+    // Between two letters, as a URL drops a space from its ends.
+    new URL(`http://x/a${char}a`).pathname.slice(2, -1),
+  );
+}
+
+/**
  * What a handler matches the path with, as an expression. `*` stands for the
  * base URL, so the handlers match wherever the API is.
  *
  * MSW reads `:` and a few other characters in a path as its own syntax, so a
  * path that has one outside its parameters (`/pets:count`) is matched with a
  * regular expression instead, which gives the resolver no named parameters.
+ * So is a path whose parameter is followed by another one or by a letter
+ * (`/files/{name}{extension}`, `/v{major}beta`): MSW 2 rejects the first, and
+ * would take the letters for the rest of the parameter's name.
  */
 function mswPath(path: string): string {
   const fixed = path.replace(PATH_PARAMETER, "");
-  if (/^[\w/.~-]*$/.test(fixed)) {
+  if (/^[\w/.~-]*$/.test(fixed) && !/\}[\w{]/.test(path)) {
     return JSON.stringify(
       `*${path.replace(PATH_PARAMETER, (_match, name: string) => {
         // A parameter name is made of word characters and starts with none
@@ -114,7 +129,9 @@ function mswPath(path: string): string {
     .split(PATH_PARAMETER)
     // Every other part is the name of a parameter.
     .map((part, index) =>
-      index % 2 === 1 ? "([^/]+)" : part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+      index % 2 === 1
+        ? "([^/]+)"
+        : encodePathText(part).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
     )
     .join("");
   // As in a path given as text, a trailing slash is only required when the

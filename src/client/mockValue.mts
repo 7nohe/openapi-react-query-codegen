@@ -16,7 +16,12 @@ import {
   type SchemaCtx,
   schemaKinds,
 } from "./schema.mjs";
-import { getByPointer, type Json, refSiblingSchema } from "./spec.mjs";
+import {
+  getByPointer,
+  type Json,
+  refSiblingSchema,
+  resolveRef,
+} from "./spec.mjs";
 
 /**
  * What the values of a mock are built with. A value is a TypeScript expression
@@ -116,14 +121,22 @@ function print(built: Built, indent: string): string {
 /**
  * One object out of the parts of an intersection. What is spread comes first
  * and a property wins over it, as the literal a discriminator pins has to; of
- * two properties with one name the later one stays.
+ * two properties with one name the later one stays. A property that several
+ * members declare is not left to that: `buildComposed` gives it a part of its
+ * own, with a value of all of its declarations.
  */
 function mergeObjects(parts: Built[], indent: string): Built {
   const spreads: Entry[] = [];
   const properties = new Map<string, string>();
   for (const part of parts) {
     if ("expr" in part) {
-      if (part.expr !== ANY_VALUE) spreads.push({ spread: part.expr });
+      // Nothing to add, or what is spread already.
+      const repeated = spreads.some(
+        (entry) => "spread" in entry && entry.spread === part.expr,
+      );
+      if (part.expr !== ANY_VALUE && !repeated) {
+        spreads.push({ spread: part.expr });
+      }
       continue;
     }
     for (const entry of part.entries) {
@@ -159,29 +172,79 @@ function stringSample(schema: Json): string {
   return text;
 }
 
-/** `1`, moved into the range the schema gives. */
+/**
+ * `1`, or where the schema does not allow it, a value in the range it gives
+ * that is a multiple of its `multipleOf`.
+ */
 function numberSample(schema: Json): number {
-  let value = 1;
   // OpenAPI 3.0 writes an exclusive bound as a flag, 3.1 as the bound itself.
-  const low =
-    typeof schema.exclusiveMinimum === "number"
-      ? schema.exclusiveMinimum + 1
-      : typeof schema.minimum === "number"
-        ? schema.minimum + (schema.exclusiveMinimum === true ? 1 : 0)
-        : undefined;
-  const high =
-    typeof schema.exclusiveMaximum === "number"
-      ? schema.exclusiveMaximum - 1
-      : typeof schema.maximum === "number"
-        ? schema.maximum - (schema.exclusiveMaximum === true ? 1 : 0)
-        : undefined;
-  if (low !== undefined && value < low) value = low;
-  if (high !== undefined && value > high) value = high;
-  const step = schema.multipleOf;
-  if (typeof step === "number" && step > 0 && value % step !== 0) {
-    value = Math.ceil(value / step) * step;
+  let min = Number.NEGATIVE_INFINITY;
+  let minOpen = false;
+  if (typeof schema.minimum === "number") {
+    min = schema.minimum;
+    minOpen = schema.exclusiveMinimum === true;
   }
-  return value;
+  if (
+    typeof schema.exclusiveMinimum === "number" &&
+    schema.exclusiveMinimum >= min
+  ) {
+    min = schema.exclusiveMinimum;
+    minOpen = true;
+  }
+  let max = Number.POSITIVE_INFINITY;
+  let maxOpen = false;
+  if (typeof schema.maximum === "number") {
+    max = schema.maximum;
+    maxOpen = schema.exclusiveMaximum === true;
+  }
+  if (
+    typeof schema.exclusiveMaximum === "number" &&
+    schema.exclusiveMaximum <= max
+  ) {
+    max = schema.exclusiveMaximum;
+    maxOpen = true;
+  }
+  const inRange = (value: number) =>
+    (minOpen ? value > min : value >= min) &&
+    (maxOpen ? value < max : value <= max);
+
+  const step =
+    typeof schema.multipleOf === "number" && schema.multipleOf > 0
+      ? schema.multipleOf
+      : schema.type === "integer"
+        ? 1
+        : undefined;
+  if (step !== undefined) {
+    // How many steps a bound is, as a whole number where it is one but for
+    // the rounding of the division.
+    const steps = (bound: number) => {
+      const exact = bound / step;
+      const whole = Math.round(exact);
+      return Math.abs(exact - whole) < 1e-9 ? whole : exact;
+    };
+    const lowest = Math.ceil(steps(min));
+    const highest = Math.floor(steps(max));
+    // The multiple at or above 1, else the lowest in the range, else the
+    // highest. With no multiple in the range there is nothing better than the
+    // first.
+    const candidates = [
+      Math.ceil(steps(1)),
+      ...(Number.isFinite(min)
+        ? [lowest + (minOpen && lowest === steps(min) ? 1 : 0)]
+        : []),
+      ...(Number.isFinite(max)
+        ? [highest - (maxOpen && highest === steps(max) ? 1 : 0)]
+        : []),
+    ].map((count) => Number((count * step).toPrecision(12)));
+    return candidates.find(inRange) ?? candidates[0];
+  }
+
+  if (inRange(1)) return 1;
+  if (Number.isFinite(min) && Number.isFinite(max)) {
+    return minOpen || maxOpen ? (min + max) / 2 : min;
+  }
+  if (Number.isFinite(min)) return minOpen ? min + 1 : min;
+  return maxOpen ? max - 1 : max;
 }
 
 function buildRef(
@@ -272,6 +335,97 @@ function buildArray(
 }
 
 /**
+ * Every declaration of each property in a schema and in what its `allOf` is
+ * made of. A member whose discriminator property is replaced
+ * (`Omit<Parent, …>`) does not declare that one.
+ */
+function collectDeclarations(
+  ctx: MockValueCtx,
+  schema: Json,
+  into: Map<string, Json[]>,
+  omitted: ReadonlySet<string> = new Set(),
+  visited: Set<Json> = new Set(),
+): void {
+  const { doc } = ctx.schema;
+  const resolved = resolveRef(doc, schema);
+  if (!resolved || typeof resolved !== "object" || visited.has(resolved)) {
+    return;
+  }
+  visited.add(resolved);
+  const properties: Record<string, Json> = resolved.properties ?? {};
+  for (const [name, property] of Object.entries(properties)) {
+    if (omitted.has(name) || hasFlag(doc, property, "writeOnly")) continue;
+    into.set(name, [...(into.get(name) ?? []), property]);
+  }
+  for (const member of Array.isArray(resolved.allOf) ? resolved.allOf : []) {
+    const marker = member?.[OMITTED_PROPERTY];
+    collectDeclarations(
+      ctx,
+      member,
+      into,
+      typeof marker === "string" ? new Set(omitted).add(marker) : omitted,
+      visited,
+    );
+  }
+}
+
+/** The values a schema is limited to by its `const` or `enum`, if it is. */
+function pinnedValues(
+  ctx: MockValueCtx,
+  schema: Json,
+  depth = 0,
+): Json[] | undefined {
+  const resolved = resolveRef(ctx.schema.doc, schema);
+  if (!resolved || typeof resolved !== "object" || depth > 16) return undefined;
+  if (resolved.const !== undefined) return [resolved.const];
+  if (Array.isArray(resolved.enum)) return resolved.enum;
+  for (const member of Array.isArray(resolved.allOf) ? resolved.allOf : []) {
+    const pinned = pinnedValues(ctx, member, depth + 1);
+    if (pinned) return pinned;
+  }
+  return undefined;
+}
+
+/**
+ * The value of an intersection that is not an object. Where a member limits
+ * the values (`string & "ok"`), only one of those that every member takes is
+ * a value of the type; undefined when there is none. Otherwise the members
+ * differ in what a type does not show, and the first part stands for all.
+ */
+function buildScalarIntersection(
+  members: Json[],
+  first: Built,
+  ctx: MockValueCtx,
+  indent: string,
+): Built | undefined {
+  const pinned = members
+    .map((member) => pinnedValues(ctx, member))
+    .find((values) => values !== undefined);
+  if (pinned === undefined) return first;
+  for (const candidate of pinned) {
+    const rendered = members.map((member) =>
+      exampleValue(member, candidate, ctx, indent),
+    );
+    if (rendered.some((value) => value === undefined)) continue;
+    // A member that is a TypeScript enum takes the value asserted to it
+    // (`("a" as Status)`). No literal is a value of an enum and of another
+    // enum or literal at once, so such an intersection has none.
+    const values = rendered as string[];
+    const isAsserted = (value: string) => value.endsWith(")");
+    const asserted = values.filter(isAsserted);
+    if (asserted.length === 0) return { expr: values[0] };
+    const pinnedElsewhere = members.some(
+      (member, index) =>
+        !isAsserted(values[index]) && pinnedValues(ctx, member) !== undefined,
+    );
+    return asserted.length > 1 || pinnedElsewhere
+      ? undefined
+      : { expr: asserted[0] };
+  }
+  return undefined;
+}
+
+/**
  * A schema composed of others. `allOf` and the schema's own properties make
  * one object; of a `oneOf` or `anyOf` the first member that ends is taken.
  */
@@ -302,13 +456,50 @@ function buildComposed(
       parts.push(part);
     }
   }
+  const typed: Json[] = [];
+  const firstTyped = parts.length;
   for (const member of members) {
     // A member that says nothing about the type adds nothing to the value.
     if (isRequiredOnly(member)) continue;
     if (renderSchema(member, ctx.schema) === "unknown") continue;
     const part = buildNullable(member, ctx, indent, seen);
     if (part === undefined) return undefined;
+    typed.push(member);
     parts.push(part);
+  }
+
+  if (hasObjectKeywords(schema)) {
+    const own = buildObject(schema, ctx, indent, seen);
+    if (own === undefined) return undefined;
+    parts.push(own);
+  }
+
+  const isObject = schemaKinds(doc, schema).has("object");
+  if (isObject) {
+    // A property that several members declare has to be a value of every
+    // declaration (`{ a: { x } } & { a: { y } }`), which neither member's own
+    // value of it is. It is built from all of them, and goes after the
+    // members so that it replaces theirs.
+    const declarations = new Map<string, Json[]>();
+    collectDeclarations(ctx, schema, declarations);
+    const shared: Entry[] = [];
+    for (const [name, schemas] of declarations) {
+      if (schemas.length < 2) continue;
+      const value = mockValue({ allOf: schemas }, ctx, `${indent}  `, seen);
+      if (value === undefined) return undefined;
+      shared.push({ key: name, value });
+    }
+    if (shared.length > 0) parts.push({ entries: shared });
+  } else if (typed.length > 1) {
+    const scalar = buildScalarIntersection(
+      typed,
+      parts[firstTyped],
+      ctx,
+      indent,
+    );
+    if (scalar === undefined) return undefined;
+    // It stands for every `allOf` member.
+    parts.splice(firstTyped, typed.length, scalar);
   }
 
   for (const key of ["oneOf", "anyOf"] as const) {
@@ -340,19 +531,11 @@ function buildComposed(
     parts.push(chosen);
   }
 
-  if (hasObjectKeywords(schema)) {
-    const own = buildObject(schema, ctx, indent, seen);
-    if (own === undefined) return undefined;
-    parts.push(own);
-  }
-
   if (parts.length === 0) return { expr: ANY_VALUE };
   if (parts.length === 1) return parts[0];
   // Only objects can be put together. Of anything else the first part stands
   // for the whole.
-  return schemaKinds(doc, schema).has("object")
-    ? mergeObjects(parts, indent)
-    : parts[0];
+  return isObject ? mergeObjects(parts, indent) : parts[0];
 }
 
 function build(
@@ -665,7 +848,12 @@ export function exampleValue(
   if (Array.isArray(schema.allOf)) {
     // `allOf` around one schema is how OpenAPI 3.0 documents a reference or
     // makes it nullable.
-    if (schema.allOf.length !== 1 || hasObjectKeywords(schema)) {
+    // What the wrapper adds, the value would have to be checked against too.
+    if (
+      schema.allOf.length !== 1 ||
+      hasObjectKeywords(schema) ||
+      (Array.isArray(schema.required) && schema.required.length > 0)
+    ) {
       return undefined;
     }
     if (value === null) return isNullableSchema(schema) ? "null" : undefined;

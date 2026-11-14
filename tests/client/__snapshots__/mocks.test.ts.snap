@@ -72,6 +72,26 @@ export function exampledMock(overrides?: Partial<Types.Exampled>): Types.Example
   };
 }
 
+export function withMetaMock(overrides?: Partial<Types.WithMeta>): Types.WithMeta {
+  return {
+    meta: {
+      x: "string",
+    },
+    ...overrides,
+  };
+}
+
+export function moreMetaMock(overrides?: Partial<Types.MoreMeta>): Types.MoreMeta {
+  return {
+    ...withMetaMock(),
+    meta: {
+      x: "string",
+      y: 1,
+    },
+    ...overrides,
+  };
+}
+
 export function maybeMock(): Types.Maybe {
   return null;
 }
@@ -240,11 +260,39 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     aliasOrAnything: dogMock(),
     taggedWithMore: {
       ...catMock(),
-      kind: "cat",
       more: "string",
+      kind: "cat",
     },
     onlyDocumented: {},
     twice: "string",
+    halfOpen: 0.25,
+    negativeEven: -4,
+    tenths: 0.3,
+    openSteps: 3,
+    openStepsBelow: -3,
+    noMultiple: 2,
+    between: 2,
+    betweenOpen: 2.5,
+    looserExclusive: 5,
+    overlap: {
+      a: {
+        x: "string",
+        y: 1,
+      },
+    },
+    moreMeta: moreMetaMock(),
+    petPlus: {
+      ...dogMock(),
+      extra: "string",
+    },
+    stringAndOk: "ok",
+    okAndString: "ok",
+    statusAndSold: "sold",
+    statusAndText: "available",
+    wrapperRequired: {
+      ...dogMock(),
+      goodBoy: true,
+    },
     oneOfPrimitives: 1,
     animal: animalMock(),
     car: sportsCarMock(),
@@ -308,6 +356,10 @@ export function listMyPetsResponseMock(): Types.ListMyPetsResponses["2XX"] {
   return [petMock()];
 }
 
+export function getArchiveResponseMock(): Types.GetArchiveResponses[200] {
+  return "string";
+}
+
 export function getFileResponseMock(): Types.GetFileResponses[200] {
   return "string";
 }
@@ -316,7 +368,15 @@ export function getPetResponseMock(): Types.GetPetResponses[200] {
   return petMock();
 }
 
+export function getCafeResponseMock(): Types.GetCafeResponses[200] {
+  return "string";
+}
+
 export function getTagResponseMock(): Types.GetTagResponses[200] {
+  return "string";
+}
+
+export function pingBetaResponseMock(): Types.PingBetaResponses[200] {
   return "string";
 }
 "
@@ -436,6 +496,12 @@ export const listMyPetsHandler = (override?: Types.ListMyPetsResponses["2XX"] | 
 export const archivePetHandler = (override?: HttpResponseResolver) =>
   http.delete(new RegExp("/pets/([^/]+):archive/?$"), override ?? empty(202));
 
+export const getArchiveHandler = (override?: Types.GetArchiveResponses[200] | HttpResponseResolver) =>
+  http.get(
+    new RegExp("/archives/([^/]+)([^/]+)/?$"),
+    answer(override, mocks.getArchiveResponseMock, json(200)),
+  );
+
 export const getFileHandler = (override?: Types.GetFileResponses[200] | HttpResponseResolver) =>
   http.get(
     new RegExp("/files/([^/]+)\\\\.\\\\(json\\\\|yaml\\\\)/$"),
@@ -451,10 +517,22 @@ export const getPetHandler = (override?: Types.GetPetResponses[200] | HttpRespon
 export const deletePetHandler = (override?: HttpResponseResolver) =>
   http.delete("*/pets/:pet_id", override ?? empty(204));
 
+export const getCafeHandler = (override?: Types.GetCafeResponses[200] | HttpResponseResolver) =>
+  http.get(
+    new RegExp("/caf%C3%A9/([^/]+)/?$"),
+    answer(override, mocks.getCafeResponseMock, json(200)),
+  );
+
 export const getTagHandler = (override?: Types.GetTagResponses[200] | HttpResponseResolver) =>
   http.get(
     "*/tags/:_1st/",
     answer(override, mocks.getTagResponseMock, json(200)),
+  );
+
+export const pingBetaHandler = (override?: Types.PingBetaResponses[200] | HttpResponseResolver) =>
+  http.get(
+    new RegExp("/v([^/]+)beta/ping/?$"),
+    answer(override, mocks.pingBetaResponseMock, json(200)),
   );
 
 export const handlers: HttpHandler[] = [
@@ -472,10 +550,13 @@ export const handlers: HttpHandler[] = [
   getShapesHandler(),
   listMyPetsHandler(),
   archivePetHandler(),
+  getArchiveHandler(),
   getFileHandler(),
   getPetHandler(),
   deletePetHandler(),
+  getCafeHandler(),
   getTagHandler(),
+  pingBetaHandler(),
 ];
 "
 `;
@@ -555,6 +636,26 @@ export function exampledMock(overrides?: Partial<Types.Exampled>): Types.Example
     anyItems: [1, "a"],
     nested: {
       tags: ["a", "b"],
+    },
+    ...overrides,
+  };
+}
+
+export function withMetaMock(overrides?: Partial<Types.WithMeta>): Types.WithMeta {
+  return {
+    meta: {
+      x: "string",
+    },
+    ...overrides,
+  };
+}
+
+export function moreMetaMock(overrides?: Partial<Types.MoreMeta>): Types.MoreMeta {
+  return {
+    ...withMetaMock(),
+    meta: {
+      x: "string",
+      y: 1,
     },
     ...overrides,
   };
@@ -728,11 +829,38 @@ export function shapesMock(overrides?: Partial<Types.Shapes>): Types.Shapes {
     aliasOrAnything: dogMock(),
     taggedWithMore: {
       ...catMock(),
-      kind: "cat",
       more: "string",
+      kind: "cat",
     },
     onlyDocumented: {},
     twice: "string",
+    halfOpen: 0.25,
+    negativeEven: -4,
+    tenths: 0.3,
+    openSteps: 3,
+    openStepsBelow: -3,
+    noMultiple: 2,
+    between: 2,
+    betweenOpen: 2.5,
+    looserExclusive: 5,
+    overlap: {
+      a: {
+        x: "string",
+        y: 1,
+      },
+    },
+    moreMeta: moreMetaMock(),
+    petPlus: {
+      ...dogMock(),
+      extra: "string",
+    },
+    stringAndOk: "ok",
+    okAndString: "ok",
+    statusAndText: ("available" as Types.Status),
+    wrapperRequired: {
+      ...dogMock(),
+      goodBoy: true,
+    },
     oneOfPrimitives: 1,
     animal: animalMock(),
     car: sportsCarMock(),
@@ -796,6 +924,10 @@ export function listMyPetsResponseMock(): Types.ListMyPetsResponses["2XX"] {
   return [petMock()];
 }
 
+export function getArchiveResponseMock(): Types.GetArchiveResponses[200] {
+  return "string";
+}
+
 export function getFileResponseMock(): Types.GetFileResponses[200] {
   return "string";
 }
@@ -804,7 +936,15 @@ export function getPetResponseMock(): Types.GetPetResponses[200] {
   return petMock();
 }
 
+export function getCafeResponseMock(): Types.GetCafeResponses[200] {
+  return "string";
+}
+
 export function getTagResponseMock(): Types.GetTagResponses[200] {
+  return "string";
+}
+
+export function pingBetaResponseMock(): Types.PingBetaResponses[200] {
   return "string";
 }
 "

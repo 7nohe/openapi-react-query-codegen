@@ -7,13 +7,13 @@ With `--mock msw` the generator also writes mock data and [MSW](https://mswjs.io
 
 ```bash
 npm install -D msw
-orqc -i ./openapi.yaml --mock msw
+orqc -i ./openapi.yaml -o ./src/openapi --mock msw
 ```
 
-This adds a third directory next to `requests/` and `queries/`:
+This adds a third directory next to `requests/` and `queries/`, here under `src/openapi` as the examples below import it:
 
 ```
-openapi/mocks/
+src/openapi/mocks/
 ├── data.ts       # one mock function per schema and per response
 ├── handlers.ts   # one MSW handler per operation, and `handlers` with all of them
 └── index.ts      # re-exports both

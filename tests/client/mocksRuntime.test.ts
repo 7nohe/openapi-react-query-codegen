@@ -95,6 +95,22 @@ describe("generated handlers under MSW", () => {
     expect(archived.response.status).toBe(202);
   });
 
+  test("matches adjacent parameters, a parameter before letters and encoded text", async () => {
+    const archive = await sdk.getArchive({
+      path: { name: "backup", extension: ".zip" },
+    });
+    expect(archive.response.status).toBe(200);
+    expect(archive.data).toBe("string");
+
+    const ping = await sdk.pingBeta({ path: { major: "2" } });
+    expect(ping.request.url).toBe("https://api.example.test/v1/v2beta/ping");
+    expect(ping.data).toBe("string");
+
+    const cafe = await sdk.getCafe({ path: { id: "1" } });
+    expect(cafe.request.url).toBe("https://api.example.test/v1/caf%C3%A9/1");
+    expect(cafe.data).toBe("string");
+  });
+
   test("answers with the status of the response", async () => {
     const created = await sdk.createPet();
     expect(created.response.status).toBe(201);
