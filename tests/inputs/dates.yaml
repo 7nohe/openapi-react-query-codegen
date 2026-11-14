@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Dates API
   version: 1.0.0
@@ -6,6 +6,17 @@ paths:
   /events:
     get:
       operationId: listEvents
+      parameters:
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: day
+          in: query
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: Events
@@ -15,13 +26,266 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          description: Invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /events/{id}:
+    get:
+      operationId: getEvent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: An event with what surrounds it
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: "#/components/schemas/Event"
+                  fetchedAt:
+                    type: string
+                    format: date-time
+                  history:
+                    type: array
+                    items:
+                      type: string
+                      format: date-time
+                  byDay:
+                    type: object
+                    additionalProperties:
+                      type: string
+                      format: date
+                  pair:
+                    type: array
+                    prefixItems:
+                      - type: string
+                        format: date-time
+                      - type: integer
+                    items:
+                      type: string
+                      format: date
+                  marks:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                    patternProperties:
+                      "^at_":
+                        type: string
+                        format: date-time
+                      "^n_":
+                        type: integer
+                    additionalProperties:
+                      type: string
+                      format: date
+        "404":
+          description: Missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: Pets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/Cat"
+                    - $ref: "#/components/schemas/Dog"
+                  discriminator:
+                    propertyName: kind
+                    mapping:
+                      cat: "#/components/schemas/Cat"
+                      dog: "#/components/schemas/Dog"
+  /mixed:
+    get:
+      operationId: getMixed
+      responses:
+        "200":
+          description: Unions and odd corners
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mixed"
+  /job:
+    get:
+      operationId: getJob
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Window"
+        "202":
+          description: Still running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from:
+                    type: string
+  /plain:
+    get:
+      operationId: getPlain
+      responses:
+        "200":
+          description: A date on its own
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Timestamp"
+  /none:
+    get:
+      operationId: getNone
+      responses:
+        "200":
+          description: Nothing to convert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plain"
 components:
   schemas:
-    Event:
+    Timestamp:
+      type: string
+      format: date-time
+    Plain:
       type: object
-      required:
-        - createdAt
+      properties:
+        name:
+          type: string
+        other:
+          $ref: "#/components/schemas/Plain"
+    Problem:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+    Window:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+    Base:
+      type: object
+      required: [createdAt]
       properties:
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: [string, "null"]
+          format: date-time
+    Event:
+      allOf:
+        - $ref: "#/components/schemas/Base"
+        - type: object
+          properties:
+            id:
+              type: integer
+            day:
+              type: string
+              format: date
+            name:
+              type: string
+            parent:
+              $ref: "#/components/schemas/Event"
+            windows:
+              type: array
+              items:
+                $ref: "#/components/schemas/Window"
+            plain:
+              $ref: "#/components/schemas/Plain"
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bornAt:
+          type: string
+          format: date
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+        bornAt:
+          type: string
+        adoptedAt:
+          type: string
+          format: date
+    Mixed:
+      type: object
+      properties:
+        ambiguous:
+          oneOf:
+            - $ref: "#/components/schemas/Window"
+            - $ref: "#/components/schemas/Problem"
+        stringOrDate:
+          anyOf:
+            - type: string
+            - type: string
+              format: date-time
+        nullableDate:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        dateOrProblem:
+          oneOf:
+            - $ref: "#/components/schemas/Problem"
+            - $ref: "#/components/schemas/Timestamp"
+            - type: integer
+        stamp:
+          $ref: "#/components/schemas/Timestamp"
+        fixed:
+          type: string
+          format: date
+          enum: ["2024-01-01"]
+        "odd-key":
+          type: string
+          format: date-time
+    Unused:
+      type: object
+      properties:
+        when:
+          type: string
+          format: date

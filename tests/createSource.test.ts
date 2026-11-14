@@ -1,27 +1,31 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createClient } from "@hey-api/openapi-ts";
 import ts from "typescript";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import {
+  type GeneratedClient,
+  writeGeneratedFiles,
+} from "../src/client/index.mjs";
 import { createSource } from "../src/createSource.mjs";
-import { formatOutput } from "../src/format.mjs";
-import { cleanOutputs, generateTSClients, outputPath } from "./utils";
+import { generateTestClient, outputPath } from "./utils";
 
 const fileName = "createSource";
 
 describe(fileName, () => {
-  beforeAll(async () => await generateTSClients(fileName));
-  afterAll(async () => await cleanOutputs(fileName));
+  let generated: GeneratedClient;
+  beforeAll(async () => {
+    generated = await generateTestClient();
+  });
 
-  test("createSource - @hey-api/client-fetch", async () => {
-    const source = await createSource({
-      outputPath: outputPath(fileName),
+  test("createSource - fetch client", async () => {
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: false,
-      client: "@hey-api/client-fetch",
+      client: "fetch",
     });
 
     expect(source).toHaveLength(8);
@@ -52,15 +56,15 @@ describe(fileName, () => {
     expect(prefetchTs?.content).toMatchSnapshot();
   });
 
-  test("createSource - @hey-api/client-axios", async () => {
-    const source = await createSource({
-      outputPath: outputPath(fileName),
+  test("createSource - axios client", async () => {
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: false,
-      client: "@hey-api/client-axios",
+      client: "axios",
     });
 
     const indexTs = source.find((s) => s.name === "index.ts");
@@ -80,14 +84,14 @@ describe(fileName, () => {
   });
 
   test("createSource - omitInitialPageParam", async () => {
-    const source = await createSource({
-      outputPath: outputPath(fileName),
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: true,
-      client: "@hey-api/client-fetch",
+      client: "fetch",
     });
 
     const infiniteQueriesTs = source.find(
@@ -106,32 +110,32 @@ describe(fileName, () => {
   });
 });
 
-// End-to-end pin for #213: hey-api names the SDK function `_123NumericLead`
-// but the Data type `NumericLeadData`. The full pipeline must still detect
-// pagination and produce output that typechecks — the bug's two symptoms were
-// a silently missing infinite hook and `Options<unknown, true>` failing TS2344.
+// End-to-end pin for #213: a digit-leading operationId yields the function
+// `_123NumericLead`. The full pipeline must detect pagination and produce
+// output that typechecks — the bug's two symptoms were a silently missing
+// infinite hook and `Options<unknown, true>` failing TS2344.
 describe("createSource - digit-leading operationId (#213)", () => {
   const prefix = "createSource-digit-leading";
   const dir = outputPath(prefix);
+  let generated: GeneratedClient;
 
   beforeAll(async () => {
-    await createClient({
-      input: path.join(__dirname, "inputs", "digit-leading.yaml"),
-      output: path.join(dir, "requests"),
-      plugins: ["@hey-api/client-fetch", "@hey-api/typescript", "@hey-api/sdk"],
-    });
+    generated = await generateTestClient("digit-leading.yaml");
+    await writeGeneratedFiles(path.join(dir, "requests"), generated.files);
   });
-  afterAll(async () => await cleanOutputs(prefix));
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
 
   test("emits infinite hooks and output that typechecks", async () => {
-    const source = await createSource({
-      outputPath: path.join(dir, "requests"),
+    const source = createSource({
+      generated,
       version: "1.0.0",
       pageParam: "page",
       nextPageParam: "nextPage",
       initialPageParam: "1",
       omitInitialPageParam: false,
-      client: "@hey-api/client-fetch",
+      client: "fetch",
     });
 
     const infiniteQueriesTs = source.find(
@@ -139,7 +143,7 @@ describe("createSource - digit-leading operationId (#213)", () => {
     );
     expect(infiniteQueriesTs?.content).toContain("use_123NumericLeadInfinite");
     expect(infiniteQueriesTs?.content).toContain(
-      "Options<NumericLeadData, true>",
+      "Options<_123NumericLeadData, true>",
     );
 
     const queriesDir = path.join(dir, "queries");
@@ -149,21 +153,89 @@ describe("createSource - digit-leading operationId (#213)", () => {
         writeFile(path.join(queriesDir, file.name), file.content),
       ),
     );
-    // The real pipeline organizes imports after printing (generate.mts),
-    // which dedupes the Options import shared by the client and service
-    // import declarations — compile what users actually get.
-    await formatOutput(queriesDir);
 
     const program = ts.createProgram(
       source.map((file) => path.join(queriesDir, file.name)),
       {
         strict: true,
+        // An import the file does not use is an error here.
+        noUnusedLocals: true,
         noEmit: true,
         skipLibCheck: true,
         esModuleInterop: true,
         target: ts.ScriptTarget.ES2020,
         module: ts.ModuleKind.ESNext,
         moduleResolution: ts.ModuleResolutionKind.Bundler,
+      },
+    );
+    const diagnostics = ts
+      .getPreEmitDiagnostics(program)
+      .map(
+        (d) =>
+          `${d.file?.fileName ?? ""}: ${ts.flattenDiagnosticMessageText(d.messageText, "\n")}`,
+      );
+    expect(diagnostics).toEqual([]);
+  });
+});
+
+// The queries import the requests, so under Node's module resolution both
+// need the `.js` extension: a bare "./common" is TS2835 there.
+describe("createSource - NodeNext module resolution", () => {
+  const dir = outputPath("createSource-nodenext");
+
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test("relative imports carry .js and the output typechecks", async () => {
+    const generated = await generateTestClient("petstore.yaml", {
+      importExtension: ".js",
+    });
+    await writeGeneratedFiles(path.join(dir, "requests"), generated.files);
+    const source = createSource({
+      generated,
+      version: "1.0.0",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
+      omitInitialPageParam: false,
+      client: "fetch",
+      importExtension: ".js",
+    });
+
+    expect(source.find((s) => s.name === "index.ts")?.content).toBe(
+      '// generated with @7nohe/openapi-react-query-codegen@1.0.0 \n\nexport * from "./common.js";\nexport * from "./queries.js";\nexport * from "./queryOptions.js";\n',
+    );
+    for (const file of source) {
+      const relative = [...file.content.matchAll(/from "(\.[^"]*)"/g)];
+      expect(relative.map((match) => match[1])).toSatisfy(
+        (specifiers: string[]) =>
+          specifiers.every((specifier) => specifier.endsWith(".js")),
+      );
+    }
+
+    const queriesDir = path.join(dir, "queries");
+    await mkdir(queriesDir, { recursive: true });
+    await Promise.all(
+      source.map((file) =>
+        writeFile(path.join(queriesDir, file.name), file.content),
+      ),
+    );
+    // NodeNext treats .ts files as CommonJS unless the package says otherwise.
+    await writeFile(path.join(dir, "package.json"), '{"type":"module"}');
+
+    const program = ts.createProgram(
+      source.map((file) => path.join(queriesDir, file.name)),
+      {
+        strict: true,
+        // An import the file does not use is an error here.
+        noUnusedLocals: true,
+        noEmit: true,
+        skipLibCheck: true,
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.NodeNext,
+        moduleResolution: ts.ModuleResolutionKind.NodeNext,
+        verbatimModuleSyntax: true,
       },
     );
     const diagnostics = ts

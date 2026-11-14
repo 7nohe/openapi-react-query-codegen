@@ -52,7 +52,9 @@ jobs:
       # the repository, so this job does not run code published in the last
       # week. `--ignore-scripts` keeps install hooks from running at all.
       # The ranges float and there is no lockfile on purpose: a user's first
-      # install resolves the same way.
+      # install resolves the same way. TypeScript is the project's own: the
+      # package does not depend on it, and the newest release is what a new
+      # project gets.
       - name: Install like a user
         working-directory: ${{ runner.temp }}
         run: |
@@ -63,9 +65,9 @@ jobs:
           npm init -y > /dev/null
           before=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
           npm install --ignore-scripts --no-fund --no-audit --before "$before" \
-            "$RUNNER_TEMP"/package/*.tgz @tanstack/react-query@5 @types/react@19
+            "$RUNNER_TEMP"/package/*.tgz @tanstack/react-query@5 @types/react@19 typescript
           npm ls --depth=0
-          npm ls --all js-yaml @hey-api/openapi-ts typescript ts-morph || true
+          npm ls --all typescript || true
 
       - name: Generate and type-check
         working-directory: ${{ runner.temp }}/app

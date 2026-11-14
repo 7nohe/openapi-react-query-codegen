@@ -1,0 +1,393 @@
+---
+// One operation of a specification, and everything the generator makes of it.
+// Pick an operation on the left; the right side lists what it becomes. The
+// part of each name that comes from the operationId carries the signal colour.
+
+type Generated = {
+  /** What stands before and after the operation's name. */
+  before: string;
+  after: string;
+  note: string;
+  /** The name keeps the lower-case first letter of the operationId. */
+  lower?: boolean;
+};
+type Operation = {
+  id: string;
+  /** The operationId with its first letter in upper case. */
+  Id: string;
+  method: string;
+  path: string;
+  /** Lines under the operationId in the specification. */
+  spec: string[];
+  generated: Generated[];
+  /** A line of application code, split around the hook's name. */
+  usage: [string, string, string];
+};
+
+const query: Generated[] = [
+  { before: "use", after: "", note: "useQuery" },
+  {
+    before: "",
+    after: "Options",
+    note: "queryOptions",
+    lower: true,
+  },
+  { before: "use", after: "Suspense", note: "useSuspenseQuery" },
+  { before: "prefetchUse", after: "", note: "prefetchQuery" },
+  { before: "Use", after: "KeyFn", note: "query key" },
+];
+
+const operations: Operation[] = [
+  {
+    id: "findPets",
+    Id: "FindPets",
+    method: "get",
+    path: "/pets",
+    spec: ["parameters: [tags, limit]", 'responses: { "200": Pet[] }'],
+    generated: query,
+    usage: ["const { data } = ", "useFindPets", "({ query: { limit: 10 } });"],
+  },
+  {
+    id: "addPet",
+    Id: "AddPet",
+    method: "post",
+    path: "/pets",
+    spec: ["requestBody: NewPet", 'responses: { "200": Pet }'],
+    generated: [
+      { before: "use", after: "", note: "useMutation" },
+      { before: "Use", after: "KeyFn", note: "mutation key" },
+      {
+        before: "",
+        after: "",
+        note: "plain function",
+        lower: true,
+      },
+      { before: "", after: "Data", note: "request type" },
+    ],
+    usage: ["const { mutate } = ", "useAddPet", "();"],
+  },
+  {
+    id: "findPaginatedPets",
+    Id: "FindPaginatedPets",
+    method: "get",
+    path: "/paginated-pets",
+    spec: ["parameters: [page, limit]", 'responses: { "200": PetPage }'],
+    generated: [
+      { before: "use", after: "Infinite", note: "useInfiniteQuery" },
+      ...query.slice(0, 4),
+    ],
+    usage: [
+      "const { data, fetchNextPage } = ",
+      "useFindPaginatedPetsInfinite",
+      "();",
+    ],
+  },
+];
+---
+
+<div class="lab" data-lab>
+  <p class="command" aria-label="Command">
+    <span class="prompt" aria-hidden="true">$</span>
+    <span class="typed">npx openapi-rq -i petstore.yaml</span>
+  </p>
+
+  <div class="panes">
+    <section class="pane" aria-label="The specification">
+      <h2>petstore.yaml</h2>
+      <div class="spec" role="tablist" aria-label="Operation">
+        {
+          operations.map((operation, index) => (
+            <>
+              {(index === 0 || operations[index - 1].path !== operation.path) && (
+                <span class="line path">{operation.path}:</span>
+              )}
+              <span class="line method">{operation.method}:</span>
+              <button
+                type="button"
+                role="tab"
+                id={`op-${operation.id}`}
+                aria-selected={index === 0 ? "true" : "false"}
+                aria-controls={`out-${operation.id}`}
+                tabindex={index === 0 ? 0 : -1}
+                class="line op"
+              >
+                operationId: <b>{operation.id}</b>
+              </button>
+              {operation.spec.map((line) => (
+                <span class="line detail">{line}</span>
+              ))}
+            </>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="pane out" aria-label="What it generates">
+      <h2>generated</h2>
+      {
+        operations.map((operation, index) => (
+          <div
+            class="result"
+            role="tabpanel"
+            id={`out-${operation.id}`}
+            aria-labelledby={`op-${operation.id}`}
+            hidden={index !== 0}
+          >
+            <ul>
+              {operation.generated.map((item, row) => (
+                <li style={`--row: ${row}`}>
+                  <code>
+                    {item.before}
+                    <b>{item.lower ? operation.id : operation.Id}</b>
+                    {item.after}
+                  </code>
+                  <span>{item.note}</span>
+                </li>
+              ))}
+            </ul>
+            <pre style={`--row: ${operation.generated.length}`}><code>{operation.usage[0]}<b>{operation.usage[1]}</b>{operation.usage[2]}</code></pre>
+          </div>
+        ))
+      }
+    </section>
+  </div>
+</div>
+
+<script>
+  for (const lab of document.querySelectorAll<HTMLElement>("[data-lab]")) {
+    const tabs = [...lab.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const select = (tab: HTMLButtonElement) => {
+      for (const other of tabs) {
+        const active = other === tab;
+        other.setAttribute("aria-selected", String(active));
+        other.tabIndex = active ? 0 : -1;
+        const panel = document.getElementById(
+          other.getAttribute("aria-controls") ?? "",
+        );
+        if (panel) panel.hidden = !active;
+      }
+    };
+    for (const [index, tab] of tabs.entries()) {
+      tab.addEventListener("click", () => select(tab));
+      tab.addEventListener("keydown", (event) => {
+        const step =
+          event.key === "ArrowDown" || event.key === "ArrowRight"
+            ? 1
+            : event.key === "ArrowUp" || event.key === "ArrowLeft"
+              ? -1
+              : 0;
+        if (step === 0) return;
+        event.preventDefault();
+        const next = tabs[(index + step + tabs.length) % tabs.length];
+        next.focus();
+        select(next);
+      });
+    }
+  }
+</script>
+
+<style>
+  .lab {
+    font-family: var(--__sl-font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    border: 1px solid var(--orqc-panel-line);
+    border-radius: 0.75rem;
+    background: var(--orqc-panel);
+    color: var(--sl-color-gray-2);
+    overflow: hidden;
+    min-width: 0;
+  }
+  b {
+    font-weight: 500;
+    color: var(--orqc-signal);
+  }
+
+  .command {
+    margin: 0;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--orqc-panel-line);
+    color: var(--sl-color-white);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .prompt {
+    color: var(--sl-color-gray-3);
+    margin-inline-end: 0.6ch;
+  }
+  .typed {
+    display: inline-block;
+    vertical-align: bottom;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 31ch;
+  }
+
+  .panes {
+    display: grid;
+  }
+  @media (min-width: 40rem) {
+    .panes {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+  .pane {
+    padding: 0.9rem 1rem 1.1rem;
+    min-width: 0;
+  }
+  .pane.out {
+    border-top: 1px solid var(--orqc-panel-line);
+  }
+  @media (min-width: 40rem) {
+    .pane.out {
+      border-top: 0;
+      border-inline-start: 1px solid var(--orqc-panel-line);
+    }
+  }
+  h2 {
+    margin: 0 0 0.6rem;
+    font: inherit;
+    font-size: 0.75rem;
+    color: var(--sl-color-gray-3);
+  }
+
+  .spec {
+    display: grid;
+  }
+  .line {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .path {
+    color: var(--sl-color-white);
+  }
+  .method {
+    padding-inline-start: 1.5ch;
+  }
+  .detail {
+    padding-inline-start: 3ch;
+    color: var(--sl-color-gray-3);
+  }
+  .op {
+    all: unset;
+    box-sizing: border-box;
+    display: block;
+    margin-inline: -0.5rem;
+    padding-inline: calc(3ch + 0.5rem) 0.5rem;
+    border-radius: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .op b {
+    color: inherit;
+    text-decoration: underline dotted;
+    text-underline-offset: 0.3em;
+  }
+  .op:hover {
+    background: var(--orqc-signal-soft);
+  }
+  .op[aria-selected="true"] {
+    background: var(--orqc-signal-soft);
+  }
+  .op[aria-selected="true"] b {
+    color: var(--orqc-signal);
+    text-decoration: none;
+  }
+  .op:focus-visible {
+    outline: 2px solid var(--sl-color-text-accent);
+    outline-offset: 1px;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.15rem;
+  }
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1.5ch;
+  }
+  li code {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  li span {
+    flex: none;
+  }
+  li code {
+    color: var(--sl-color-white);
+    background: none;
+    padding: 0;
+  }
+  li span {
+    color: var(--sl-color-gray-3);
+    font-size: 0.75rem;
+  }
+  pre {
+    margin: 0.9rem 0 0;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--orqc-panel-line);
+    background: var(--sl-color-black);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  pre code {
+    font-size: 0.78rem;
+    color: var(--sl-color-white);
+    background: none;
+    padding: 0;
+  }
+
+  /*
+   * The one sequence the page plays: the command is typed, then what it
+   * generates arrives line by line. Picking another operation replays the
+   * second half, as its panel is shown again.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .typed {
+      animation: type 1.1s steps(31, end) 0.25s both;
+    }
+    .result li,
+    .result pre {
+      animation: arrive 0.32s ease-out both;
+      animation-delay: calc(var(--row) * 55ms);
+    }
+    .result:first-of-type li,
+    .result:first-of-type pre {
+      animation-delay: calc(1.45s + var(--row) * 70ms);
+    }
+    .lab[data-played] .result li,
+    .lab[data-played] .result pre {
+      animation-delay: calc(var(--row) * 55ms);
+    }
+  }
+  @keyframes type {
+    from {
+      width: 0;
+    }
+  }
+  @keyframes arrive {
+    from {
+      opacity: 0;
+      transform: translateX(-0.6ch);
+    }
+  }
+</style>
+
+<script>
+  // After the opening sequence, a panel that is shown again must not wait for
+  // the command to be typed.
+  for (const lab of document.querySelectorAll<HTMLElement>("[data-lab]")) {
+    setTimeout(() => lab.setAttribute("data-played", ""), 2400);
+  }
+</script>

@@ -29,7 +29,7 @@ const output = path.join("tests", outputDir);
 const options: LimitedUserConfig = {
   input: path.join(__dirname, "inputs", "petstore.yaml"),
   output,
-  client: "@hey-api/client-fetch",
+  client: "fetch",
   // Formatter and linter run on the scratch output too; the round trip below
   // proves they resolve the same config there as for the real output.
   format: "biome",
@@ -52,11 +52,6 @@ async function snapshotTree(root: string) {
 
 const scratchLeftovers = (dir: string) =>
   readdirSync(dir).filter((name) => name.startsWith(scratchPrefix));
-
-const crashLogs = () =>
-  readdirSync(process.cwd()).filter((name) =>
-    name.startsWith("openapi-ts-error-"),
-  );
 
 describe("check", () => {
   beforeAll(async () => {
@@ -129,7 +124,6 @@ describe("check", () => {
   });
 
   test("cleans up and reports a typed error when generation fails", async () => {
-    const before = crashLogs();
     await expect(
       check(
         {
@@ -140,7 +134,6 @@ describe("check", () => {
       ),
     ).rejects.toMatchObject({ code: ErrorCodes.inputNotFound });
     expect(scratchLeftovers(__dirname)).toEqual([]);
-    expect(crashLogs()).toEqual(before);
   });
 
   test("treats a missing output as all files added, using the OS temp dir", async () => {

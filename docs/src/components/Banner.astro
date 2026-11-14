@@ -1,0 +1,33 @@
+---
+// A notice on every page while v4 is in beta: the site describes v4, and a
+// plain `npm install` still gets v3. Remove this file and its entry in
+// astro.config.mjs when 4.0.0 is released. A page's own banner still shows.
+const { banner } = Astro.locals.starlightRoute.entry.data;
+const v3Docs =
+  "https://github.com/7nohe/openapi-react-query-codegen/tree/v3/docs/src/content/docs/guides";
+---
+
+<div class="notice" data-pagefind-ignore>
+  These docs describe v4, which is in beta: install it with <code>@beta</code>.
+  For v3, read the <a href={v3Docs}>docs in the v3 branch</a>.
+</div>
+{banner && <div class="notice" data-pagefind-ignore set:html={banner.content} />}
+
+<style>
+  .notice {
+    padding: var(--sl-nav-pad-y) var(--sl-nav-pad-x);
+    background-color: var(--sl-color-accent-low);
+    color: var(--sl-color-white);
+    font-size: var(--sl-text-sm);
+    line-height: var(--sl-line-height-headings);
+    text-align: center;
+    text-wrap: balance;
+  }
+  .notice a {
+    color: inherit;
+  }
+  .notice code {
+    font-family: var(--__sl-font-mono);
+    font-size: 0.9em;
+  }
+</style>

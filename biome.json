@@ -50,6 +50,17 @@
       }
     },
     {
+      "includes": ["**/*.astro"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["examples/**"],
       "linter": {
         "rules": {

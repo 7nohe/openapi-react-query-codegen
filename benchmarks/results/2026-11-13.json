@@ -1,0 +1,1313 @@
+{
+  "install": {
+    "orqc": {
+      "typescript": "7.0.2",
+      "versions": {
+        "@7nohe/openapi-react-query-codegen": "4.0.0-beta.4"
+      },
+      "addedPackages": 9,
+      "addedKilobytes": 2128
+    },
+    "hey-api": {
+      "typescript": "6.0.3",
+      "versions": {
+        "@hey-api/openapi-ts": "0.99.0"
+      },
+      "addedPackages": 51,
+      "addedKilobytes": 11036
+    },
+    "orval": {
+      "typescript": "7.0.2",
+      "versions": {
+        "orval": "8.46.0"
+      },
+      "addedPackages": 89,
+      "addedKilobytes": 103904
+    },
+    "kubb": {
+      "typescript": "7.0.2",
+      "versions": {
+        "@kubb/plugin-fetch": "5.12.0",
+        "@kubb/plugin-react-query": "5.9.0",
+        "@kubb/plugin-ts": "5.4.0",
+        "kubb": "5.15.4"
+      },
+      "addedPackages": 91,
+      "addedKilobytes": 38304
+    },
+    "openapi-ts": {
+      "typescript": "5.9.3",
+      "versions": {
+        "openapi-fetch": "0.17.0",
+        "openapi-react-query": "0.5.4",
+        "openapi-typescript": "7.13.0"
+      },
+      "addedPackages": 35,
+      "addedKilobytes": 20968
+    }
+  },
+  "pairs": {
+    "orqc/petstore": {
+      "tool": "orqc",
+      "spec": "petstore",
+      "generate": {
+        "medianMs": 68,
+        "minMs": 65,
+        "runs": 5
+      },
+      "output": {
+        "files": 15,
+        "bytes": 87682,
+        "lines": 2286
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 89,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 495,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 15,
+        "totalTokens": 22233,
+        "largestFileTokens": 5974,
+        "lookups": [
+          {
+            "operation": "getPetById",
+            "export": "useGetPetById",
+            "file": "queries/queries.ts",
+            "declarationTokens": 146,
+            "closureDeclarations": 11,
+            "closureTokens": 984,
+            "files": 5,
+            "fileTokens": 14870
+          },
+          {
+            "operation": "findPetsByStatus",
+            "export": "useFindPetsByStatus",
+            "file": "queries/queries.ts",
+            "declarationTokens": 147,
+            "closureDeclarations": 11,
+            "closureTokens": 967,
+            "files": 5,
+            "fileTokens": 14870
+          },
+          {
+            "operation": "addPet",
+            "export": "useAddPet",
+            "file": "queries/queries.ts",
+            "declarationTokens": 142,
+            "closureDeclarations": 12,
+            "closureTokens": 1020,
+            "files": 5,
+            "fileTokens": 14870
+          }
+        ],
+        "bundle": {
+          "bytes": 8389,
+          "gzipBytes": 3381
+        }
+      }
+    },
+    "hey-api/petstore": {
+      "tool": "hey-api",
+      "spec": "petstore",
+      "generate": {
+        "medianMs": 372,
+        "minMs": 350,
+        "runs": 5
+      },
+      "output": {
+        "files": 17,
+        "bytes": 93292,
+        "lines": 3276
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 81,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 473,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 17,
+        "totalTokens": 22086,
+        "largestFileTokens": 3329,
+        "lookups": [
+          {
+            "operation": "getPetById",
+            "export": "getPetByIdOptions",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 114,
+            "closureDeclarations": 15,
+            "closureTokens": 1250,
+            "files": 6,
+            "fileTokens": 11596
+          },
+          {
+            "operation": "findPetsByStatus",
+            "export": "findPetsByStatusOptions",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 116,
+            "closureDeclarations": 15,
+            "closureTokens": 1239,
+            "files": 6,
+            "fileTokens": 11596
+          },
+          {
+            "operation": "addPet",
+            "export": "addPetMutation",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 114,
+            "closureDeclarations": 14,
+            "closureTokens": 1055,
+            "files": 6,
+            "fileTokens": 11596
+          }
+        ],
+        "bundle": {
+          "bytes": 10628,
+          "gzipBytes": 4262
+        }
+      }
+    },
+    "orval/petstore": {
+      "tool": "orval",
+      "spec": "petstore",
+      "generate": {
+        "medianMs": 238,
+        "minMs": 236,
+        "runs": 5
+      },
+      "output": {
+        "files": 1,
+        "bytes": 84096,
+        "lines": 2644
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 114,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 526,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 1,
+        "totalTokens": 21025,
+        "largestFileTokens": 21025,
+        "lookups": [
+          {
+            "operation": "getPetById",
+            "export": "useGetPetById",
+            "file": "api.ts",
+            "declarationTokens": 566,
+            "closureDeclarations": 7,
+            "closureTokens": 1169,
+            "files": 1,
+            "fileTokens": 21025
+          },
+          {
+            "operation": "findPetsByStatus",
+            "export": "useFindPetsByStatus",
+            "file": "api.ts",
+            "declarationTokens": 576,
+            "closureDeclarations": 9,
+            "closureTokens": 1350,
+            "files": 1,
+            "fileTokens": 21025
+          },
+          {
+            "operation": "addPet",
+            "export": "useAddPet",
+            "file": "api.ts",
+            "declarationTokens": 107,
+            "closureDeclarations": 8,
+            "closureTokens": 755,
+            "files": 1,
+            "fileTokens": 21025
+          }
+        ],
+        "bundle": {
+          "bytes": 2353,
+          "gzipBytes": 979
+        }
+      }
+    },
+    "orval-split/petstore": {
+      "tool": "orval-split",
+      "spec": "petstore",
+      "generate": {
+        "medianMs": 255,
+        "minMs": 251,
+        "runs": 5
+      },
+      "output": {
+        "files": 22,
+        "bytes": 105473,
+        "lines": 3050
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 95,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 531,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 22,
+        "totalTokens": 26483,
+        "largestFileTokens": 9440,
+        "lookups": [
+          {
+            "operation": "getPetById",
+            "export": "useGetPetById",
+            "file": "pet/pet.ts",
+            "declarationTokens": 566,
+            "closureDeclarations": 7,
+            "closureTokens": 1169,
+            "files": 1,
+            "fileTokens": 9440
+          },
+          {
+            "operation": "findPetsByStatus",
+            "export": "useFindPetsByStatus",
+            "file": "pet/pet.ts",
+            "declarationTokens": 576,
+            "closureDeclarations": 9,
+            "closureTokens": 1350,
+            "files": 3,
+            "fileTokens": 9952
+          },
+          {
+            "operation": "addPet",
+            "export": "useAddPet",
+            "file": "pet/pet.ts",
+            "declarationTokens": 107,
+            "closureDeclarations": 8,
+            "closureTokens": 755,
+            "files": 2,
+            "fileTokens": 9719
+          }
+        ],
+        "bundle": {
+          "bytes": 2353,
+          "gzipBytes": 979
+        }
+      }
+    },
+    "kubb/petstore": {
+      "tool": "kubb",
+      "spec": "petstore",
+      "generate": {
+        "medianMs": 994,
+        "minMs": 896,
+        "runs": 5
+      },
+      "output": {
+        "files": 70,
+        "bytes": 157379,
+        "lines": 4026
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 99,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 599,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 70,
+        "totalTokens": 38930,
+        "largestFileTokens": 8141,
+        "lookups": [
+          {
+            "operation": "getPetById",
+            "export": "useGetPetById",
+            "file": "hooks/useGetPetById.ts",
+            "declarationTokens": 324,
+            "closureDeclarations": 29,
+            "closureTokens": 1910,
+            "files": 5,
+            "fileTokens": 14678
+          },
+          {
+            "operation": "findPetsByStatus",
+            "export": "useFindPetsByStatus",
+            "file": "hooks/useFindPetsByStatus.ts",
+            "declarationTokens": 313,
+            "closureDeclarations": 28,
+            "closureTokens": 1896,
+            "files": 5,
+            "fileTokens": 14715
+          },
+          {
+            "operation": "addPet",
+            "export": "useAddPet",
+            "file": "hooks/useAddPet.ts",
+            "declarationTokens": 293,
+            "closureDeclarations": 30,
+            "closureTokens": 1941,
+            "files": 5,
+            "fileTokens": 14751
+          }
+        ],
+        "bundle": {
+          "bytes": 14659,
+          "gzipBytes": 5031
+        }
+      }
+    },
+    "openapi-ts/petstore": {
+      "tool": "openapi-ts",
+      "spec": "petstore",
+      "generate": {
+        "medianMs": 271,
+        "minMs": 266,
+        "runs": 5
+      },
+      "output": {
+        "files": 2,
+        "bytes": 34462,
+        "lines": 1203
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 152,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 609,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 2,
+        "totalTokens": 6159,
+        "largestFileTokens": 6111,
+        "lookups": [
+          {
+            "operation": "getPetById",
+            "export": "$api",
+            "declarationTokens": 9,
+            "closureDeclarations": 3,
+            "closureTokens": 328,
+            "files": 1,
+            "fileTokens": 6111
+          },
+          {
+            "operation": "findPetsByStatus",
+            "export": "$api",
+            "declarationTokens": 9,
+            "closureDeclarations": 3,
+            "closureTokens": 308,
+            "files": 1,
+            "fileTokens": 6111
+          },
+          {
+            "operation": "addPet",
+            "export": "$api",
+            "declarationTokens": 7,
+            "closureDeclarations": 3,
+            "closureTokens": 360,
+            "files": 1,
+            "fileTokens": 6111
+          }
+        ],
+        "bundle": {
+          "bytes": 7621,
+          "gzipBytes": 3019
+        }
+      }
+    },
+    "orqc/stripe": {
+      "tool": "orqc",
+      "spec": "stripe",
+      "generate": {
+        "medianMs": 312,
+        "minMs": 303,
+        "runs": 5
+      },
+      "output": {
+        "files": 15,
+        "bytes": 7754995,
+        "lines": 183274
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 768,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 3020,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 15,
+        "totalTokens": 1814210,
+        "largestFileTokens": 752654,
+        "lookups": [
+          {
+            "operation": "GetAccountsAccount",
+            "export": "useGetAccountsAccount",
+            "file": "queries/queries.ts",
+            "declarationTokens": 144,
+            "closureDeclarations": 12,
+            "closureTokens": 1004,
+            "files": 5,
+            "fileTokens": 1033261
+          },
+          {
+            "operation": "GetAccount",
+            "export": "useGetAccount",
+            "file": "queries/queries.ts",
+            "declarationTokens": 140,
+            "closureDeclarations": 12,
+            "closureTokens": 980,
+            "files": 5,
+            "fileTokens": 1033261
+          },
+          {
+            "operation": "PostAccountLinks",
+            "export": "usePostAccountLinks",
+            "file": "queries/queries.ts",
+            "declarationTokens": 149,
+            "closureDeclarations": 12,
+            "closureTokens": 1379,
+            "files": 5,
+            "fileTokens": 1033261
+          }
+        ],
+        "bundle": {
+          "bytes": 8713,
+          "gzipBytes": 3390
+        }
+      }
+    },
+    "hey-api/stripe": {
+      "tool": "hey-api",
+      "spec": "stripe",
+      "generate": {
+        "medianMs": 6604,
+        "minMs": 5695,
+        "runs": 5
+      },
+      "output": {
+        "files": 17,
+        "bytes": 5033458,
+        "lines": 113425
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 487,
+          "errors": 274,
+          "firstErrors": [
+            "out/hey-api/stripe/@tanstack/react-query.gen.ts(4584,21): error TS2353: Object literal may only specify known properties, and ''transaction_refresh.after'' does not exist in type '{ account: string; ending_before?: string | undefined; expan",
+            "out/hey-api/stripe/sdk.gen.ts(28,5): error TS2322: Type '{ parameters: { expand: { array: { style: \"deepObject\"; }; }; }; }' is not assignable to type 'QuerySerializer | QuerySerializerOptions | undefined'.",
+            "out/hey-api/stripe/sdk.gen.ts(77,5): error TS2322: Type '{ parameters: { expand: { array: { style: \"deepObject\"; }; }; }; }' is not assignable to type 'QuerySerializer | QuerySerializerOptions | undefined'."
+          ]
+        },
+        "ts6": {
+          "medianMs": 1914,
+          "errors": 274,
+          "firstErrors": [
+            "out/hey-api/stripe/@tanstack/react-query.gen.ts(4584,21): error TS2322: Type 'Pick<Pick<Options<GetFinancialConnectionsTransactionsData>, \"query\" | \"body\" | \"headers\" | \"path\" | \"baseUrl\"> & { ...; }, \"query\" | ... 2 more ... | \"path\"> | { ",
+            "out/hey-api/stripe/sdk.gen.ts(28,5): error TS2322: Type '{ parameters: { expand: { array: { style: \"deepObject\"; }; }; }; }' is not assignable to type 'QuerySerializerOptions | QuerySerializer | undefined'.",
+            "out/hey-api/stripe/sdk.gen.ts(77,5): error TS2322: Type '{ parameters: { expand: { array: { style: \"deepObject\"; }; }; }; }' is not assignable to type 'QuerySerializerOptions | QuerySerializer | undefined'."
+          ]
+        }
+      },
+      "analysis": {
+        "sourceFiles": 17,
+        "totalTokens": 1089563,
+        "largestFileTokens": 751758,
+        "lookups": [
+          {
+            "operation": "GetAccountsAccount",
+            "export": "getAccountsAccountOptions",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 109,
+            "closureDeclarations": 17,
+            "closureTokens": 1416,
+            "files": 7,
+            "fileTokens": 1044050
+          },
+          {
+            "operation": "GetAccount",
+            "export": "getAccountOptions",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 101,
+            "closureDeclarations": 17,
+            "closureTokens": 1381,
+            "files": 7,
+            "fileTokens": 1044050
+          },
+          {
+            "operation": "PostAccountLinks",
+            "export": "postAccountLinksMutation",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 120,
+            "closureDeclarations": 15,
+            "closureTokens": 1546,
+            "files": 7,
+            "fileTokens": 1044050
+          }
+        ],
+        "bundle": {
+          "bytes": 11318,
+          "gzipBytes": 4403
+        }
+      }
+    },
+    "orval/stripe": {
+      "tool": "orval",
+      "spec": "stripe",
+      "generate": {
+        "medianMs": 2466,
+        "minMs": 2351,
+        "runs": 5
+      },
+      "output": {
+        "files": 1,
+        "bytes": 8963057,
+        "lines": 206514
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 2072,
+          "errors": 219,
+          "firstErrors": [
+            "out/orval/stripe/api.ts(110999,40): error TS2345: Argument of type 'PostAccountsBodyBankAccount' is not assignable to parameter of type 'string'.",
+            "out/orval/stripe/api.ts(111069,36): error TS2345: Argument of type 'PostAccountsBodyMetadata' is not assignable to parameter of type 'string'.",
+            "out/orval/stripe/api.ts(111575,36): error TS2345: Argument of type 'PostAccountsAccountBodyMetadata' is not assignable to parameter of type 'string'."
+          ]
+        },
+        "ts6": {
+          "medianMs": 5030,
+          "errors": 219,
+          "firstErrors": [
+            "out/orval/stripe/api.ts(110999,40): error TS2345: Argument of type 'PostAccountsBodyBankAccount' is not assignable to parameter of type 'string'.",
+            "out/orval/stripe/api.ts(111069,36): error TS2345: Argument of type 'PostAccountsBodyMetadata' is not assignable to parameter of type 'string'.",
+            "out/orval/stripe/api.ts(111575,36): error TS2345: Argument of type 'PostAccountsAccountBodyMetadata' is not assignable to parameter of type 'string'."
+          ]
+        }
+      },
+      "analysis": {
+        "sourceFiles": 1,
+        "totalTokens": 2056546,
+        "largestFileTokens": 2056546,
+        "lookups": [
+          {
+            "operation": "GetAccountsAccount",
+            "export": "useGetAccountsAccount",
+            "file": "api.ts",
+            "declarationTokens": 631,
+            "closureDeclarations": 11,
+            "closureTokens": 2359,
+            "files": 1,
+            "fileTokens": 2056546
+          },
+          {
+            "operation": "GetAccount",
+            "export": "useGetAccount",
+            "file": "api.ts",
+            "declarationTokens": 580,
+            "closureDeclarations": 11,
+            "closureTokens": 2236,
+            "files": 1,
+            "fileTokens": 2056546
+          },
+          {
+            "operation": "PostAccountLinks",
+            "export": "usePostAccountLinks",
+            "file": "api.ts",
+            "declarationTokens": 113,
+            "closureDeclarations": 10,
+            "closureTokens": 1984,
+            "files": 1,
+            "fileTokens": 2056546
+          }
+        ],
+        "bundle": {
+          "bytes": 4117,
+          "gzipBytes": 1491
+        }
+      }
+    },
+    "orval-split/stripe": {
+      "tool": "orval-split",
+      "spec": "stripe",
+      "generate": {
+        "medianMs": 3168,
+        "minMs": 3129,
+        "runs": 5
+      },
+      "output": {
+        "files": 8376,
+        "bytes": 12145481,
+        "lines": 282105
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 2016,
+          "errors": 219,
+          "firstErrors": [
+            "out/orval-split/stripe/default/default.ts(1872,40): error TS2345: Argument of type 'PostAccountsBodyBankAccount' is not assignable to parameter of type 'string'.",
+            "out/orval-split/stripe/default/default.ts(1942,36): error TS2345: Argument of type 'PostAccountsBodyMetadata' is not assignable to parameter of type 'string'.",
+            "out/orval-split/stripe/default/default.ts(2445,36): error TS2345: Argument of type 'PostAccountsAccountBodyMetadata' is not assignable to parameter of type 'string'."
+          ]
+        },
+        "ts6": {
+          "medianMs": 6039,
+          "errors": 219,
+          "firstErrors": [
+            "out/orval-split/stripe/default/default.ts(1872,40): error TS2345: Argument of type 'PostAccountsBodyBankAccount' is not assignable to parameter of type 'string'.",
+            "out/orval-split/stripe/default/default.ts(1942,36): error TS2345: Argument of type 'PostAccountsBodyMetadata' is not assignable to parameter of type 'string'.",
+            "out/orval-split/stripe/default/default.ts(2445,36): error TS2345: Argument of type 'PostAccountsAccountBodyMetadata' is not assignable to parameter of type 'string'."
+          ]
+        }
+      },
+      "analysis": {
+        "sourceFiles": 8376,
+        "totalTokens": 2809323,
+        "largestFileTokens": 972705,
+        "lookups": [
+          {
+            "operation": "GetAccountsAccount",
+            "export": "useGetAccountsAccount",
+            "file": "default/default.ts",
+            "declarationTokens": 631,
+            "closureDeclarations": 11,
+            "closureTokens": 2359,
+            "files": 5,
+            "fileTokens": 973728
+          },
+          {
+            "operation": "GetAccount",
+            "export": "useGetAccount",
+            "file": "default/default.ts",
+            "declarationTokens": 580,
+            "closureDeclarations": 11,
+            "closureTokens": 2236,
+            "files": 5,
+            "fileTokens": 973726
+          },
+          {
+            "operation": "PostAccountLinks",
+            "export": "usePostAccountLinks",
+            "file": "default/default.ts",
+            "declarationTokens": 113,
+            "closureDeclarations": 10,
+            "closureTokens": 1984,
+            "files": 4,
+            "fileTokens": 974055
+          }
+        ],
+        "bundle": {
+          "bytes": 4117,
+          "gzipBytes": 1490
+        }
+      }
+    },
+    "kubb/stripe": {
+      "tool": "kubb",
+      "spec": "stripe",
+      "generate": {
+        "medianMs": 2108,
+        "minMs": 2018,
+        "runs": 5
+      },
+      "output": {
+        "files": 3402,
+        "bytes": 9315369,
+        "lines": 200913
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 870,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 4832,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 3402,
+        "totalTokens": 2160901,
+        "largestFileTokens": 135911,
+        "lookups": [
+          {
+            "operation": "GetAccountsAccount",
+            "export": "useGetAccountsAccount",
+            "file": "hooks/useGetAccountsAccount.ts",
+            "declarationTokens": 363,
+            "closureDeclarations": 28,
+            "closureTokens": 3048,
+            "files": 6,
+            "fileTokens": 16497
+          },
+          {
+            "operation": "GetAccount",
+            "export": "useGetAccount",
+            "file": "hooks/useGetAccount.ts",
+            "declarationTokens": 317,
+            "closureDeclarations": 27,
+            "closureTokens": 2918,
+            "files": 6,
+            "fileTokens": 16349
+          },
+          {
+            "operation": "PostAccountLinks",
+            "export": "usePostAccountLinks",
+            "file": "hooks/usePostAccountLinks.ts",
+            "declarationTokens": 230,
+            "closureDeclarations": 25,
+            "closureTokens": 2317,
+            "files": 6,
+            "fileTokens": 15493
+          }
+        ],
+        "bundle": {
+          "bytes": 15256,
+          "gzipBytes": 5131
+        }
+      }
+    },
+    "openapi-ts/stripe": {
+      "tool": "openapi-ts",
+      "spec": "stripe",
+      "generate": {
+        "medianMs": 1366,
+        "minMs": 1258,
+        "runs": 5
+      },
+      "output": {
+        "files": 2,
+        "bytes": 4611229,
+        "lines": 82902
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 168,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 891,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 2,
+        "totalTokens": 861507,
+        "largestFileTokens": 861459,
+        "lookups": [
+          {
+            "operation": "GetAccountsAccount",
+            "export": "$api",
+            "declarationTokens": 8,
+            "closureDeclarations": 4,
+            "closureTokens": 1021,
+            "files": 1,
+            "fileTokens": 861459
+          },
+          {
+            "operation": "GetAccount",
+            "export": "$api",
+            "declarationTokens": 7,
+            "closureDeclarations": 4,
+            "closureTokens": 1013,
+            "files": 1,
+            "fileTokens": 861459
+          },
+          {
+            "operation": "PostAccountLinks",
+            "export": "$api",
+            "declarationTokens": 8,
+            "closureDeclarations": 4,
+            "closureTokens": 742,
+            "files": 1,
+            "fileTokens": 861459
+          }
+        ],
+        "bundle": {
+          "bytes": 7621,
+          "gzipBytes": 3019
+        }
+      }
+    },
+    "orqc/github": {
+      "tool": "orqc",
+      "spec": "github",
+      "generate": {
+        "medianMs": 463,
+        "minMs": 459,
+        "runs": 5
+      },
+      "output": {
+        "files": 15,
+        "bytes": 17236862,
+        "lines": 397462
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 2735,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 7584,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 15,
+        "totalTokens": 3732786,
+        "largestFileTokens": 996799,
+        "lookups": [
+          {
+            "operation": "security-advisories/get-global-advisory",
+            "export": "useSecurityAdvisoriesGetGlobalAdvisory",
+            "file": "queries/queries.ts",
+            "declarationTokens": 181,
+            "closureDeclarations": 12,
+            "closureTokens": 1058,
+            "files": 5,
+            "fileTokens": 1559535
+          },
+          {
+            "operation": "security-advisories/list-global-advisories",
+            "export": "useSecurityAdvisoriesListGlobalAdvisories",
+            "file": "queries/queries.ts",
+            "declarationTokens": 183,
+            "closureDeclarations": 13,
+            "closureTokens": 2235,
+            "files": 5,
+            "fileTokens": 1559535
+          },
+          {
+            "operation": "credentials/revoke",
+            "export": "useCredentialsRevoke",
+            "file": "queries/queries.ts",
+            "declarationTokens": 152,
+            "closureDeclarations": 12,
+            "closureTokens": 1007,
+            "files": 5,
+            "fileTokens": 1559535
+          }
+        ],
+        "bundle": {
+          "bytes": 8485,
+          "gzipBytes": 3406
+        }
+      }
+    },
+    "hey-api/github": {
+      "tool": "hey-api",
+      "spec": "github",
+      "generate": {
+        "medianMs": 2980,
+        "minMs": 2896,
+        "runs": 5
+      },
+      "output": {
+        "files": 17,
+        "bytes": 8524214,
+        "lines": 196195
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 1345,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 3235,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 17,
+        "totalTokens": 1780736,
+        "largestFileTokens": 910215,
+        "lookups": [
+          {
+            "operation": "security-advisories/get-global-advisory",
+            "export": "securityAdvisoriesGetGlobalAdvisoryOptions",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 159,
+            "closureDeclarations": 16,
+            "closureTokens": 1368,
+            "files": 6,
+            "fileTokens": 1711251
+          },
+          {
+            "operation": "security-advisories/list-global-advisories",
+            "export": "securityAdvisoriesListGlobalAdvisoriesOptions",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 159,
+            "closureDeclarations": 17,
+            "closureTokens": 2496,
+            "files": 6,
+            "fileTokens": 1711251
+          },
+          {
+            "operation": "credentials/revoke",
+            "export": "credentialsRevokeMutation",
+            "file": "@tanstack/react-query.gen.ts",
+            "declarationTokens": 125,
+            "closureDeclarations": 14,
+            "closureTokens": 1046,
+            "files": 6,
+            "fileTokens": 1711251
+          }
+        ],
+        "bundle": {
+          "bytes": 10640,
+          "gzipBytes": 4265
+        }
+      }
+    },
+    "orval/github": {
+      "tool": "orval",
+      "spec": "github",
+      "generate": {
+        "medianMs": 4314,
+        "minMs": 4226,
+        "runs": 5
+      },
+      "output": {
+        "files": 1,
+        "bytes": 11725841,
+        "lines": 292140
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 3630,
+          "errors": 1,
+          "firstErrors": [
+            "out/orval/github/api.ts(257265,5): error TS2322: Type 'Blob | undefined' is not assignable to type 'BodyInit | null | undefined'."
+          ]
+        },
+        "ts6": {
+          "medianMs": 8103,
+          "errors": 1,
+          "firstErrors": [
+            "out/orval/github/api.ts(257265,5): error TS2322: Type 'Blob | undefined' is not assignable to type 'BodyInit | null | undefined'."
+          ]
+        }
+      },
+      "analysis": {
+        "sourceFiles": 1,
+        "totalTokens": 2689071,
+        "largestFileTokens": 2689071,
+        "lookups": [
+          {
+            "operation": "security-advisories/get-global-advisory",
+            "export": "useSecurityAdvisoriesGetGlobalAdvisory",
+            "file": "api.ts",
+            "declarationTokens": 664,
+            "closureDeclarations": 9,
+            "closureTokens": 1375,
+            "files": 1,
+            "fileTokens": 2689071
+          },
+          {
+            "operation": "security-advisories/list-global-advisories",
+            "export": "useSecurityAdvisoriesListGlobalAdvisories",
+            "file": "api.ts",
+            "declarationTokens": 708,
+            "closureDeclarations": 18,
+            "closureTokens": 3080,
+            "files": 1,
+            "fileTokens": 2689071
+          },
+          {
+            "operation": "credentials/revoke",
+            "export": "useCredentialsRevoke",
+            "file": "api.ts",
+            "declarationTokens": 120,
+            "closureDeclarations": 12,
+            "closureTokens": 857,
+            "files": 1,
+            "fileTokens": 2689071
+          }
+        ],
+        "bundle": {
+          "bytes": 2340,
+          "gzipBytes": 993
+        }
+      }
+    },
+    "orval-split/github": {
+      "tool": "orval-split",
+      "spec": "github",
+      "generate": {
+        "medianMs": 3941,
+        "minMs": 3703,
+        "runs": 5
+      },
+      "output": {
+        "files": 7946,
+        "bytes": 14459532,
+        "lines": 367364
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 2301,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 9238,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 7946,
+        "totalTokens": 3389902,
+        "largestFileTokens": 259261,
+        "lookups": [
+          {
+            "operation": "security-advisories/get-global-advisory",
+            "export": "useSecurityAdvisoriesGetGlobalAdvisory",
+            "file": "security-advisories/security-advisories.ts",
+            "declarationTokens": 664,
+            "closureDeclarations": 9,
+            "closureTokens": 1375,
+            "files": 3,
+            "fileTokens": 22337
+          },
+          {
+            "operation": "security-advisories/list-global-advisories",
+            "export": "useSecurityAdvisoriesListGlobalAdvisories",
+            "file": "security-advisories/security-advisories.ts",
+            "declarationTokens": 708,
+            "closureDeclarations": 18,
+            "closureTokens": 3080,
+            "files": 12,
+            "fileTokens": 24591
+          },
+          {
+            "operation": "credentials/revoke",
+            "export": "useCredentialsRevoke",
+            "file": "credentials/credentials.ts",
+            "declarationTokens": 120,
+            "closureDeclarations": 12,
+            "closureTokens": 857,
+            "files": 6,
+            "fileTokens": 1711
+          }
+        ],
+        "bundle": {
+          "bytes": 2388,
+          "gzipBytes": 998
+        }
+      }
+    },
+    "kubb/github": {
+      "tool": "kubb",
+      "spec": "github",
+      "generate": {
+        "medianMs": 2976,
+        "minMs": 2845,
+        "runs": 5
+      },
+      "output": {
+        "files": 4838,
+        "bytes": 16305305,
+        "lines": 374950
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 1727,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 8373,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 4838,
+        "totalTokens": 3713293,
+        "largestFileTokens": 207104,
+        "lookups": [
+          {
+            "operation": "security-advisories/get-global-advisory",
+            "export": "useSecurityAdvisoriesGetGlobalAdvisory",
+            "file": "hooks/useSecurityAdvisoriesGetGlobalAdvisory.ts",
+            "declarationTokens": 368,
+            "closureDeclarations": 28,
+            "closureTokens": 3059,
+            "files": 7,
+            "fileTokens": 16255
+          },
+          {
+            "operation": "security-advisories/list-global-advisories",
+            "export": "useSecurityAdvisoriesListGlobalAdvisories",
+            "file": "hooks/useSecurityAdvisoriesListGlobalAdvisories.ts",
+            "declarationTokens": 394,
+            "closureDeclarations": 30,
+            "closureTokens": 4371,
+            "files": 8,
+            "fileTokens": 18229
+          },
+          {
+            "operation": "credentials/revoke",
+            "export": "useCredentialsRevoke",
+            "file": "hooks/useCredentialsRevoke.ts",
+            "declarationTokens": 274,
+            "closureDeclarations": 28,
+            "closureTokens": 1780,
+            "files": 7,
+            "fileTokens": 15056
+          }
+        ],
+        "bundle": {
+          "bytes": 14462,
+          "gzipBytes": 4955
+        }
+      }
+    },
+    "openapi-ts/github": {
+      "tool": "openapi-ts",
+      "spec": "github",
+      "generate": {
+        "medianMs": 2102,
+        "minMs": 2077,
+        "runs": 5
+      },
+      "output": {
+        "files": 2,
+        "bytes": 7318349,
+        "lines": 155121
+      },
+      "typecheck": {
+        "ts7": {
+          "medianMs": 326,
+          "errors": 0,
+          "firstErrors": []
+        },
+        "ts6": {
+          "medianMs": 1267,
+          "errors": 0,
+          "firstErrors": []
+        }
+      },
+      "analysis": {
+        "sourceFiles": 2,
+        "totalTokens": 1277631,
+        "largestFileTokens": 1277583,
+        "lookups": [
+          {
+            "operation": "security-advisories/get-global-advisory",
+            "export": "$api",
+            "declarationTokens": 14,
+            "closureDeclarations": 3,
+            "closureTokens": 959,
+            "files": 1,
+            "fileTokens": 1277583
+          },
+          {
+            "operation": "security-advisories/list-global-advisories",
+            "export": "$api",
+            "declarationTokens": 14,
+            "closureDeclarations": 5,
+            "closureTokens": 2158,
+            "files": 1,
+            "fileTokens": 1277583
+          },
+          {
+            "operation": "credentials/revoke",
+            "export": "$api",
+            "declarationTokens": 8,
+            "closureDeclarations": 2,
+            "closureTokens": 128,
+            "files": 1,
+            "fileTokens": 1277583
+          }
+        ],
+        "bundle": {
+          "bytes": 7621,
+          "gzipBytes": 3019
+        }
+      }
+    }
+  },
+  "environment": {
+    "date": "2026-11-13",
+    "node": "v24.22.0",
+    "os": "darwin 25.6.0",
+    "cpu": "Apple M2",
+    "releasedBefore": "2026-11-06T12:16:17.239Z",
+    "tokenizer": "o200k_base (gpt-tokenizer)"
+  },
+  "specs": {
+    "petstore": {
+      "bytes": 17106,
+      "operations": 19,
+      "sampled": [
+        "GET /pet/{petId} (getPetById)",
+        "GET /pet/findByStatus (findPetsByStatus)",
+        "POST /pet (addPet)"
+      ]
+    },
+    "stripe": {
+      "bytes": 8317513,
+      "operations": 612,
+      "sampled": [
+        "GET /v1/accounts/{account} (GetAccountsAccount)",
+        "GET /v1/account (GetAccount)",
+        "POST /v1/account_links (PostAccountLinks)"
+      ]
+    },
+    "github": {
+      "bytes": 14206638,
+      "operations": 1272,
+      "sampled": [
+        "GET /advisories/{ghsa_id} (security-advisories/get-global-advisory)",
+        "GET /advisories (security-advisories/list-global-advisories)",
+        "POST /credentials/revoke (credentials/revoke)"
+      ]
+    }
+  }
+}

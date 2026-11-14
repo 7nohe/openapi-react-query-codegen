@@ -1,66 +1,46 @@
 /**
- * Normalized operation information extracted from the OpenAPI service.
- * This is a pure JSON-serializable structure that can be consumed by generators.
+ * What the hook generators know about an operation. The client generator
+ * (`src/client/`) fills it in; it is plain JSON-serializable data.
  */
 export interface OperationInfo {
-  /** Method/function name as defined in service (e.g., "findPets") */
+  /** Name of the operation's function in `sdk.gen.ts` (e.g., "findPets") */
   methodName: string;
   /** Capitalized method name (e.g., "FindPets") */
   capitalizedMethodName: string;
-  /**
-   * Generated Data type name read from the SDK function's own
-   * `Options<XData, ThrowOnError>` signature (e.g., "FindPetsData").
-   * Not derivable from the method name: for digit-leading operationIds
-   * hey-api prefixes the function but strips the digits from the type (#213).
-   * Undefined when the SDK signature exposes no Data type.
-   *
-   * The rule this encodes: names hey-api owns (Data, Error) must be read from
-   * the SDK signature or share this field's stem; names this codegen mints
-   * itself (DefaultResponse, MutationResult, key fns) may be derived from
-   * capitalizedMethodName because they anchor back to the SDK via
-   * `typeof methodName`.
-   */
+  /** Generated Data type name of the operation (e.g., "FindPetsData"). */
   dataTypeName?: string;
+  /**
+   * Name of the operation's error type alias (e.g., "FindPetsError"), or
+   * undefined when the operation declares no error responses with a body.
+   * A colliding name gets a number appended, so this is not always the data
+   * type's stem plus "Error".
+   */
+  errorTypeName?: string;
   /** HTTP method (e.g., "GET", "POST", "PUT", "PATCH", "DELETE") */
   httpMethod: string;
   /** JSDoc comment string (if present) */
   jsDoc?: string;
-  /** Whether the operation is deprecated */
-  isDeprecated: boolean;
-  /** Parameter information for the operation */
-  parameters: OperationParameter[];
   /** Whether all parameters are optional */
   allParamsOptional: boolean;
   /** Whether this operation supports pagination (for infinite queries) */
   isPaginatable: boolean;
   /** Type of the configured page query parameter */
   pageParamType?: string;
+  /** Models `pageParamType` names, which the hooks have to import */
+  pageParamModels?: string[];
   /** Resolved primitive kind of the configured page query parameter */
   pageParamTypeKind?: PageParamTypeKind;
 }
 
 export type PageParamTypeKind = "string" | "number" | "other";
 
-export interface OperationParameter {
-  /** Parameter name */
-  name: string;
-  /** TypeScript type as string */
-  typeName: string;
-  /** Whether this parameter is optional */
-  optional: boolean;
-}
-
 /**
  * Context for generating hooks and utilities.
  * Contains shared information needed across all generators.
  */
 export interface GenerationContext {
-  /** Client type: "@hey-api/client-fetch" or "@hey-api/client-axios" */
-  client: "@hey-api/client-fetch" | "@hey-api/client-axios";
-  /** Model type names exported from the models file */
-  modelNames: string[];
-  /** Service function names exported from the service file */
-  serviceNames: string[];
+  /** Client type: "fetch" or "axios" */
+  client: "fetch" | "axios";
   /** Page param name for infinite queries (e.g., "page") */
   pageParam: string;
   /** Next page param name for infinite queries (e.g., "nextPage") */
@@ -71,6 +51,11 @@ export interface GenerationContext {
   omitInitialPageParam: boolean;
   /** Package version for generated comment */
   version: string;
+  /**
+   * Extension of relative import specifiers: ".js" when the consuming project
+   * resolves modules the Node way (`node16` / `nodenext`), else none.
+   */
+  importExtension?: "" | ".js";
 }
 
 /**

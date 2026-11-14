@@ -1,6 +1,6 @@
 {
   "name": "@7nohe/openapi-react-query-codegen",
-  "version": "3.2.1",
+  "version": "4.0.0-beta.6",
   "description": "OpenAPI React Query Codegen",
   "bin": {
     "openapi-rq": "dist/cli.mjs"
@@ -11,7 +11,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "node scripts/clean.mjs dist && tsc -p tsconfig.json",
+    "build": "node scripts/clean.mjs dist && tsc -p tsconfig.json && node scripts/copy-runtime.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "preview:react": "npm run build && npm -C examples/react-app run generate:api",
@@ -46,14 +46,13 @@
     "openapi",
     "swagger",
     "typescript",
-    "openapi-typescript-codegen",
-    "@hey-api/openapi-ts"
+    "openapi-typescript-codegen"
   ],
   "license": "MIT",
   "author": "Daiki Urata (@7nohe)",
   "dependencies": {
-    "@hey-api/openapi-ts": "0.99.0",
-    "cross-spawn": "^7.0.3"
+    "cross-spawn": "^7.0.3",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
@@ -61,36 +60,23 @@
     "@types/node": "^22.20.1",
     "@types/semver": "^7.7.1",
     "@vitest/coverage-v8": "^5.1.0",
+    "axios": "1.20.0",
     "commander": "^15.0.0",
     "lefthook": "^2.1.10",
-    "ts-morph": "^28.0.0",
     "typescript": "^6.0.3",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
-    "commander": "12.x || 13.x || 14.x || 15.x",
-    "ts-morph": "28.x",
-    "typescript": "5.x || 6.x"
+    "commander": "12.x || 13.x || 14.x || 15.x"
   },
   "packageManager": "pnpm@9.6.0",
   "engines": {
-    "node": ">=22.18.0",
+    "node": ">=24.0.0",
     "pnpm": ">=9"
   },
   "pnpm": {
-    "patchedDependencies": {
-      "@hey-api/openapi-ts@0.99.0": "patches/@hey-api__openapi-ts@0.99.0.patch",
-      "@hey-api/shared@0.5.0": "patches/@hey-api__shared@0.5.0.patch"
-    },
-    "packageExtensions": {
-      "ofetch": {
-        "dependencies": {
-          "undici": "6.29.1"
-        }
-      }
-    },
     "overrides": {
       "@babel/core": "7.29.7",
       "@babel/helpers": "7.26.10",

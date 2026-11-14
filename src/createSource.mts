@@ -1,53 +1,38 @@
-import { resolve } from "node:path";
-import { Project } from "ts-morph";
-import { buildGenerationContext, parseOperations } from "./parseOperations.mjs";
-import { generateAllFiles } from "./tsmorph/index.mjs";
-import type { GeneratedFile } from "./types.mjs";
-
-type ClientType = "@hey-api/client-fetch" | "@hey-api/client-axios";
+import type { ClientKind, GeneratedClient } from "./client/index.mjs";
+import { generateAllFiles } from "./hooks/generateFiles.mjs";
+import type { GeneratedFile, GenerationContext } from "./types.mjs";
 
 /**
- * Create source files using ts-morph based generation.
+ * Create the React Query source files for a generated client.
  */
-export const createSource = async ({
-  outputPath,
+export const createSource = ({
+  generated,
   client,
   version,
   pageParam,
   nextPageParam,
   initialPageParam,
   omitInitialPageParam,
+  importExtension = "",
 }: {
-  outputPath: string;
-  client: ClientType;
+  generated: Pick<GeneratedClient, "operations">;
+  client: ClientKind;
   version: string;
   pageParam: string;
   nextPageParam: string;
   initialPageParam: string;
   omitInitialPageParam: boolean;
-}): Promise<GeneratedFile[]> => {
-  // Initialize ts-morph project to read the generated OpenAPI client
-  const project = new Project({
-    skipAddingFilesFromTsConfig: true,
-  });
-
-  const sourceFiles = resolve(process.cwd(), outputPath);
-  project.addSourceFilesAtPaths(`${sourceFiles}/**/*`);
-
-  // Parse operations from the service file
-  const operations = await parseOperations(project, pageParam);
-
-  // Build generation context
-  const ctx = buildGenerationContext(
-    project,
-    client as "@hey-api/client-fetch" | "@hey-api/client-axios",
+  /** Extension of the relative imports; see `detectImportExtension`. */
+  importExtension?: "" | ".js";
+}): GeneratedFile[] => {
+  const ctx: GenerationContext = {
+    client,
     pageParam,
     nextPageParam,
     initialPageParam,
     omitInitialPageParam,
     version,
-  );
-
-  // Generate all files using ts-morph
-  return generateAllFiles(operations, ctx);
+    importExtension,
+  };
+  return generateAllFiles(generated.operations, ctx);
 };

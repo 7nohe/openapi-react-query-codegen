@@ -1,0 +1,151 @@
+---
+// Horizontal bars for a handful of values, drawn at build time. The bars
+// grow once, when the chart scrolls into view. The values are a table for
+// anything that does not see the bars.
+interface Props {
+  caption: string;
+  rows: Array<{ name: string; value: number; own?: boolean }>;
+  /** How a value is written next to its bar. */
+  unit: string;
+  digits?: number;
+}
+const { caption, rows, unit, digits = 2 } = Astro.props;
+const max = Math.max(...rows.map((row) => row.value));
+const format = (value: number) =>
+  `${value.toLocaleString("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })} ${unit}`;
+---
+
+<figure class="chart not-content" data-chart>
+  <figcaption>{caption}</figcaption>
+  <table>
+    <tbody>
+      {
+        rows.map((row) => (
+          <tr class:list={{ own: row.own }}>
+            <th scope="row">{row.name}</th>
+            <td>
+              <span
+                class="bar"
+                style={`--size: ${Math.max((row.value / max) * 100, 0.6)}%`}
+              />
+              <span class="value">{format(row.value)}</span>
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+</figure>
+
+<script>
+  const charts = document.querySelectorAll("[data-chart]");
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.setAttribute("data-shown", "");
+        observer.unobserve(entry.target);
+      }
+    },
+    { threshold: 0.4 },
+  );
+  for (const chart of charts) observer.observe(chart);
+</script>
+
+<style>
+  .chart {
+    margin: 1.5rem 0;
+  }
+  figcaption {
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    width: 1%;
+    padding: 0.3rem 1rem 0.3rem 0;
+    text-align: start;
+    font-weight: 400;
+    white-space: nowrap;
+    color: var(--sl-color-gray-2);
+  }
+  td {
+    padding: 0.3rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .bar {
+    display: block;
+    flex: none;
+    height: 0.85rem;
+    width: calc(var(--size) * 0.78);
+    border-radius: 0.2rem;
+    background: var(--orqc-bar);
+    transform-origin: left center;
+  }
+  .value {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+    white-space: nowrap;
+  }
+  .own th {
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  .own .bar {
+    background: var(--orqc-signal);
+  }
+  .own .value {
+    font-weight: 600;
+    color: var(--sl-color-white);
+  }
+  @media (max-width: 40rem) {
+    tr {
+      display: block;
+      padding-block: 0.25rem;
+    }
+    th {
+      display: block;
+      width: auto;
+      padding: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bar {
+      transform: scaleX(0);
+      transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+    }
+    .value {
+      opacity: 0;
+      transition: opacity 0.3s ease-out 0.5s;
+    }
+    [data-shown] .bar {
+      transform: none;
+    }
+    [data-shown] .value {
+      opacity: 1;
+    }
+    tr:nth-child(2) .bar {
+      transition-delay: 60ms;
+    }
+    tr:nth-child(3) .bar {
+      transition-delay: 120ms;
+    }
+    tr:nth-child(4) .bar {
+      transition-delay: 180ms;
+    }
+    tr:nth-child(5) .bar {
+      transition-delay: 240ms;
+    }
+  }
+</style>
