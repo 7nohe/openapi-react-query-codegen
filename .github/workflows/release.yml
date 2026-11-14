@@ -60,13 +60,14 @@ jobs:
           path: ./artifact/*.tgz
           if-no-files-found: error
 
-  # The only job holding `id-token: write`. It never checks out the repository
-  # and never runs a dependency install, so neither this repository's code nor
-  # any package dependency executes here. What does run: two SHA-pinned
-  # GitHub-maintained actions (`setup-node`, `download-artifact`), the inline
-  # scripts below, and the npm CLI bundled with Node.
+  # With `publish-alias`, the only jobs holding `id-token: write`. They never
+  # check out the repository and never run a dependency install, so neither
+  # this repository's code nor any package dependency executes there. What does
+  # run: two SHA-pinned GitHub-maintained actions (`setup-node`,
+  # `download-artifact`), the inline scripts below, and the npm CLI bundled with
+  # Node.
   #
-  # It can only stage: the npm trusted publisher allows `npm stage publish` and
+  # They can only stage: the npm trusted publisher allows `npm stage publish` and
   # nothing else, so a version goes live only after a maintainer approves it
   # with 2FA on npmjs.com or with `npm stage approve`. Even a fully compromised
   # workflow cannot put a version in front of users.
@@ -77,7 +78,8 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Install Node.js
+      - &install-node
+        name: Install Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26.13.0
@@ -85,7 +87,8 @@ jobs:
 
       # `npm stage` needs 11.15.0. Node 26.13.0 bundles npm 11.20.0; fail loudly
       # if that ever stops holding.
-      - name: Verify npm supports staged publishing
+      - &verify-npm
+        name: Verify npm supports staged publishing
         run: |
           set -euo pipefail
           npm_version=$(npm --version)
@@ -99,7 +102,8 @@ jobs:
 
       # download-artifact v8 errors on a digest mismatch by default, which is
       # what makes the build -> publish tarball handoff trustworthy.
-      - name: Download package tarball
+      - &download-tarballs
+        name: Download package tarballs
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: package-tarball
@@ -109,7 +113,8 @@ jobs:
       # `binding.gyp` that node-gyp evaluates by itself, a payload of several MB
       # outside `dist`, and version numbers unrelated to any tag. The alias may
       # only hold its bin script and depend on nothing but this exact version.
-      - name: Verify package tarballs
+      - &verify-tarballs
+        name: Verify package tarballs
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -174,18 +179,40 @@ jobs:
 
       # The previous step proved the versions equal the tag, so the tag decides
       # the dist-tag: prereleases (e.g. 3.1.0-beta.1) never take over `latest`.
-      # The alias is staged second because it depends on the main package:
-      # approve the main package first on npm, then the alias.
       - name: Stage for npm
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
           args=(--provenance --access public)
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then
             args+=(--tag beta)
           fi
-          npm stage publish "./7nohe-openapi-react-query-codegen-$version.tgz" "${args[@]}"
-          npm stage publish "./7nohe-orqc-$version.tgz" "${args[@]}"
+          npm stage publish "./7nohe-openapi-react-query-codegen-${GITHUB_REF_NAME#v}.tgz" "${args[@]}"
+
+  # Stages the `@7nohe/orqc` alias, under the same rules as `publish`. It is a
+  # job of its own because a staged version can never be staged again: if this
+  # fails, "Re-run failed jobs" retries the alias alone. It runs after the main
+  # package because it depends on it, so approve the main package first on npm,
+  # then the alias.
+  publish-alias:
+    needs: publish
+    runs-on: ubuntu-latest
+    environment: release # gated by a required-reviewer protection rule
+    permissions:
+      id-token: write
+    steps:
+      - *install-node
+      - *verify-npm
+      - *download-tarballs
+      - *verify-tarballs
+
+      - name: Stage for npm
+        run: |
+          set -euo pipefail
+          args=(--provenance --access public)
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            args+=(--tag beta)
+          fi
+          npm stage publish "./7nohe-orqc-${GITHUB_REF_NAME#v}.tgz" "${args[@]}"
 
   # At this point the version is only staged, so the release stays a draft.
   # Publish the draft after approving the version on npm. A declined approval

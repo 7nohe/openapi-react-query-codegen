@@ -38,7 +38,7 @@ function Pets() {
 See the [documentation](https://orqc.7nohe.dev) for CLI options, SSR recipes, and infinite query usage.
 
 > [!IMPORTANT]
-> The only package published by this project is the scoped **`@7nohe/openapi-react-query-codegen`**. The unscoped `openapi-react-query-codegen` and the copies under other scopes on npm are published by third parties, not by this project.
+> This project publishes only the scoped **`@7nohe/openapi-react-query-codegen`** and its short name **`@7nohe/orqc`**. The unscoped `openapi-react-query-codegen` and `openapi-rq` and the copies under other scopes on npm are published by third parties, not by this project.
 
 ## How it compares
 
