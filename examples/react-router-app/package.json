@@ -1,5 +1,5 @@
 {
-  "name": "@7nohe/react-router-7-app",
+  "name": "@7nohe/react-router-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,21 +15,20 @@
     "test:generated": "pnpm typegen && tsc -p ./tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@react-router/fs-routes": "^7.18.1",
-    "@react-router/node": "^7.18.1",
-    "@react-router/serve": "^7.18.1",
+    "@react-router/fs-routes": "^8.5.1",
+    "@react-router/node": "^8.5.1",
+    "@react-router/serve": "^8.5.1",
     "@tanstack/react-query": "^5.59.13",
     "@tanstack/react-query-devtools": "^5.32.1",
     "form-data": "~4.0.0",
     "isbot": "^5",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-router": "^7.18.1",
-    "react-router-dom": "^7.18.1"
+    "react-router": "^8.5.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.5",
-    "@react-router/dev": "^7.18.1",
+    "@biomejs/biome": "^2.6.6",
+    "@react-router/dev": "^8.5.1",
     "@stoplight/prism-cli": "^5.5.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

@@ -24,7 +24,7 @@ Key facts for agents:
 - [Vite + React](https://orqc.7nohe.dev/examples/vite-react/)
 - [Next.js](https://orqc.7nohe.dev/examples/nextjs/)
 - [TanStack Router](https://orqc.7nohe.dev/examples/tanstack-router/)
-- [React Router 7](https://orqc.7nohe.dev/examples/react-router-7/)
+- [React Router](https://orqc.7nohe.dev/examples/react-router/)
 
 ## Optional
 

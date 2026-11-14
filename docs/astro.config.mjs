@@ -10,6 +10,10 @@ const ogImageAlt = "OpenAPI React Query Codegen";
 // https://astro.build/config
 export default defineConfig({
   site,
+  // The example page was renamed when the example moved to React Router 8.
+  redirects: {
+    "/examples/react-router-7/": "/examples/react-router/",
+  },
   // The guides are full of command line flags: `--check` must stay two
   // hyphens, not become a dash.
   markdown: {
