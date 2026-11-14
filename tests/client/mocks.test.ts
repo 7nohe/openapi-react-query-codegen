@@ -259,6 +259,9 @@ describe("emitMocks", () => {
         "noWholeMultipleAboveZero: 2,",
         // Rounding the dust away must not leave the range
         "bigTenths: 170000000000.1,",
+        // A bound between two steps is not taken for one of them
+        "betweenFractions: 1000000001,",
+        "betweenFractionsOfTenths: 100000000.1,",
         // A whole step is not rounded to a few digits
         "bigInteger: 1700000000001,",
       ]) {

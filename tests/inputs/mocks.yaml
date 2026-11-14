@@ -931,6 +931,15 @@ components:
           type: integer
           multipleOf: 1.2345678901234567
           minimum: 2
+        betweenFractions:
+          type: integer
+          exclusiveMinimum: 1000000000.75
+          exclusiveMaximum: 1000000001.25
+        betweenFractionsOfTenths:
+          type: number
+          multipleOf: 0.1
+          exclusiveMinimum: 100000000.04
+          exclusiveMaximum: 100000000.16
         bigTenths:
           type: number
           multipleOf: 0.1

@@ -249,13 +249,16 @@ function numberSample(schema: Json): number {
   }
   if (step !== undefined) {
     const size = step;
-    // How many steps a bound is, as a whole number where it is one but for
-    // the rounding of the division.
+    // How many steps a bound is. Dividing by a fraction can miss a whole
+    // number by the rounding of the division (0.3 / 0.1), which is put
+    // right. The allowance is that error and no more: a bound that is not a
+    // whole number of steps (1000000000.75) must not become one.
     const steps = (bound: number) => {
       const exact = bound / size;
+      if (Number.isInteger(size)) return exact;
       const whole = Math.round(exact);
-      const near = 1e-9 * Math.max(1, Math.abs(exact));
-      return Math.abs(exact - whole) <= near ? whole : exact;
+      const error = 8 * Number.EPSILON * Math.max(1, Math.abs(exact));
+      return Math.abs(exact - whole) <= Math.min(error, 1e-3) ? whole : exact;
     };
     const lowest = Math.ceil(steps(min));
     const highest = Math.floor(steps(max));
