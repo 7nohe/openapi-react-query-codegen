@@ -30,6 +30,8 @@ export type LimitedUserConfig = {
   nextPageParam: string;
   initialPageParam: string | number;
   omitInitialPageParam?: boolean;
+  /** `--agentsMd`: the file to keep the agent guide in, or `true` for `AGENTS.md`. */
+  agentsMd?: string | boolean;
 };
 
 async function main() {

@@ -60,6 +60,33 @@ describe("runCli", () => {
     );
   });
 
+  test("--agentsMd takes an optional file name", async () => {
+    const bare = setup();
+    expect(await bare.run("-i", "spec.yaml", "--agentsMd")).toBe(0);
+    expect(bare.dependencies.generate).toHaveBeenCalledWith(
+      expect.objectContaining({ agentsMd: true }),
+      "9.9.9",
+      { silent: false },
+    );
+
+    const named = setup();
+    expect(
+      await named.run("-i", "spec.yaml", "--agentsMd", "CLAUDE.md", "--check"),
+    ).toBe(0);
+    expect(named.dependencies.check).toHaveBeenCalledWith(
+      expect.objectContaining({ agentsMd: "CLAUDE.md" }),
+      "9.9.9",
+    );
+
+    const off = setup();
+    expect(await off.run("-i", "spec.yaml")).toBe(0);
+    expect(off.dependencies.generate).toHaveBeenCalledWith(
+      expect.not.objectContaining({ agentsMd: expect.anything() }),
+      "9.9.9",
+      { silent: false },
+    );
+  });
+
   test("does not silence the generator in the default mode", async () => {
     const cli = setup();
     expect(await cli.run("-i", "spec.yaml")).toBe(0);

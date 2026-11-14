@@ -47,6 +47,7 @@ Add a script and run it whenever the spec changes:
 | `--pageParam <name>` | `page` | query param that turns a GET into an infinite query |
 | `--nextPageParam <path>` | `nextPage` | response field holding the next page (dot path allowed, e.g. `meta.next`) |
 | `--initialPageParam <value>` / `--omitInitialPageParam` | `1` | first page value, or send none |
+| `--agentsMd [file]` | off | also keep a lookup guide for agents in `AGENTS.md` (or the file named), see below |
 | `--check` | off | do not update the output; exit 1 if it is out of date (see below) |
 | `--json` | off | errors as one JSON line on stderr (see below) |
 
@@ -119,6 +120,21 @@ mutate({ body: { name: "Fluffy" } });
 ```
 
 Wrap the app in TanStack Query's `QueryClientProvider` as usual.
+
+### Looking an operation up: `--agentsMd`
+
+The generated files can be very large. Do not read them whole: an operation's function, hook and types each start a line, so `grep` finds them.
+
+```bash
+# the function of an operation, by a word in its name or by its URL path
+grep -o '^export const [A-Za-z0-9_]*' src/openapi/requests/sdk.gen.ts | grep -i pet
+grep -B7 'url: "/pets/{petId}"' src/openapi/requests/sdk.gen.ts | grep -o 'export const [A-Za-z0-9_]*'
+# what it takes (path, query, body) and what it returns for each status
+grep -n -A30 '^export type FindPetsData = ' src/openapi/requests/types.gen.ts
+grep -n -A12 '^export type FindPetsResponses = ' src/openapi/requests/types.gen.ts
+```
+
+With `--agentsMd` in the codegen script, the generator keeps these instructions, with the project's real output path, in a block of the project's `AGENTS.md` (`--agentsMd CLAUDE.md` for another file). The block is between `<!-- openapi-rq:begin <output> -->` and `<!-- openapi-rq:end <output> -->`; do not edit inside it, it is replaced on the next run, and `--check` reports it when it is missing or out of date. If the project has a `CLAUDE.md` that does not import `AGENTS.md`, add `@AGENTS.md` to it.
 
 ### CI drift check: `--check`
 

@@ -105,6 +105,10 @@ The available options are:
 
 See [CI and Coding Agents](/guides/ci-and-agents/) for details and examples.
 
+### --agentsMd [file]
+
+Also keep a short guide for coding agents in `AGENTS.md` in the working directory, or in the file you name (`--agentsMd CLAUDE.md`). The guide says how the generated names are built and how to find an operation and its types with `grep`, so that an agent does not read the generated files, which can be very large. It is written between two comments that carry the output path; everything else in the file is left as it is, and the block is replaced in place on the next run. With `--check`, a missing or outdated block is reported like a file that differs.
+
 ### --check
 
 Generate into a temporary directory and compare the result with the existing output instead of writing it. Exits with `1` and lists the files that differ (`added`, `modified` or `removed`) when the output is out of date, and with `0` when it is up to date. No existing file in the output directory is changed.

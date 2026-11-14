@@ -118,6 +118,10 @@ export function buildProgram(
       "Send no initial page parameter at all (overrides --initialPageParam)",
     )
     .option(
+      "--agentsMd [file]",
+      "Also keep a short guide for coding agents (how to look operations up in the output) in AGENTS.md, or in the file named",
+    )
+    .option(
       "--check",
       "Do not update the output; exit 1 and list the files that differ if the existing output is out of date",
     )

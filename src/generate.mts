@@ -1,3 +1,8 @@
+import {
+  agentsFilePath,
+  claudeImportHint,
+  writeAgentsBlock,
+} from "./agentsMd.mjs";
 import type { ClientChoice, LimitedUserConfig } from "./cli.mjs";
 import {
   type ClientKind,
@@ -136,6 +141,13 @@ async function runGenerate(
     format: formattedOptions.format,
     lint: formattedOptions.lint,
   });
+
+  if (options.agentsMd) {
+    const file = agentsFilePath(options.agentsMd);
+    await writeAgentsBlock(file, options.output);
+    const hint = runtime.silent ? undefined : await claudeImportHint(file);
+    if (hint) console.warn(hint);
+  }
 }
 
 /**
