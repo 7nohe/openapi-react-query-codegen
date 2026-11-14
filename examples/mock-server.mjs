@@ -51,10 +51,11 @@ function integerParam(url, name) {
     : Number.NaN;
 }
 
+/** Reads the JSON body; undefined when it is not JSON or the client hung up. */
 async function readJson(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
   try {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
     return JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch {
     return undefined;
@@ -106,7 +107,7 @@ export function createMockServer() {
     const limit = integerParam(url, "limit");
     const page = integerParam(url, "page") ?? 1;
     if (Number.isNaN(limit) || Number.isNaN(page) || page < 1) {
-      sendError(400, "limit and page must be positive integers");
+      sendError(400, "limit and page must be integers, page at least 1");
       return;
     }
 
@@ -117,6 +118,7 @@ export function createMockServer() {
 
     if (route === "POST /pets") {
       const body = await readJson(req);
+      if (res.destroyed) return;
       if (typeof body?.name !== "string" || body.name === "") {
         sendError(400, "name is required");
         return;
@@ -134,7 +136,8 @@ export function createMockServer() {
       const found = findPets(url);
       const start = (page - 1) * size;
       const result = { pets: found.slice(start, start + size) };
-      if (start + size < found.length) result.nextPage = page + 1;
+      // A limit of 0 has no next page: every page would be empty.
+      if (size > 0 && start + size < found.length) result.nextPage = page + 1;
       send(200, result);
       return;
     }

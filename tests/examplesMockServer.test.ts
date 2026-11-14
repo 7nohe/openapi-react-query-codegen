@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { Server } from "node:http";
-import type { AddressInfo } from "node:net";
+import { type AddressInfo, connect } from "node:net";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { parse } from "yaml";
 import { createMockServer } from "../examples/mock-server.mjs";
@@ -101,6 +101,29 @@ describe("examples/mock-server.mjs", () => {
     ).json();
     expect(last.pets).toHaveLength(5);
     expect(last).not.toHaveProperty("nextPage");
+  });
+
+  test("ends the pages when the limit is zero", async () => {
+    const empty = await (
+      await fetch(`${baseUrl}/paginated-pets?limit=0`)
+    ).json();
+    expect(empty).toEqual({ pets: [] });
+  });
+
+  test("keeps running when a client disconnects while sending a pet", async () => {
+    const { port } = server.address() as AddressInfo;
+    const socket = connect(port, "127.0.0.1");
+    await new Promise((resolve) => socket.once("connect", resolve));
+    // Announce more body than is sent, then hang up.
+    socket.write(
+      'POST /pets HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n{"name":',
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    socket.destroy();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const pets = await (await fetch(`${baseUrl}/pets`)).json();
+    expect(pets).toHaveLength(25);
   });
 
   test("rejects a pet without a name and a limit that is not a number", async () => {
