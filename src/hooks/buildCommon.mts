@@ -35,13 +35,18 @@ export function buildQueryResultType(op: HookOperation): TypeStatement {
 
 /**
  * Build the mutation result type alias.
- * Example: export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
+ * Example: export type AddPetMutationResult = Awaited<ReturnType<typeof addPet<true>>>;
+ *
+ * `<true>` is ThrowOnError: the hook always calls the SDK with
+ * `throwOnError: true`, so a resolved mutation is the success response and
+ * never the error one. Without it the alias is the union of both, which hides
+ * what only the success side has (the axios response headers, #168).
  */
 export function buildMutationResultType(op: HookOperation): TypeStatement {
   return {
     kind: "type",
     name: hookNames(op).mutationResult,
-    type: `Awaited<ReturnType<typeof ${op.methodName}>>`,
+    type: `Awaited<ReturnType<typeof ${op.methodName}<true>>>`,
     service: op.methodName,
   };
 }

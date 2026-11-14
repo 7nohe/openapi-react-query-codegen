@@ -247,3 +247,78 @@ describe("createSource - NodeNext module resolution", () => {
     expect(diagnostics).toEqual([]);
   });
 });
+
+// #168: a mutation resolves to the whole success response, so its headers are
+// there to read. The hook calls the SDK with `throwOnError: true`; when the
+// result type did not say so it was the union with the error response, and
+// with axios `result.headers` did not compile.
+describe.each([
+  {
+    client: "fetch" as const,
+    read: 'result.response.headers.get("content-disposition")',
+  },
+  {
+    client: "axios" as const,
+    read: 'result.headers["content-disposition"]',
+  },
+])("createSource - mutation result ($client client)", ({ client, read }) => {
+  const dir = outputPath(`createSource-mutation-result-${client}`);
+
+  afterAll(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  test("the response headers and the data are typed as the success response", async () => {
+    const generated = await generateTestClient("petstore.yaml", { client });
+    await writeGeneratedFiles(path.join(dir, "requests"), generated.files);
+    const source = createSource({
+      generated,
+      version: "1.0.0",
+      pageParam: "page",
+      nextPageParam: "nextPage",
+      initialPageParam: "1",
+      omitInitialPageParam: false,
+      client,
+    });
+
+    const queriesDir = path.join(dir, "queries");
+    await mkdir(queriesDir, { recursive: true });
+    await Promise.all(
+      source.map((file) =>
+        writeFile(path.join(queriesDir, file.name), file.content),
+      ),
+    );
+    const consumer = path.join(dir, "consumer.ts");
+    await writeFile(
+      consumer,
+      [
+        'import type { AddPetMutationResult } from "./queries/common";',
+        'import { useAddPet } from "./queries/queries";',
+        'import type { Pet } from "./requests/types.gen";',
+        "export const header = (result: AddPetMutationResult) =>",
+        `  ${read};`,
+        "export const pet = (result: AddPetMutationResult): Pet => result.data;",
+        "export const useHeader = () =>",
+        "  useAddPet().mutateAsync({ body: { name: 'x' } }).then((result) =>",
+        `    ${read});`,
+      ].join("\n"),
+    );
+
+    const program = ts.createProgram([consumer], {
+      strict: true,
+      noEmit: true,
+      skipLibCheck: true,
+      esModuleInterop: true,
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+    });
+    const diagnostics = ts
+      .getPreEmitDiagnostics(program)
+      .map(
+        (d) =>
+          `${d.file?.fileName ?? ""}: ${ts.flattenDiagnosticMessageText(d.messageText, "\n")}`,
+      );
+    expect(diagnostics).toEqual([]);
+  });
+});

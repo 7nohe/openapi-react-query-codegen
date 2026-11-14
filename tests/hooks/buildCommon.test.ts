@@ -95,7 +95,7 @@ describe("buildCommon", () => {
 
       expect(result.kind).toBe("type");
       expect(result.name).toBe("AddPetMutationResult");
-      expect(result.type).toBe("Awaited<ReturnType<typeof addPet>>");
+      expect(result.type).toBe("Awaited<ReturnType<typeof addPet<true>>>");
     });
   });
 
