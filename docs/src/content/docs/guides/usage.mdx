@@ -139,6 +139,31 @@ const disposition = result.response.headers.get("content-disposition");
 const axiosDisposition = result.headers["content-disposition"];
 ```
 
+Query hooks return the response body only. When a query needs a header, such
+as `x-total-count`, call the SDK function in your own `useQuery` and keep what
+you need next to the data. Extending the generated key keeps the entry apart
+from the one `useFindPets` caches, and `invalidateQueries` with the generated
+key still matches it:
+
+```tsx
+import { useQuery } from "@tanstack/react-query";
+import { UseFindPetsKeyFn } from "../openapi/queries";
+import { findPets } from "../openapi/requests";
+
+const options = { query: { limit: 10 } };
+const { data } = useQuery({
+  queryKey: [...UseFindPetsKeyFn(options), "withTotal"],
+  queryFn: ({ signal }) =>
+    findPets({ ...options, signal, throwOnError: true }).then(
+      // axios client: ({ data, headers }) and headers["x-total-count"]
+      ({ data, response }) => ({
+        pets: data,
+        total: Number(response.headers.get("x-total-count")),
+      }),
+    ),
+});
+```
+
 Learn more about invalidating queries [here](https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation).
 
 To ensure the query key is created the same way as the query hook, you can use the query key function exported by the generated query hooks.

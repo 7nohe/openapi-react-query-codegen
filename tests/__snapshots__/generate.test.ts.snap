@@ -91,7 +91,7 @@ export const UseFindPaginatedPetsInfiniteKeyFn = (
   queryKey?: Array<unknown>,
 ) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
-export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
+export type AddPetMutationResult = Awaited<ReturnType<typeof addPet<true>>>;
 
 export const useAddPetKey = "AddPet";
 export const UseAddPetKeyFn = (mutationKey?: Array<unknown>) => [
@@ -100,7 +100,7 @@ export const UseAddPetKeyFn = (mutationKey?: Array<unknown>) => [
 ];
 
 export type PostNotDefinedMutationResult = Awaited<
-  ReturnType<typeof postNotDefined>
+  ReturnType<typeof postNotDefined<true>>
 >;
 
 export const usePostNotDefinedKey = "PostNotDefined";
@@ -109,7 +109,9 @@ export const UsePostNotDefinedKeyFn = (mutationKey?: Array<unknown>) => [
   ...(mutationKey ?? []),
 ];
 
-export type DeletePetMutationResult = Awaited<ReturnType<typeof deletePet>>;
+export type DeletePetMutationResult = Awaited<
+  ReturnType<typeof deletePet<true>>
+>;
 
 export const useDeletePetKey = "DeletePet";
 export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [

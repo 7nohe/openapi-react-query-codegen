@@ -84,6 +84,8 @@ A property that an `allOf` requires is now required in the generated type, where
 
 A `oneOf` or `anyOf` next to an `allOf` is now part of the type (`Base & (A | B)`). v3 dropped the union and emitted `Base`.
 
+The `*MutationResult` types are the successful response only: `data` is no longer `undefined`, there is no `error` property, and with the axios client `result.headers` is there without narrowing. A mutation that fails rejects, as it did in v3, so the error side of the union v3 typed was never what a mutation resolved to.
+
 In OpenAPI 3.1, a string with a `contentMediaType` is a file (`Blob | File`) for every media type that is not text (JSON, XML, `text/*`, form-urlencoded), unless it also has a `contentEncoding` such as `base64`, which makes it a `string`. v3 knew a fixed list of media types, so `image/png` was a `string`, and it ignored `contentEncoding` for `application/octet-stream`.
 
 ### Types that are no longer generated

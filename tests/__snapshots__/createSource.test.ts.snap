@@ -45,17 +45,17 @@ export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedP
 export const useFindPaginatedPetsInfiniteKey = [useFindPaginatedPetsKey, "infinite"] as const;
 export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
-export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
+export type AddPetMutationResult = Awaited<ReturnType<typeof addPet<true>>>;
 
 export const useAddPetKey = "AddPet";
 export const UseAddPetKeyFn = (mutationKey?: Array<unknown>) => [useAddPetKey, ...(mutationKey ?? [])];
 
-export type PostNotDefinedMutationResult = Awaited<ReturnType<typeof postNotDefined>>;
+export type PostNotDefinedMutationResult = Awaited<ReturnType<typeof postNotDefined<true>>>;
 
 export const usePostNotDefinedKey = "PostNotDefined";
 export const UsePostNotDefinedKeyFn = (mutationKey?: Array<unknown>) => [usePostNotDefinedKey, ...(mutationKey ?? [])];
 
-export type DeletePetMutationResult = Awaited<ReturnType<typeof deletePet>>;
+export type DeletePetMutationResult = Awaited<ReturnType<typeof deletePet<true>>>;
 
 export const useDeletePetKey = "DeletePet";
 export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [useDeletePetKey, ...(mutationKey ?? [])];
@@ -235,17 +235,17 @@ export type FindPaginatedPetsInfiniteClientOptions = Omit<Options<FindPaginatedP
 export const useFindPaginatedPetsInfiniteKey = [useFindPaginatedPetsKey, "infinite"] as const;
 export const UseFindPaginatedPetsInfiniteKeyFn = (clientOptions: FindPaginatedPetsInfiniteClientOptions = {}, queryKey?: Array<unknown>) => [...useFindPaginatedPetsInfiniteKey, ...(queryKey ?? [clientOptions])];
 
-export type AddPetMutationResult = Awaited<ReturnType<typeof addPet>>;
+export type AddPetMutationResult = Awaited<ReturnType<typeof addPet<true>>>;
 
 export const useAddPetKey = "AddPet";
 export const UseAddPetKeyFn = (mutationKey?: Array<unknown>) => [useAddPetKey, ...(mutationKey ?? [])];
 
-export type PostNotDefinedMutationResult = Awaited<ReturnType<typeof postNotDefined>>;
+export type PostNotDefinedMutationResult = Awaited<ReturnType<typeof postNotDefined<true>>>;
 
 export const usePostNotDefinedKey = "PostNotDefined";
 export const UsePostNotDefinedKeyFn = (mutationKey?: Array<unknown>) => [usePostNotDefinedKey, ...(mutationKey ?? [])];
 
-export type DeletePetMutationResult = Awaited<ReturnType<typeof deletePet>>;
+export type DeletePetMutationResult = Awaited<ReturnType<typeof deletePet<true>>>;
 
 export const useDeletePetKey = "DeletePet";
 export const UseDeletePetKeyFn = (mutationKey?: Array<unknown>) => [useDeletePetKey, ...(mutationKey ?? [])];
