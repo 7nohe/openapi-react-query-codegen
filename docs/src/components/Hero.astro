@@ -1,11 +1,13 @@
 ---
-// The hero of the home page: what the generator is, how to get it, and a
+// The hero of the home page: what the generator is, how to try it, and a
 // panel that shows what one operation of a specification turns into.
 import SpecToHooks from "./SpecToHooks.astro";
 
 const { data } = Astro.locals.starlightRoute.entry;
 const { title = data.title, tagline, actions = [] } = data.hero || {};
-const install = "npm install -D @7nohe/openapi-react-query-codegen@beta";
+// Runs once without installing, so it matches the command in the panel. A
+// project installs the package and runs it from a script (see the steps).
+const command = "npx @7nohe/orqc@beta -i ./openapi.yaml";
 // The id Starlight gives the title of a page; "Skip to content" and the
 // table of contents point at it.
 const PAGE_TITLE_ID = "_top";
@@ -16,9 +18,13 @@ const PAGE_TITLE_ID = "_top";
     <h1 id={PAGE_TITLE_ID} data-page-title set:html={title} />
     {tagline && <p class="tagline" set:html={tagline} />}
     <div class="install">
-      <code>{install}</code>
-      <button type="button" data-copy={install}>Copy</button>
+      <code>{command}</code>
+      <button type="button" data-copy={command}>Copy</button>
     </div>
+    <p class="hint">
+      Runs once without installing. To add it to a project, follow the steps
+      below.
+    </p>
     <div class="actions">
       {
         actions.map(({ link, text, variant }) => (
@@ -113,6 +119,11 @@ const PAGE_TITLE_ID = "_top";
   }
   .install button:hover {
     background: var(--sl-color-accent-low);
+  }
+  .hint {
+    margin-top: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--sl-color-gray-3);
   }
 
   .actions {
