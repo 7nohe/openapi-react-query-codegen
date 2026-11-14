@@ -49,6 +49,10 @@ jobs:
       - name: Pack
         run: pnpm pack --pack-destination ./artifact
 
+      # `@7nohe/orqc` at the same version, depending on exactly this version.
+      - name: Pack the @7nohe/orqc alias
+        run: node scripts/pack-orqc.mjs ./artifact
+
       - name: Upload package tarball
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -100,64 +104,88 @@ jobs:
         with:
           name: package-tarball
 
-      # Reads the tarball without running anything from it. The checks mirror
-      # how the 2026-08-28 versions looked: install hooks or a `binding.gyp`
-      # that node-gyp evaluates by itself, a payload of several MB outside
-      # `dist`, and version numbers unrelated to any tag.
-      - name: Verify package tarball
+      # Reads the tarballs without running anything from them. The checks
+      # mirror how the 2026-08-28 versions looked: install hooks or a
+      # `binding.gyp` that node-gyp evaluates by itself, a payload of several MB
+      # outside `dist`, and version numbers unrelated to any tag. The alias may
+      # only hold its bin script and depend on nothing but this exact version.
+      - name: Verify package tarballs
         run: |
           set -euo pipefail
           shopt -s nullglob
+          version="${GITHUB_REF_NAME#v}"
           tarballs=(./*.tgz)
-          if [ "${#tarballs[@]}" -ne 1 ]; then
-            echo "expected exactly one tarball, found ${#tarballs[@]}: ${tarballs[*]}" >&2
+          if [ "${#tarballs[@]}" -ne 2 ]; then
+            echo "expected two tarballs, found ${#tarballs[@]}: ${tarballs[*]}" >&2
             exit 1
           fi
-          tarball="${tarballs[0]}"
-          size=$(wc -c < "$tarball")
-          tar -tzf "$tarball" > "$RUNNER_TEMP/files.txt"
-          tar -xzOf "$tarball" package/package.json > "$RUNNER_TEMP/package.json"
-          node -e '
-            const fs = require("node:fs");
-            const [listPath, manifestPath, size] = process.argv.slice(1);
-            const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-            const files = fs.readFileSync(listPath, "utf8").split("\n").filter(Boolean);
-            const errors = [];
-            if (manifest.name !== "@7nohe/openapi-react-query-codegen") {
-              errors.push("unexpected package name: " + manifest.name);
-            }
-            if ("v" + manifest.version !== process.env.GITHUB_REF_NAME) {
-              errors.push("version " + manifest.version + " does not match tag " + process.env.GITHUB_REF_NAME);
-            }
-            for (const hook of ["preinstall", "install", "postinstall", "prepare"]) {
-              if (manifest.scripts?.[hook]) errors.push("install hook present: " + hook);
-            }
-            if (manifest.gypfile) errors.push("gypfile is set");
-            for (const file of files) {
-              if (!/^package\/(package\.json|README\.md|LICENSE|AGENTS\.md|dist\/.+)$/.test(file)) {
-                errors.push("unexpected file: " + file);
+          for name in openapi-react-query-codegen orqc; do
+            tarball="./7nohe-$name-$version.tgz"
+            if [ ! -f "$tarball" ]; then
+              echo "missing $tarball" >&2
+              exit 1
+            fi
+            size=$(wc -c < "$tarball")
+            tar -tzf "$tarball" > "$RUNNER_TEMP/files.txt"
+            tar -xzOf "$tarball" package/package.json > "$RUNNER_TEMP/package.json"
+            node -e '
+              const fs = require("node:fs");
+              const [expected, listPath, manifestPath, size] = process.argv.slice(1);
+              const main = "@7nohe/openapi-react-query-codegen";
+              const alias = expected === "@7nohe/orqc";
+              const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+              const files = fs.readFileSync(listPath, "utf8").split("\n").filter(Boolean);
+              const errors = [];
+              if (manifest.name !== expected) {
+                errors.push("unexpected package name: " + manifest.name + ", expected " + expected);
               }
-              if (/(^|\/)binding\.gyp$|\.node$/i.test(file)) errors.push("native build file: " + file);
-            }
-            if (Number(size) > 1024 * 1024) errors.push("tarball is unexpectedly large: " + size + " bytes");
-            if (errors.length > 0) {
-              console.error(errors.join("\n"));
-              process.exit(1);
-            }
-            console.log("verified " + manifest.name + "@" + manifest.version + ": " + files.length + " files, " + size + " bytes");
-          ' "$RUNNER_TEMP/files.txt" "$RUNNER_TEMP/package.json" "$size"
+              if ("v" + manifest.version !== process.env.GITHUB_REF_NAME) {
+                errors.push("version " + manifest.version + " does not match tag " + process.env.GITHUB_REF_NAME);
+              }
+              for (const hook of ["preinstall", "install", "postinstall", "prepare"]) {
+                if (manifest.scripts?.[hook]) errors.push("install hook present: " + hook);
+              }
+              if (manifest.gypfile) errors.push("gypfile is set");
+              const allowed = alias
+                ? /^package\/(package\.json|README\.md|LICENSE|bin\/orqc\.mjs)$/
+                : /^package\/(package\.json|README\.md|LICENSE|AGENTS\.md|dist\/.+)$/;
+              for (const file of files) {
+                if (!allowed.test(file)) errors.push("unexpected file: " + file);
+                if (/(^|\/)binding\.gyp$|\.node$/i.test(file)) errors.push("native build file: " + file);
+              }
+              if (alias) {
+                const deps = JSON.stringify(manifest.dependencies ?? {});
+                if (deps !== JSON.stringify({ [main]: manifest.version })) {
+                  errors.push("the alias must depend on exactly " + main + "@" + manifest.version + ", got " + deps);
+                }
+                for (const field of ["optionalDependencies", "peerDependencies", "bundleDependencies", "bundledDependencies"]) {
+                  if (manifest[field]) errors.push("the alias must not have " + field);
+                }
+              }
+              const limit = alias ? 16 * 1024 : 1024 * 1024;
+              if (Number(size) > limit) errors.push("tarball is unexpectedly large: " + size + " bytes");
+              if (errors.length > 0) {
+                console.error(errors.join("\n"));
+                process.exit(1);
+              }
+              console.log("verified " + manifest.name + "@" + manifest.version + ": " + files.length + " files, " + size + " bytes");
+            ' "@7nohe/$name" "$RUNNER_TEMP/files.txt" "$RUNNER_TEMP/package.json" "$size"
+          done
 
-      # The previous step proved the version equals the tag, so the tag decides
+      # The previous step proved the versions equal the tag, so the tag decides
       # the dist-tag: prereleases (e.g. 3.1.0-beta.1) never take over `latest`.
+      # The alias is staged second because it depends on the main package:
+      # approve the main package first on npm, then the alias.
       - name: Stage for npm
         run: |
           set -euo pipefail
-          tarball=$(echo ./*.tgz)
+          version="${GITHUB_REF_NAME#v}"
+          args=(--provenance --access public)
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then
-            npm stage publish "$tarball" --provenance --access public --tag beta
-          else
-            npm stage publish "$tarball" --provenance --access public
+            args+=(--tag beta)
           fi
+          npm stage publish "./7nohe-openapi-react-query-codegen-$version.tgz" "${args[@]}"
+          npm stage publish "./7nohe-orqc-$version.tgz" "${args[@]}"
 
   # At this point the version is only staged, so the release stays a draft.
   # Publish the draft after approving the version on npm. A declined approval

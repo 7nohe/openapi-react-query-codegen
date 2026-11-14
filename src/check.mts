@@ -226,7 +226,7 @@ export async function check(
 export function outOfDateError(files: FileChange[]): CodegenError {
   return new CodegenError(
     ErrorCodes.outputOutOfDate,
-    `Generated output is out of date (${files.length} ${files.length === 1 ? "file differs" : "files differ"}). Re-run openapi-rq without --check to update it.`,
+    `Generated output is out of date (${files.length} ${files.length === 1 ? "file differs" : "files differ"}). Re-run orqc without --check to update it.`,
     { files },
   );
 }

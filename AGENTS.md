@@ -7,12 +7,12 @@ This file has two parts:
 
 ## Using this package
 
-`@7nohe/openapi-react-query-codegen` is a CLI (`openapi-rq`) that reads an OpenAPI spec and generates:
+`@7nohe/openapi-react-query-codegen` is a CLI (`orqc`; `openapi-rq` also works) that reads an OpenAPI spec and generates:
 
 1. a TypeScript HTTP client (types, one function per operation and a small fetch or axios runtime) in `<output>/requests/`
 2. TanStack Query v5 hooks and helpers on top of that client in `<output>/queries/`
 
-Docs: https://openapi-react-query-codegen.vercel.app (summary for LLMs: https://openapi-react-query-codegen.vercel.app/llms.txt)
+Docs: https://orqc.7nohe.dev (summary for LLMs: https://orqc.7nohe.dev/llms.txt)
 
 ### Install
 
@@ -32,7 +32,7 @@ Only the scoped `@7nohe/openapi-react-query-codegen` package belongs to this pro
 Add a script and run it whenever the spec changes:
 
 ```json
-{ "scripts": { "codegen": "openapi-rq -i ./openapi.yaml -o ./src/openapi" } }
+{ "scripts": { "codegen": "orqc -i ./openapi.yaml -o ./src/openapi" } }
 ```
 
 | Flag | Default | Notes |
@@ -141,7 +141,7 @@ With `--agentsMd` in the codegen script, the generator keeps these instructions,
 ### CI drift check: `--check`
 
 ```bash
-openapi-rq -i ./openapi.yaml -o ./src/openapi --check
+orqc -i ./openapi.yaml -o ./src/openapi --check
 ```
 
 Generates into a temporary directory (`.openapi-rq-check-*` inside `<output>/queries`, removed afterwards), compares it with `<output>/requests` and `<output>/queries`, and changes no existing file. `--format`/`--lint` rules that target the output directory by path also apply to the temporary copy; a rule that names an exact file or depth from the project root (`src/openapi/queries/*.ts`) does not, so write such rules as `src/openapi/queries/**`. Each file is `added` (would be created), `modified` or `removed` (no longer generated).
