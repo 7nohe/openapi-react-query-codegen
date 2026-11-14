@@ -1,8 +1,8 @@
-import { readdirSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterAll, describe, expect, test } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
+import { SpecError } from "../src/client/index.mjs";
 import {
   CodegenError,
   ErrorCodes,
@@ -82,24 +82,17 @@ describe("mapClientError", () => {
     expect(mapClientError(error, "a.yaml")).toBe(error);
   });
 
-  test("maps InputError to INPUT_NOT_FOUND", () => {
-    const error = Object.assign(new Error("Input file not found"), {
-      name: "InputError",
-    });
+  test("maps an unreadable specification to INPUT_NOT_FOUND", () => {
+    const error = new SpecError("not-found", "Input file not found");
     expect(mapClientError(error, "a.yaml")).toMatchObject({
       code: ErrorCodes.inputNotFound,
       details: { input: "a.yaml", reason: "Input file not found" },
+      cause: error,
     });
   });
 
-  test("maps a parser JobError to INPUT_PARSE_ERROR", () => {
-    const error = Object.assign(new Error(""), {
-      name: "JobError",
-      originalError: {
-        error: { code: "EPARSER", message: "bad yaml" },
-        jobIndex: 0,
-      },
-    });
+  test("maps an unparsable specification to INPUT_PARSE_ERROR", () => {
+    const error = new SpecError("parse", "bad yaml");
     expect(mapClientError(error, "a.yaml")).toMatchObject({
       code: ErrorCodes.inputParseError,
       details: { input: "a.yaml", reason: "bad yaml" },
@@ -107,15 +100,15 @@ describe("mapClientError", () => {
   });
 
   test("maps other failures to CLIENT_GENERATION_FAILED", () => {
-    const error = Object.assign(new Error(""), {
-      name: "JobError",
-      originalError: { error: { message: "plugin crashed" } },
-    });
+    const error = new RangeError("emitter crashed");
     expect(mapClientError(error, "a.yaml")).toMatchObject({
       code: ErrorCodes.clientGenerationFailed,
-      message:
-        "@hey-api/openapi-ts failed to generate the client: plugin crashed",
-      details: { input: "a.yaml", reason: "plugin crashed", name: "JobError" },
+      message: "The client could not be generated: emitter crashed",
+      details: {
+        input: "a.yaml",
+        reason: "emitter crashed",
+        name: "RangeError",
+      },
     });
   });
 
@@ -136,15 +129,11 @@ describe("generate errors", () => {
   const baseOptions: LimitedUserConfig = {
     input: "",
     output: path.join("tests", "outputs-errors"),
-    client: "@hey-api/client-fetch",
+    client: "fetch",
     pageParam: "page",
     nextPageParam: "nextPage",
     initialPageParam: "1",
   };
-  const crashLogs = () =>
-    readdirSync(process.cwd()).filter((name) =>
-      name.startsWith("openapi-ts-error-"),
-    );
 
   afterAll(async () => {
     const { rm } = await import("node:fs/promises");
@@ -169,7 +158,8 @@ describe("generate errors", () => {
   });
 
   test("a failure after client generation is still a CodegenError", async () => {
-    // `queries` is a regular file, so writing the hooks fails with ENOTDIR.
+    // `queries` is a regular file, so the directory for the hooks cannot be
+    // created.
     const output = path.join("tests", "outputs-errors");
     await mkdir(output, { recursive: true });
     await writeFile(path.join(output, "queries"), "");
@@ -187,17 +177,14 @@ describe("generate errors", () => {
     expect(error).toBeInstanceOf(CodegenError);
     expect(error).toMatchObject({
       code: ErrorCodes.generationFailed,
-      // ENOTDIR on POSIX, ENOENT on Windows.
-      cause: { code: expect.stringMatching(/^E(NOTDIR|NOENT)$/) },
+      cause: { code: "EEXIST" },
     });
   });
 
-  test("an unparsable input is INPUT_PARSE_ERROR and silent mode writes no crash log", async () => {
+  test("an unparsable input is INPUT_PARSE_ERROR", async () => {
     await writeFile(badSpec, "openapi: 3.0.0\ninfo: [broken\n");
-    const before = crashLogs();
     await expect(
       generate({ ...baseOptions, input: badSpec }, "1.0.0", { silent: true }),
     ).rejects.toMatchObject({ code: ErrorCodes.inputParseError });
-    expect(crashLogs()).toEqual(before);
   });
 });

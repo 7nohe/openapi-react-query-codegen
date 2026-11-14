@@ -1,9 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import type { LimitedUserConfig } from "../src/cli.mts";
 import { findNearestTsConfigPath, generate } from "../src/generate.mjs";
 
@@ -19,13 +25,12 @@ describe("generate", () => {
     const options: LimitedUserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", "outputs"),
-      client: "@hey-api/client-fetch",
+      client: "fetch",
       lint: "biome",
       format: "biome",
       pageParam: "page",
       nextPageParam: "meta.next",
       initialPageParam: "initial",
-      operationId: true,
     };
     await generate(options, "1.0.0");
   }, 60000);
@@ -84,10 +89,9 @@ describe("generate - axios client with enums, noOperationId, schemaType", () => 
     const options: LimitedUserConfig = {
       input: path.join(__dirname, "inputs", "petstore.yaml"),
       output: path.join("tests", outputDir),
-      client: "@hey-api/client-axios",
+      client: "axios",
       enums: "javascript",
       noOperationId: true,
-      schemaType: "json",
       pageParam: "page",
       nextPageParam: "meta.next",
       initialPageParam: "initial",
@@ -106,88 +110,88 @@ describe("generate - axios client with enums, noOperationId, schemaType", () => 
   });
 });
 
-describe("generate - noSchemas option", () => {
-  const outputDir = "outputs-generate-noschemas";
-  const readNoSchemasOutput = (fileName: string) => {
-    return readFileSync(
-      path.join(__dirname, outputDir, "queries", fileName),
-      "utf-8",
+describe("generate - optional request files", () => {
+  const outputDir = "outputs-generate-optional";
+  const requests = (name: string, fileName: string) =>
+    path.join(__dirname, outputDir, name, "requests", fileName);
+  const run = (name: string, options: Partial<LimitedUserConfig>) =>
+    generate(
+      {
+        input: path.join(__dirname, "inputs", "dates.yaml"),
+        output: path.join("tests", outputDir, name),
+        pageParam: "page",
+        nextPageParam: "nextPage",
+        initialPageParam: "1",
+        ...options,
+      },
+      "1.0.0",
     );
-  };
-
-  beforeAll(async () => {
-    const options: LimitedUserConfig = {
-      input: path.join(__dirname, "inputs", "petstore.yaml"),
-      output: path.join("tests", outputDir),
-      client: "@hey-api/client-fetch",
-      noSchemas: true,
-      pageParam: "page",
-      nextPageParam: "meta.next",
-      initialPageParam: "initial",
-    };
-    await generate(options, "1.0.0");
-  });
 
   afterAll(async () => {
-    if (existsSync(path.join(__dirname, outputDir))) {
-      await rm(path.join(__dirname, outputDir), { recursive: true });
-    }
+    await rm(path.join(__dirname, outputDir), { recursive: true, force: true });
   });
 
-  test("queries.ts", () => {
-    expect(readNoSchemasOutput("queries.ts")).toMatchSnapshot();
-  });
-});
-
-describe("generate - useDateType", () => {
-  const outputDir = "outputs-generate-dates";
-  const readDateOutput = (fileName: string) =>
-    readFileSync(
-      path.join(__dirname, outputDir, "requests", fileName),
+  test("JSON schemas by default, and no transformers", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await run("default", {});
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+    const schemas = await readFile(
+      requests("default", "schemas.gen.ts"),
       "utf-8",
     );
-
-  beforeAll(async () => {
-    const options: LimitedUserConfig = {
-      input: path.join(__dirname, "inputs", "dates.yaml"),
-      output: path.join("tests", outputDir),
-      client: "@hey-api/client-fetch",
-      useDateType: true,
-      pageParam: "page",
-      nextPageParam: "nextPage",
-      initialPageParam: "1",
-    };
-    await generate(options, "1.0.0");
+    expect(schemas).toContain("export const EventSchema = {");
+    expect(existsSync(requests("default", "transformers.gen.ts"))).toBe(false);
   });
 
-  afterAll(async () => {
-    if (existsSync(path.join(__dirname, outputDir))) {
-      await rm(path.join(__dirname, outputDir), { recursive: true });
-    }
+  test("--schemaType form leaves the documentation out", async () => {
+    await run("form", {
+      input: path.join(__dirname, "inputs", "features.yaml"),
+      schemaType: "form",
+    });
+    await run("json", {
+      input: path.join(__dirname, "inputs", "features.yaml"),
+      schemaType: "json",
+    });
+    expect(
+      await readFile(requests("json", "schemas.gen.ts"), "utf-8"),
+    ).toContain('description: "A stored item"');
+    expect(
+      await readFile(requests("form", "schemas.gen.ts"), "utf-8"),
+    ).not.toContain("description:");
   });
 
-  test("uses Date in generated model types", () => {
-    expect(readDateOutput("types.gen.ts")).toContain("createdAt: Date");
-  });
-
-  test("wires the runtime date transformer into the SDK", async () => {
-    const transformer = readDateOutput("transformers.gen.ts");
-    expect(transformer).toContain("new Date");
-    expect(transformer).toContain("createdAt");
-
-    const sdk = readDateOutput("sdk.gen.ts");
-    expect(sdk).toContain("listEventsResponseTransformer");
-    expect(sdk).toContain("responseTransformer: listEventsResponseTransformer");
-
-    const transformerModule = await import(
-      pathToFileURL(
-        path.join(__dirname, outputDir, "requests", "transformers.gen.ts"),
-      ).href
+  test("--noSchemas and --useDateType", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await run("dates", { noSchemas: true, useDateType: true });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain(
+      "--useDateType: the dates in these schemas stay strings",
     );
-    const transformed = await transformerModule.listEventsResponseTransformer([
-      { createdAt: "2026-07-20T00:00:00.000Z" },
-    ]);
-    expect(transformed[0].createdAt).toBeInstanceOf(Date);
+    warn.mockRestore();
+    // `--json` and `--check` keep stderr to themselves.
+    const silenced = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await generate(
+      {
+        input: path.join(__dirname, "inputs", "dates.yaml"),
+        output: path.join("tests", outputDir, "silent"),
+        useDateType: true,
+        pageParam: "page",
+        nextPageParam: "nextPage",
+        initialPageParam: "1",
+      },
+      "1.0.0",
+      { silent: true },
+    );
+    expect(silenced).not.toHaveBeenCalled();
+    silenced.mockRestore();
+    expect(existsSync(requests("dates", "schemas.gen.ts"))).toBe(false);
+    expect(
+      await readFile(requests("dates", "transformers.gen.ts"), "utf-8"),
+    ).toContain("export const listEventsResponseTransformer");
+    expect(await readFile(requests("dates", "sdk.gen.ts"), "utf-8")).toContain(
+      "responseTransformer: listEventsResponseTransformer",
+    );
   });
 });
 
@@ -238,6 +242,19 @@ describe("generate - import extension follows the caller's tsconfig", () => {
   const readGenerated = async (outputDir: string, fileName: string) =>
     readFile(path.join(outputDir, "requests", fileName), "utf-8");
 
+  /** Every relative module specifier in the generated queries directory. */
+  const queriesSpecifiers = async (outputDir: string) => {
+    const dir = path.join(outputDir, "queries");
+    const specifiers = new Set<string>();
+    for (const name of await readdir(dir)) {
+      const content = await readFile(path.join(dir, name), "utf-8");
+      for (const match of content.matchAll(/from "(\.[^"]*)"/g)) {
+        specifiers.add(match[1]);
+      }
+    }
+    return [...specifiers].sort();
+  };
+
   const runInFixture = async (moduleResolution: string) => {
     const fixtureDir = await mkdtemp(
       path.join(tmpdir(), "openapi-rq-generate-"),
@@ -255,7 +272,7 @@ describe("generate - import extension follows the caller's tsconfig", () => {
           // `generate()` joins this against `process.cwd()` internally, so
           // it must be relative (matching how the CLI is always invoked).
           output: "output",
-          client: "@hey-api/client-fetch",
+          client: "fetch",
           pageParam: "page",
           nextPageParam: "meta.next",
           initialPageParam: "initial",
@@ -273,11 +290,18 @@ describe("generate - import extension follows the caller's tsconfig", () => {
     try {
       const sdkGen = await readGenerated(outputDir, "sdk.gen.ts");
       const shim = await readGenerated(outputDir, "services.gen.ts");
-      expect(sdkGen).toContain("from './client.gen'");
-      expect(sdkGen).not.toContain("from './client.gen.js'");
+      expect(sdkGen).toContain('from "./client.gen"');
+      expect(sdkGen).not.toContain('from "./client.gen.js"');
       expect(shim).toBe(
-        "// This file is auto-generated for backward compatibility\nexport * from './client.gen';\nexport * from './sdk.gen';\n",
+        '// This file is auto-generated for backward compatibility\nexport * from "./client.gen";\nexport * from "./sdk.gen";\n',
       );
+      expect(await queriesSpecifiers(outputDir)).toEqual([
+        "../requests/sdk.gen",
+        "../requests/types.gen",
+        "./common",
+        "./queries",
+        "./queryOptions",
+      ]);
     } finally {
       await rm(fixtureDir, { recursive: true, force: true });
     }
@@ -288,10 +312,18 @@ describe("generate - import extension follows the caller's tsconfig", () => {
     try {
       const sdkGen = await readGenerated(outputDir, "sdk.gen.ts");
       const shim = await readGenerated(outputDir, "services.gen.ts");
-      expect(sdkGen).toContain("from './client.gen.js'");
+      expect(sdkGen).toContain('from "./client.gen.js"');
       expect(shim).toBe(
-        "// This file is auto-generated for backward compatibility\nexport * from './client.gen.js';\nexport * from './sdk.gen.js';\n",
+        '// This file is auto-generated for backward compatibility\nexport * from "./client.gen.js";\nexport * from "./sdk.gen.js";\n',
       );
+      // The queries import the requests, so they follow the same rule.
+      expect(await queriesSpecifiers(outputDir)).toEqual([
+        "../requests/sdk.gen.js",
+        "../requests/types.gen.js",
+        "./common.js",
+        "./queries.js",
+        "./queryOptions.js",
+      ]);
     } finally {
       await rm(fixtureDir, { recursive: true, force: true });
     }

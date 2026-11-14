@@ -1,0 +1,330 @@
+openapi: 3.1.0
+info:
+  title: Feature coverage
+  version: 1.0.0
+servers:
+  - url: "{scheme}://api.example.com/{basePath}"
+    variables:
+      scheme:
+        default: https
+      basePath:
+        default: v1
+security:
+  - bearerAuth: []
+paths:
+  /items:
+    get:
+      operationId: listItems
+      summary: List items
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: ids
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: false
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          style: pipeDelimited
+          explode: false
+        - name: filter
+          in: query
+          schema:
+            type: object
+            properties:
+              color:
+                type: string
+              size:
+                type: integer
+          style: form
+          explode: true
+        - name: X-Trace-Id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: session
+          in: cookie
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of items
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Item"
+                  nextPage:
+                    type: [integer, "null"]
+        "4XX":
+          $ref: "#/components/responses/ClientError"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+    post:
+      operationId: createItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewItem"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      description: Fetch one item
+      operationId: getItem
+      responses:
+        "200":
+          description: The item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+    put:
+      operationId: replaceItem
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/NewItem"
+      responses:
+        "204":
+          description: Replaced
+    delete:
+      operationId: deleteItem
+      deprecated: true
+      security: []
+      responses:
+        "204":
+          description: Deleted
+  /items/{itemId}/image:
+    put:
+      operationId: uploadImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                caption:
+                  type: string
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ok
+    get:
+      operationId: downloadImage
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+  /status:
+    get:
+      operationId: getStatus
+      security:
+        - apiKeyAuth: []
+        - basicAuth: []
+      responses:
+        "200":
+          description: Plain text
+          content:
+            text/plain:
+              schema:
+                type: string
+  /notes:
+    post:
+      operationId: addNote
+      requestBody:
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: ok
+  /events:
+    get:
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                prefixItems:
+                  - type: string
+                  - type: integer
+                items: false
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    basicAuth:
+      type: http
+      scheme: basic
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+  responses:
+    ClientError:
+      description: Client error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    Item:
+      description: A stored item
+      allOf:
+        - $ref: "#/components/schemas/NewItem"
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+              readOnly: true
+    NewItem:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/Status"
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        price:
+          type: [number, "null"]
+        parent:
+          oneOf:
+            - $ref: "#/components/schemas/Item"
+            - type: "null"
+        kind:
+          anyOf:
+            - type: string
+              enum: [a, b]
+            - type: integer
+        legacy:
+          type: string
+          deprecated: true
+          description: Use name instead
+        "weird-key":
+          const: fixed
+    Status:
+      type: string
+      enum: [active, "in-progress", archived]
+    Priority:
+      type: integer
+      enum: [1, 2, 3]
+    Problem:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
+    Tree:
+      type: object
+      properties:
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tree"
+    "my-odd schema":
+      type: object
+      properties:
+        any: {}
+    Empty:
+      type: object
+    Loose: {}
+    Grid:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        type: array
+        minItems: 2
+        maxItems: 2
+        items:
+          type: integer
+    Pair:
+      type: array
+      prefixItems:
+        - type: string
+        - type: number
+      items:
+        type: boolean

@@ -23,11 +23,6 @@ updates:
     # still open for them: handle each alert by bumping the pin or override by
     # hand.
     ignore:
-      # @hey-api/openapi-ts is exact-pinned and patched through
-      # pnpm.patchedDependencies, so each bump needs the type patches recreated
-      # by hand, and the other @hey-api packages move with it. See the hey-api
-      # version policy in docs/src/content/docs/contributing.md.
-      - dependency-name: "@hey-api/*"
       # The examples' mock server. 5.16.0 of its internal packages adds
       # @scarf/scarf, a telemetry dependency with an install script. Every
       # prism-cli release takes them with a caret range, so any prism-cli
@@ -40,8 +35,9 @@ updates:
       - dependency-name: "cross-spawn"
       - dependency-name: "form-data"
       - dependency-name: "postcss"
+      - dependency-name: "yaml"
       # The workspace mixes TypeScript 5 (docs/, examples/) and 6 (the root
-      # library, which ts-morph 28 needs). Dependabot updates them as one
+      # library). Dependabot updates them as one
       # dependency and has rewritten the root's `^6.0.3` down to `^5.9.3`
       # (#254). docs/ builds with `astro check`, which rejects TypeScript 7.
       # Bump TypeScript by hand in each package.

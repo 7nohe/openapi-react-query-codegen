@@ -4,10 +4,20 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runCli } from "./runCli.mjs";
 
+/**
+ * `fetch` and `axios` select the generated HTTP client. The `@hey-api/*`
+ * spellings are accepted as deprecated aliases for v3 command lines.
+ */
+export type ClientChoice =
+  | "fetch"
+  | "axios"
+  | "@hey-api/client-fetch"
+  | "@hey-api/client-axios";
+
 export type LimitedUserConfig = {
   input: string;
   output: string;
-  client?: "@hey-api/client-fetch" | "@hey-api/client-axios";
+  client?: ClientChoice;
   format?: "biome" | "prettier";
   lint?: "biome" | "eslint";
   noOperationId?: boolean;
@@ -20,6 +30,8 @@ export type LimitedUserConfig = {
   nextPageParam: string;
   initialPageParam: string | number;
   omitInitialPageParam?: boolean;
+  /** `--agentsMd`: the file to keep the agent guide in, or `true` for `AGENTS.md`. */
+  agentsMd?: string | boolean;
 };
 
 async function main() {

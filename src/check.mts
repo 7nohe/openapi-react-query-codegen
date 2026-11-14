@@ -2,6 +2,7 @@ import { existsSync, statSync } from "node:fs";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { agentsFilePath, checkAgentsBlock } from "./agentsMd.mjs";
 import type { LimitedUserConfig } from "./cli.mjs";
 import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
 import { CodegenError, ErrorCodes, toCodegenError } from "./errors.mjs";
@@ -174,9 +175,13 @@ async function runCheck(
     options.output,
   );
   try {
-    await generate({ ...options, output: scratchOutput }, version, {
-      silent: true,
-    });
+    // The agent guide is not part of the output directory: it is compared
+    // below, against the file the real run would write.
+    await generate(
+      { ...options, output: scratchOutput, agentsMd: undefined },
+      version,
+      { silent: true },
+    );
     const changesPerDir = await Promise.all(
       checkedSubdirectories.map((subdirectory) =>
         diffDirectories({
@@ -190,7 +195,12 @@ async function runCheck(
         }),
       ),
     );
-    const files = changesPerDir.flat().sort(byPath);
+    const guide = options.agentsMd
+      ? await checkAgentsBlock(agentsFilePath(options.agentsMd), options.output)
+      : undefined;
+    const files = [...changesPerDir.flat(), ...(guide ? [guide] : [])].sort(
+      byPath,
+    );
     return { upToDate: files.length === 0, files };
   } finally {
     await rm(scratchRoot, { recursive: true, force: true });

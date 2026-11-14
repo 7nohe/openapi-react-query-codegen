@@ -10,24 +10,7 @@ import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 /** @type {Map<string, string>} advisory ID -> why it is accepted for now */
-export const KNOWN = new Map([
-  [
-    "GHSA-52cp-r559-cp3m",
-    "js-yaml 4.2.0 is pinned by @hey-api/json-schema-ref-parser; removed by the v4 client generator",
-  ],
-  [
-    "GHSA-5p4m-2wfm-xmqj",
-    "js-yaml 4.2.0 is pinned by @hey-api/json-schema-ref-parser; removed by the v4 client generator",
-  ],
-  [
-    "GHSA-2883-xcg3-v3hh",
-    "js-yaml 4.2.0 is pinned by @hey-api/json-schema-ref-parser; removed by the v4 client generator",
-  ],
-  [
-    "GHSA-g3hv-75wg-m249",
-    "minimatch comes through the ts-morph peer; no fixed 9.x or 10.x release",
-  ],
-]);
+export const KNOWN = new Map();
 
 const FAILING_SEVERITIES = new Set(["high", "critical"]);
 
@@ -49,24 +32,26 @@ export function assertAuditReport(report) {
 
 /**
  * @param {{ vulnerabilities?: Record<string, { via: (string | Record<string, any>)[] }> }} report
+ * @param {Map<string, string>} [known]
  */
-export function reviewAudit(report) {
-  /** @type {Map<string, { id: string, name: string, severity: string, title: string, range: string, known: boolean, failing: boolean }>} */
+export function reviewAudit(report, known = KNOWN) {
+  /** @type {Map<string, { id: string, name: string, severity: string, title: string, range: string, reason: string | undefined, failing: boolean }>} */
   const advisories = new Map();
   for (const entry of Object.values(report.vulnerabilities ?? {})) {
     for (const via of entry.via) {
       if (typeof via !== "object" || !via.url) continue;
       const id = String(via.url).split("/").pop();
       if (!id || advisories.has(id)) continue;
-      const known = KNOWN.has(id);
+      const reason = known.get(id);
       advisories.set(id, {
         id,
         name: via.name,
         severity: via.severity,
         title: via.title,
         range: via.range,
-        known,
-        failing: FAILING_SEVERITIES.has(via.severity) && !known,
+        // Why the advisory is accepted for now, if it is.
+        reason,
+        failing: FAILING_SEVERITIES.has(via.severity) && reason === undefined,
       });
     }
   }
@@ -90,8 +75,8 @@ export function formatSummary(advisories) {
     for (const a of advisories) {
       const status = a.failing
         ? "❌ new"
-        : a.known
-          ? `known: ${KNOWN.get(a.id)}`
+        : a.reason !== undefined
+          ? `known: ${a.reason}`
           : "below high";
       lines.push(
         `| [${a.id}](https://github.com/advisories/${a.id}) | \`${a.name}\` ${a.range} | ${a.severity} | ${status} |`,

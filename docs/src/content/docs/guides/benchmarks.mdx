@@ -1,0 +1,159 @@
+---
+title: Benchmarks
+description: How the generator compares with other OpenAPI to TanStack Query generators in speed, install size and type correctness, and what a coding agent spends using its output.
+---
+
+import BarChart from "../../../components/BarChart.astro";
+import {
+  addedPackages,
+  agentRuns,
+  environment,
+  generationSeconds,
+  operations,
+  ownVersion,
+  specs,
+  typeErrors,
+  versions,
+} from "../../../data/benchmarks";
+
+export const number = (value) => Math.round(value).toLocaleString("en-US");
+export const sonnet = {
+  without: agentRuns("claude-sonnet-5-5", "baseline"),
+  guided: agentRuns("claude-sonnet-5-5", "agents-md"),
+};
+export const haiku = {
+  without: agentRuns("claude-haiku-5-5", "baseline"),
+  guided: agentRuns("claude-haiku-5-5", "agents-md"),
+};
+
+These numbers come from the scripts in [`benchmarks/`](https://github.com/7nohe/openapi-react-query-codegen/tree/main/benchmarks) of the repository. Every tool was set up to produce TanStack Query v5 code on a fetch client and otherwise left at its defaults.
+
+## What was measured
+
+- **When and where**: {environment.date}, Node.js {environment.node.replace("v", "")}, {environment.cpu}. Packages released in the seven days before the run were not installed.
+- **Specifications**: Petstore ({operations("petstore")} operations), the Stripe API ({operations("stripe")}) and the GitHub REST API ({number(operations("github"))}).
+- **Versions**:
+
+<ul>
+  {versions.map((tool) => (
+    <li>
+      {tool.name}: {tool.versions}
+    </li>
+  ))}
+</ul>
+
+Orval was run in its default single-file mode. `openapi-typescript` generates types only; its hooks are typed at the call site by `openapi-react-query`.
+
+## Generation time
+
+Median wall-clock time of the command line tool over five runs, after one warm-up run. On a small specification most of it is the start of the process.
+
+<BarChart
+  caption={`GitHub REST API (${number(operations("github"))} operations)`}
+  rows={generationSeconds("github")}
+  unit="s"
+/>
+
+<BarChart
+  caption={`Stripe API (${operations("stripe")} operations)`}
+  rows={generationSeconds("stripe")}
+  unit="s"
+/>
+
+<BarChart
+  caption={`Petstore (${operations("petstore")} operations)`}
+  rows={generationSeconds("petstore")}
+  unit="s"
+/>
+
+## Install size
+
+What installing the generator adds to a project that already has React, TanStack Query and TypeScript.
+
+<BarChart caption="Packages added" rows={addedPackages} unit="packages" digits={0} />
+
+## Type errors in the output
+
+`tsc --noEmit` over the generated directory with `strict` on, TypeScript 7.
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      {Object.values(specs).map((name) => (
+        <th>{name}</th>
+      ))}
+    </tr>
+  </thead>
+  <tbody>
+    {versions.map((tool, index) => (
+      <tr>
+        <td>{tool.name}</td>
+        {Object.keys(specs).map((spec) => (
+          <td>{typeErrors(spec)[index].value}</td>
+        ))}
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+`@hey-api/openapi-ts` 0.99.0 does not run in a project with TypeScript 7, and `openapi-typescript` 7.13.0 declares TypeScript 5 as its peer, so each was run with the newest TypeScript it accepts. Their output was then checked with TypeScript 7 like the rest.
+
+## Coding agents
+
+The generated files are large: for the GitHub API, `queries.ts` alone is 1.5 MB. We gave Claude Code five small tasks in a project with that client ("write a component that lists a repository's open issues", and the like), ten runs per model and setup, and counted what it took.
+
+<table>
+  <thead>
+    <tr>
+      <th>Model</th>
+      <th>Setup</th>
+      <th>Passed</th>
+      <th>Tokens sent to the model</th>
+      <th>Turns</th>
+    </tr>
+  </thead>
+  <tbody>
+    {[
+      ["Sonnet 5.5", "nothing added", sonnet.without],
+      ["Sonnet 5.5", "--agentsMd", sonnet.guided],
+      ["Haiku 5.5", "nothing added", haiku.without],
+      ["Haiku 5.5", "--agentsMd", haiku.guided],
+    ].map(([model, setup, runs]) => (
+      <tr>
+        <td>{model}</td>
+        <td>{setup === "--agentsMd" ? <code>--agentsMd</code> : setup}</td>
+        <td>
+          {runs.passed} of {runs.runs}
+        </td>
+        <td>{number(runs.inputTokens)}</td>
+        <td>{runs.turns}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+A run passes when the component exists, uses the right hook and the project type-checks. The numbers are medians.
+
+- **An agent does not read the files whole.** It searches them, so every run passed, with or without help.
+- **[`--agentsMd`](/guides/ci-and-agents/#coding-agents-a-guide-in-your-agentsmd) saves the searching around.** With the lookup instructions in the project's `AGENTS.md`, the agent goes straight to the operation it needs.
+- **Where the instructions are matters more than what they offer.** The same guide inside the output directory changed nothing, because an agent that searches with `grep` never loads it. A lookup command, an index file and an MCP server did no better than the `grep` instructions, so the generator ships none of them.
+
+The setups that were tried and every run are in [`benchmarks/agent`](https://github.com/7nohe/openapi-react-query-codegen/tree/main/benchmarks/agent).
+
+## Reading the numbers
+
+- The tools do not generate the same thing. This library and Kubb generate hooks, `@hey-api/openapi-ts` generates options factories, and `openapi-typescript` generates types.
+- Times change from run to run by a few percent, and by more on a busy machine. Compare tools within one run.
+- Ten agent runs per setup show a direction, not a precise saving.
+
+## Running them yourself
+
+```bash
+node benchmarks/run.mjs \
+  --work /tmp/orqc-bench \
+  --spec petstore=./examples/petstore.yaml \
+  --spec github=/path/to/github.json
+```
+
+[`benchmarks/README.md`](https://github.com/7nohe/openapi-react-query-codegen/blob/main/benchmarks/README.md) describes the options.

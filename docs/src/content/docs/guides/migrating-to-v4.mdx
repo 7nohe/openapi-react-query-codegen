@@ -1,0 +1,127 @@
+---
+title: Migrating to v4
+description: Migration guide from v3 to v4 of OpenAPI React Query Codegen.
+---
+
+v4 replaces `@hey-api/openapi-ts` with a client generator that ships inside this package. The generated **hooks are unchanged** — same names, same signatures, same query keys — so for most projects migrating means updating the package, regenerating, and checking the handful of differences below.
+
+## TL;DR
+
+1. Use Node.js 24 or later to run the generator (v3 needed 22.18).
+2. Update the package and regenerate:
+
+   ```bash
+   npm install -D @7nohe/openapi-react-query-codegen@beta
+   npx openapi-rq -i ./petstore.yaml
+   ```
+
+3. If you pass `-c @hey-api/client-fetch` or `-c @hey-api/client-axios`, both still work. Prefer the new spellings `-c fetch` and `-c axios`.
+4. Delete the stale `client/` and `core/` folders from `openapi/requests` (the easiest way is to remove the whole `openapi` folder before regenerating).
+5. Everything else is compatible — you are done.
+
+## What stays the same
+
+- Every generated hook, prefetch/`ensureQueryData` function, `queryOptions` factory, key constant and key function keeps its v3 name and signature. For the same specification the generated `openapi/queries` files differ from v3 only in the order of import specifiers.
+- `client` is still exported from `openapi/requests/client.gen` (and from the `services.gen` compatibility shim) with `setConfig()` and `interceptors`.
+- SDK functions keep the `{ data, error, request, response }` result and throw the error when `throwOnError` is set. The hooks always set it, so failed requests reject (as in v3).
+- `--format`, `--lint`, `--enums`, `--noOperationId`, `--pageParam`, `--nextPageParam`, `--initialPageParam` and `--omitInitialPageParam` behave as before.
+- `--useDateType`, `--noSchemas` and `--schemaType` are still there. See [dates and JSON schemas](#dates-and-json-schemas) for the details that differ.
+
+## What changed
+
+### `openapi/requests`
+
+| v3 | v4 |
+| --- | --- |
+| `client/`, `core/` (Hey API runtime) | `runtime.gen.ts` (one file) |
+| `client.gen.ts`, `sdk.gen.ts`, `types.gen.ts`, `services.gen.ts`, `index.ts` | same names |
+| `schemas.gen.ts` (JSON schemas) | same name |
+| `transformers.gen.ts` (with `--useDateType`) | same name |
+
+Anything that imported from `openapi/requests/client` or `openapi/requests/core` needs to import from `openapi/requests/runtime.gen` instead (for example the `Config` and `Options` types).
+
+When your `tsconfig.json` resolves modules the Node way (`node16` or `nodenext`), relative imports in both `openapi/requests` and `openapi/queries` end with `.js`.
+
+### The HTTP runtimes
+
+The runtimes are small, dependency-free TypeScript files generated into your project (`axios` aside). They cover what the hooks and typical applications use:
+
+- `baseUrl` (`baseURL` for axios), `headers`, `throwOnError`, `signal` and any other `fetch` option
+- request, response and error `interceptors` (fetch) or `client.instance.interceptors` (axios)
+- `auth` for operations with `security` (bearer, basic and API keys in header, query or cookie), including schemes an operation requires together
+- `querySerializer`, `pathSerializer` and `bodySerializer`, with OpenAPI `style`/`explode` honoured per query and path parameter
+- JSON, `multipart/form-data`, `application/x-www-form-urlencoded`, text and binary request bodies; JSON, text, blob, form data and stream responses via `parseAs`
+- `responseTransformer`, called with the data of a successful response
+- With `parseAs: "auto"`, the default, XML responses are read as text instead of a `Blob`, and a response without a `Content-Type` as text instead of a stream
+
+Three behaviours differ from v3, each to follow the specification:
+
+- A query parameter whose schema is a `$ref` to an object and that has no `style` is sent in the OpenAPI default, `form` with `explode` (`role=admin`). v3 did this for inline object schemas but sent `$ref`s as `filter[role]=admin`. Specify `style: deepObject` to keep that form.
+- Path parameters with `style: label` or `style: matrix`, or an exploded object, are serialized as declared. v3 ignored both settings.
+- With `-c axios`, a JSON request body that is a string is always sent as a JSON string. v3 sent a string that happened to parse as JSON, such as `"true"`, as that JSON value.
+
+Not carried over from the Hey API clients: server-sent events, `responseStyle`, `requestValidator`/`responseValidator`, the helpers exported from `openapi/requests/client` and `openapi/requests/core` (`mergeHeaders`, `jsonBodySerializer`, `formDataBodySerializer`, `urlSearchParamsBodySerializer`, `buildClientParams`, `serializeQueryKeyValue`), and the `runtimeConfigPath` option. If you relied on them, keep calling those parts of your API through your own code.
+
+### Specification support
+
+OpenAPI 3.0 and 3.1 are supported, including external `$ref`s to files and URLs. A schema in another file is exported under its own name, as in v3. Swagger/OpenAPI 2.0 documents are rejected with an explicit error — convert them to OpenAPI 3 first.
+
+### Naming
+
+- Operations without an `operationId` are named after the method and path (`getPetsById`), as before.
+- A name that would collide with a schema or another operation's type gets a number appended on its own, instead of producing duplicate identifiers or renaming the whole operation. For example, when the specification has a `ListRunsResponse` schema and an operation `listRuns`, the schema keeps its name, `ListRunsData` / `ListRunsResponses` / `ListRunsErrors` keep theirs, and only the alias becomes `ListRunsResponse2`. The hooks keep their names.
+- Schema names are converted to PascalCase as in v3 (`account_annual_revenue` → `AccountAnnualRevenue`, `FineTuneDPOHyperparameters` → `FineTuneDpoHyperparameters`).
+- Operation names and enum members are cased as in v3, acronyms included (`getHTTPStatus` → `getHttpStatus`, `useGetHttpStatus`, `HTTPServer` → `HTTP_SERVER`).
+- A digit-leading `operationId` such as `123numericLead` yields the function `_123NumericLead` and the types `_123NumericLeadData` / `_123NumericLeadError` (v3 dropped the digits from the types only).
+
+- Some names are taken by what generated code uses, and get a suffix where v3 failed to compile: schemas such as `Options`, `Array`, `Promise`, `Omit` or `QueryClient` become `Options2`, `Array2` and so on, and operations such as `client`, `options`, `signal`, `queryClient` or `useQuery` become `client_`, `options_`, `queryClient_` and `useQuery_` (their hooks are `useClient_`, …). Schemas named `Blob` and `File` keep their names, and binary fields refer to `globalThis.Blob` and `globalThis.File`.
+
+### Stricter types
+
+A property that an `allOf` requires is now required in the generated type, wherever it is declared. v3 left it optional when the `required` list and the declaration were in different members, as in `allOf: [{ $ref: Base }, { required: [id] }]`, so code that reads it gets a narrower type and code that builds such an object has to set it.
+
+A `oneOf` or `anyOf` next to an `allOf` is now part of the type (`Base & (A | B)`). v3 dropped the union and emitted `Base`.
+
+In OpenAPI 3.1, a string with a `contentMediaType` is a file (`Blob | File`) for every media type that is not text (JSON, XML, `text/*`, form-urlencoded), unless it also has a `contentEncoding` such as `base64`, which makes it a `string`. v3 knew a fixed list of media types, so `image/png` was a `string`, and it ignored `contentEncoding` for `application/octet-stream`.
+
+### Types that are no longer generated
+
+v3 emitted a few helper types that no hook uses. They are gone in v4; if your code imports one, declare it yourself from the schema:
+
+- types for `components.parameters` (for example `Page` for a `Page` parameter) and for webhooks (`Webhooks`, `…WebhookRequest`)
+- `*Writable` aliases of schemas that have no `readOnly`/`writeOnly` property. A real request-side variant (`PetWritable`, without the `readOnly` properties) is still generated, and the type of a `readOnly` property is now `readonly` in response types.
+
+Types for `components.requestBodies` are still generated (`Pet2` and `UserArray` for the Petstore). Two details differ: an operation's `body` refers to the schema itself rather than to the request body's type, and when a request body shares its name with a schema or an operation's type, the request body is the one that gets the number.
+
+Two typing differences to be aware of: a fixed-length array (`minItems` equal to `maxItems`) is a tuple, as before, and when `prefixItems` is followed by `items` the remaining elements are typed as `...Array<T>` rather than one extra tuple member. `oneOf`/`anyOf` members with a `discriminator` are narrowed by the discriminator value unless the member already pins the property to literals; without a `mapping`, the value is the schema's name as written in the specification (`Zoo.Cat`, where v3 wrote `Zoo_Cat`). In OpenAPI 3.1, keywords next to a `$ref` (`properties`, `required`, …) now apply together with the reference, while OpenAPI 3.0 keeps ignoring them as the specification says. A `type` on its own next to a `$ref` is not applied, as in v3.
+
+### Performance
+
+Large specifications generate much faster, mostly because the hook files now import only the models they use: the 4 MB OpenAI specification (388 operations) takes about 5 seconds instead of about 30.
+
+## Dates and JSON schemas
+
+`--useDateType`, `--noSchemas` and `--schemaType` work as in v3, without the Hey API plugins they used to hand over to.
+
+### `--useDateType`
+
+`date` and `date-time` strings are typed `Date`, in responses and in what you send, and `transformers.gen.ts` turns them into `Date` objects in successful responses. Three details differ from v3:
+
+- A `oneOf`/`anyOf` is converted wherever its members can be told apart: by their shape (a date next to `null`, a number, an object or an array), or by a `discriminator`. v3 converted a union only when it was a single schema next to `null`.
+- When two members of a union are both objects, or both arrays, and no `discriminator` tells them apart, their dates stay strings, as in v3. The generator prints each such place.
+- The transformer runs on every successful response, not only on the ones read as JSON. A value that is not what the schema describes is passed on as it came.
+
+As in v3, error responses are not converted: an error body keeps its date strings although its type says `Date`.
+
+### `schemas.gen.ts`
+
+The constants have the names v3 gave them (`PetSchema`, `my_schemaSchema`, `PetWritableSchema`) and hold the schemas as the specification writes them. One detail differs: a schema that is only a `$ref` to another one (`Alias: { $ref: "#/components/schemas/Pet" }`) stays a reference where other schemas point at it. v3 rewrote those references to the target.
+
+## Dependency changes
+
+- Node.js 24 or later is required (`engines.node` is `>=24.0.0`; v3 needed 22.18). This is the version that runs `openapi-rq`. The generated code has no Node.js requirement of its own.
+- `@hey-api/openapi-ts` is no longer a dependency, so its (FSL) license no longer applies to your install.
+- `yaml` (exact-pinned, no dependencies of its own) was added to parse YAML specifications.
+- `typescript` is no longer a peer dependency, so the TypeScript version of your project cannot conflict with this package, and TypeScript 7 works. The generator reads your `tsconfig.json` itself (comments, trailing commas and `extends` included) to decide whether relative imports need `.js`, instead of using the TypeScript compiler API, which version 7 does not have. The generated code compiles with TypeScript 5.x, 6.x and 7.x.
+- `ts-morph` is no longer a peer dependency. If you installed it only for this package, you can remove it. The hook files are now printed directly, which makes generation faster on large specifications.
+- The remaining peer dependencies (`@tanstack/react-query`, `commander`) are unchanged. `axios` is needed in your project only with `-c axios`.

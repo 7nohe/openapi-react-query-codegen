@@ -60,8 +60,13 @@ export function buildProgram(
     .option("-o, --output <value>", "Output directory", defaultOutputPath)
     .addOption(
       new Option("-c, --client <value>", "HTTP client to generate")
-        .choices(["@hey-api/client-fetch", "@hey-api/client-axios"])
-        .default("@hey-api/client-fetch"),
+        .choices([
+          "fetch",
+          "axios",
+          "@hey-api/client-fetch",
+          "@hey-api/client-axios",
+        ])
+        .default("fetch"),
     )
     .addOption(
       new Option(
@@ -111,6 +116,10 @@ export function buildProgram(
     .option(
       "--omitInitialPageParam",
       "Send no initial page parameter at all (overrides --initialPageParam)",
+    )
+    .option(
+      "--agentsMd [file]",
+      "Also keep a short guide for coding agents (how to look operations up in the output) in AGENTS.md, or in the file named",
     )
     .option(
       "--check",

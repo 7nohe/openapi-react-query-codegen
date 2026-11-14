@@ -1,0 +1,97 @@
+/*
+ * The look of the site: the navy and blue of the ORQC mark, IBM Plex for text
+ * and code, and one signal colour (the green of an OpenAPI document) for the
+ * name of an operation wherever it turns up in generated code.
+ */
+
+:root {
+  --sl-font: "IBM Plex Sans Variable";
+  --sl-font-mono: "IBM Plex Mono";
+
+  /* Dark: the navy of the mark, not black. */
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #e6eef8;
+  --sl-color-gray-2: #c5d3e5;
+  --sl-color-gray-3: #8ea3be;
+  --sl-color-gray-4: #506886;
+  --sl-color-gray-5: #29415f;
+  --sl-color-gray-6: #162b47;
+  --sl-color-black: #0d2038;
+  --sl-color-accent-low: #123a66;
+  --sl-color-accent: #4f9fe8;
+  --sl-color-accent-high: #c8e1fb;
+
+  --orqc-signal: #93d66e;
+  --orqc-signal-soft: rgb(147 214 110 / 0.14);
+  --orqc-panel: #112741;
+  --orqc-panel-line: #29415f;
+  --orqc-bar: #3b5878;
+}
+
+:root[data-theme="light"] {
+  --sl-color-white: #0f2a4a;
+  --sl-color-gray-1: #17365c;
+  --sl-color-gray-2: #2a4a72;
+  --sl-color-gray-3: #51698a;
+  --sl-color-gray-4: #8497b1;
+  --sl-color-gray-5: #c4d0e0;
+  --sl-color-gray-6: #e7eef7;
+  --sl-color-gray-7: #f4f8fc;
+  --sl-color-black: #ffffff;
+  --sl-color-accent-low: #d8e9fa;
+  --sl-color-accent: #1c69b5;
+  --sl-color-accent-high: #124170;
+
+  --orqc-signal: #2f7d16;
+  --orqc-signal-soft: rgb(63 138 34 / 0.12);
+  --orqc-panel: #f4f8fc;
+  --orqc-panel-line: #c4d0e0;
+  --orqc-bar: #b9c8db;
+}
+
+/* Type: Plex is a little wide, so headings are set tight and not too heavy. */
+.sl-markdown-content :is(h1, h2, h3, h4),
+h1#_top {
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+.sl-markdown-content :is(h2, h3, h4) {
+  line-height: 1.25;
+}
+.sl-markdown-content code:not(pre code) {
+  font-size: 0.875em;
+}
+
+/* Tables carry the numbers of the benchmarks: line them up. */
+.sl-markdown-content table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The link in the nav that is the current page. */
+.sidebar-content a[aria-current="page"] {
+  font-weight: 600;
+}
+
+/*
+ * Moving between pages: the content cross-fades, the header and the sidebar
+ * stay where they are. Browsers without cross-document view transitions
+ * navigate as before.
+ */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+}
+header.header {
+  view-transition-name: site-header;
+}
+#starlight__sidebar {
+  view-transition-name: site-sidebar;
+}
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}

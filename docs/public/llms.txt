@@ -1,10 +1,10 @@
 # OpenAPI React Query Codegen
 
-> `@7nohe/openapi-react-query-codegen` is a CLI (`openapi-rq`) that generates TanStack Query v5 (React Query) hooks from an OpenAPI 2.0/3.x specification. It builds a TypeScript HTTP client with @hey-api/openapi-ts in `<output>/requests/`, then generates typed `useQuery`, `useSuspenseQuery`, `useInfiniteQuery` and `useMutation` hooks, `queryOptions` factories, `prefetchQuery` / `ensureQueryData` helpers and query key functions in `<output>/queries/`.
+> `@7nohe/openapi-react-query-codegen` is a CLI (`openapi-rq`) that generates TanStack Query v5 (React Query) hooks from an OpenAPI 3.0/3.1 specification. It generates a TypeScript HTTP client (fetch or axios) in `<output>/requests/`, then generates typed `useQuery`, `useSuspenseQuery`, `useInfiniteQuery` and `useMutation` hooks, `queryOptions` factories, `prefetchQuery` / `ensureQueryData` helpers and query key functions in `<output>/queries/`.
 
 Key facts for agents:
 
-- Install: `npm install -D @7nohe/openapi-react-query-codegen` and `npm install @tanstack/react-query`. Only the scoped package belongs to this project.
+- Install: `npm install -D @7nohe/openapi-react-query-codegen@beta` (v4 is in beta; without `@beta` npm installs v3) and `npm install @tanstack/react-query`. Only the scoped package belongs to this project.
 - Run: `openapi-rq -i ./openapi.yaml -o ./src/openapi`. Keep the flags in a package.json script and always pass the same ones.
 - Do not edit generated files. Change the spec or the flags and regenerate.
 - `--check` changes no existing file and exits 1 when the committed output is out of date, which makes it a CI drift check.
@@ -29,6 +29,7 @@ Key facts for agents:
 ## Optional
 
 - [Migrating to v3](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v3/)
+- [Migrating to v4](https://openapi-react-query-codegen.vercel.app/guides/migrating-to-v4/)
 - [Migrating from openapi-react-query](https://openapi-react-query-codegen.vercel.app/guides/migrating-from-openapi-react-query/)
 - [Contributing](https://openapi-react-query-codegen.vercel.app/contributing/)
 - [Source code](https://github.com/7nohe/openapi-react-query-codegen)

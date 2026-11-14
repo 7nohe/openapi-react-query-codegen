@@ -1,0 +1,459 @@
+import { describe, expect, test } from "vitest";
+import {
+  buildSchemaNames,
+  classifyResponses,
+  collectOperations,
+  deref,
+  schemaPrimitiveKind,
+} from "../../src/client/operations.mts";
+
+const json = (schema: unknown) => ({
+  content: { "application/json": { schema } },
+});
+
+describe("collectOperations", () => {
+  const doc = {
+    openapi: "3.1.0",
+    security: [{ bearer: [] }],
+    components: {
+      securitySchemes: {
+        bearer: { type: "http", scheme: "Bearer" },
+        oauth: { type: "oauth2" },
+        oidc: { type: "openIdConnect" },
+        key: { type: "apiKey", in: "query", name: "k" },
+        broken: {},
+      },
+      parameters: {
+        Limit: { name: "limit", in: "query", schema: { type: "integer" } },
+      },
+      requestBodies: {
+        Pet: {
+          required: true,
+          content: { "application/json": { schema: { type: "object" } } },
+        },
+      },
+      responses: { Gone: { description: "gone", ...json({ type: "string" }) } },
+      schemas: { Pet: { type: "object" } },
+    },
+    paths: {
+      "/pets/{id}": {
+        parameters: [
+          { name: "id", in: "path", schema: { type: "string" } },
+          {
+            name: "limit",
+            in: "query",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        get: {
+          operationId: "find pet by id",
+          summary: "Find",
+          parameters: [
+            { $ref: "#/components/parameters/Limit" },
+            {
+              name: "q",
+              in: "query",
+              content: { "application/json": { schema: { type: "string" } } },
+            },
+            { in: "query" },
+          ],
+          responses: {
+            "200": {
+              description: "ok",
+              ...json({ $ref: "#/components/schemas/Pet" }),
+            },
+            "404": { $ref: "#/components/responses/Gone" },
+            default: { description: "boom" },
+          },
+        },
+        post: {
+          requestBody: { $ref: "#/components/requestBodies/Pet" },
+          security: [
+            { oauth: [] },
+            { oidc: [] },
+            { key: [] },
+            { broken: [] },
+            { missing: [] },
+          ],
+          responses: { 200: { description: "ok" } },
+        },
+        delete: {
+          deprecated: true,
+          description: "Removes it",
+          requestBody: { content: {} },
+          responses: { Default: { description: "x" } },
+        },
+      },
+      "/ref": { $ref: "#/components/pathItems/Shared" },
+      "/dup": { get: { operationId: "find pet by id", responses: {} } },
+    },
+  };
+  // Path item refs are dereferenced before use.
+  (doc.components as Record<string, unknown>).pathItems = {
+    Shared: { head: { responses: {} } },
+  };
+
+  const operations = collectOperations(doc);
+  const byName = (name: string) =>
+    operations.find((op) => op.functionName === name);
+
+  test("derives names, with collision suffixes and path based fallbacks", () => {
+    expect(operations.map((op) => op.functionName)).toEqual([
+      "findPetById",
+      "postPetsById",
+      "deletePetsById",
+      "headRef",
+      "findPetById2",
+    ]);
+  });
+
+  test("merges path and operation parameters (operation wins)", () => {
+    const find = byName("findPetById");
+    expect(find?.parameters.map((p) => [p.name, p.in, p.required])).toEqual([
+      ["id", "path", true],
+      ["limit", "query", false],
+      ["q", "query", false],
+    ]);
+    expect(find?.parameters[2].schema).toEqual({ type: "string" });
+  });
+
+  test("keeps the response media type and status", () => {
+    const find = byName("findPetById");
+    expect(find?.responses.map((r) => r.status)).toEqual([
+      "200",
+      "404",
+      "default",
+    ]);
+    expect(find?.responses[0].mediaTypes).toEqual(["application/json"]);
+    expect(find?.responses[1].schema).toEqual({ type: "string" });
+    expect(byName("deletePetsById")?.responses[0].status).toBe("default");
+  });
+
+  test("resolves request bodies", () => {
+    const post = byName("postPetsById");
+    expect(post?.body).toMatchObject({ required: true, kind: "json" });
+    expect(byName("deletePetsById")?.body).toBeUndefined();
+  });
+
+  test("collects security requirements, falling back to the document", () => {
+    expect(byName("findPetById")?.security).toEqual([
+      [{ type: "http", scheme: "bearer", key: "bearer" }],
+    ]);
+    expect(byName("postPetsById")?.security).toEqual([
+      [{ type: "http", scheme: "bearer", key: "oauth" }],
+      [{ type: "http", scheme: "bearer", key: "oidc" }],
+      [{ type: "apiKey", in: "query", name: "k" }],
+    ]);
+    expect(
+      collectOperations({
+        paths: { "/x": { get: { security: [{ a: [] }, { a: [] }] } } },
+      })[0].security,
+    ).toEqual([]);
+  });
+
+  test("keeps schemes required together in one group", () => {
+    const security = collectOperations({
+      components: {
+        securitySchemes: {
+          a: { type: "apiKey", in: "header", name: "X-A" },
+          b: { type: "apiKey", in: "header", name: "X-B" },
+        },
+      },
+      paths: {
+        "/x": {
+          get: { security: [{ a: [], b: [] }, { a: [] }, { a: [] }, {}] },
+        },
+      },
+    })[0].security;
+    expect(security).toEqual([
+      [
+        { type: "apiKey", in: "header", name: "X-A" },
+        { type: "apiKey", in: "header", name: "X-B" },
+      ],
+      [{ type: "apiKey", in: "header", name: "X-A" }],
+    ]);
+  });
+
+  test("builds the JSDoc", () => {
+    expect(byName("findPetById")?.jsDoc).toBe("/**\n * Find\n */");
+    expect(byName("deletePetsById")?.jsDoc).toBe(
+      "/**\n * Removes it\n *\n * @deprecated\n */",
+    );
+    expect(byName("headRef")?.jsDoc).toBeUndefined();
+  });
+
+  test("ignores operationId when asked to", () => {
+    const names = collectOperations(doc, { useOperationId: false }).map(
+      (op) => op.functionName,
+    );
+    expect(names).toContain("getPetsById");
+  });
+
+  test("keeps type names apart from the type parameters of the hooks", () => {
+    const [op] = collectOperations({
+      paths: { "/t": { post: { operationId: "t", responses: {} } } },
+    });
+    // `TData` and `TError` inside a hook would be its own type parameters.
+    expect(op.typeNames).toEqual({
+      data: "TData2",
+      errors: "TErrors",
+      error: "TError2",
+      responses: "TResponses",
+      response: "TResponse",
+    });
+    expect(
+      [
+        ...buildSchemaNames({
+          components: { schemas: { TData: {}, TQueryKey: {}, TContext: {} } },
+        }).values(),
+      ].sort(),
+    ).toEqual(["TContext2", "TData2", "TQueryKey2"]);
+  });
+
+  test("keeps type names apart from reserved ones and each other", () => {
+    const ops = collectOperations(
+      {
+        paths: {
+          "/a": { get: { operationId: "listRuns", responses: {} } },
+          "/b": { get: { operationId: "listRuns2", responses: {} } },
+        },
+      },
+      { reservedTypeNames: ["ListRunsResponse"] },
+    );
+    // Only the colliding name is renumbered; the operation's other types keep
+    // the names users import.
+    expect(ops.map((op) => op.typeNames)).toEqual([
+      {
+        data: "ListRunsData",
+        errors: "ListRunsErrors",
+        error: "ListRunsError",
+        responses: "ListRunsResponses",
+        response: "ListRunsResponse2",
+      },
+      {
+        data: "ListRuns2Data",
+        errors: "ListRuns2Errors",
+        error: "ListRuns2Error",
+        responses: "ListRuns2Responses",
+        response: "ListRuns2Response",
+      },
+    ]);
+    expect(ops.map((op) => op.functionName)).toEqual(["listRuns", "listRuns2"]);
+  });
+
+  test("handles documents without paths", () => {
+    expect(collectOperations({})).toEqual([]);
+  });
+
+  test("detects body kinds", () => {
+    const kinds = (mediaType: string) =>
+      collectOperations({
+        paths: {
+          "/x": {
+            post: {
+              requestBody: { content: { [mediaType]: { schema: {} } } },
+              responses: {},
+            },
+          },
+        },
+      })[0].body?.kind;
+    expect(kinds("application/vnd.api+json")).toBe("json");
+    expect(kinds("multipart/form-data")).toBe("form-data");
+    expect(kinds("application/x-www-form-urlencoded")).toBe("urlencoded");
+    expect(kinds("text/csv")).toBe("text");
+    expect(kinds("application/octet-stream")).toBe("binary");
+  });
+});
+
+describe("security schemes a request cannot carry", () => {
+  const security = (requirements: unknown) =>
+    collectOperations({
+      components: {
+        securitySchemes: {
+          mtls: { type: "mutualTLS" },
+          digest: { type: "http", scheme: "digest" },
+          basic: { type: "http", scheme: "Basic" },
+          bearer: { type: "http", scheme: "bearer" },
+          oauth: { type: "oauth2" },
+        },
+      },
+      paths: { "/x": { get: { security: requirements } } },
+    })[0].security;
+
+  test("are not sent as a bearer token", () => {
+    expect(security([{ mtls: [] }, { digest: [] }])).toEqual([]);
+  });
+
+  test("leave the rest of a requirement in place", () => {
+    expect(
+      security([{ mtls: [], basic: [] }, { digest: [] }, { oauth: [] }]),
+    ).toEqual([
+      [{ type: "http", scheme: "basic" }],
+      [{ type: "http", scheme: "bearer", key: "oauth" }],
+    ]);
+  });
+
+  test("schemes that look the same keep their names, as in v3", () => {
+    const security = collectOperations({
+      components: {
+        securitySchemes: {
+          user: { type: "http", scheme: "bearer" },
+          admin: { type: "oauth2" },
+          basic: { type: "http", scheme: "basic" },
+          k1: { type: "apiKey", in: "header", name: "X-K" },
+          k2: { type: "apiKey", in: "header", name: "X-K" },
+          k3: { type: "apiKey", in: "query", name: "X-K" },
+        },
+      },
+      paths: {
+        "/x": {
+          get: {
+            security: [
+              { user: [] },
+              { admin: [] },
+              { basic: [] },
+              { k1: [] },
+              { k2: [] },
+              { k3: [] },
+            ],
+          },
+        },
+      },
+    })[0].security;
+    expect(security).toEqual([
+      [{ type: "http", scheme: "bearer", key: "user" }],
+      [{ type: "http", scheme: "bearer", key: "admin" }],
+      [{ type: "http", scheme: "basic" }],
+      [{ type: "apiKey", in: "header", name: "X-K", key: "k1" }],
+      [{ type: "apiKey", in: "header", name: "X-K", key: "k2" }],
+      [{ type: "apiKey", in: "query", name: "X-K" }],
+    ]);
+  });
+});
+
+describe("deref", () => {
+  test("follows chains and rejects dangling refs", () => {
+    const doc = { a: { $ref: "#/b" }, b: { x: 1 } };
+    expect(deref(doc, { $ref: "#/a" })).toEqual({ x: 1 });
+    expect(deref(doc, 5)).toBe(5);
+    expect(() => deref(doc, { $ref: "#/missing" })).toThrow("Unresolvable");
+  });
+});
+
+describe("classifyResponses", () => {
+  const make = (...statuses: string[]) =>
+    classifyResponses({
+      responses: statuses.map((status) => ({ status })),
+    } as never);
+
+  test("splits success and error responses", () => {
+    const { responses, errors } = make("200", "201", "404", "5XX", "default");
+    expect(responses.map((r) => r.status)).toEqual(["200", "201"]);
+    expect(errors.map((r) => r.status)).toEqual(["404", "5XX", "default"]);
+  });
+
+  test("default is the data when no 2xx response is listed", () => {
+    expect(make("default")).toEqual({
+      responses: [{ status: "default" }],
+      errors: [],
+    });
+    const { responses, errors } = make("404", "default");
+    expect(responses.map((r) => r.status)).toEqual(["default"]);
+    expect(errors.map((r) => r.status)).toEqual(["404"]);
+  });
+
+  test("ignores informational and redirect statuses", () => {
+    const { responses, errors } = make(
+      "100",
+      "200",
+      "2XX",
+      "304",
+      "3XX",
+      "4XX",
+    );
+    expect(responses.map((r) => r.status)).toEqual(["200", "2XX"]);
+    expect(errors.map((r) => r.status)).toEqual(["4XX"]);
+  });
+});
+
+describe("buildSchemaNames", () => {
+  test("deduplicates and reserves ClientOptions", () => {
+    const names = buildSchemaNames({
+      components: {
+        schemas: { ClientOptions: {}, "a-b": {}, "a b": {}, Pet: {} },
+      },
+    });
+    expect([...names.values()]).toEqual(["ClientOptions2", "AB", "AB2", "Pet"]);
+    expect(buildSchemaNames({}).size).toBe(0);
+  });
+});
+
+describe("schemaPrimitiveKind of composed schemas", () => {
+  const doc = {
+    components: {
+      schemas: { Name: { type: "string" }, Null: { type: "null" } },
+    },
+  };
+  test.each([
+    [{ anyOf: [{ type: "string" }, { type: "null" }] }, "string"],
+    [{ oneOf: [{ type: "integer" }, { type: "null" }] }, "number"],
+    [
+      {
+        anyOf: [
+          { $ref: "#/components/schemas/Name" },
+          { $ref: "#/components/schemas/Null" },
+        ],
+      },
+      "string",
+    ],
+    [{ anyOf: [{ type: "string" }, { type: "number" }] }, "other"],
+    [{ anyOf: [{ type: "null" }] }, "other"],
+    [{ allOf: [{ type: "string" }] }, "string"],
+    // The members narrow each other, and what the schema says itself.
+    [{ allOf: [{ type: "integer" }, { minimum: 1 }] }, "number"],
+    [{ type: "string", anyOf: [{ maxLength: 1 }, { pattern: "a" }] }, "string"],
+    [{ anyOf: [{ type: "string" }, { enum: [null] }] }, "string"],
+  ])("%j is %s", (schema, kind) => {
+    expect(schemaPrimitiveKind(doc, schema)).toBe(kind);
+  });
+});
+
+describe("schemaPrimitiveKind", () => {
+  const doc = {
+    components: {
+      schemas: { Id: { type: "integer" }, Name: { type: "string" } },
+    },
+    other: { type: "number" },
+  };
+  test("resolves refs and unions", () => {
+    expect(schemaPrimitiveKind(doc, { $ref: "#/components/schemas/Id" })).toBe(
+      "number",
+    );
+    expect(
+      schemaPrimitiveKind(doc, { $ref: "#/components/schemas/Name" }),
+    ).toBe("string");
+    expect(schemaPrimitiveKind(doc, { $ref: "#/other" })).toBe("number");
+    expect(schemaPrimitiveKind(doc, { type: ["string", "null"] })).toBe(
+      "string",
+    );
+    expect(schemaPrimitiveKind(doc, { enum: ["a", "b"] })).toBe("string");
+    expect(schemaPrimitiveKind(doc, { enum: [1, 2, null] })).toBe("number");
+    expect(schemaPrimitiveKind(doc, { enum: [1, "a"] })).toBe("other");
+    expect(schemaPrimitiveKind(doc, { enum: [true] })).toBe("other");
+    expect(schemaPrimitiveKind(doc, { type: "object" })).toBe("other");
+    expect(schemaPrimitiveKind(doc, { type: ["string", "number"] })).toBe(
+      "other",
+    );
+    expect(schemaPrimitiveKind(doc, undefined)).toBe("other");
+    expect(
+      schemaPrimitiveKind(doc, { $ref: "#/components/schemas/Nope" }),
+    ).toBe("other");
+  });
+
+  test("gives up on reference cycles", () => {
+    expect(schemaPrimitiveKind({ a: { $ref: "#/a" } }, { $ref: "#/a" })).toBe(
+      "other",
+    );
+  });
+});

@@ -3,9 +3,10 @@ info:
   version: 1.0.0
   title: Digit-leading operationId
   description: >
-    Regression spec for #213. hey-api names the SDK function `_123NumericLead`
-    (identifiers cannot start with a digit) but names the Data type
-    `NumericLeadData` (digits are dropped), so the two names diverge.
+    Regression spec for #213. The SDK function for a digit-leading operationId
+    is prefixed (`_123NumericLead`, identifiers cannot start with a digit); the
+    hook generators must read the Data type name from the generator's output
+    instead of re-deriving it, so the two names can never diverge.
 paths:
   /d:
     get:
