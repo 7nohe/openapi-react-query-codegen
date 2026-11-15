@@ -1,8 +1,10 @@
 import { satteri } from "@astrojs/markdown-satteri";
+import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlightLlmsTxt from "starlight-llms-txt";
+import { lastModified } from "./src/lastModified.mjs";
 
 const site = "https://orqc.7nohe.dev";
 const ogUrl = new URL("og.jpg", site).href;
@@ -37,6 +39,14 @@ export default defineConfig({
     processor: satteri({ features: { smartPunctuation: false } }),
   },
   integrations: [
+    // Starlight adds the sitemap itself unless one is already here. This one
+    // also says when each page last changed.
+    sitemap({
+      serialize(item) {
+        const lastmod = lastModified(new URL(item.url).pathname);
+        return lastmod ? { ...item, lastmod } : item;
+      },
+    }),
     starlight({
       title: "OpenAPI React Query Codegen",
       routeMiddleware: "./src/routeData.ts",
@@ -61,11 +71,12 @@ export default defineConfig({
             {
               label: "Getting started and usage",
               description:
-                "install, first run, the generated layout, using the generated hooks and queryOptions factories, every CLI option, mock data and MSW handlers, CI checks, coding agents and the FAQ",
+                "install, first run, the generated layout, using the generated hooks and queryOptions factories, every CLI option, configuring the client (base URL, tokens, interceptors), mock data and MSW handlers, CI checks, coding agents and the FAQ",
               paths: [
                 "guides/introduction",
                 "guides/usage",
                 "guides/cli-options",
+                "guides/client",
                 "guides/mocking",
                 "guides/ci-and-agents",
                 "guides/faq",
@@ -95,6 +106,7 @@ export default defineConfig({
             "guides/introduction",
             "guides/usage",
             "guides/cli-options",
+            "guides/client",
             "guides/mocking",
             "guides/ci-and-agents",
             "guides/faq",
@@ -138,6 +150,7 @@ export default defineConfig({
             { slug: "guides/introduction" },
             { slug: "guides/usage" },
             { slug: "guides/cli-options" },
+            { slug: "guides/client" },
             { slug: "guides/mocking" },
             { slug: "guides/ci-and-agents" },
             { slug: "guides/comparison" },

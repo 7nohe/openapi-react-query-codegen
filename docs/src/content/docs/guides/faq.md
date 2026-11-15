@@ -80,7 +80,7 @@ client.interceptors.request.use((request) => {
 });
 ```
 
-With the axios client the option is `baseURL`, and interceptors are registered on the axios instance: `client.instance.interceptors.request.use(...)`.
+With the axios client the option is `baseURL`, and interceptors are registered on the axios instance: `client.instance.interceptors.request.use(...)`. See [Configuring the Client](/guides/client/) for cookies, response and error interceptors, and options for one request.
 
 ### How are error responses handled?
 
