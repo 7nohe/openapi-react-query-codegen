@@ -80,7 +80,7 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 
 ## How it compares
 
-Built only for React and TanStack Query v5: every operation gets its hooks, suspense hooks, `queryOptions` factory, prefetch and `ensureQueryData` functions from one command, with no configuration file. The [Comparison](https://orqc.7nohe.dev/guides/comparison/) page has the details and when another tool fits better.
+Built only for React and TanStack Query v5: one command, with no configuration file, gives every GET operation a query hook, a suspense hook, a `queryOptions` factory, a prefetch function and an `ensureQueryData` function, and every other operation a mutation hook. The [Comparison](https://orqc.7nohe.dev/guides/comparison/) page has the details and when another tool fits better.
 
 |  | This library | Orval | Kubb | Hey API | openapi-react-query |
 |---|---|---|---|---|---|
