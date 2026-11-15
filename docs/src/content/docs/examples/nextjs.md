@@ -15,7 +15,7 @@ The command writes the client to `openapi/requests/` and the TanStack Query code
 
 ## Configure the client and the provider
 
-Set the base URL once, in a module that both the server and the browser load:
+Set the base URL in one module:
 
 ```ts
 // fetchClient.ts
@@ -25,6 +25,8 @@ client.setConfig({
   baseUrl: "http://localhost:4010",
 });
 ```
+
+Next.js bundles Server Components and Client Components separately, so each side has its own copy of the generated client. Import this module on both: in the provider below for the browser, and in every Server Component that prefetches. A Server Component that leaves it out sends its request to the server URL written in the specification.
 
 The `QueryClientProvider` needs a Client Component. Create one `QueryClient` per request on the server and keep a single one in the browser:
 
@@ -76,6 +78,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import "../fetchClient";
 import { prefetchUseFindPets } from "../openapi/queries/prefetch";
 import Pets from "./components/Pets";
 
@@ -117,7 +120,7 @@ export default function Pets() {
 }
 ```
 
-Pass the hook the same options as the prefetch function. The query key is built from them, so different options are a different cache entry and the browser fetches again.
+Pass the hook the same options as the prefetch function, and no query key of your own as its second argument. The query key is built from both, so anything different is a different cache entry and the browser fetches again.
 
 ## Infinite queries
 
@@ -130,6 +133,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import "../../fetchClient";
 import { prefetchUseFindPaginatedPetsInfinite } from "../../openapi/queries/prefetch";
 import PaginatedPets from "../components/PaginatedPets";
 
@@ -176,7 +180,7 @@ export default function PaginatedPets() {
 }
 ```
 
-Which operations count as paginated is decided by [`--pageParam` and `--nextPageParam`](/guides/cli-options/#--pageparam-value). See [Usage](/guides/usage/#using-the-generated-useinfinitequery-hooks) for the details.
+An operation is paginated when it has the query parameter named by [`--pageParam`](/guides/cli-options/#--pageparam-value). See [Usage](/guides/usage/#using-the-generated-useinfinitequery-hooks) for the details.
 
 ## Run the example
 

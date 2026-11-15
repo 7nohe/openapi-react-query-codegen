@@ -22,7 +22,7 @@ This page was checked on 2026-11-15 against the documentation of Orval 8.48.0, K
 | Hooks per operation | Yes, always | Yes | With `hooks: true` | Not in the documented output | No generated code: `$api.useQuery("get", "/pets")` |
 | `queryOptions` factories | Yes | Yes (`getXxxQueryOptions`) | Yes, the default output | Yes, the default output | `$api.queryOptions(...)` |
 | Suspense hooks | Yes | With `useSuspenseQuery` | With `suspense` | No | `$api.useSuspenseQuery` |
-| Infinite queries | Found by `--pageParam` and `--nextPageParam` | `useInfinite` and `useInfiniteQueryParam` | `infinite` option | Found by pagination keywords | At the call site |
+| Infinite queries | Found by the `--pageParam` query parameter | `useInfinite` and `useInfiniteQueryParam` | `infinite` option | Found by pagination keywords | At the call site |
 | Prefetch and `ensureQueryData` functions | Yes, per operation | Prefetch with `usePrefetch` | No | No | No |
 | Query key functions | Yes | Yes | Yes | Yes | No, the key is `[method, path, params]` |
 | Frameworks | React | React, Vue, Svelte, Solid, Angular | React, Vue | React, Vue, Svelte, Solid, Angular, Preact | React |

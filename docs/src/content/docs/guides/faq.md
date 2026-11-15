@@ -88,7 +88,7 @@ The generated hooks reject on an error response, so `error` and `isError` are se
 
 ### How do infinite queries get generated?
 
-An operation gets `useXxxInfinite` when it has a query parameter with the name given by `--pageParam` (default `page`) and its response has the property given by `--nextPageParam` (default `nextPage`, dot notation for nested values). See [Usage](/guides/usage/#using-the-generated-useinfinitequery-hooks).
+A GET operation gets `useXxxInfinite` when it has a query parameter with the name given by `--pageParam` (default `page`). `--nextPageParam` (default `nextPage`, dot notation for nested values) is the response property the generated `getNextPageParam` reads; when your API signals the next page differently, pass your own `getNextPageParam` to the hook. See [Usage](/guides/usage/#using-the-generated-useinfinitequery-hooks).
 
 ### Does it work with Next.js App Router and other SSR frameworks?
 

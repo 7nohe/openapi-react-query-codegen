@@ -3,6 +3,7 @@ import {
   HydrationBoundary,
   QueryClient,
 } from "@tanstack/react-query";
+import "../../fetchClient";
 import { prefetchUseFindPaginatedPetsInfinite } from "../../openapi/queries/prefetch";
 import PaginatedPets from "../components/PaginatedPets";
 

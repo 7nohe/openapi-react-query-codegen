@@ -98,7 +98,7 @@ export default function Index({ loaderData }: Route.ComponentProps) {
 }
 ```
 
-Pass the hook the same options as the prefetch function. The query key is built from them, so different options are a different cache entry and the browser fetches again.
+Pass the hook the same options as the prefetch function, and no query key of your own as its second argument. The query key is built from both, so anything different is a different cache entry and the browser fetches again.
 
 ## Mutation and invalidation
 

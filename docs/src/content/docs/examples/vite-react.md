@@ -114,7 +114,7 @@ To cancel a mutation, pass an `AbortSignal` next to the body: `addPet({ body, si
 
 ## Suspense
 
-The suspense hooks are in `openapi/queries/suspense`. `data` is never `undefined` there, and an error is thrown to the nearest error boundary:
+The suspense hooks are in `openapi/queries/suspense`. `data` is never `undefined` there. An error is thrown to the nearest error boundary when there is no data to show; if a refetch fails while data is cached, the component keeps rendering that data:
 
 ```tsx
 import { Suspense } from "react";
