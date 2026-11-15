@@ -20,7 +20,8 @@ function git(...args) {
 // the date of the oldest commit that was fetched. No date is better than a
 // wrong one: the build host has to fetch the full history for these to appear
 // (on Vercel, the VERCEL_DEEP_CLONE environment variable).
-const hasHistory = git("rev-parse", "--is-shallow-repository") === "false";
+export const hasHistory =
+  git("rev-parse", "--is-shallow-repository") === "false";
 
 /**
  * When the page at `pathname` was last committed, for the sitemap.

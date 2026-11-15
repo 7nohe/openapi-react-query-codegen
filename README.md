@@ -80,22 +80,30 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 
 ## How it compares
 
-|  | This library | @hey-api tanstack-query plugin | Orval | openapi-react-query |
-|---|---|---|---|---|
-| `queryOptions` / `infiniteQueryOptions` factories (TanStack v5 pattern) | ✅ | ✅ | ✅ (`getXxxQueryOptions`) | ✅ (`$api.queryOptions`) |
-| Ready-to-use hooks (`useQuery` / suspense / infinite variants) | ✅ generated per operation | ❌ (options only) | ✅ | ✅ runtime wrapper (method + path strings) |
-| SSR helpers (`prefetchQuery` / `prefetchInfiniteQuery` / `ensureQueryData`) | ✅ | ❌ | Partial (`usePrefetch`) | Not provided (use `queryOptions`) |
-| Hierarchical query keys for granular invalidation | ✅ | ✅ (tags) | Partial | Not documented |
-| Stable release line | ✅ SemVer | pre-1.0, frequent breaking changes | ✅ | ⚠️ upstream openapi-typescript is in [maintenance mode](https://github.com/openapi-ts/openapi-typescript/issues/2874) |
-| MSW mock generation | ✅ (`--mock msw`, fixed values) | ❌ | ✅ (random values with Faker) | ❌ |
-| Vue / Solid / Svelte / Angular | ❌ React-focused | ✅ | ✅ | ❌ |
-| Generation time, GitHub REST API (1,272 operations)¹ | **0.46 s** | 2.98 s | 4.31 s | 2.10 s |
-| Packages added by installing the generator¹ | **9** (2.1 MB) | 51 (10.8 MB) | 89 (101.5 MB) | 35 (20.5 MB) |
-| Type errors in the generated code, Stripe / GitHub APIs¹ | **0 / 0** | 274 / 0 | 219 / 1 | 0 / 0 |
+Built only for React and TanStack Query v5: one command, with no configuration file, gives every GET operation a query hook, a suspense hook, a `queryOptions` factory, a prefetch function and an `ensureQueryData` function, and every other operation a mutation hook. The [Comparison](https://orqc.7nohe.dev/guides/comparison/) page has the details and when another tool fits better.
 
-¹ Measured on 2026-11-13 on an Apple M2 with Node.js 24 (generation time is the median wall-clock time of the CLI), with 4.0.0-beta.4, `@hey-api/openapi-ts` 0.99.0, Orval 8.46.0 and openapi-typescript 7.13.0 + openapi-react-query 0.5.4. Methods, the other specifications and type-checking times are on the [Benchmarks](https://orqc.7nohe.dev/guides/benchmarks/) page; the scripts are in [`benchmarks/`](./benchmarks). The [Comparison](https://orqc.7nohe.dev/guides/comparison/) page covers Kubb too, and what each tool generates in more detail.
+|  | This library | Orval | Kubb | Hey API | openapi-react-query |
+|---|---|---|---|---|---|
+| Hooks per operation (`useQuery`, `useMutation`) | ✅ always | ✅ | With `hooks: true` | ❌ (documented output is options factories) | Runtime wrapper (`$api.useQuery("get", "/pets")`) |
+| Suspense hooks | ✅ always | With `useSuspenseQuery` | With `suspense` | ❌ | ✅ (`$api.useSuspenseQuery`) |
+| Prefetch functions | ✅ always | With `usePrefetch` | ❌ | ❌ | ❌ |
+| `ensureQueryData` functions | ✅ always | ❌ | ❌ | ❌ | ❌ |
+| `queryOptions` factories (TanStack v5 pattern) | ✅ | ✅ (`getXxxQueryOptions`) | ✅ | ✅ | ✅ (`$api.queryOptions`) |
+| Query key functions | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Check for stale output in CI | ✅ `--check` | ✅ `--outdated` | `--dry-run` shows planned changes | ❌ | ✅ `--check` |
+| Configuration | CLI flags | `orval.config.ts` | `kubb.config.ts` | `openapi-ts.config.ts` | CLI flags |
+| Release line | ✅ SemVer | ✅ v8 | ✅ v5 | Before 1.0 | ⚠️ [maintenance mode](https://github.com/openapi-ts/openapi-typescript/issues/2874) |
+| MSW mocks | ✅ fixed values (`--mock msw`) | ✅ random values (Faker) | ✅ random values (Faker) | In progress | ❌ |
+| Vue / Svelte / Solid / Angular | ❌ React only | ✅ | Vue | ✅ | ❌ |
+| Generation time, GitHub REST API (1,272 operations)¹ | **0.46 s** | 4.31 s | 2.98 s | 2.98 s | 2.10 s |
+| Packages added by installing the generator¹ | **9** (2.1 MB) | 89 (101.5 MB) | 91 (37.4 MB) | 51 (10.8 MB) | 35 (20.5 MB) |
+| Type errors in the generated code, Stripe / GitHub APIs¹ | **0 / 0** | 219 / 1 | 0 / 0 | 274 / 0 | 0 / 0 |
 
-**Scope**: this library is deliberately React-focused — use the hey-api plugin if you need non-React frameworks. Its [MSW mocks](https://orqc.7nohe.dev/guides/mocking/) answer with fixed values taken from the spec and keep no state; use Orval if you want randomly generated mock data.
+The feature rows were checked against each tool's documentation on 2026-11-15 (Orval 8.48.0, Kubb 5.20.1 with `@kubb/plugin-react-query` 5.10.3, `@hey-api/openapi-ts` 0.99.0, openapi-react-query 0.5.4).
+
+¹ Measured on 2026-11-13 on an Apple M2 with Node.js 24 (generation time is the median wall-clock time of the CLI), with 4.0.0-beta.4, Orval 8.46.0, Kubb 5.15.4 with `@kubb/plugin-react-query` 5.9.0, `@hey-api/openapi-ts` 0.99.0 and openapi-typescript 7.13.0 + openapi-react-query 0.5.4. Methods, the other specifications and type-checking times are on the [Benchmarks](https://orqc.7nohe.dev/guides/benchmarks/) page; the scripts are in [`benchmarks/`](./benchmarks).
+
+**Scope**: this library is deliberately React-focused — use Orval, Kubb or Hey API if you need another framework. Its [MSW mocks](https://orqc.7nohe.dev/guides/mocking/) answer with fixed values taken from the spec and keep no state; use Orval or Kubb if you want randomly generated mock data.
 
 **Coming from openapi-typescript / openapi-fetch / openapi-react-query?** See the [migration guide](https://orqc.7nohe.dev/guides/migrating-from-openapi-react-query/).
 
