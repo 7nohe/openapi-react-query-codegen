@@ -1,0 +1,98 @@
+---
+title: Comparison
+description: How OpenAPI React Query Codegen differs from Orval, Kubb, Hey API and openapi-react-query in what they generate for TanStack Query, the frameworks and HTTP clients they support, and when to choose which.
+---
+
+import {
+  addedPackages,
+  generationSeconds,
+  operations,
+  tools,
+  typeErrors,
+} from "../../../data/benchmarks";
+
+Several tools turn an OpenAPI document into code for TanStack Query. They differ mostly in scope. This library does one thing: React and TanStack Query v5, from one command with no configuration file. The others are broader, and that is often the reason to choose them.
+
+This page was checked on 2026-11-15 against the documentation of Orval 8.48.0, Kubb 5.20.1 with `@kubb/plugin-react-query` 5.10.3, `@hey-api/openapi-ts` 0.99.0, and openapi-typescript 7.13.0 with openapi-react-query 0.5.4. If something here is out of date, please [open an issue](https://github.com/7nohe/openapi-react-query-codegen/issues).
+
+## At a glance
+
+| | This library | Orval | Kubb | Hey API | openapi-react-query |
+|---|---|---|---|---|---|
+| Hooks per operation | Yes, always | Yes | With `hooks: true` | Not in the documented output | No generated code: `$api.useQuery("get", "/pets")` |
+| `queryOptions` factories | Yes | Yes (`getXxxQueryOptions`) | Yes, the default output | Yes, the default output | `$api.queryOptions(...)` |
+| Suspense hooks | Yes | With `useSuspenseQuery` | With `suspense` | No | `$api.useSuspenseQuery` |
+| Infinite queries | Found by `--pageParam` and `--nextPageParam` | `useInfinite` and `useInfiniteQueryParam` | `infinite` option | Found by pagination keywords | At the call site |
+| Prefetch and `ensureQueryData` functions | Yes, per operation | Prefetch with `usePrefetch` | No | No | No |
+| Query key functions | Yes | Yes | Yes | Yes | No, the key is `[method, path, params]` |
+| Frameworks | React | React, Vue, Svelte, Solid, Angular | React, Vue | React, Vue, Svelte, Solid, Angular, Preact | React |
+| Other data libraries | No | SWR, Pinia Colada | SWR | Pinia Colada | No |
+| HTTP client | fetch or axios, generated into the output | fetch, axios or your own | fetch, axios or your own | Fetch, Axios, Ky, OFetch and others | fetch, through the `openapi-fetch` package |
+| Schema validation | JSON Schema constants | Zod, Valibot, Effect | Zod | Zod, Valibot | No |
+| Mocks | MSW handlers with fixed values | MSW and Faker | MSW and Faker | In progress | No |
+| Configuration | Command line flags | `orval.config.ts` | `kubb.config.ts` | `openapi-ts.config.ts` | Command line flags |
+| Check for stale output in CI | `--check` | `--outdated` | `--dry-run` shows planned changes | No | `--check` |
+| Errors as JSON | `--json` | No | `--reporter json` | No | No |
+
+Where a tool has no helper of its own, such as prefetching with Kubb or Hey API, you pass its `queryOptions` factory to `queryClient.prefetchQuery` or `queryClient.ensureQueryData` yourself.
+
+## Measured
+
+<table>
+  <thead>
+    <tr>
+      <th>Tool</th>
+      <th>Generation time, GitHub REST API ({operations("github").toLocaleString("en-US")} operations)</th>
+      <th>Packages added</th>
+      <th>Type errors in the output, Stripe / GitHub</th>
+    </tr>
+  </thead>
+  <tbody>
+    {tools.map((tool, index) => (
+      <tr>
+        <td>{tool.name}</td>
+        <td>{generationSeconds("github")[index].value.toFixed(2)} s</td>
+        <td>{addedPackages[index].value}</td>
+        <td>
+          {typeErrors("stripe")[index].value} / {typeErrors("github")[index].value}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+How these were measured, the versions and the other specifications are on the [Benchmarks](/guides/benchmarks/) page.
+
+## Orval
+
+[Orval](https://orval.dev) generates hooks per operation too, with `queryOptions` factories, key functions and optional suspense, infinite, prefetch and invalidation helpers. It covers far more than React: Vue, Svelte, Solid and Angular with TanStack Query, SWR, Pinia Colada, and Zod, Valibot or Effect schemas. Its mocks use MSW with Faker, so they return random data.
+
+Choose Orval when you need one of those targets, random mock data, or a configuration file with per-operation overrides. Choose this library when you want React and TanStack Query without configuration: suspense hooks, prefetch and `ensureQueryData` functions are generated for every operation with no option to turn on, the generator installs {addedPackages[0].value} packages, and it is faster on large specifications.
+
+## Kubb
+
+[Kubb](https://kubb.dev) is a plugin system. Its React Query plugin generates `queryOptions` and `mutationOptions` factories by default and hooks when you set `hooks: true`. Other plugins add Vue Query, SWR, Zod, MSW and Faker, and you can write your own. It is configured in `kubb.config.ts`.
+
+Choose Kubb when you want to compose the output from plugins or generate something no fixed generator offers. Choose this library when the fixed output is what you want and you would rather not maintain a configuration.
+
+## Hey API
+
+[Hey API](https://heyapi.dev) (`@hey-api/openapi-ts`) is also plugin-based. Its TanStack Query plugin generates options factories and query keys that you pass to `useQuery`, `useInfiniteQuery` and `useMutation` yourself, for React, Vue, Svelte, Solid, Angular and Preact. It has the widest choice of HTTP clients here, and Zod and Valibot plugins. The project asks you to pin an exact version while it is before 1.0.
+
+Up to v3 this library used `@hey-api/openapi-ts` to generate its client. Since v4 it has its own generator, see [Migrating to v4](/guides/migrating-to-v4/).
+
+Choose Hey API when you need a framework other than React, another HTTP client, or runtime validation. Choose this library when you want ready-made hooks, suspense variants and server-side helpers per operation, and output that only changes in a breaking way between major versions.
+
+## openapi-typescript and openapi-react-query
+
+[openapi-typescript](https://openapi-ts.dev) generates types only. `openapi-fetch` and `openapi-react-query` are small runtime packages that use those types: you call `$api.useQuery("get", "/pets/{petId}", ...)` with the method and the path as strings, so there is nothing to regenerate except the types and very little code in your repository.
+
+The project announced that it is [in maintenance mode](https://github.com/openapi-ts/openapi-typescript/issues/2874) from September 2026 and will get no more updates. If you are moving on from it, see [Migrating from openapi-react-query](/guides/migrating-from-openapi-react-query/).
+
+## When this library is not the right choice
+
+- You use Vue, Svelte, Solid or Angular. The hooks are for React.
+- You want Zod or Valibot schemas generated for runtime validation. This library writes JSON Schema constants only.
+- You want mock data that is random, or mocks that keep state. The generated MSW handlers answer with fixed values from the specification.
+- You need an HTTP client other than fetch or axios.
+- You want to change the shape of the generated code. There are flags, but no templates or plugins.

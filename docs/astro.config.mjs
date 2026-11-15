@@ -61,13 +61,14 @@ export default defineConfig({
             {
               label: "Getting started and usage",
               description:
-                "install, first run, the generated layout, using the generated hooks and queryOptions factories, every CLI option, mock data and MSW handlers, CI checks and coding agents",
+                "install, first run, the generated layout, using the generated hooks and queryOptions factories, every CLI option, mock data and MSW handlers, CI checks, coding agents and the FAQ",
               paths: [
                 "guides/introduction",
                 "guides/usage",
                 "guides/cli-options",
                 "guides/mocking",
                 "guides/ci-and-agents",
+                "guides/faq",
               ],
             },
             {
@@ -83,10 +84,10 @@ export default defineConfig({
               paths: ["guides/migrating-*"],
             },
             {
-              label: "Benchmarks",
+              label: "Comparison and benchmarks",
               description:
-                "generation time, install size and type errors compared with other generators, and what a coding agent spends",
-              paths: ["guides/benchmarks"],
+                "what Orval, Kubb, Hey API and openapi-react-query generate compared with this library, with generation time, install size and type errors, and what a coding agent spends",
+              paths: ["guides/comparison", "guides/benchmarks"],
             },
           ],
           promote: [
@@ -96,6 +97,8 @@ export default defineConfig({
             "guides/cli-options",
             "guides/mocking",
             "guides/ci-and-agents",
+            "guides/faq",
+            "guides/comparison",
           ],
           demote: ["guides/migrating-to-v3", "contributing", "license"],
           exclude: ["guides/migrating-to-v3", "contributing", "license"],
@@ -137,7 +140,9 @@ export default defineConfig({
             { slug: "guides/cli-options" },
             { slug: "guides/mocking" },
             { slug: "guides/ci-and-agents" },
+            { slug: "guides/comparison" },
             { slug: "guides/benchmarks" },
+            { slug: "guides/faq" },
             { slug: "guides/migrating-to-v3" },
             { slug: "guides/migrating-to-v4" },
             { slug: "guides/migrating-from-openapi-react-query" },

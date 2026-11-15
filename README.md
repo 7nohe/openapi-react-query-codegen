@@ -82,7 +82,7 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 
 |  | This library | @hey-api tanstack-query plugin | Orval | openapi-react-query |
 |---|---|---|---|---|
-| `queryOptions` / `infiniteQueryOptions` factories (TanStack v5 pattern) | ✅ | ✅ | ❌ | ✅ (`$api.queryOptions`) |
+| `queryOptions` / `infiniteQueryOptions` factories (TanStack v5 pattern) | ✅ | ✅ | ✅ (`getXxxQueryOptions`) | ✅ (`$api.queryOptions`) |
 | Ready-to-use hooks (`useQuery` / suspense / infinite variants) | ✅ generated per operation | ❌ (options only) | ✅ | ✅ runtime wrapper (method + path strings) |
 | SSR helpers (`prefetchQuery` / `prefetchInfiniteQuery` / `ensureQueryData`) | ✅ | ❌ | Partial (`usePrefetch`) | Not provided (use `queryOptions`) |
 | Hierarchical query keys for granular invalidation | ✅ | ✅ (tags) | Partial | Not documented |
@@ -93,7 +93,7 @@ See the [documentation](https://orqc.7nohe.dev) for [CLI options](https://orqc.7
 | Packages added by installing the generator¹ | **9** (2.1 MB) | 51 (10.8 MB) | 89 (101.5 MB) | 35 (20.5 MB) |
 | Type errors in the generated code, Stripe / GitHub APIs¹ | **0 / 0** | 274 / 0 | 219 / 1 | 0 / 0 |
 
-¹ Measured on 2026-11-13 on an Apple M2 with Node.js 24 (generation time is the median wall-clock time of the CLI), with 4.0.0-beta.4, `@hey-api/openapi-ts` 0.99.0, Orval 8.46.0 and openapi-typescript 7.13.0 + openapi-react-query 0.5.4. Methods, the other specifications and type-checking times are on the [Benchmarks](https://orqc.7nohe.dev/guides/benchmarks/) page; the scripts are in [`benchmarks/`](./benchmarks).
+¹ Measured on 2026-11-13 on an Apple M2 with Node.js 24 (generation time is the median wall-clock time of the CLI), with 4.0.0-beta.4, `@hey-api/openapi-ts` 0.99.0, Orval 8.46.0 and openapi-typescript 7.13.0 + openapi-react-query 0.5.4. Methods, the other specifications and type-checking times are on the [Benchmarks](https://orqc.7nohe.dev/guides/benchmarks/) page; the scripts are in [`benchmarks/`](./benchmarks). The [Comparison](https://orqc.7nohe.dev/guides/comparison/) page covers Kubb too, and what each tool generates in more detail.
 
 **Scope**: this library is deliberately React-focused — use the hey-api plugin if you need non-React frameworks. Its [MSW mocks](https://orqc.7nohe.dev/guides/mocking/) answer with fixed values taken from the spec and keep no state; use Orval if you want randomly generated mock data.
 
