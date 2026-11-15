@@ -9,9 +9,13 @@ OpenAPI React Query Codegen is a code generator for creating React Query (also k
 ## Features
 
 - Generates custom react hooks that use React Query's `useQuery`, `useSuspenseQuery`, `useMutation` and `useInfiniteQuery` hooks
+- Generates `queryOptions` and `infiniteQueryOptions` factories to use with `useQuery`, `useQueries`, loaders and the query client
 - Generates custom functions that use React Query's `ensureQueryData` and `prefetchQuery` functions
 - Generates query keys and functions for query caching
 - Generates a pure TypeScript client (types, SDK functions and a small fetch or axios runtime) from the same specification
+- Optionally generates mock data and [MSW](/guides/mocking/) request handlers
+
+How it differs from Orval, Kubb, Hey API and openapi-react-query is on the [Comparison](/guides/comparison/) page.
 
 
 ## Installation
@@ -80,12 +84,13 @@ openapi/
 │   ├── infiniteQueries.ts
 │   ├── prefetch.ts
 │   ├── queries.ts
+│   ├── queryOptions.ts
 │   └── suspense.ts
 └── requests
-    ├── client/
-    ├── core/
     ├── client.gen.ts
     ├── index.ts
+    ├── runtime.gen.ts
+    ├── schemas.gen.ts
     ├── sdk.gen.ts
     ├── services.gen.ts
     └── types.gen.ts
@@ -107,7 +112,7 @@ Before using the generated hooks, you need to install the required dependencies.
 
 Then, add the `QueryClientProvider` to your application's entry point.
 
-Also, you can set the base URL and interceptors for the generated client.
+Also, you can set the base URL and interceptors for the generated client. [Configuring the client](/guides/client/) has the details.
 
 ```tsx
 // src/main.tsx
@@ -181,10 +186,11 @@ export default App;
 
 - openapi
   - queries
-    - index.ts Main file that exports common types, variables, and queries. Does not export suspense or prefetch hooks
-    - common.ts Common types
+    - index.ts Re-exports `common.ts`, `queries.ts` and `queryOptions.ts`. Import the suspense, infinite, prefetch and ensureQueryData functions from their own files
+    - common.ts Common types, query keys and key functions
     - ensureQueryData.ts Generated ensureQueryData functions
     - queries.ts Generated query/mutation hooks
+    - queryOptions.ts Generated `queryOptions` and `infiniteQueryOptions` factories
     - infiniteQueries.ts Generated infinite query hooks
     - suspense.ts Generated suspense hooks
     - prefetch.ts Generated prefetch functions
@@ -194,6 +200,7 @@ export default App;
     - sdk.gen.ts SDK functions (primary service functions)
     - services.gen.ts Backward-compatibility shim (re-exports from client.gen and sdk.gen)
     - types.gen.ts Generated TypeScript types
+    - schemas.gen.ts JSON schemas of the specification (unless `--noSchemas`)
     - index.ts Barrel file
 
 </FileTree>
