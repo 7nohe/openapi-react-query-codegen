@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "run-p dev:mock dev:tanstack",
-    "dev:mock": "prism mock ../petstore.yaml --dynamic",
+    "dev:mock": "node ../mock-server.mjs",
     "typecheck": "tsc --noEmit",
     "dev:tanstack": "vite --port=3001",
     "build": "vite build",
@@ -15,7 +15,6 @@
     "test:generated": "tsc -p ./tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@stoplight/prism-cli": "^5.5.2",
     "@tanstack/router-plugin": "^1.168.48",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

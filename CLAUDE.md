@@ -39,7 +39,8 @@ npm run preview:tanstack-router
 2. **Generate** (`src/generate.mts`): Orchestrates the generation process:
    - Calls `generateClient()` (`src/client/index.mts`) to build the client in `openapi/requests/` and the normalized operations
    - Calls `createSource()` to generate React Query hooks in `openapi/queries/`
-3. **Client Generator** (`src/client/`): `spec.mts` loads/bundles the document, `operations.mts` normalizes operations, `schema.mts` renders types, `emitTypes.mts` / `emitSdk.mts` write the files, and `runtime/*.runtime.ts` are the fetch/axios runtimes copied into the output
+   - With `--mock msw`, writes the mock data and MSW handlers that `generateClient()` returns to `openapi/mocks/`
+3. **Client Generator** (`src/client/`): `spec.mts` loads/bundles the document, `operations.mts` normalizes operations, `schema.mts` renders types, `emitTypes.mts` / `emitSdk.mts` write the files, `emitMocks.mts` / `mockValue.mts` write the mocks, and `runtime/*.runtime.ts` are the fetch/axios runtimes copied into the output
 4. **Hook Generators** (`src/hooks/`): `generateFiles.mts` routes operations by HTTP method (GET → queries, suspense, infinite, prefetch, ensure; POST/PUT/PATCH/DELETE → mutations) to the `build*.mts` builders, which return statements as strings; `statement.mts` and `imports.mts` print them and the imports each file needs
 5. **Write**: `writeGeneratedFiles()` (`src/client/index.mts`) writes both directories
 
@@ -54,10 +55,13 @@ The tool generates files in `openapi/queries/`:
 - `ensureQueryData.ts`: `ensureQueryData` functions
 - `index.ts`: Re-exports
 
+With `--mock msw` it also generates `openapi/mocks/`: `data.ts` (mock functions typed by `types.gen.ts`), `handlers.ts` (MSW handlers) and `index.ts`.
+
 ### Key Dependencies
 
 - **typescript** (dev only): building this package and compiling generated output in tests
 - **yaml**: parsing YAML specifications
+- **msw** (dev only): compiling and running the generated handlers in tests; generated code imports it from the user's project
 
 ## Testing
 

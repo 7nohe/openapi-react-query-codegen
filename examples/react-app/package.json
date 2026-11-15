@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "run-p dev:mock dev:client",
     "dev:client": "vite --clearScreen=false",
-    "dev:mock": "prism mock ../petstore.yaml --dynamic",
+    "dev:mock": "node ../mock-server.mjs",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "generate:api": "node ../../scripts/clean.mjs ./openapi && node ../../dist/cli.mjs -i ../petstore.yaml --format=biome --lint=biome -c axios",
@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.6",
-    "@stoplight/prism-cli": "^5.5.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.2.1",

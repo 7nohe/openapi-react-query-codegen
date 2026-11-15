@@ -87,6 +87,21 @@ describe("runCli", () => {
     );
   });
 
+  test("--mock takes the mocking library", async () => {
+    const cli = setup();
+    expect(await cli.run("-i", "spec.yaml", "--mock", "msw")).toBe(0);
+    expect(cli.dependencies.generate).toHaveBeenCalledWith(
+      expect.objectContaining({ mock: "msw" }),
+      "9.9.9",
+      { silent: false },
+    );
+
+    const unknown = setup();
+    expect(await unknown.run("-i", "spec.yaml", "--mock", "nock")).toBe(2);
+    expect(unknown.stderr()).toContain("--mock");
+    expect(unknown.dependencies.generate).not.toHaveBeenCalled();
+  });
+
   test("does not silence the generator in the default mode", async () => {
     const cli = setup();
     expect(await cli.run("-i", "spec.yaml")).toBe(0);

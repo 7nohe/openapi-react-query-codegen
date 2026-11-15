@@ -1,6 +1,7 @@
 export const defaultOutputPath = "openapi";
 export const queriesOutputPath = "queries";
 export const requestsOutputPath = "requests";
+export const mocksOutputPath = "mocks";
 
 export const OpenApiRqFiles = {
   queries: "queries",

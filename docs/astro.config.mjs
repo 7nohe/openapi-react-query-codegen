@@ -61,11 +61,12 @@ export default defineConfig({
             {
               label: "Getting started and usage",
               description:
-                "install, first run, the generated layout, using the generated hooks and queryOptions factories, every CLI option, CI checks and coding agents",
+                "install, first run, the generated layout, using the generated hooks and queryOptions factories, every CLI option, mock data and MSW handlers, CI checks and coding agents",
               paths: [
                 "guides/introduction",
                 "guides/usage",
                 "guides/cli-options",
+                "guides/mocking",
                 "guides/ci-and-agents",
               ],
             },
@@ -93,6 +94,7 @@ export default defineConfig({
             "guides/introduction",
             "guides/usage",
             "guides/cli-options",
+            "guides/mocking",
             "guides/ci-and-agents",
           ],
           demote: ["guides/migrating-to-v3", "contributing", "license"],
@@ -133,6 +135,7 @@ export default defineConfig({
             { slug: "guides/introduction" },
             { slug: "guides/usage" },
             { slug: "guides/cli-options" },
+            { slug: "guides/mocking" },
             { slug: "guides/ci-and-agents" },
             { slug: "guides/benchmarks" },
             { slug: "guides/migrating-to-v3" },

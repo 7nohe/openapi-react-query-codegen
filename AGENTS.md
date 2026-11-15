@@ -11,6 +11,7 @@ This file has two parts:
 
 1. a TypeScript HTTP client (types, one function per operation and a small fetch or axios runtime) in `<output>/requests/`
 2. TanStack Query v5 hooks and helpers on top of that client in `<output>/queries/`
+3. with `--mock msw`, mock data and MSW request handlers in `<output>/mocks/`
 
 Docs: https://orqc.7nohe.dev (summary for LLMs: https://orqc.7nohe.dev/llms.txt)
 
@@ -40,8 +41,9 @@ Add a script and run it whenever the spec changes:
 | `-i, --input <path\|url\|content>` | (required) | OpenAPI 3.0/3.1 spec |
 | `-o, --output <dir>` | `openapi` | `requests/` and `queries/` are created inside |
 | `-c, --client <name>` | `fetch` | or `axios` |
-| `--format <biome\|prettier>` | none | formats `queries/` only |
-| `--lint <biome\|eslint>` | none | lints/fixes `queries/` only |
+| `--format <biome\|prettier>` | none | formats `queries/` (and `mocks/`) only |
+| `--lint <biome\|eslint>` | none | lints/fixes `queries/` (and `mocks/`) only |
+| `--mock <msw>` | off | also generate mock data and MSW handlers into `mocks/` (see below) |
 | `--enums <javascript\|typescript>` | none | emit enum objects |
 | `--useDateType` | off | `Date` for `date`/`date-time`, converted in successful responses |
 | `--noOperationId` | off | derive names from paths instead of `operationId` |
@@ -77,6 +79,8 @@ Pass the **same flags** every time (keep them in the package.json script). Diffe
     ├── schemas.gen.ts    # component schemas as constants (unless --noSchemas)
     └── transformers.gen.ts # date conversion (only with --useDateType)
 ```
+
+With `--mock msw` there is also `<output>/mocks/`: `data.ts` (mock functions), `handlers.ts` (MSW handlers) and `index.ts`.
 
 Never edit generated files; change the spec or the flags and regenerate. Whether to commit the output is the project's choice. If it is committed, add the `--check` step below to CI.
 
@@ -123,6 +127,28 @@ mutate({ body: { name: "Fluffy" } });
 
 Wrap the app in TanStack Query's `QueryClientProvider` as usual.
 
+### Mocks: `--mock msw`
+
+```bash
+orqc -i ./openapi.yaml -o ./src/openapi --mock msw
+```
+
+Writes `<output>/mocks/` and needs `msw` (2 or 3) in the project. For an operation `findPets` and a schema `Pet` it exports:
+
+- `findPetsHandler(override?)`: an MSW handler that answers with the operation's lowest successful status. `override` is a body of the response type, or an MSW resolver for anything else (an error, a body that depends on the request).
+- `handlers`: every handler, ordered so that `/pets/mine` matches before `/pets/{id}`.
+- `findPetsResponseMock()` and `petMock(overrides?)`: the mock data, typed by `requests/types.gen.ts`. `overrides` exists for object schemas only.
+
+```ts
+import { setupServer } from "msw/node"; // or setupWorker from "msw/browser"
+import { findPetsHandler, handlers, petMock } from "./openapi/mocks";
+
+const server = setupServer(...handlers);
+server.use(findPetsHandler([petMock({ name: "Momo" })])); // own handlers win: MSW takes the first match
+```
+
+The values are fixed, not random: the specification's `example`/`default`, else the first `enum` value, else a value made up from the type. To change the data everywhere, add `example`s to the specification and regenerate; do not edit `mocks/`. The handlers keep no state and ignore the request, so pagination, errors and "created items show up in the list" need a handler of your own.
+
 ### Looking an operation up: `--agentsMd`
 
 The generated files can be very large. Do not read them whole: an operation's function, hook and types each start a line, so `grep` finds them.
@@ -144,7 +170,7 @@ With `--agentsMd` in the codegen script, the generator keeps these instructions,
 orqc -i ./openapi.yaml -o ./src/openapi --check
 ```
 
-Generates into a temporary directory (`.openapi-rq-check-*` inside `<output>/queries`, removed afterwards), compares it with `<output>/requests` and `<output>/queries`, and changes no existing file. `--format`/`--lint` rules that target the output directory by path also apply to the temporary copy; a rule that names an exact file or depth from the project root (`src/openapi/queries/*.ts`) does not, so write such rules as `src/openapi/queries/**`. Each file is `added` (would be created), `modified` or `removed` (no longer generated).
+Generates into a temporary directory (`.openapi-rq-check-*` inside `<output>/queries`, removed afterwards), compares it with `<output>/requests` and `<output>/queries` (and `<output>/mocks` with `--mock`), and changes no existing file. `--format`/`--lint` rules that target the output directory by path also apply to the temporary copy; a rule that names an exact file or depth from the project root (`src/openapi/queries/*.ts`) does not, so write such rules as `src/openapi/queries/**`. Each file is `added` (would be created), `modified` or `removed` (no longer generated).
 
 The `queries/` headers include the package version, so after upgrading this package `--check` fails until you regenerate. Upgrade and regenerate in the same change.
 
@@ -219,10 +245,12 @@ import { check, generate } from "@7nohe/openapi-react-query-codegen";
 - A hook builder takes the names it declares and refers to from `hookNames(op)` (`src/hooks/hookNames.mts`), never from the operation's name directly: `settleHookNames` numbers a name that its file already imports or declares, and the files are then built again with those names.
 - A hook builder declares what its statement needs from the generated client: `service` (the SDK function) and `models` (types from `types.gen`). The fixed names (TanStack Query, `Options`, `Common`, `AxiosError`) are imported when the code mentions them, which is only safe because the client generator reserves them. When hook code starts using a new name, add it to `RESERVED_TYPE_NAMES` or `RESERVED_FUNCTION_NAMES` and to the list in `tests/hooks/imports.test.ts`.
 - The generated hooks rely on a small SDK contract: `Options<XData, ThrowOnError>` exported from `sdk.gen`, calls returning `{ data }` and rejecting when `throwOnError` is set, and the `XData` / `XError` type names. Keep it in sync with `src/client/emitSdk.mts` and the runtimes in `src/client/runtime/`.
+- The mocks (`src/client/emitMocks.mts`, `mockValue.mts`) are typed by `types.gen.ts`, so a value has to be one `renderSchema` gives a type for: `mockValue` reads a schema with the same helpers (`componentSchemaView`, `inheritedRequired`, `discriminatorValues`). When the type of a schema changes, change its value with it; `tests/client/mocksCompile.test.ts` compiles the mocks of every specification under `tests/inputs` and fails when the two disagree. An `example` is only used after `exampleValue` has checked it against the schema.
 - The runtimes (`src/client/runtime/*.runtime.ts`) are plain TypeScript that is copied verbatim into users' projects. Keep them dependency-free (axios aside), strict-mode clean, and free of syntax that needs a newer TypeScript than the generated code supports. `scripts/copy-runtime.mjs` ships them next to the compiled generator.
 
 ### Dependencies
 - Runtime dependencies are deliberately few (`cross-spawn`, `yaml`). Adding one needs a reason; the generator replaced `@hey-api/openapi-ts` to cut the supply-chain surface.
+- `msw` is a devDependency only, for the tests that compile and run the generated handlers. The generated code imports it from the user's project, so it is neither a dependency nor a peer dependency of this package.
 
 ### Agent-Specific Notes
 - The generators build source text as strings. After changing one, run the tests that compile the generated output (`tests/createSource.test.ts`, `tests/client/`) to confirm it is still valid TypeScript.

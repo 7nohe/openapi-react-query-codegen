@@ -1,6 +1,10 @@
 import path from "node:path";
 import type { LimitedUserConfig } from "./cli.mjs";
-import { queriesOutputPath, requestsOutputPath } from "./constants.mjs";
+import {
+  mocksOutputPath,
+  queriesOutputPath,
+  requestsOutputPath,
+} from "./constants.mjs";
 
 /**
  * Safely parse a value into a number. Checks for NaN and Infinity.
@@ -58,4 +62,8 @@ export function buildRequestsOutputPath(outputPath: string) {
 
 export function buildQueriesOutputPath(outputPath: string) {
   return path.join(outputPath, queriesOutputPath);
+}
+
+export function buildMocksOutputPath(outputPath: string) {
+  return path.join(outputPath, mocksOutputPath);
 }
