@@ -120,7 +120,7 @@ export default function Pets() {
 }
 ```
 
-Pass the hook the same options as the prefetch function, and no query key of your own as its second argument. The query key is built from both, so anything different is a different cache entry and the browser fetches again.
+Pass the hook the same options as the prefetch function, and no query key of your own as its second argument. The query key is the operation's key followed by the options, and a key of your own takes the place of the options. Either difference is a different cache entry, and the browser fetches again.
 
 ## Infinite queries
 
