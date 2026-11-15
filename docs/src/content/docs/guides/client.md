@@ -93,7 +93,7 @@ const { data } = useFindPets({
 addPet({ body: { name: "Fluffy" }, headers: { "Idempotency-Key": key } });
 ```
 
-The options of a query hook are part of its query key, so two calls with different headers are two cache entries.
+The options of a query hook are part of its query key, so two calls with different headers are two cache entries. A query key of your own, passed as the hook's second argument, takes the place of the options in the key. Put into it whatever changes the response, such as the language, or two calls that differ only in a header share one entry.
 
 ## Errors
 
