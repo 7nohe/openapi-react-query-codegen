@@ -1,6 +1,6 @@
 ---
 title: TanStack Router Example
-description: Using TanStack Router with OpenAPI React Query Codegen for data loading and prefetching.
+description: Use TanStack Router loaders with the generated ensureQueryData and prefetch functions to load and prefetch data from an OpenAPI API.
 ---
 
 Example of using TanStack Router can be found in the [`examples/tanstack-router-app`](https://github.com/7nohe/openapi-react-query-codegen/tree/main/examples/tanstack-router-app) directory of the repository.

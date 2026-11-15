@@ -1,6 +1,6 @@
 ---
 title: React Router Example
-description: A simple example of using React Router 8 (framework mode) with OpenAPI React Query Codegen.
+description: A React Router 8 (framework mode) example that loads data with TanStack Query code generated from an OpenAPI document.
 ---
 
 Example of using React Router 8 in framework mode can be found in the [`examples/react-router-app`](https://github.com/7nohe/openapi-react-query-codegen/tree/main/examples/react-router-app) directory of the repository.
