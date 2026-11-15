@@ -4,6 +4,7 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import Link from "next/link";
+import "../fetchClient";
 import { prefetchUseFindPets } from "../openapi/queries/prefetch";
 import Pets from "./components/Pets";
 
