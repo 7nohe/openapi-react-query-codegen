@@ -4,7 +4,7 @@ import starlight from "@astrojs/starlight";
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlightLlmsTxt from "starlight-llms-txt";
-import { lastModified } from "./src/lastModified.mjs";
+import { hasHistory, lastModified } from "./src/lastModified.mjs";
 
 const site = "https://orqc.7nohe.dev";
 const ogUrl = new URL("og.jpg", site).href;
@@ -50,6 +50,9 @@ export default defineConfig({
     starlight({
       title: "OpenAPI React Query Codegen",
       routeMiddleware: "./src/routeData.ts",
+      // "Last updated" on every page, from git. A shallow clone would date
+      // most pages to its oldest commit, so the dates are left out there.
+      lastUpdated: hasHistory,
       customCss: [
         "@fontsource-variable/ibm-plex-sans/wght.css",
         "@fontsource/ibm-plex-mono/400.css",

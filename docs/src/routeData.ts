@@ -8,7 +8,7 @@ const siteName = "OpenAPI React Query Codegen";
  * that says which site the page belongs to.
  */
 export const onRequest = defineRouteMiddleware((context) => {
-  const { entry, head } = context.locals.starlightRoute;
+  const { entry, head, lastUpdated } = context.locals.starlightRoute;
   const site = context.site;
   // The 404 page has no Markdown version and nothing to describe.
   if (!site || entry.id === "404") return;
@@ -39,6 +39,7 @@ export const onRequest = defineRouteMiddleware((context) => {
           "@id": `${page}#article`,
           headline: entry.data.title,
           description: entry.data.description,
+          ...(lastUpdated && { dateModified: lastUpdated.toISOString() }),
           url: page,
           inLanguage: "en",
           isPartOf: { "@id": `${home}#website` },
